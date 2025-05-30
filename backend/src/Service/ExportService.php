@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\ExportJobRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Service for managing export jobs and operations
@@ -20,6 +21,7 @@ class ExportService
         private readonly EntityManagerInterface $entityManager,
         private readonly ExportJobRepository $exportJobRepository,
         private readonly MessageBusInterface $messageBus,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -88,36 +90,22 @@ class ExportService
     public function processExportJob(ExportJob $exportJob): void
     {
         try {
-            $exportJob->setStatus('processing')
-                      ->setStartedAt(new \DateTimeImmutable());
-            
+            $exportJob->setStatus('processing');
             $this->entityManager->flush();
 
-            $startTime = microtime(true);
-            
             // Generate the export based on format
             $outputPath = $this->generateExport($exportJob);
             
-            $endTime = microtime(true);
-            $processingTime = ($endTime - $startTime) * 1000; // Convert to milliseconds
+            // Get file information
+            $fileName = basename($outputPath);
+            $fileSize = file_exists($outputPath) ? filesize($outputPath) : 0;
+            $mimeType = $this->getMimeType($exportJob->getFormat());
 
-            $exportJob->setStatus('completed')
-                      ->setCompletedAt(new \DateTimeImmutable())
-                      ->setOutputPath($outputPath)
-                      ->setProcessingTimeMs((int) $processingTime);
-
-            // Calculate file size if file exists
-            if ($outputPath && file_exists($outputPath)) {
-                $exportJob->setFileSize(filesize($outputPath));
-            }
-
+            $exportJob->markAsCompleted($outputPath, $fileName, $fileSize, $mimeType);
             $this->entityManager->flush();
 
         } catch (\Exception $e) {
-            $exportJob->setStatus('failed')
-                      ->setErrorMessage($e->getMessage())
-                      ->setCompletedAt(new \DateTimeImmutable());
-            
+            $exportJob->markAsFailed($e->getMessage());
             $this->entityManager->flush();
             
             throw $e;
@@ -131,7 +119,6 @@ class ExportService
     {
         $design = $exportJob->getDesign();
         $format = $exportJob->getFormat();
-        $options = $exportJob->getOptions();
 
         // Create export directory if it doesn't exist
         $exportDir = '/var/www/html/iamgickpro/storage/exports';
@@ -150,7 +137,7 @@ class ExportService
         $outputPath = $exportDir . '/' . $filename;
 
         // Generate SVG first (this is the base format)
-        $svgContent = $this->generateSVG($design, $options);
+        $svgContent = $this->generateSVG($design, $exportJob);
         
         if ($format === 'svg') {
             file_put_contents($outputPath, $svgContent);
@@ -158,13 +145,30 @@ class ExportService
         }
 
         // For other formats, convert from SVG
-        return $this->convertFromSVG($svgContent, $outputPath, $format, $options);
+        return $this->convertFromSVG($svgContent, $outputPath, $format, $exportJob);
+    }
+
+    /**
+     * Get MIME type for format
+     */
+    private function getMimeType(string $format): string
+    {
+        return match ($format) {
+            'png' => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'svg' => 'image/svg+xml',
+            'gif' => 'image/gif',
+            'mp4' => 'video/mp4',
+            'webm' => 'video/webm',
+            'pdf' => 'application/pdf',
+            default => 'application/octet-stream',
+        };
     }
 
     /**
      * Generate SVG from design
      */
-    private function generateSVG(Design $design, array $options = []): string
+    private function generateSVG(Design $design, ExportJob $exportJob): string
     {
         $width = $design->getCanvasWidth();
         $height = $design->getCanvasHeight();
@@ -309,14 +313,14 @@ class ExportService
     /**
      * Convert SVG to other formats using ImageMagick
      */
-    private function convertFromSVG(string $svgContent, string $outputPath, string $format, array $options = []): string
+    private function convertFromSVG(string $svgContent, string $outputPath, string $format, ExportJob $exportJob): string
     {
         // Save SVG to temporary file first
         $tempSvgPath = tempnam(sys_get_temp_dir(), 'export_') . '.svg';
         file_put_contents($tempSvgPath, $svgContent);
 
         try {
-            $command = $this->buildConversionCommand($tempSvgPath, $outputPath, $format, $options);
+            $command = $this->buildConversionCommand($tempSvgPath, $outputPath, $format, $exportJob);
             
             $result = shell_exec($command . ' 2>&1');
             
@@ -337,7 +341,7 @@ class ExportService
     /**
      * Build ImageMagick conversion command
      */
-    private function buildConversionCommand(string $inputPath, string $outputPath, string $format, array $options): string
+    private function buildConversionCommand(string $inputPath, string $outputPath, string $format, ExportJob $exportJob): string
     {
         $command = 'convert';
         
@@ -349,7 +353,7 @@ class ExportService
             case 'jpg':
             case 'jpeg':
                 $command .= ' -background white -flatten';
-                $quality = $options['quality'] ?? 90;
+                $quality = $exportJob->getQuality() === 'high' ? 95 : ($exportJob->getQuality() === 'low' ? 60 : 80);
                 $command .= sprintf(' -quality %d', $quality);
                 break;
             case 'gif':
@@ -357,15 +361,10 @@ class ExportService
                 break;
         }
 
-        // Add DPI if specified
-        if (isset($options['dpi'])) {
-            $command .= sprintf(' -density %d', $options['dpi']);
-        }
-
         // Add resize if specified
-        if (isset($options['width']) || isset($options['height'])) {
-            $width = $options['width'] ?? '';
-            $height = $options['height'] ?? '';
+        if ($exportJob->getWidth() || $exportJob->getHeight()) {
+            $width = $exportJob->getWidth() ?? '';
+            $height = $exportJob->getHeight() ?? '';
             $command .= sprintf(' -resize %sx%s', $width, $height);
         }
 
@@ -383,23 +382,26 @@ class ExportService
             throw new \InvalidArgumentException('Only failed export jobs can be retried');
         }
 
-        $retryCount = $exportJob->getRetryCount() + 1;
-        
-        if ($retryCount > 3) {
-            throw new \InvalidArgumentException('Maximum retry count exceeded');
-        }
+        // Create a new export job with the same parameters
+        $newExportJob = new ExportJob(
+            $exportJob->getUser(),
+            $exportJob->getDesign(),
+            $exportJob->getFormat(),
+            $exportJob->getQuality(),
+            $exportJob->getWidth(),
+            $exportJob->getHeight(),
+            $exportJob->getScale(),
+            $exportJob->isTransparent(),
+            $exportJob->getBackgroundColor(),
+            $exportJob->getAnimationSettings()
+        );
 
-        $exportJob->setStatus('pending')
-                  ->setRetryCount($retryCount)
-                  ->setErrorMessage(null)
-                  ->setStartedAt(null)
-                  ->setCompletedAt(null);
-
+        $this->entityManager->persist($newExportJob);
         $this->entityManager->flush();
 
-        $this->queueExportJob($exportJob);
+        $this->queueExportJob($newExportJob);
 
-        return $exportJob;
+        return $newExportJob;
     }
 
     /**
@@ -407,13 +409,7 @@ class ExportService
      */
     public function cancelExportJob(ExportJob $exportJob): ExportJob
     {
-        if (!in_array($exportJob->getStatus(), ['pending', 'queued'])) {
-            throw new \InvalidArgumentException('Only pending or queued export jobs can be cancelled');
-        }
-
-        $exportJob->setStatus('cancelled')
-                  ->setCompletedAt(new \DateTimeImmutable());
-
+        $exportJob->cancel();
         $this->entityManager->flush();
 
         return $exportJob;
@@ -428,13 +424,13 @@ class ExportService
             throw new \InvalidArgumentException('Export job is not completed');
         }
 
-        $outputPath = $exportJob->getOutputPath();
+        $outputPath = $exportJob->getFilePath();
         if (!$outputPath || !file_exists($outputPath)) {
             throw new \RuntimeException('Export file not found');
         }
 
         // Return URL relative to web root
-        $filename = basename($outputPath);
+        $filename = $exportJob->getFileName();
         return sprintf('/api/exports/%d/download/%s', $exportJob->getId(), $filename);
     }
 
@@ -481,5 +477,19 @@ class ExportService
     public function getSystemExportStats(): array
     {
         return $this->exportJobRepository->getQueueStats();
+    }
+
+    public function markJobAsFailed(ExportJob $exportJob, string $errorMessage): void
+    {
+        $exportJob->setStatus('failed');
+        $exportJob->setErrorMessage($errorMessage);
+        $exportJob->setCompletedAt(new \DateTimeImmutable());
+        
+        $this->entityManager->flush();
+
+        $this->logger->error('Export job marked as failed', [
+            'export_job_id' => $exportJob->getId(),
+            'error' => $errorMessage
+        ]);
     }
 }

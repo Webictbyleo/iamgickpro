@@ -393,6 +393,12 @@ class ExportJob
         return $this->completedAt;
     }
 
+    public function setCompletedAt(?\DateTimeImmutable $completedAt): self
+    {
+        $this->completedAt = $completedAt;
+        return $this;
+    }
+
     public function getExpiresAt(): ?\DateTimeImmutable
     {
         return $this->expiresAt;

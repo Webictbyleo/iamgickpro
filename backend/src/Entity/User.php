@@ -97,6 +97,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: ExportJob::class, orphanRemoval: true)]
     private Collection $exportJobs;
 
+    #[ORM\Column(type: 'integer')]
+    private int $failedLoginAttempts = 0;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $lockedUntil = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $passwordResetToken = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $passwordResetTokenExpiresAt = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $emailVerificationToken = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $emailVerificationTokenExpiresAt = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $timezone = null;
+
+    #[ORM\Column(type: 'string', length: 10, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $language = null;
+
     public function __construct()
     {
         $this->uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
@@ -396,5 +422,152 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getFailedLoginAttempts(): int
+    {
+        return $this->failedLoginAttempts;
+    }
+
+    public function setFailedLoginAttempts(int $failedLoginAttempts): self
+    {
+        $this->failedLoginAttempts = $failedLoginAttempts;
+        $this->touch();
+        return $this;
+    }
+
+    public function incrementFailedLoginAttempts(): self
+    {
+        $this->failedLoginAttempts++;
+        $this->touch();
+        return $this;
+    }
+
+    public function resetFailedLoginAttempts(): self
+    {
+        $this->failedLoginAttempts = 0;
+        $this->lockedUntil = null;
+        $this->touch();
+        return $this;
+    }
+
+    public function getLockedUntil(): ?\DateTimeImmutable
+    {
+        return $this->lockedUntil;
+    }
+
+    public function setLockedUntil(?\DateTimeImmutable $lockedUntil): self
+    {
+        $this->lockedUntil = $lockedUntil;
+        $this->touch();
+        return $this;
+    }
+
+    public function isAccountLocked(): bool
+    {
+        return $this->lockedUntil && $this->lockedUntil > new \DateTimeImmutable();
+    }
+
+    public function getPasswordResetToken(): ?string
+    {
+        return $this->passwordResetToken;
+    }
+
+    public function setPasswordResetToken(?string $passwordResetToken): self
+    {
+        $this->passwordResetToken = $passwordResetToken;
+        $this->touch();
+        return $this;
+    }
+
+    public function getPasswordResetTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->passwordResetTokenExpiresAt;
+    }
+
+    public function setPasswordResetTokenExpiresAt(?\DateTimeImmutable $passwordResetTokenExpiresAt): self
+    {
+        $this->passwordResetTokenExpiresAt = $passwordResetTokenExpiresAt;
+        $this->touch();
+        return $this;
+    }
+
+    public function isPasswordResetTokenValid(): bool
+    {
+        return $this->passwordResetToken && 
+               $this->passwordResetTokenExpiresAt && 
+               $this->passwordResetTokenExpiresAt > new \DateTimeImmutable();
+    }
+
+    public function getEmailVerificationToken(): ?string
+    {
+        return $this->emailVerificationToken;
+    }
+
+    public function setEmailVerificationToken(?string $emailVerificationToken): self
+    {
+        $this->emailVerificationToken = $emailVerificationToken;
+        $this->touch();
+        return $this;
+    }
+
+    public function getEmailVerificationTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->emailVerificationTokenExpiresAt;
+    }
+
+    public function setEmailVerificationTokenExpiresAt(?\DateTimeImmutable $emailVerificationTokenExpiresAt): self
+    {
+        $this->emailVerificationTokenExpiresAt = $emailVerificationTokenExpiresAt;
+        $this->touch();
+        return $this;
+    }
+
+    public function isEmailVerificationTokenValid(): bool
+    {
+        return $this->emailVerificationToken && 
+               $this->emailVerificationTokenExpiresAt && 
+               $this->emailVerificationTokenExpiresAt > new \DateTimeImmutable();
+    }
+
+    public function getTimezone(): ?string
+    {
+        return $this->timezone;
+    }
+
+    public function setTimezone(?string $timezone): self
+    {
+        $this->timezone = $timezone;
+        $this->touch();
+        return $this;
+    }
+
+    public function getLanguage(): ?string
+    {
+        return $this->language;
+    }
+
+    public function setLanguage(?string $language): self
+    {
+        $this->language = $language;
+        $this->touch();
+        return $this;
+    }
+
+    public function setAvatarUrl(?string $avatarUrl): self
+    {
+        $this->avatar = $avatarUrl;
+        $this->touch();
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->getIsActive();
+    }
+
+    public function isEmailVerified(): bool
+    {
+        return $this->getEmailVerified();
     }
 }
