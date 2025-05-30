@@ -187,6 +187,33 @@ class Design
         return $this;
     }
 
+    public function getCanvasSettings(): array
+    {
+        return [
+            'width' => $this->width,
+            'height' => $this->height,
+            'background' => $this->background,
+            'animationSettings' => $this->animationSettings
+        ];
+    }
+
+    public function setCanvasSettings(array $settings): self
+    {
+        if (isset($settings['width'])) {
+            $this->setWidth($settings['width']);
+        }
+        if (isset($settings['height'])) {
+            $this->setHeight($settings['height']);
+        }
+        if (isset($settings['background'])) {
+            $this->setBackground($settings['background']);
+        }
+        if (isset($settings['animationSettings'])) {
+            $this->setAnimationSettings($settings['animationSettings']);
+        }
+        return $this;
+    }
+
     public function getName(): string
     {
         return $this->title;

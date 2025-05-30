@@ -12,6 +12,7 @@ use App\Repository\DesignRepository;
 use App\Repository\LayerRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
+use Psr\Log\LoggerInterface;
 
 /**
  * Service for managing designs and their operations
@@ -22,7 +23,20 @@ class DesignService
         private readonly EntityManagerInterface $entityManager,
         private readonly DesignRepository $designRepository,
         private readonly LayerRepository $layerRepository,
+        private readonly LoggerInterface $logger,
+        private readonly string $thumbnailDirectory,
     ) {
+        // Ensure thumbnail directory exists
+        $this->ensureDirectoryExists($this->thumbnailDirectory);
+    }
+
+    private function ensureDirectoryExists(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+            }
+        }
     }
 
     /**
@@ -162,15 +176,186 @@ class DesignService
      */
     public function generateThumbnail(Design $design): string
     {
-        // This would integrate with the actual thumbnail generation service
-        // For now, return a placeholder URL
-        $thumbnailUrl = sprintf('/thumbnails/design_%s.jpg', $design->getId());
+        try {
+            $thumbnailFilename = sprintf('design_%s_thumb.jpg', $design->getId());
+            $thumbnailPath = $this->thumbnailDirectory . '/' . $thumbnailFilename;
+            
+            // Generate SVG content from design data
+            $svgContent = $this->generateSvgFromDesign($design);
+            
+            // Save temporary SVG file
+            $tempSvgPath = sys_get_temp_dir() . '/' . uniqid('design_', true) . '.svg';
+            file_put_contents($tempSvgPath, $svgContent);
+            
+            // Convert SVG to JPEG thumbnail using ImageMagick
+            $command = sprintf(
+                'convert "%s" -thumbnail 300x300^ -gravity center -extent 300x300 -quality 85 "%s"',
+                escapeshellarg($tempSvgPath),
+                escapeshellarg($thumbnailPath)
+            );
+            
+            exec($command, $output, $returnCode);
+            
+            // Clean up temp file
+            if (file_exists($tempSvgPath)) {
+                unlink($tempSvgPath);
+            }
+            
+            if ($returnCode === 0 && file_exists($thumbnailPath)) {
+                $thumbnailUrl = '/uploads/thumbnails/' . $thumbnailFilename;
+                $design->setThumbnail($thumbnailUrl);
+                $this->entityManager->flush();
+                
+                $this->logger->info('Design thumbnail generated successfully', [
+                    'design_id' => $design->getId(),
+                    'thumbnail_path' => $thumbnailPath
+                ]);
+                
+                return $thumbnailUrl;
+            } else {
+                throw new \RuntimeException('Failed to generate thumbnail with ImageMagick');
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to generate design thumbnail', [
+                'design_id' => $design->getId(),
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback to placeholder
+            $placeholderUrl = sprintf('/thumbnails/placeholder_design_%s.jpg', $design->getId());
+            $design->setThumbnail($placeholderUrl);
+            $this->entityManager->flush();
+            
+            return $placeholderUrl;
+        }
+    }
+
+    /**
+     * Generate SVG content from design data
+     */
+    private function generateSvgFromDesign(Design $design): string
+    {
+        $canvasSettings = $design->getCanvasSettings();
+        $width = $canvasSettings['width'] ?? 800;
+        $height = $canvasSettings['height'] ?? 600;
+        $backgroundColor = $canvasSettings['backgroundColor'] ?? '#ffffff';
         
-        $design->setThumbnail($thumbnailUrl);
+        $layers = $this->layerRepository->findByDesignOrderedByZIndex($design);
+        
+        $svg = sprintf(
+            '<svg width="%d" height="%d" viewBox="0 0 %d %d" xmlns="http://www.w3.org/2000/svg">',
+            $width, $height, $width, $height
+        );
+        
+        // Add background
+        $svg .= sprintf(
+            '<rect width="100%%" height="100%%" fill="%s"/>',
+            htmlspecialchars($backgroundColor)
+        );
+        
+        // Add layers
+        foreach ($layers as $layer) {
+            if (!$layer->getVisible()) {
+                continue;
+            }
+            
+            $svg .= $this->renderLayerToSvg($layer);
+        }
+        
+        $svg .= '</svg>';
+        
+        return $svg;
+    }
 
-        $this->entityManager->flush();
+    /**
+     * Render a single layer to SVG
+     */
+    private function renderLayerToSvg(Layer $layer): string
+    {
+        $type = $layer->getType();
+        $properties = $layer->getProperties();
+        $transform = sprintf(
+            'translate(%d,%d) rotate(%f) scale(%f,%f)',
+            $layer->getX() ?? 0,
+            $layer->getY() ?? 0,
+            $layer->getRotation() ?? 0,
+            $layer->getScaleX() ?? 1,
+            $layer->getScaleY() ?? 1
+        );
+        
+        switch ($type) {
+            case 'text':
+                return $this->renderTextLayerToSvg($layer, $properties, $transform);
+            case 'image':
+                return $this->renderImageLayerToSvg($layer, $properties, $transform);
+            case 'shape':
+                return $this->renderShapeLayerToSvg($layer, $properties, $transform);
+            default:
+                return '';
+        }
+    }
 
-        return $thumbnailUrl;
+    private function renderTextLayerToSvg(Layer $layer, array $properties, string $transform): string
+    {
+        $text = $properties['text'] ?? '';
+        $fontSize = $properties['fontSize'] ?? 16;
+        $fontFamily = $properties['fontFamily'] ?? 'Arial';
+        $color = $properties['color'] ?? '#000000';
+        
+        return sprintf(
+            '<text x="0" y="0" font-family="%s" font-size="%d" fill="%s" transform="%s">%s</text>',
+            htmlspecialchars($fontFamily),
+            $fontSize,
+            htmlspecialchars($color),
+            $transform,
+            htmlspecialchars($text)
+        );
+    }
+
+    private function renderImageLayerToSvg(Layer $layer, array $properties, string $transform): string
+    {
+        $src = $properties['src'] ?? '';
+        $width = $layer->getWidth() ?? 100;
+        $height = $layer->getHeight() ?? 100;
+        
+        if (empty($src)) {
+            return '';
+        }
+        
+        return sprintf(
+            '<image x="0" y="0" width="%d" height="%d" href="%s" transform="%s"/>',
+            $width,
+            $height,
+            htmlspecialchars($src),
+            $transform
+        );
+    }
+
+    private function renderShapeLayerToSvg(Layer $layer, array $properties, string $transform): string
+    {
+        $shapeType = $properties['shapeType'] ?? 'rectangle';
+        $fill = $properties['fill'] ?? '#cccccc';
+        $stroke = $properties['stroke'] ?? '#000000';
+        $strokeWidth = $properties['strokeWidth'] ?? 1;
+        $width = $layer->getWidth() ?? 100;
+        $height = $layer->getHeight() ?? 100;
+        
+        switch ($shapeType) {
+            case 'rectangle':
+                return sprintf(
+                    '<rect x="0" y="0" width="%d" height="%d" fill="%s" stroke="%s" stroke-width="%d" transform="%s"/>',
+                    $width, $height, htmlspecialchars($fill), htmlspecialchars($stroke), $strokeWidth, $transform
+                );
+            case 'circle':
+                $radius = min($width, $height) / 2;
+                return sprintf(
+                    '<circle cx="%d" cy="%d" r="%d" fill="%s" stroke="%s" stroke-width="%d" transform="%s"/>',
+                    $width/2, $height/2, $radius, htmlspecialchars($fill), htmlspecialchars($stroke), $strokeWidth, $transform
+                );
+            default:
+                return '';
+        }
     }
 
     /**

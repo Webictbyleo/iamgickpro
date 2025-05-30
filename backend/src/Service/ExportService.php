@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Design;
 use App\Entity\ExportJob;
 use App\Entity\User;
+use App\Message\ExportDesignMessage;
 use App\Repository\ExportJobRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -87,13 +88,32 @@ class ExportService
      */
     private function queueExportJob(ExportJob $exportJob): void
     {
-        // This would dispatch a message to the message bus
-        // For now, we'll just update the status
         $exportJob->setStatus('queued');
         $this->entityManager->flush();
         
-        // TODO: Implement actual message dispatch
-        // $this->messageBus->dispatch(new ProcessExportJobMessage($exportJob->getId()));
+        // Dispatch message to message bus for background processing
+        $message = new ExportDesignMessage(
+            $exportJob->getId(),
+            $exportJob->getDesign()->getId(),
+            $exportJob->getFormat(),
+            [
+                'quality' => $exportJob->getQuality(),
+                'width' => $exportJob->getWidth(),
+                'height' => $exportJob->getHeight(),
+                'scale' => $exportJob->getScale(),
+                'transparent' => $exportJob->isTransparent(),
+                'backgroundColor' => $exportJob->getBackgroundColor(),
+                'animationSettings' => $exportJob->getAnimationSettings()
+            ]
+        );
+        
+        $this->messageBus->dispatch($message);
+        
+        $this->logger->info('Export job queued for processing', [
+            'export_job_id' => $exportJob->getId(),
+            'design_id' => $exportJob->getDesign()->getId(),
+            'format' => $exportJob->getFormat()
+        ]);
     }
 
     /**

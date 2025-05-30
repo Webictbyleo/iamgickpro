@@ -59,3 +59,8 @@ services:
     App\Service\ExportService:
         arguments:
             $exportDirectory: '%app.export_directory%'
+
+    # Design Service Configuration
+    App\Service\DesignService:
+        arguments:
+            $thumbnailDirectory: '%app.thumbnail_directory%'
