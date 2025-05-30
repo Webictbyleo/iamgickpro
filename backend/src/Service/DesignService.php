@@ -1,0 +1,278 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Service;
+
+use App\Entity\Design;
+use App\Entity\Layer;
+use App\Entity\Project;
+use App\Entity\User;
+use App\Repository\DesignRepository;
+use App\Repository\LayerRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Uid\Uuid;
+
+/**
+ * Service for managing designs and their operations
+ */
+class DesignService
+{
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly DesignRepository $designRepository,
+        private readonly LayerRepository $layerRepository,
+    ) {
+    }
+
+    /**
+     * Create a new design
+     */
+    public function createDesign(
+        Project $project,
+        string $name,
+        int $width = 1920,
+        int $height = 1080,
+        array $data = []
+    ): Design {
+        $design = new Design();
+        $design->setName($name)
+               ->setProject($project)
+               ->setCanvasWidth($width)
+               ->setCanvasHeight($height)
+               ->setData($data);
+
+        $this->entityManager->persist($design);
+        $this->entityManager->flush();
+
+        return $design;
+    }
+
+    /**
+     * Duplicate a design
+     */
+    public function duplicateDesign(Design $originalDesign, ?Project $targetProject = null): Design {
+        $newDesign = new Design();
+        $newDesign->setName($originalDesign->getName() . ' (Copy)')
+                  ->setProject($targetProject ?? $originalDesign->getProject())
+                  ->setCanvasWidth($originalDesign->getCanvasWidth())
+                  ->setCanvasHeight($originalDesign->getCanvasHeight())
+                  ->setData($originalDesign->getData())
+                  ->setAnimationSettings($originalDesign->getAnimationSettings());
+
+        $this->entityManager->persist($newDesign);
+        $this->entityManager->flush();
+
+        // Duplicate all layers
+        $originalLayers = $this->layerRepository->findBy(['design' => $originalDesign], ['zIndex' => 'ASC']);
+        $layerMapping = [];
+
+        foreach ($originalLayers as $originalLayer) {
+            $newLayer = $this->duplicateLayer($originalLayer, $newDesign);
+            $layerMapping[$originalLayer->getId()] = $newLayer;
+        }
+
+        // Update parent relationships for duplicated layers
+        foreach ($layerMapping as $originalId => $newLayer) {
+            $originalLayer = $this->layerRepository->find($originalId);
+            if ($originalLayer->getParent()) {
+                $newParent = $layerMapping[$originalLayer->getParent()->getId()] ?? null;
+                if ($newParent) {
+                    $newLayer->setParent($newParent);
+                }
+            }
+        }
+
+        $this->entityManager->flush();
+
+        return $newDesign;
+    }
+
+    /**
+     * Duplicate a layer
+     */
+    private function duplicateLayer(Layer $originalLayer, Design $targetDesign): Layer
+    {
+        $newLayer = new Layer();
+        $newLayer->setType($originalLayer->getType())
+                 ->setName($originalLayer->getName())
+                 ->setDesign($targetDesign)
+                 ->setProperties($originalLayer->getProperties())
+                 ->setX($originalLayer->getX())
+                 ->setY($originalLayer->getY())
+                 ->setWidth($originalLayer->getWidth())
+                 ->setHeight($originalLayer->getHeight())
+                 ->setRotation($originalLayer->getRotation())
+                 ->setScaleX($originalLayer->getScaleX())
+                 ->setScaleY($originalLayer->getScaleY())
+                 ->setOpacity($originalLayer->getOpacity())
+                 ->setZIndex($originalLayer->getZIndex())
+                 ->setVisible($originalLayer->isVisible())
+                 ->setLocked($originalLayer->isLocked())
+                 ->setAnimations($originalLayer->getAnimations())
+                 ->setMask($originalLayer->getMask());
+
+        $this->entityManager->persist($newLayer);
+
+        return $newLayer;
+    }
+
+    /**
+     * Update design canvas dimensions
+     */
+    public function updateCanvasDimensions(Design $design, int $width, int $height): Design
+    {
+        $design->setCanvasWidth($width)
+               ->setCanvasHeight($height);
+
+        $this->entityManager->flush();
+
+        return $design;
+    }
+
+    /**
+     * Update design data/settings
+     */
+    public function updateData(Design $design, array $data): Design
+    {
+        $currentData = $design->getData();
+        $mergedData = array_merge($currentData, $data);
+        
+        $design->setData($mergedData);
+
+        $this->entityManager->flush();
+
+        return $design;
+    }
+
+    /**
+     * Update animation settings
+     */
+    public function updateAnimationSettings(Design $design, array $animationSettings): Design
+    {
+        $design->setAnimationSettings($animationSettings);
+
+        $this->entityManager->flush();
+
+        return $design;
+    }
+
+    /**
+     * Generate thumbnail for design
+     */
+    public function generateThumbnail(Design $design): string
+    {
+        // This would integrate with the actual thumbnail generation service
+        // For now, return a placeholder URL
+        $thumbnailUrl = sprintf('/thumbnails/design_%s.jpg', $design->getId());
+        
+        $design->setThumbnail($thumbnailUrl);
+
+        $this->entityManager->flush();
+
+        return $thumbnailUrl;
+    }
+
+    /**
+     * Get design statistics
+     */
+    public function getDesignStats(Design $design): array
+    {
+        $layers = $this->layerRepository->findBy(['design' => $design]);
+        $layersByType = [];
+        $totalAnimations = 0;
+
+        foreach ($layers as $layer) {
+            $type = $layer->getType();
+            $layersByType[$type] = ($layersByType[$type] ?? 0) + 1;
+            
+            if ($layer->getAnimations()) {
+                $totalAnimations += count($layer->getAnimations());
+            }
+        }
+
+        return [
+            'total_layers' => count($layers),
+            'layers_by_type' => $layersByType,
+            'total_animations' => $totalAnimations,
+            'canvas_size' => [
+                'width' => $design->getCanvasWidth(),
+                'height' => $design->getCanvasHeight(),
+            ],
+            'has_animations' => $totalAnimations > 0,
+            'created_at' => $design->getCreatedAt(),
+            'updated_at' => $design->getUpdatedAt(),
+        ];
+    }
+
+    /**
+     * Clean up orphaned designs (designs without projects)
+     */
+    public function cleanupOrphanedDesigns(): int
+    {
+        $orphanedDesigns = $this->designRepository->createQueryBuilder('d')
+            ->where('d.project IS NULL')
+            ->andWhere('d.createdAt < :threshold')
+            ->setParameter('threshold', new \DateTimeImmutable('-30 days'))
+            ->getQuery()
+            ->getResult();
+
+        $count = count($orphanedDesigns);
+
+        foreach ($orphanedDesigns as $design) {
+            $this->entityManager->remove($design);
+        }
+
+        $this->entityManager->flush();
+
+        return $count;
+    }
+
+    /**
+     * Export design data for backup or migration
+     */
+    public function exportDesignData(Design $design): array
+    {
+        $layers = $this->layerRepository->findBy(['design' => $design], ['zIndex' => 'ASC']);
+        
+        $layersData = [];
+        foreach ($layers as $layer) {
+            $layersData[] = [
+                'id' => $layer->getId(),
+                'type' => $layer->getType(),
+                'name' => $layer->getName(),
+                'properties' => $layer->getProperties(),
+                'transform' => [
+                    'x' => $layer->getX(),
+                    'y' => $layer->getY(),
+                    'width' => $layer->getWidth(),
+                    'height' => $layer->getHeight(),
+                    'rotation' => $layer->getRotation(),
+                    'scaleX' => $layer->getScaleX(),
+                    'scaleY' => $layer->getScaleY(),
+                    'opacity' => $layer->getOpacity(),
+                ],
+                'zIndex' => $layer->getZIndex(),
+                'visible' => $layer->isVisible(),
+                'locked' => $layer->isLocked(),
+                'animations' => $layer->getAnimations(),
+                'mask' => $layer->getMask(),
+                'parent_id' => $layer->getParent()?->getId(),
+            ];
+        }
+
+        return [
+            'design' => [
+                'id' => $design->getId(),
+                'name' => $design->getName(),
+                'canvas_width' => $design->getCanvasWidth(),
+                'canvas_height' => $design->getCanvasHeight(),
+                'data' => $design->getData(),
+                'animation_settings' => $design->getAnimationSettings(),
+                'created_at' => $design->getCreatedAt()->format('c'),
+                'updated_at' => $design->getUpdatedAt()?->format('c'),
+            ],
+            'layers' => $layersData,
+        ];
+    }
+}

@@ -1,0 +1,49 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Service\Media\:
+        resource: '../src/Service/Media/'
+        tags: ['app.media_service']
+
+    App\Service\Design\:
+        resource: '../src/Service/Design/'
+        tags: ['app.design_service']
+
+    # Stock Media Services
+    App\Service\Media\UnsplashService:
+        arguments:
+            $apiKey: '%env(UNSPLASH_ACCESS_KEY)%'
+
+    App\Service\Media\PexelsService:
+        arguments:
+            $apiKey: '%env(PEXELS_API_KEY)%'
+
+    App\Service\Media\IconFinderService:
+        arguments:
+            $apiKey: '%env(ICONFINDER_API_KEY)%'
+
+    App\Service\Media\GiphyService:
+        arguments:
+            $apiKey: '%env(GIPHY_API_KEY)%'
+
+    # Export Services
+    App\Service\Export\ExportManager:
+        arguments:
+            $storagePath: '%env(STORAGE_PATH)%'
+            $imageMagickPath: '%env(IMAGEMAGICK_PATH)%'
+            $inkscapePath: '%env(INKSCAPE_PATH)%'
+
+    # File Manager
+    App\Service\Media\FileManager:
+        arguments:
+            $storagePath: '%env(STORAGE_PATH)%'
+            $maxUploadSize: '%env(UPLOAD_MAX_SIZE)%'
