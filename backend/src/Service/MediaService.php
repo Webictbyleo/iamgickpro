@@ -19,22 +19,24 @@ readonly class MediaService
         private MediaRepository $mediaRepository,
         private SluggerInterface $slugger,
         private LoggerInterface $logger,
-        private string $mediaUploadDirectory = 'uploads/media',
-        private string $thumbnailDirectory = 'uploads/thumbnails',
-        private int $maxFileSize = 10485760, // 10MB
-        private array $allowedMimeTypes = [
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'image/svg+xml',
-            'image/webp',
-            'video/mp4',
-            'video/webm',
-            'audio/mpeg',
-            'audio/wav',
-            'audio/ogg'
-        ]
-    ) {}
+        private string $mediaUploadDirectory,
+        private string $thumbnailDirectory,
+        private int $maxFileSize,
+        private array $allowedMimeTypes
+    ) {
+        // Ensure directories exist
+        $this->ensureDirectoryExists($this->mediaUploadDirectory);
+        $this->ensureDirectoryExists($this->thumbnailDirectory);
+    }
+
+    private function ensureDirectoryExists(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+            }
+        }
+    }
 
     public function uploadFile(UploadedFile $file, User $user, ?string $alt = null): Media
     {
@@ -165,11 +167,6 @@ readonly class MediaService
         $thumbnailPath = $this->thumbnailDirectory . '/' . $thumbnailName;
 
         try {
-            // Create thumbnail directory if it doesn't exist
-            if (!is_dir($this->thumbnailDirectory)) {
-                mkdir($this->thumbnailDirectory, 0755, true);
-            }
-
             // Generate thumbnail using ImageMagick
             $command = sprintf(
                 'convert "%s" -thumbnail 300x300^ -gravity center -extent 300x300 "%s"',

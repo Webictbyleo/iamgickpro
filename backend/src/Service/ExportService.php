@@ -22,7 +22,19 @@ class ExportService
         private readonly ExportJobRepository $exportJobRepository,
         private readonly MessageBusInterface $messageBus,
         private readonly LoggerInterface $logger,
+        private readonly string $exportDirectory,
     ) {
+        // Ensure export directory exists
+        $this->ensureDirectoryExists($this->exportDirectory);
+    }
+
+    private function ensureDirectoryExists(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+            }
+        }
     }
 
     /**
@@ -120,11 +132,8 @@ class ExportService
         $design = $exportJob->getDesign();
         $format = $exportJob->getFormat();
 
-        // Create export directory if it doesn't exist
-        $exportDir = '/var/www/html/iamgickpro/storage/exports';
-        if (!is_dir($exportDir)) {
-            mkdir($exportDir, 0755, true);
-        }
+        // Use configured export directory
+        $exportDir = $this->exportDirectory;
 
         $filename = sprintf(
             'design_%d_%s_%s.%s',

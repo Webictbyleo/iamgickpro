@@ -20,14 +20,24 @@ readonly class PluginService
         private PluginRepository $pluginRepository,
         private SluggerInterface $slugger,
         private LoggerInterface $logger,
-        private string $pluginDirectory = 'uploads/plugins',
-        private string $extractDirectory = 'extracted/plugins',
-        private int $maxFileSize = 52428800, // 50MB
-        private array $allowedMimeTypes = [
-            'application/zip',
-            'application/x-zip-compressed'
-        ]
-    ) {}
+        private string $pluginDirectory,
+        private string $extractDirectory,
+        private int $maxFileSize,
+        private array $allowedMimeTypes
+    ) {
+        // Ensure directories exist
+        $this->ensureDirectoryExists($this->pluginDirectory);
+        $this->ensureDirectoryExists($this->extractDirectory);
+    }
+
+    private function ensureDirectoryExists(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+            }
+        }
+    }
 
     public function uploadPlugin(UploadedFile $file, User $developer): Plugin
     {

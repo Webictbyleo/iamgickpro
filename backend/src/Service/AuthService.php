@@ -16,14 +16,14 @@ use Symfony\Component\Uid\Uuid;
  */
 class AuthService
 {
-    private const MAX_LOGIN_ATTEMPTS = 5;
-    private const LOCKOUT_DURATION = 900; // 15 minutes in seconds
-    private const TOKEN_EXPIRY = 3600; // 1 hour in seconds
-
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly string $fromEmail,
+        private readonly int $tokenExpiryHours,
+        private readonly int $maxLoginAttempts,
+        private readonly int $lockoutDurationMinutes,
     ) {
     }
 
@@ -248,8 +248,8 @@ class AuthService
         $attempts = $user->getFailedLoginAttempts() + 1;
         $user->setFailedLoginAttempts($attempts);
 
-        if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
-            $lockUntil = new \DateTimeImmutable('+' . self::LOCKOUT_DURATION . ' seconds');
+        if ($attempts >= $this->maxLoginAttempts) {
+            $lockUntil = new \DateTimeImmutable('+' . ($this->lockoutDurationMinutes * 60) . ' seconds');
             $user->setLockedUntil($lockUntil);
         }
 

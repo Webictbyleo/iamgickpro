@@ -1,3 +1,12 @@
+parameters:
+    # Directory paths (relative to project root)
+    app.upload_directory: '%kernel.project_dir%/public/uploads'
+    app.media_directory: '%app.upload_directory%/media'
+    app.thumbnail_directory: '%app.upload_directory%/thumbnails'
+    app.plugin_directory: '%app.upload_directory%/plugins'
+    app.plugin_extract_directory: '%kernel.project_dir%/var/plugins'
+    app.export_directory: '%kernel.project_dir%/var/exports'
+
 services:
     _defaults:
         autowire: true
@@ -17,3 +26,36 @@ services:
             $tokenExpiryHours: 24
             $maxLoginAttempts: 5
             $lockoutDurationMinutes: 30
+
+    # Media Service Configuration
+    App\Service\MediaService:
+        arguments:
+            $mediaUploadDirectory: '%app.media_directory%'
+            $thumbnailDirectory: '%app.thumbnail_directory%'
+            $maxFileSize: 10485760 # 10MB
+            $allowedMimeTypes:
+                - 'image/jpeg'
+                - 'image/png'
+                - 'image/gif'
+                - 'image/svg+xml'
+                - 'image/webp'
+                - 'video/mp4'
+                - 'video/webm'
+                - 'audio/mpeg'
+                - 'audio/wav'
+                - 'audio/ogg'
+
+    # Plugin Service Configuration
+    App\Service\PluginService:
+        arguments:
+            $pluginDirectory: '%app.plugin_directory%'
+            $extractDirectory: '%app.plugin_extract_directory%'
+            $maxFileSize: 52428800 # 50MB
+            $allowedMimeTypes:
+                - 'application/zip'
+                - 'application/x-zip-compressed'
+
+    # Export Service Configuration
+    App\Service\ExportService:
+        arguments:
+            $exportDirectory: '%app.export_directory%'
