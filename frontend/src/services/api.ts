@@ -1,5 +1,5 @@
 import { api } from '../utils/api'
-import type { Design, Template, MediaItem, User } from '@/types'
+import type { Design, Template, MediaItem, User, ExportJob, ExportOptions } from '@/types'
 
 export interface PaginatedResponse<T> {
   data: T[]
@@ -203,4 +203,45 @@ export const collaborationAPI = {
       permissions: string
       joined_at: string
     }>>>(`/designs/${designId}/collaborators`),
+}
+
+// Export Jobs API
+export const exportAPI = {
+  // Get user's export jobs with pagination and filters
+  getExportJobs: (params?: {
+    page?: number
+    per_page?: number
+    status?: 'pending' | 'processing' | 'completed' | 'failed'
+    format?: string
+    design_id?: string
+    sort_by?: 'created_at' | 'updated_at' | 'status'
+    sort_order?: 'asc' | 'desc'
+  }) => api.get<PaginatedResponse<ExportJob>>('/export-jobs', { params }),
+
+  // Get single export job by ID
+  getExportJob: (id: string) => api.get<ApiResponse<ExportJob>>(`/export-jobs/${id}`),
+
+  // Create new export job
+  createExportJob: (data: {
+    designId: string
+    format: 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg' | 'mp4' | 'gif'
+    options?: ExportOptions
+  }) => api.post<ApiResponse<ExportJob>>('/export-jobs', data),
+
+  // Cancel export job
+  cancelExportJob: (id: string) => api.delete(`/export-jobs/${id}`),
+
+  // Download completed export
+  downloadExport: (id: string) => 
+    api.get(`/export-jobs/${id}/download`, { responseType: 'blob' }),
+
+  // Get export job progress (for real-time updates)
+  getJobProgress: (id: string) => api.get<ApiResponse<{
+    status: string
+    progress: number
+    message?: string
+  }>>(`/export-jobs/${id}/progress`),
+
+  // Retry failed export job
+  retryExportJob: (id: string) => api.post<ApiResponse<ExportJob>>(`/export-jobs/${id}/retry`),
 }

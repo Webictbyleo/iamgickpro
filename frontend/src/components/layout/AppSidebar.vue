@@ -79,6 +79,24 @@
               <component :is="icons.arrowRight" class="w-4 h-4" />
             </div>
           </router-link>
+
+          <!-- Export Jobs -->
+          <router-link
+            to="/exports"
+            class="sidebar-nav-item group"
+            :class="{ 'sidebar-nav-item-active': $route.name === 'Exports' }"
+          >
+            <component :is="icons.documentDownload" class="w-5 h-5 mr-3 transition-colors" />
+            <span>Export Jobs</span>
+            <div v-if="hasActiveJobs" class="ml-auto">
+              <span class="bg-gradient-to-r from-blue-500 to-cyan-600 text-white text-xs px-2 py-1 rounded-full font-medium animate-pulse">
+                {{ activeJobsCount }}
+              </span>
+            </div>
+            <div v-else class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+              <component :is="icons.arrowRight" class="w-4 h-4" />
+            </div>
+          </router-link>
         </nav>
 
         <!-- Recent Projects Section -->
@@ -204,6 +222,7 @@
 import { computed } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useAuthStore } from '@/stores/auth'
+import { useExportsStore } from '@/stores/exports'
 import { useIcons } from '@/composables/useIcons'
 import type { Design } from '@/types'
 
@@ -220,6 +239,7 @@ defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const exportsStore = useExportsStore()
 const icons = useIcons()
 
 const userName = computed(() => authStore.user?.name || 'Demo User')
@@ -238,6 +258,11 @@ const designCount = computed(() => {
   // This would come from a designs store in real implementation
   return 12
 })
+
+const hasActiveJobs = computed(() => exportsStore.hasActiveJobs)
+const activeJobsCount = computed(() => 
+  exportsStore.pendingJobs.length + exportsStore.processingJobs.length
+)
 
 const formatDate = (date: string | Date) => {
   const d = new Date(date)

@@ -119,3 +119,30 @@ export interface MediaItem {
   isPremium: boolean
   createdAt: Date
 }
+
+export interface ExportJob {
+  id: string
+  designId: string
+  designTitle: string
+  designThumbnail?: string
+  format: 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg' | 'mp4' | 'gif'
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress?: number
+  options: ExportOptions
+  downloadUrl?: string
+  fileSize?: number
+  errorMessage?: string
+  createdAt: string
+  updatedAt: string
+  completedAt?: string
+}
+
+export interface ExportOptions {
+  quality?: number
+  width?: number
+  height?: number
+  scale?: number
+  transparent?: boolean
+  duration?: number // for video/gif exports
+  fps?: number // for video/gif exports
+}

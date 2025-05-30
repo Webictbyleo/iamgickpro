@@ -42,10 +42,8 @@
               >
                 <component 
                   :is="getIcon(notification.type)" 
-                  :class="[
-                    'w-6 h-6 transition-colors duration-300',
-                    getIconClasses(notification.type)
-                  ]"
+                  class="w-6 h-6 transition-colors duration-300"
+                  :class="getIconClasses(notification.type)"
                 />
               </div>
             </div>
@@ -199,7 +197,7 @@ const getIconBackgroundClasses = (type: string) => {
   return classes[type as keyof typeof classes] || classes.info
 }
 
-const getIconClasses = (type: string) => {
+const getIconClasses = (type: string): string => {
   const classes = {
     success: 'text-emerald-600 group-hover:text-emerald-700',
     error: 'text-red-600 group-hover:text-red-700',

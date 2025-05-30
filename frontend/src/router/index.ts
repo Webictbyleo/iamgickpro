@@ -34,6 +34,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Media.vue'),
   },
   {
+    path: '/exports',
+    name: 'Exports',
+    component: () => import('@/views/Exports.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),
