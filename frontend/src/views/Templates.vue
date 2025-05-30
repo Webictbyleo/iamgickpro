@@ -37,7 +37,7 @@
 
       <!-- Templates Grid -->
       <TemplateGrid
-        title="Templates"
+        title=""
         :templates="filteredTemplates"
         :loading="isLoading"
         :loading-count="8"

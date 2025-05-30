@@ -22,7 +22,7 @@
 
       <!-- Right side -->
       <div class="flex items-center space-x-3">
-        <!-- Search -->
+        <!-- Enhanced Search -->
         <div class="hidden sm:block">
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -31,13 +31,50 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search designs, templates..."
-              class="block w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50/50 backdrop-blur-sm text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 focus:bg-white transition-all duration-200"
-              @input="$emit('search', searchQuery)"
+              placeholder="Search designs, templates, media..."
+              class="block w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50/50 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 focus:bg-white transition-all duration-200"
+              @keyup.enter="navigateToSearch"
               @focus="searchFocused = true"
-              @blur="searchFocused = false"
+              @blur="handleSearchBlur"
             />
-            <!-- Search suggestions dropdown would go here -->
+            
+            <!-- Search Suggestions Dropdown -->
+            <div 
+              v-if="searchFocused && searchSuggestions.length > 0"
+              class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-2 z-[9999] max-h-80 overflow-y-auto"
+            >
+              <div class="px-4 py-2 border-b border-gray-100">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick Suggestions</p>
+              </div>
+              
+              <div class="py-1">
+                <button
+                  v-for="suggestion in searchSuggestions"
+                  :key="suggestion.id"
+                  @click="selectSuggestion(suggestion)"
+                  class="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors duration-150 flex items-center space-x-3"
+                >
+                  <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span class="text-sm">{{ suggestion.icon }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ suggestion.title }}</p>
+                    <p class="text-xs text-gray-500">{{ suggestion.type }}</p>
+                  </div>
+                  <div class="text-xs text-gray-400">{{ suggestion.count }}+ items</div>
+                </button>
+              </div>
+              
+              <div class="border-t border-gray-100 px-4 py-3">
+                <button
+                  @click="navigateToSearch"
+                  class="w-full text-center text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center justify-center space-x-2"
+                >
+                  <component :is="icons.search" class="w-4 h-4" />
+                  <span>View all search results</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -406,7 +443,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useIcons } from '@/composables/useIcons'
@@ -414,6 +452,15 @@ import { useIcons } from '@/composables/useIcons'
 interface Props {
   title: string
   subtitle?: string
+}
+
+interface SearchSuggestion {
+  id: string
+  title: string
+  type: string
+  icon: string
+  count: number
+  query: string
 }
 
 defineProps<Props>()
@@ -425,10 +472,22 @@ defineEmits<{
   logout: []
 }>()
 
+const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const icons = useIcons()
 const searchQuery = ref('')
 const searchFocused = ref(false)
+const searchTimeout = ref<NodeJS.Timeout>()
+
+// Mock search suggestions (replace with actual API call)
+const searchSuggestions = ref<SearchSuggestion[]>([
+  { id: '1', title: 'Social Media Posts', type: 'Templates', icon: '📱', count: 1250, query: 'social media' },
+  { id: '2', title: 'Business Cards', type: 'Templates', icon: '💼', count: 890, query: 'business cards' },
+  { id: '3', title: 'Logo Designs', type: 'Designs', icon: '🎨', count: 2100, query: 'logo' },
+  { id: '4', title: 'Stock Photos', type: 'Media', icon: '📸', count: 15000, query: 'photos' },
+  { id: '5', title: 'Marketing Flyers', type: 'Templates', icon: '📄', count: 750, query: 'flyers' }
+])
 
 const userName = computed(() => authStore.user?.name || 'Demo User')
 const userEmail = computed(() => authStore.user?.email || 'demo@example.com')
@@ -440,5 +499,50 @@ const userInitials = computed(() => {
     .join('')
     .toUpperCase()
     .slice(0, 2)
+})
+
+// Search functionality
+const navigateToSearch = () => {
+  if (searchQuery.value.trim()) {
+    router.push({
+      name: 'SearchResults',
+      query: { q: searchQuery.value.trim() }
+    })
+  } else {
+    router.push({ name: 'SearchResults' })
+  }
+  searchFocused.value = false
+}
+
+const selectSuggestion = (suggestion: SearchSuggestion) => {
+  searchQuery.value = suggestion.query
+  navigateToSearch()
+}
+
+const handleSearchBlur = () => {
+  // Delay hiding suggestions to allow for click events
+  setTimeout(() => {
+    searchFocused.value = false
+  }, 200)
+}
+
+// Load suggestions when component mounts
+onMounted(() => {
+  // Load search query from route if we're on search results page
+  if (route.name === 'SearchResults' && route.query.q) {
+    searchQuery.value = route.query.q as string
+  }
+  // You can load dynamic suggestions here
+  // loadSearchSuggestions()
+})
+
+// Watch for route changes to update search query
+watch(() => route.query.q, (newQuery) => {
+  if (route.name === 'SearchResults' && newQuery) {
+    searchQuery.value = newQuery as string
+  } else if (route.name !== 'SearchResults') {
+    // Clear search query when navigating away from search results
+    searchQuery.value = ''
+  }
 })
 </script>

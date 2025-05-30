@@ -5,142 +5,102 @@
     @search="handleSearch"
   >
     <div class="space-y-8">
-      <!-- Welcome Hero Section -->
-      <div class="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-3xl shadow-2xl">
-        <!-- Animated background elements -->
+      <!-- Welcome Hero Section - Refined and Compact -->
+      <div class="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl shadow-xl">
+        <!-- Simplified background elements -->
         <div class="absolute inset-0">
-          <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-          <div class="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-          <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+          <div class="absolute top-0 -left-4 w-48 h-48 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div class="absolute top-0 -right-4 w-48 h-48 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
         </div>
         
         <!-- Glass morphism overlay -->
         <div class="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
         
-        <div class="relative px-8 py-16">
+        <div class="relative px-6 py-8">
           <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex-1 mb-12 lg:mb-0">
-              <!-- Welcome Message -->
-              <div class="flex items-start space-x-6 mb-8">
-                <div class="relative">
-                  <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/30 shadow-lg">
-                    <component :is="icons.sparkle" class="w-10 h-10 text-white" />
-                  </div>
-                  <div class="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-                    <div class="w-3 h-3 bg-yellow-300 rounded-full animate-ping"></div>
-                  </div>
+            <div class="flex-1 mb-8 lg:mb-0">
+              <!-- Compact Welcome Message -->
+              <div class="flex items-center space-x-4 mb-6">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
+                  <component :is="icons.sparkle" class="w-7 h-7 text-white" />
                 </div>
                 <div class="flex-1">
-                  <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-4 border border-white/30">
+                  <div class="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-2 border border-white/30">
                     <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                     Online & Ready
                   </div>
-                  <h1 class="text-4xl lg:text-5xl font-bold text-white leading-tight">
+                  <h1 class="text-3xl lg:text-4xl font-bold text-white leading-tight">
                     Welcome back,
                     <span class="bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
                       {{ user?.name || 'Designer' }}
                     </span>!
                   </h1>
-                  <p class="text-xl text-white/90 mt-3 leading-relaxed">
-                    Your creative studio awaits. Let's bring your vision to life with powerful design tools.
+                  <p class="text-lg text-white/90 mt-2">
+                    Your creative studio awaits. Let's bring your vision to life.
                   </p>
-                  
-                  <!-- Achievement badges -->
-                  <div class="flex flex-wrap gap-3 mt-6">
-                    <div class="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm border border-white/30">
-                      <component :is="icons.star" class="w-4 h-4 mr-2 text-yellow-300" />
-                      Pro Designer
-                    </div>
-                    <div class="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm border border-white/30">
-                      <component :is="icons.trending" class="w-4 h-4 mr-2 text-green-300" />
-                      {{ formatDesignCount(dashboardStats?.total_designs || 0) }}+ Designs
-                    </div>
-                  </div>
                 </div>
               </div>
               
-              <!-- Enhanced Quick Stats -->
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
-                <div class="group relative">
-                  <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
-                  <div class="relative bg-white/15 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 hover:transform hover:scale-105">
-                    <div class="flex items-center justify-between mb-3">
-                      <component :is="icons.design" class="w-8 h-8 text-blue-300" />
-                      <div class="text-xs text-white/70 bg-white/20 px-2 py-1 rounded-full">+12%</div>
-                    </div>
-                    <div class="text-3xl font-bold text-white">{{ dashboardStats?.total_designs || 0 }}</div>
-                    <div class="text-sm text-white/80 font-medium">Total Designs</div>
+              <!-- Compact Quick Stats -->
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-2">
+                    <component :is="icons.design" class="w-6 h-6 text-blue-300" />
+                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+12%</div>
                   </div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.total_designs || 0 }}</div>
+                  <div class="text-sm text-white/80">Total Designs</div>
                 </div>
                 
-                <div class="group relative">
-                  <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
-                  <div class="relative bg-white/15 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 hover:transform hover:scale-105">
-                    <div class="flex items-center justify-between mb-3">
-                      <component :is="icons.template" class="w-8 h-8 text-purple-300" />
-                      <div class="text-xs text-white/70 bg-white/20 px-2 py-1 rounded-full">+8%</div>
-                    </div>
-                    <div class="text-3xl font-bold text-white">{{ dashboardStats?.total_templates_used || 0 }}</div>
-                    <div class="text-sm text-white/80 font-medium">Templates Used</div>
+                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-2">
+                    <component :is="icons.template" class="w-6 h-6 text-purple-300" />
+                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+8%</div>
                   </div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.total_templates_used || 0 }}</div>
+                  <div class="text-sm text-white/80">Templates Used</div>
                 </div>
                 
-                <div class="group relative">
-                  <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
-                  <div class="relative bg-white/15 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 hover:transform hover:scale-105">
-                    <div class="flex items-center justify-between mb-3">
-                      <component :is="icons.folder" class="w-8 h-8 text-green-300" />
-                      <div class="text-xs text-white/70 bg-white/20 px-2 py-1 rounded-full">+5%</div>
-                    </div>
-                    <div class="text-3xl font-bold text-white">{{ dashboardStats?.active_projects || 0 }}</div>
-                    <div class="text-sm text-white/80 font-medium">Active Projects</div>
+                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-2">
+                    <component :is="icons.folder" class="w-6 h-6 text-green-300" />
+                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+5%</div>
                   </div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.active_projects || 0 }}</div>
+                  <div class="text-sm text-white/80">Active Projects</div>
                 </div>
                 
-                <div class="group relative">
-                  <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
-                  <div class="relative bg-white/15 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 hover:transform hover:scale-105">
-                    <div class="flex items-center justify-between mb-3">
-                      <component :is="icons.download" class="w-8 h-8 text-orange-300" />
-                      <div class="text-xs text-white/70 bg-white/20 px-2 py-1 rounded-full">+15%</div>
-                    </div>
-                    <div class="text-3xl font-bold text-white">{{ dashboardStats?.export_count || 0 }}</div>
-                    <div class="text-sm text-white/80 font-medium">Total Exports</div>
+                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-2">
+                    <component :is="icons.download" class="w-6 h-6 text-orange-300" />
+                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+15%</div>
                   </div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.export_count || 0 }}</div>
+                  <div class="text-sm text-white/80">Total Exports</div>
                 </div>
               </div>
             </div>
             
-            <!-- Enhanced Action Buttons -->
-            <div class="flex flex-col space-y-4 lg:ml-8">
+            <!-- Compact Action Buttons -->
+            <div class="flex flex-col space-y-3 lg:ml-8">
               <!-- Primary CTA -->
               <button
                 @click="() => createNewDesign()"
-                class="group relative overflow-hidden bg-white text-violet-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center space-x-4"
+                class="group relative bg-white text-violet-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-xl flex items-center justify-center space-x-3"
               >
-                <div class="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                <component :is="icons.plus" class="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
-                <span>Create New Design</span>
-                <div class="w-2 h-2 bg-violet-600 rounded-full group-hover:animate-ping"></div>
+                <component :is="icons.plus" class="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+                <span>Create Design</span>
               </button>
               
               <!-- Secondary Action -->
               <router-link
                 to="/templates"
-                class="group w-full bg-white/15 backdrop-blur-md text-white px-10 py-5 rounded-2xl font-semibold hover:bg-white/25 transition-all duration-300 border border-white/30 hover:border-white/50 flex items-center justify-center space-x-4 shadow-xl"
+                class="group w-full bg-white/15 backdrop-blur-md text-white px-8 py-3 rounded-xl font-semibold hover:bg-white/25 transition-all duration-300 border border-white/30 hover:border-white/50 flex items-center justify-center space-x-3"
               >
-                <component :is="icons.template" class="w-6 h-6 group-hover:scale-110 transition-transform" />
+                <component :is="icons.template" class="w-5 h-5" />
                 <span>Browse Templates</span>
-                <ArrowRightIcon class="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                <component :is="icons.arrowRight" class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </router-link>
-              
-              <!-- Quick metrics -->
-              <div class="text-center text-white/80 text-sm mt-4">
-                <span class="inline-flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>Last active: 2 minutes ago</span>
-                </span>
-              </div>
             </div>
           </div>
         </div>

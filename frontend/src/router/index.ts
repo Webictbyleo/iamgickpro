@@ -34,6 +34,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Media.vue'),
   },
   {
+    path: '/search',
+    name: 'SearchResults',
+    component: () => import('@/views/SearchResults.vue'),
+  },
+  {
     path: '/exports',
     name: 'Exports',
     component: () => import('@/views/Exports.vue'),
