@@ -17,7 +17,12 @@ interface RegisterCredentials {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const { success, error: showError } = useNotifications()
+  const { 
+    success, 
+    error: notificationError, 
+    showSuccess, 
+    showError
+  } = useNotifications()
   
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('auth_token'))
@@ -46,7 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = access_token
       localStorage.setItem('auth_token', access_token)
       
-      success('Welcome back! You have been logged in successfully.')
+      success('Login Successful', 'Welcome back! You have been logged in successfully.')
       return { success: true }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed'
@@ -69,7 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = access_token
       localStorage.setItem('auth_token', access_token)
       
-      success('Account created successfully! Welcome to IGPro!')
+      success('Registration Successful', 'Account created successfully! Welcome to IGPro!')
       return { success: true }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Registration failed'
@@ -87,11 +92,11 @@ export const useAuthStore = defineStore('auth', () => {
       if (token.value) {
         await api.post('/auth/logout')
       }
-      success('You have been logged out successfully.')
+      success('Logout Successful', 'You have been logged out successfully.')
     } catch (err) {
       console.warn('Logout API call failed:', err)
       // Still show success since local logout will happen regardless
-      success('You have been logged out.')
+      success('Logout Complete', 'You have been logged out.')
     } finally {
       user.value = null
       token.value = null
@@ -132,7 +137,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await api.put('/user/profile', data)
       user.value = response.data.data
-      success('Profile updated successfully!')
+      success('Profile Updated', 'Profile updated successfully!')
       return { success: true }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to update profile'

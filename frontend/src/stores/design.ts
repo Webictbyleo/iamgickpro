@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables/useNotifications'
 
 export const useDesignStore = defineStore('design', () => {
-  const { success, error: showError } = useNotifications()
+  const { designSaved, saveFailed, designDeleted, designExported, exportFailed, showError } = useNotifications()
   
   const currentDesign = ref<Design | null>(null)
   const designs = ref<Design[]>([])
@@ -81,12 +81,12 @@ export const useDesignStore = defineStore('design', () => {
         designs.value.unshift(designToSave)
       }
       
-      success('Design saved successfully!')
+      designSaved(designToSave.title)
       return { success: true }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Save failed'
       error.value = errorMessage
-      showError(errorMessage)
+      saveFailed(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
@@ -109,7 +109,7 @@ export const useDesignStore = defineStore('design', () => {
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Load failed'
       error.value = errorMessage
-      showError(errorMessage)
+      showError('Failed to Load Design', errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
@@ -176,7 +176,7 @@ export const useDesignStore = defineStore('design', () => {
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load designs'
       error.value = errorMessage
-      showError(errorMessage)
+      showError('Failed to Load Designs', errorMessage)
       designs.value = []
       return { success: false, error: errorMessage }
     } finally {
@@ -189,6 +189,10 @@ export const useDesignStore = defineStore('design', () => {
       isLoading.value = true
       error.value = null
       
+      // Get the design name before deletion for the notification
+      const designToDelete = designs.value.find(d => d.id === id)
+      const designName = designToDelete?.title || 'Design'
+      
       await designAPI.deleteDesign(id)
       
       // Remove from local designs list
@@ -199,12 +203,12 @@ export const useDesignStore = defineStore('design', () => {
         currentDesign.value = null
       }
       
-      success('Design deleted successfully!')
+      designDeleted(designName)
       return { success: true }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Delete failed'
       error.value = errorMessage
-      showError(errorMessage)
+      showError('Failed to Delete Design', errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
@@ -228,12 +232,12 @@ export const useDesignStore = defineStore('design', () => {
       link.remove()
       window.URL.revokeObjectURL(url)
       
-      success('Design exported successfully!')
+      designExported(format.toUpperCase())
       return { success: true }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Export failed'
       error.value = errorMessage
-      showError(errorMessage)
+      exportFailed(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
@@ -250,7 +254,7 @@ export const useDesignStore = defineStore('design', () => {
       if (response.data) {
         const duplicatedDesign = response.data.data
         designs.value.unshift(duplicatedDesign)
-        success('Design duplicated successfully!')
+        designSaved(duplicatedDesign.title)
         return { success: true, design: duplicatedDesign }
       }
       
@@ -258,7 +262,7 @@ export const useDesignStore = defineStore('design', () => {
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Duplication failed'
       error.value = errorMessage
-      showError(errorMessage)
+      showError('Failed to Duplicate Design', errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
