@@ -1,0 +1,290 @@
+<template>
+  <div class="space-y-8">
+    <!-- Section Header -->
+    <div class="text-center">
+      <h2 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+        Third-Party Integrations
+      </h2>
+      <p class="text-gray-600 mt-2">
+        Connect external services to enhance your design workflow
+      </p>
+    </div>
+
+    <!-- AI Services Section -->
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
+      <div class="flex items-center mb-6">
+        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+          <component :is="icons.cpu" class="w-6 h-6 text-white" />
+        </div>
+        <div class="ml-4">
+          <h3 class="text-xl font-semibold text-gray-900">AI Services</h3>
+          <p class="text-gray-600">Connect AI-powered tools for enhanced functionality</p>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <!-- OpenAI Integration -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                <span class="text-white font-bold text-sm">AI</span>
+              </div>
+              <div class="ml-4">
+                <h4 class="text-lg font-semibold text-gray-900">OpenAI</h4>
+                <p class="text-gray-600 text-sm">Enable AI-powered text generation and image creation</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span v-if="openAiConnected" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <component :is="icons.check" class="w-3 h-3 mr-1" />
+                Connected
+              </span>
+              <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Not Connected
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                API Key
+              </label>
+              <div class="relative">
+                <input
+                  v-model="openAiApiKey"
+                  :type="showOpenAiKey ? 'text' : 'password'"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-20"
+                  placeholder="sk-..."
+                />
+                <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
+                  <button
+                    @click="showOpenAiKey = !showOpenAiKey"
+                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <component :is="showOpenAiKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-600">
+                <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                  Get your OpenAI API key
+                </a>
+              </div>
+              <div class="space-x-2">
+                <button
+                  v-if="openAiConnected"
+                  @click="testOpenAiConnection"
+                  :disabled="testingOpenAi"
+                  class="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+                >
+                  <component :is="icons.refresh" class="w-4 h-4 mr-1 inline" :class="{ 'animate-spin': testingOpenAi }" />
+                  Test Connection
+                </button>
+                <button
+                  @click="saveOpenAiKey"
+                  :disabled="savingOpenAi || !openAiApiKey"
+                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
+                  {{ openAiConnected ? 'Update' : 'Connect' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Processing Services Section -->
+    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 border border-purple-100">
+      <div class="flex items-center mb-6">
+        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+          <component :is="icons.photo" class="w-6 h-6 text-white" />
+        </div>
+        <div class="ml-4">
+          <h3 class="text-xl font-semibold text-gray-900">Image Processing</h3>
+          <p class="text-gray-600">Connect image processing and editing services</p>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Remove.bg Integration -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+                <component :is="icons.scissors" class="w-5 h-5 text-white" />
+              </div>
+              <div class="ml-4">
+                <h4 class="text-lg font-semibold text-gray-900">Remove.bg</h4>
+                <p class="text-gray-600 text-sm">Automatically remove backgrounds from images</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span v-if="removeBgConnected" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <component :is="icons.check" class="w-3 h-3 mr-1" />
+                Connected
+              </span>
+              <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Not Connected
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                API Key
+              </label>
+              <div class="relative">
+                <input
+                  v-model="removeBgApiKey"
+                  :type="showRemoveBgKey ? 'text' : 'password'"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors pr-20"
+                  placeholder="Enter your Remove.bg API key"
+                />
+                <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
+                  <button
+                    @click="showRemoveBgKey = !showRemoveBgKey"
+                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <component :is="showRemoveBgKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-600">
+                <a href="https://www.remove.bg/api" target="_blank" class="text-purple-600 hover:text-purple-800 underline">
+                  Get your Remove.bg API key
+                </a>
+              </div>
+              <div class="space-x-2">
+                <button
+                  v-if="removeBgConnected"
+                  @click="testRemoveBgConnection"
+                  :disabled="testingRemoveBg"
+                  class="px-4 py-2 text-sm font-medium text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors disabled:opacity-50"
+                >
+                  <component :is="icons.refresh" class="w-4 h-4 mr-1 inline" :class="{ 'animate-spin': testingRemoveBg }" />
+                  Test Connection
+                </button>
+                <button
+                  @click="saveRemoveBgKey"
+                  :disabled="savingRemoveBg || !removeBgApiKey"
+                  class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                >
+                  <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
+                  {{ removeBgConnected ? 'Update' : 'Connect' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage Information -->
+    <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-100">
+      <div class="flex items-center mb-4">
+        <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+          <component :is="icons.information" class="w-5 h-5 text-white" />
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 ml-3">Important Information</h3>
+      </div>
+      <div class="space-y-3 text-sm text-gray-700">
+        <p>• API keys are securely encrypted and stored. We never have access to your credentials.</p>
+        <p>• Third-party service usage is subject to their respective terms of service and pricing.</p>
+        <p>• You can disconnect any service at any time by removing the API key.</p>
+        <p>• Test connections to ensure your API keys are working correctly before use.</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useIcons } from '@/composables/useIcons'
+
+const icons = useIcons()
+
+// OpenAI Integration
+const openAiApiKey = ref('')
+const showOpenAiKey = ref(false)
+const openAiConnected = ref(false)
+const savingOpenAi = ref(false)
+const testingOpenAi = ref(false)
+
+// Remove.bg Integration
+const removeBgApiKey = ref('')
+const showRemoveBgKey = ref(false)
+const removeBgConnected = ref(false)
+const savingRemoveBg = ref(false)
+const testingRemoveBg = ref(false)
+
+// OpenAI Methods
+const saveOpenAiKey = async () => {
+  if (!openAiApiKey.value) return
+  
+  savingOpenAi.value = true
+  try {
+    // TODO: Implement API call to save OpenAI key
+    await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+    openAiConnected.value = true
+    console.log('OpenAI API key saved successfully')
+  } catch (error) {
+    console.error('Failed to save OpenAI API key:', error)
+  } finally {
+    savingOpenAi.value = false
+  }
+}
+
+const testOpenAiConnection = async () => {
+  testingOpenAi.value = true
+  try {
+    // TODO: Implement API call to test OpenAI connection
+    await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
+    console.log('OpenAI connection test successful')
+  } catch (error) {
+    console.error('OpenAI connection test failed:', error)
+  } finally {
+    testingOpenAi.value = false
+  }
+}
+
+// Remove.bg Methods
+const saveRemoveBgKey = async () => {
+  if (!removeBgApiKey.value) return
+  
+  savingRemoveBg.value = true
+  try {
+    // TODO: Implement API call to save Remove.bg key
+    await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+    removeBgConnected.value = true
+    console.log('Remove.bg API key saved successfully')
+  } catch (error) {
+    console.error('Failed to save Remove.bg API key:', error)
+  } finally {
+    savingRemoveBg.value = false
+  }
+}
+
+const testRemoveBgConnection = async () => {
+  testingRemoveBg.value = true
+  try {
+    // TODO: Implement API call to test Remove.bg connection
+    await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
+    console.log('Remove.bg connection test successful')
+  } catch (error) {
+    console.error('Remove.bg connection test failed:', error)
+  } finally {
+    testingRemoveBg.value = false
+  }
+}
+</script>

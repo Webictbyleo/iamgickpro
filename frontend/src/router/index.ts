@@ -44,6 +44,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Exports.vue'),
   },
   {
+    path: '/settings/:tab?',
+    name: 'Settings',
+    component: () => import('@/views/Settings.vue'),
+    props: true,
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),

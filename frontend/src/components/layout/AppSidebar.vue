@@ -19,12 +19,14 @@
       </div>
 
       <!-- Navigation Section -->
-      <div class="flex-1 flex flex-col px-4 py-6 space-y-8">
-        <!-- Main Navigation -->
-        <nav class="space-y-2">
-          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-4">
-            Main Menu
-          </div>
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Scrollable Navigation Area -->
+        <div class="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+          <!-- Main Navigation -->
+          <nav class="space-y-2">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">
+              Main Menu
+            </div>
           
           <!-- Dashboard -->
           <router-link
@@ -99,6 +101,26 @@
           </router-link>
         </nav>
 
+        <!-- Settings Section -->
+        <nav class="space-y-2">
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">
+            Settings
+          </div>
+          
+          <!-- Settings Overview -->
+          <router-link
+            to="/settings"
+            class="sidebar-nav-item group"
+            :class="{ 'sidebar-nav-item-active': $route.name === 'Settings' }"
+          >
+            <component :is="icons.cog" class="w-5 h-5 mr-3 transition-colors" />
+            <span>Settings</span>
+            <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+              <component :is="icons.arrowRight" class="w-4 h-4" />
+            </div>
+          </router-link>
+        </nav>
+
         <!-- Recent Projects Section -->
         <div class="space-y-3">
           <div class="flex items-center justify-between px-3">
@@ -108,10 +130,10 @@
             </button>
           </div>
           
-          <div v-if="!recentProjects || recentProjects.length === 0" class="px-3 py-4">
+          <div v-if="!recentProjects || recentProjects.length === 0" class="px-3 py-2">
             <div class="text-center">
-              <component :is="icons.folder" class="w-8 h-8 mx-auto text-gray-300 mb-2" />
-              <p class="text-sm text-gray-500">No recent projects</p>
+              <component :is="icons.folder" class="w-6 h-6 mx-auto text-gray-300 mb-1" />
+              <p class="text-xs text-gray-500">No recent projects</p>
               <button class="text-xs text-violet-600 hover:text-violet-700 font-medium mt-1">
                 Create your first design
               </button>
@@ -120,7 +142,7 @@
           
           <div v-else class="space-y-1">
             <router-link
-              v-for="project in recentProjects.slice(0, 5)"
+              v-for="project in recentProjects.slice(0, 3)"
               :key="project.id"
               :to="`/editor/${project.id}`"
               class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 group"
@@ -136,9 +158,10 @@
           </div>
         </div>
       </div>
+      </div>
 
       <!-- User Profile Section -->
-      <div class="flex-shrink-0 border-t border-gray-200/50 p-4">
+        <div class="flex-shrink-0 border-t border-gray-200/50 p-4">
         <div class="flex items-center">
           <div class="relative">
             <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
@@ -164,7 +187,8 @@
             >
               <MenuItems class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
                 <MenuItem v-slot="{ active }">
-                  <button
+                  <router-link
+                    to="/settings/profile"
                     :class="[
                       active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
                       'group flex w-full items-center px-4 py-2 text-sm'
@@ -172,18 +196,31 @@
                   >
                     <component :is="icons.user" class="w-4 h-4 mr-3" />
                     Profile Settings
-                  </button>
+                  </router-link>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
-                  <button
+                  <router-link
+                    to="/settings/subscription"
                     :class="[
                       active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
                       'group flex w-full items-center px-4 py-2 text-sm'
                     ]"
                   >
                     <component :is="icons.creditCard" class="w-4 h-4 mr-3" />
-                    Billing
-                  </button>
+                    Subscription Plans
+                  </router-link>
+                </MenuItem>
+                <MenuItem v-slot="{ active }">
+                  <router-link
+                    to="/settings/general"
+                    :class="[
+                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      'group flex w-full items-center px-4 py-2 text-sm'
+                    ]"
+                  >
+                    <component :is="icons.cog" class="w-4 h-4 mr-3" />
+                    Preferences
+                  </router-link>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
                   <button

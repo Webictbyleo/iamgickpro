@@ -22,7 +22,7 @@
 
       <!-- Right side -->
       <div class="flex items-center space-x-3">
-        <!-- Enhanced Search -->
+        <!-- Simple Search -->
         <div class="hidden sm:block">
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -34,156 +34,12 @@
               placeholder="Search designs, templates, media..."
               class="block w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50/50 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 focus:bg-white transition-all duration-200"
               @keyup.enter="navigateToSearch"
-              @focus="searchFocused = true"
-              @blur="handleSearchBlur"
             />
-            
-            <!-- Search Suggestions Dropdown -->
-            <div 
-              v-if="searchFocused && searchSuggestions.length > 0"
-              class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-2 z-[9999] max-h-80 overflow-y-auto"
-            >
-              <div class="px-4 py-2 border-b border-gray-100">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick Suggestions</p>
-              </div>
-              
-              <div class="py-1">
-                <button
-                  v-for="suggestion in searchSuggestions"
-                  :key="suggestion.id"
-                  @click="selectSuggestion(suggestion)"
-                  class="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors duration-150 flex items-center space-x-3"
-                >
-                  <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span class="text-sm">{{ suggestion.icon }}</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900 truncate">{{ suggestion.title }}</p>
-                    <p class="text-xs text-gray-500">{{ suggestion.type }}</p>
-                  </div>
-                  <div class="text-xs text-gray-400">{{ suggestion.count }}+ items</div>
-                </button>
-              </div>
-              
-              <div class="border-t border-gray-100 px-4 py-3">
-                <button
-                  @click="navigateToSearch"
-                  class="w-full text-center text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center justify-center space-x-2"
-                >
-                  <component :is="icons.search" class="w-4 h-4" />
-                  <span>View all search results</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
         <!-- Quick Actions -->
         <div class="flex items-center space-x-2">
-          <!-- Notifications -->
-          <Menu as="div" class="relative">
-            <MenuButton class="relative p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 rounded-xl transition-all duration-200 group">
-              <component :is="icons.bell" class="w-6 h-6" />
-              <!-- Notification badge -->
-              <span class="absolute -top-0.5 -right-0.5 h-4 w-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
-                <span class="text-xs font-semibold text-white">3</span>
-              </span>
-            </MenuButton>
-            
-            <Transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="transform scale-95 opacity-0 translate-y-1"
-              enter-to-class="transform scale-100 opacity-100 translate-y-0"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="transform scale-100 opacity-100 translate-y-0"
-              leave-to-class="transform scale-95 opacity-0 translate-y-1"
-            >
-              <MenuItems class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-2 z-[9999] max-h-96 overflow-y-auto">
-                <!-- Notifications header -->
-                <div class="px-4 py-3 border-b border-gray-100">
-                  <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
-                    <button class="text-xs text-violet-600 hover:text-violet-700 font-medium">
-                      Mark all read
-                    </button>
-                  </div>
-                </div>
-                
-                <!-- Notification items -->
-                <div class="py-1">
-                  <MenuItem v-slot="{ active }">
-                    <div
-                      :class="[
-                        active ? 'bg-violet-50' : '',
-                        'px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent hover:border-violet-500'
-                      ]"
-                    >
-                      <div class="flex items-start">
-                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                          <component :is="icons.design" class="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900">Design exported successfully</p>
-                          <p class="text-xs text-gray-500 mt-1">Your "Social Media Post" has been exported as PNG</p>
-                          <p class="text-xs text-gray-400 mt-2">2 minutes ago</p>
-                        </div>
-                        <div class="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>
-                      </div>
-                    </div>
-                  </MenuItem>
-                  
-                  <MenuItem v-slot="{ active }">
-                    <div
-                      :class="[
-                        active ? 'bg-violet-50' : '',
-                        'px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent hover:border-violet-500'
-                      ]"
-                    >
-                      <div class="flex items-start">
-                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                          <component :is="icons.template" class="w-4 h-4 text-green-600" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900">New templates available</p>
-                          <p class="text-xs text-gray-500 mt-1">50+ new social media templates have been added</p>
-                          <p class="text-xs text-gray-400 mt-2">1 hour ago</p>
-                        </div>
-                        <div class="w-2 h-2 bg-green-500 rounded-full ml-2"></div>
-                      </div>
-                    </div>
-                  </MenuItem>
-                  
-                  <MenuItem v-slot="{ active }">
-                    <div
-                      :class="[
-                        active ? 'bg-violet-50' : '',
-                        'px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent hover:border-violet-500'
-                      ]"
-                    >
-                      <div class="flex items-start">
-                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                          <component :is="icons.star" class="w-4 h-4 text-purple-600" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900">Achievement unlocked!</p>
-                          <p class="text-xs text-gray-500 mt-1">You've created your 10th design this month</p>
-                          <p class="text-xs text-gray-400 mt-2">3 hours ago</p>
-                        </div>
-                      </div>
-                    </div>
-                  </MenuItem>
-                </div>
-                
-                <!-- View all notifications -->
-                <div class="border-t border-gray-100 px-4 py-3">
-                  <button class="w-full text-center text-sm text-violet-600 hover:text-violet-700 font-medium">
-                    View all notifications
-                  </button>
-                </div>
-              </MenuItems>
-            </Transition>
-          </Menu>
-
           <!-- Help & Support -->
           <Menu as="div" class="relative">
             <MenuButton class="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 rounded-xl transition-all duration-200">
@@ -377,7 +233,8 @@
               <!-- Menu items -->
               <div class="py-1">
                 <MenuItem v-slot="{ active }">
-                  <button
+                  <router-link
+                    to="/settings/profile"
                     :class="[
                       active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
@@ -385,29 +242,43 @@
                   >
                     <component :is="icons.user" class="w-4 h-4 mr-3 text-gray-400" />
                     Profile Settings
-                  </button>
+                  </router-link>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
-                  <button
+                  <router-link
+                    to="/settings/subscription"
                     :class="[
                       active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
                     <component :is="icons.creditCard" class="w-4 h-4 mr-3 text-gray-400" />
-                    Billing & Plans
-                  </button>
+                    Subscription Plans
+                  </router-link>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
-                  <button
+                  <router-link
+                    to="/settings/general"
                     :class="[
                       active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
-                    <component :is="icons.settings" class="w-4 h-4 mr-3 text-gray-400" />
+                    <component :is="icons.cog" class="w-4 h-4 mr-3 text-gray-400" />
                     Preferences
-                  </button>
+                  </router-link>
+                </MenuItem>
+                <MenuItem v-slot="{ active }">
+                  <router-link
+                    to="/settings/integrations"
+                    :class="[
+                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                    ]"
+                  >
+                    <component :is="icons.puzzle" class="w-4 h-4 mr-3 text-gray-400" />
+                    Integrations
+                  </router-link>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
                   <button
@@ -443,8 +314,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useIcons } from '@/composables/useIcons'
@@ -452,15 +323,6 @@ import { useIcons } from '@/composables/useIcons'
 interface Props {
   title: string
   subtitle?: string
-}
-
-interface SearchSuggestion {
-  id: string
-  title: string
-  type: string
-  icon: string
-  count: number
-  query: string
 }
 
 defineProps<Props>()
@@ -473,21 +335,9 @@ defineEmits<{
 }>()
 
 const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
 const icons = useIcons()
 const searchQuery = ref('')
-const searchFocused = ref(false)
-const searchTimeout = ref<NodeJS.Timeout>()
-
-// Mock search suggestions (replace with actual API call)
-const searchSuggestions = ref<SearchSuggestion[]>([
-  { id: '1', title: 'Social Media Posts', type: 'Templates', icon: '📱', count: 1250, query: 'social media' },
-  { id: '2', title: 'Business Cards', type: 'Templates', icon: '💼', count: 890, query: 'business cards' },
-  { id: '3', title: 'Logo Designs', type: 'Designs', icon: '🎨', count: 2100, query: 'logo' },
-  { id: '4', title: 'Stock Photos', type: 'Media', icon: '📸', count: 15000, query: 'photos' },
-  { id: '5', title: 'Marketing Flyers', type: 'Templates', icon: '📄', count: 750, query: 'flyers' }
-])
 
 const userName = computed(() => authStore.user?.name || 'Demo User')
 const userEmail = computed(() => authStore.user?.email || 'demo@example.com')
@@ -511,38 +361,5 @@ const navigateToSearch = () => {
   } else {
     router.push({ name: 'SearchResults' })
   }
-  searchFocused.value = false
 }
-
-const selectSuggestion = (suggestion: SearchSuggestion) => {
-  searchQuery.value = suggestion.query
-  navigateToSearch()
-}
-
-const handleSearchBlur = () => {
-  // Delay hiding suggestions to allow for click events
-  setTimeout(() => {
-    searchFocused.value = false
-  }, 200)
-}
-
-// Load suggestions when component mounts
-onMounted(() => {
-  // Load search query from route if we're on search results page
-  if (route.name === 'SearchResults' && route.query.q) {
-    searchQuery.value = route.query.q as string
-  }
-  // You can load dynamic suggestions here
-  // loadSearchSuggestions()
-})
-
-// Watch for route changes to update search query
-watch(() => route.query.q, (newQuery) => {
-  if (route.name === 'SearchResults' && newQuery) {
-    searchQuery.value = newQuery as string
-  } else if (route.name !== 'SearchResults') {
-    // Clear search query when navigating away from search results
-    searchQuery.value = ''
-  }
-})
 </script>

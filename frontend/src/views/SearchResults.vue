@@ -592,62 +592,91 @@ const performSearch = async () => {
     
     await router.push({ query })
     
-    // Simulate API call (replace with actual API call)
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // Prepare API parameters
+    const params = new URLSearchParams({
+      q: searchQuery.value || '',
+      page: currentPage.value.toString(),
+      limit: '12'
+    })
     
-    // Mock search results
-    const mockResults: SearchResult[] = []
-    for (let i = 1; i <= 12; i++) {
-      const types = ['design', 'template', 'media', 'export']
-      const type = types[Math.floor(Math.random() * types.length)] as any
-      const hasAnimation = Math.random() > 0.7 // 30% chance of having animation
-      const isVideo = Math.random() > 0.8 // 20% chance of being a video
-      
-      const result: SearchResult = {
-        id: `result-${i}`,
-        type,
-        title: `${searchQuery.value || 'Sample'} Result ${i}`,
-        description: `This is a sample search result for "${searchQuery.value}". It demonstrates the search functionality.`,
-        thumbnail: `https://picsum.photos/400/300?random=${i}`,
-        author: `Designer ${i}`,
-        created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-        isPremium: Math.random() > 0.7,
-        hasAnimation,
-        isVideo: type === 'media' ? (Math.random() > 0.6) : false, // Higher chance for media to be video
-        duration: (hasAnimation || isVideo) ? Math.floor(Math.random() * 30) + 5 : undefined, // 5-35 seconds
-        stats: {
-          likes: Math.floor(Math.random() * 1000),
-          views: Math.floor(Math.random() * 10000)
-        }
-      }
-      
-      // Add export status for export type results
-      if (type === 'export') {
-        const statuses = ['pending', 'processing', 'completed', 'failed'] as const
-        result.exportStatus = statuses[Math.floor(Math.random() * statuses.length)]
-        // Add download URL for completed exports
-        if (result.exportStatus === 'completed') {
-          result.url = `https://example.com/downloads/export-${i}.png`
-        }
-      }
-      
-      mockResults.push(result)
+    if (sortBy.value !== 'relevance') {
+      params.append('sort', sortBy.value)
     }
     
-    searchResults.value = mockResults
-    totalResults.value = mockResults.length
-    totalPages.value = Math.ceil(totalResults.value / 12)
+    // Determine search type based on active filters
+    let searchType = 'all'
+    if (activeFilters.value.length === 1) {
+      if (activeFilters.value.includes('design')) searchType = 'projects'
+      else if (activeFilters.value.includes('template')) searchType = 'templates'
+      else if (activeFilters.value.includes('media')) searchType = 'media'
+    }
     
-    // Update filter counts
-    contentFilters.value.forEach(filter => {
-      filter.count = mockResults.filter(result => result.type === filter.type).length
+    if (searchType !== 'all') {
+      params.append('type', searchType)
+    }
+    
+    // Call the search API
+    const response = await fetch(`/api/search?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        'Content-Type': 'application/json'
+      }
     })
+    
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.statusText}`)
+    }
+    
+    const data = await response.json()
+    
+    if (data.success) {
+      // Transform API results to match our interface
+      searchResults.value = data.results.map((item: any) => ({
+        id: item.id,
+        type: item.result_type || item.type,
+        title: item.name || item.title,
+        description: item.description,
+        thumbnail: item.thumbnail,
+        url: item.url,
+        author: item.author,
+        created_at: item.createdAt || item.created_at,
+        isPremium: item.isPremium || false,
+        hasAnimation: item.hasAnimation || false,
+        isVideo: item.type === 'video' || item.mimeType?.startsWith('video/'),
+        duration: item.duration,
+        stats: {
+          likes: item.likes || 0,
+          views: item.views || 0,
+          downloads: item.downloads || 0
+        },
+        exportStatus: item.exportStatus
+      }))
+      
+      totalResults.value = data.pagination?.total || data.results.length
+      totalPages.value = data.pagination?.pages || Math.ceil(totalResults.value / 12)
+      
+      // Update filter counts based on search results
+      contentFilters.value.forEach(filter => {
+        filter.count = searchResults.value.filter(result => result.type === filter.type).length
+      })
+    } else {
+      throw new Error(data.error || 'Search failed')
+    }
     
     searchTime.value = Date.now() - startTime
   } catch (error) {
     console.error('Search failed:', error)
     searchResults.value = []
     totalResults.value = 0
+    totalPages.value = 1
+    
+    // Reset filter counts
+    contentFilters.value.forEach(filter => {
+      filter.count = 0
+    })
+    
+    searchTime.value = Date.now() - startTime
   } finally {
     isLoading.value = false
   }

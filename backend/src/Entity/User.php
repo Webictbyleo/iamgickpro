@@ -123,6 +123,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write'])]
     private ?string $language = null;
 
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $jobTitle = null;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $company = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $website = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $portfolio = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $bio = null;
+
+    #[ORM\Column(type: 'json')]
+    #[Groups(['user:read', 'user:write'])]
+    private array $socialLinks = [];
+
     public function __construct()
     {
         $this->uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
@@ -569,5 +593,77 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isEmailVerified(): bool
     {
         return $this->getEmailVerified();
+    }
+
+    public function getJobTitle(): ?string
+    {
+        return $this->jobTitle;
+    }
+
+    public function setJobTitle(?string $jobTitle): self
+    {
+        $this->jobTitle = $jobTitle;
+        $this->touch();
+        return $this;
+    }
+
+    public function getCompany(): ?string
+    {
+        return $this->company;
+    }
+
+    public function setCompany(?string $company): self
+    {
+        $this->company = $company;
+        $this->touch();
+        return $this;
+    }
+
+    public function getWebsite(): ?string
+    {
+        return $this->website;
+    }
+
+    public function setWebsite(?string $website): self
+    {
+        $this->website = $website;
+        $this->touch();
+        return $this;
+    }
+
+    public function getPortfolio(): ?string
+    {
+        return $this->portfolio;
+    }
+
+    public function setPortfolio(?string $portfolio): self
+    {
+        $this->portfolio = $portfolio;
+        $this->touch();
+        return $this;
+    }
+
+    public function getBio(): ?string
+    {
+        return $this->bio;
+    }
+
+    public function setBio(?string $bio): self
+    {
+        $this->bio = $bio;
+        $this->touch();
+        return $this;
+    }
+
+    public function getSocialLinks(): array
+    {
+        return $this->socialLinks;
+    }
+
+    public function setSocialLinks(array $socialLinks): self
+    {
+        $this->socialLinks = $socialLinks;
+        $this->touch();
+        return $this;
     }
 }
