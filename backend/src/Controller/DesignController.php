@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\DTO\CreateDesignRequestDTO;
+use App\DTO\DuplicateDesignRequestDTO;
+use App\DTO\SearchRequestDTO;
+use App\DTO\UpdateDesignRequestDTO;
+use App\DTO\UpdateDesignThumbnailRequestDTO;
 use App\Entity\Design;
 use App\Entity\Project;
 use App\Entity\User;
 use App\Repository\DesignRepository;
 use App\Repository\ProjectRepository;
+use App\Service\ResponseDTOFactory;
+use App\Controller\Trait\TypedResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,12 +30,15 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[IsGranted('ROLE_USER')]
 class DesignController extends AbstractController
 {
+    use TypedResponseTrait;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly DesignRepository $designRepository,
         private readonly ProjectRepository $projectRepository,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
+        private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -37,7 +47,8 @@ class DesignController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $projectId = $request->query->get('project');
@@ -48,7 +59,8 @@ class DesignController extends AbstractController
             if ($projectId) {
                 $project = $this->projectRepository->find($projectId);
                 if (!$project || ($project->getUser() !== $user && !$project->getIsPublic())) {
-                    return $this->json(['error' => 'Project not found or access denied'], Response::HTTP_FORBIDDEN);
+                    $errorResponse = $this->responseDTOFactory->createErrorResponse('Project not found or access denied');
+                    return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
                 }
                 $designs = $this->designRepository->findByProject($project, $limit, $offset);
                 $total = count($this->designRepository->findByProject($project));
@@ -57,79 +69,70 @@ class DesignController extends AbstractController
                 $total = count($this->designRepository->findByUser($user));
             }
 
-            $designData = array_map(function (Design $design) {
-                return [
-                    'id' => $design->getId(),
-                    'name' => $design->getName(),
-                    'canvasWidth' => $design->getCanvasWidth(),
-                    'canvasHeight' => $design->getCanvasHeight(),
-                    'background' => $design->getBackground(),
-                    'thumbnail' => $design->getThumbnail(),
-                    'createdAt' => $design->getCreatedAt()->format('c'),
-                    'updatedAt' => $design->getUpdatedAt()?->format('c'),
-                    'layerCount' => count($design->getLayers()),
-                    'hasAnimations' => $design->getHasAnimations(),
-                    'project' => [
-                        'id' => $design->getProject()->getId(),
-                        'name' => $design->getProject()->getName(),
-                    ],
-                ];
-            }, $designs);
+            $designResponses = array_map(
+                fn(Design $design) => $this->responseDTOFactory->createDesignResponse($design),
+                $designs
+            );
 
-            return $this->json([
-                'designs' => $designData,
-                'pagination' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => $total,
-                    'totalPages' => ceil($total / $limit),
-                ]
-            ]);
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $designResponses,
+                $page,
+                $limit,
+                $total,
+                'Designs retrieved successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to fetch designs',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch designs',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
+    /**
+     * Create a new design
+     * 
+     * @param CreateDesignRequestDTO $dto Design creation data
+     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO>
+     */
     #[Route('', name: 'create', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    public function create(CreateDesignRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
-            }
-
-            if (!isset($data['projectId'])) {
-                return $this->json(['error' => 'Project ID is required'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $project = $this->projectRepository->find($data['projectId']);
-            if (!$project || $project->getUser() !== $user) {
-                return $this->json(['error' => 'Project not found or access denied'], Response::HTTP_FORBIDDEN);
+            // Validate project access if project ID is provided
+            if ($dto->hasProjectId()) {
+                $project = $this->projectRepository->find($dto->projectId);
+                if (!$project || $project->getUser() !== $user) {
+                    $errorResponse = $this->responseDTOFactory->createErrorResponse('Project not found or access denied');
+                    return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
+                }
             }
 
             $design = new Design();
-            $design->setName($data['name'] ?? 'Untitled Design');
-            $design->setCanvasWidth($data['canvasWidth'] ?? 1920);
-            $design->setCanvasHeight($data['canvasHeight'] ?? 1080);
-            $design->setBackground($data['background'] ?? ['type' => 'color', 'color' => '#ffffff']);
-            $design->setProject($project);
-
-            if (isset($data['thumbnail'])) {
-                $design->setThumbnail($data['thumbnail']);
+            $design->setName($dto->name);
+            $design->setWidth($dto->width);
+            $design->setHeight($dto->height);
+            $design->setCanvasWidth($dto->width);
+            $design->setCanvasHeight($dto->height);
+            $design->setData($dto->data);
+            $design->setBackground(['type' => 'color', 'color' => '#ffffff']); // Default background
+            
+            if ($dto->description) {
+                $design->setTitle($dto->description); // Assuming title field stores description
             }
 
-            if (isset($data['animationSettings'])) {
-                $design->setAnimationSettings($data['animationSettings']);
+            if ($dto->hasProjectId()) {
+                $design->setProject($project);
             }
 
             // Validate design
@@ -140,31 +143,21 @@ class DesignController extends AbstractController
                     $errorMessages[] = $error->getMessage();
                 }
                 
-                return $this->json([
-                    'error' => 'Validation failed',
-                    'details' => $errorMessages
-                ], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->persist($design);
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Design created successfully',
-                'design' => [
-                    'id' => $design->getId(),
-                    'name' => $design->getName(),
-                    'canvasWidth' => $design->getCanvasWidth(),
-                    'canvasHeight' => $design->getCanvasHeight(),
-                    'background' => $design->getBackground(),
-                    'thumbnail' => $design->getThumbnail(),
-                    'createdAt' => $design->getCreatedAt()->format('c'),
-                    'updatedAt' => $design->getUpdatedAt()?->format('c'),
-                    'layerCount' => 0,
-                    'hasAnimations' => false,
-                    'animationSettings' => $design->getAnimationSettings(),
-                ]
-            ], Response::HTTP_CREATED);
+            $designResponse = $this->responseDTOFactory->createDesignResponse(
+                $design, 
+                'Design created successfully'
+            );
+            return $this->designResponse($designResponse, Response::HTTP_CREATED);
 
         } catch (\Exception $e) {
             return $this->json([
@@ -180,132 +173,91 @@ class DesignController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $design = $this->designRepository->find($id);
             if (!$design) {
-                return $this->json(['error' => 'Design not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user has access to this design
             $project = $design->getProject();
             if ($project->getUser() !== $user && !$project->getIsPublic()) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $layers = array_map(function ($layer) {
-                return [
-                    'id' => $layer->getId(),
-                    'name' => $layer->getName(),
-                    'type' => $layer->getType(),
-                    'data' => $layer->getData(),
-                    'x' => $layer->getX(),
-                    'y' => $layer->getY(),
-                    'width' => $layer->getWidth(),
-                    'height' => $layer->getHeight(),
-                    'rotation' => $layer->getRotation(),
-                    'scaleX' => $layer->getScaleX(),
-                    'scaleY' => $layer->getScaleY(),
-                    'opacity' => $layer->getOpacity(),
-                    'visible' => $layer->isVisible(),
-                    'locked' => $layer->isLocked(),
-                    'zIndex' => $layer->getZIndex(),
-                    'parentId' => $layer->getParent()?->getId(),
-                    'animations' => $layer->getAnimations(),
-                    'mask' => $layer->getMask(),
-                    'createdAt' => $layer->getCreatedAt()->format('c'),
-                    'updatedAt' => $layer->getUpdatedAt()?->format('c'),
-                ];
-            }, $design->getLayers()->toArray());
-
-            return $this->json([
-                'design' => [
-                    'id' => $design->getId(),
-                    'name' => $design->getName(),
-                    'canvasWidth' => $design->getCanvasWidth(),
-                    'canvasHeight' => $design->getCanvasHeight(),
-                    'background' => $design->getBackground(),
-                    'thumbnail' => $design->getThumbnail(),
-                    'createdAt' => $design->getCreatedAt()->format('c'),
-                    'updatedAt' => $design->getUpdatedAt()?->format('c'),
-                    'hasAnimations' => $design->getHasAnimations(),
-                    'animationSettings' => $design->getAnimationSettings(),
-                    'project' => [
-                        'id' => $project->getId(),
-                        'name' => $project->getName(),
-                        'user' => [
-                            'id' => $project->getUser()->getId(),
-                            'name' => $project->getUser()->getName(),
-                            'username' => $project->getUser()->getUsername(),
-                        ],
-                    ],
-                    'layers' => $layers,
-                ]
-            ]);
+            $designResponse = $this->responseDTOFactory->createDesignResponse(
+                $design,
+                'Design retrieved successfully'
+            );
+            return $this->designResponse($designResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to fetch design',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch design',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update(int $id, Request $request): JsonResponse
+    public function update(int $id, UpdateDesignRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $design = $this->designRepository->find($id);
             if (!$design) {
-                return $this->json(['error' => 'Design not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this design
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
+            // Check if there's any data to update
+            if (!$dto->hasAnyData()) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('No data provided for update');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             // Update allowed fields
-            if (isset($data['name'])) {
-                $design->setName($data['name']);
+            if ($dto->name !== null) {
+                $design->setName($dto->name);
             }
 
-            if (isset($data['canvasWidth'])) {
-                $design->setCanvasWidth($data['canvasWidth']);
+            if ($dto->width !== null) {
+                $design->setCanvasWidth($dto->width);
             }
 
-            if (isset($data['canvasHeight'])) {
-                $design->setCanvasHeight($data['canvasHeight']);
+            if ($dto->height !== null) {
+                $design->setCanvasHeight($dto->height);
             }
 
-            if (isset($data['background'])) {
-                $design->setBackground($data['background']);
+            if ($dto->data !== null) {
+                $design->setData($dto->data);
             }
 
-            if (isset($data['thumbnail'])) {
-                $design->setThumbnail($data['thumbnail']);
+            if ($dto->description !== null) {
+                $design->setTitle($dto->description); // Assuming title field stores description
             }
 
-            if (isset($data['animationSettings'])) {
-                $design->setAnimationSettings($data['animationSettings']);
-            }
-
-            // Update hasAnimations based on animation settings or layer animations
-            $hasAnimations = !empty($data['animationSettings']) || 
-                            $design->getLayers()->exists(function($key, $layer) {
-                                return !empty($layer->getAnimations());
-                            });
+            // Update hasAnimations based on layer animations
+            $hasAnimations = $design->getLayers()->exists(function($key, $layer) {
+                return !empty($layer->getAnimations());
+            });
             $design->setHasAnimations($hasAnimations);
 
             // Validate design
@@ -316,34 +268,27 @@ class DesignController extends AbstractController
                     $errorMessages[] = $error->getMessage();
                 }
                 
-                return $this->json([
-                    'error' => 'Validation failed',
-                    'details' => $errorMessages
-                ], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Design updated successfully',
-                'design' => [
-                    'id' => $design->getId(),
-                    'name' => $design->getName(),
-                    'canvasWidth' => $design->getCanvasWidth(),
-                    'canvasHeight' => $design->getCanvasHeight(),
-                    'background' => $design->getBackground(),
-                    'thumbnail' => $design->getThumbnail(),
-                    'hasAnimations' => $design->getHasAnimations(),
-                    'animationSettings' => $design->getAnimationSettings(),
-                    'updatedAt' => $design->getUpdatedAt()?->format('c'),
-                ]
-            ]);
+            $designResponse = $this->responseDTOFactory->createDesignResponse(
+                $design,
+                'Design updated successfully'
+            );
+            return $this->designResponse($designResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to update design',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to update design',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -353,125 +298,124 @@ class DesignController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $design = $this->designRepository->find($id);
             if (!$design) {
-                return $this->json(['error' => 'Design not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this design
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
             $this->entityManager->remove($design);
             $this->entityManager->flush();
 
-            return $this->json(['message' => 'Design deleted successfully']);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse('Design deleted successfully');
+            return $this->successResponse($successResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to delete design',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to delete design',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{id}/duplicate', name: 'duplicate', methods: ['POST'])]
-    public function duplicate(int $id, Request $request): JsonResponse
+    public function duplicate(int $id, DuplicateDesignRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $originalDesign = $this->designRepository->find($id);
             if (!$originalDesign) {
-                return $this->json(['error' => 'Design not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user has access to this design
             $project = $originalDesign->getProject();
             if ($project->getUser() !== $user && !$project->getIsPublic()) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            $newName = $data['name'] ?? $originalDesign->getName() . ' (Copy)';
-            $targetProjectId = $data['projectId'] ?? $project->getId();
+            $newName = $dto->name ?? $originalDesign->getName() . ' (Copy)';
+            $targetProjectId = $dto->projectId ?? $project->getId();
 
             // Verify target project access
             $targetProject = $this->projectRepository->find($targetProjectId);
             if (!$targetProject || $targetProject->getUser() !== $user) {
-                return $this->json(['error' => 'Target project not found or access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Target project not found or access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
             $duplicatedDesign = $this->designRepository->duplicateDesign($originalDesign, $targetProject, $newName);
 
-            return $this->json([
-                'message' => 'Design duplicated successfully',
-                'design' => [
-                    'id' => $duplicatedDesign->getId(),
-                    'name' => $duplicatedDesign->getName(),
-                    'canvasWidth' => $duplicatedDesign->getCanvasWidth(),
-                    'canvasHeight' => $duplicatedDesign->getCanvasHeight(),
-                    'background' => $duplicatedDesign->getBackground(),
-                    'thumbnail' => $duplicatedDesign->getThumbnail(),
-                    'createdAt' => $duplicatedDesign->getCreatedAt()->format('c'),
-                    'updatedAt' => $duplicatedDesign->getUpdatedAt()?->format('c'),
-                    'layerCount' => count($duplicatedDesign->getLayers()),
-                    'hasAnimations' => $duplicatedDesign->getHasAnimations(),
-                ]
-            ], Response::HTTP_CREATED);
+            $designResponse = $this->responseDTOFactory->createDesignResponse(
+                $duplicatedDesign,
+                'Design duplicated successfully'
+            );
+            return $this->designResponse($designResponse, Response::HTTP_CREATED);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to duplicate design',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to duplicate design',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{id}/thumbnail', name: 'update_thumbnail', methods: ['PUT'])]
-    public function updateThumbnail(int $id, Request $request): JsonResponse
+    public function updateThumbnail(int $id, UpdateDesignThumbnailRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $design = $this->designRepository->find($id);
             if (!$design) {
-                return $this->json(['error' => 'Design not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this design
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data || !isset($data['thumbnail'])) {
-                return $this->json(['error' => 'Thumbnail data is required'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $design->setThumbnail($data['thumbnail']);
+            $design->setThumbnail($dto->thumbnail);
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Thumbnail updated successfully',
-                'thumbnail' => $design->getThumbnail()
-            ]);
+            $designResponse = $this->responseDTOFactory->createDesignResponse(
+                $design,
+                'Thumbnail updated successfully'
+            );
+            return $this->designResponse($designResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to update thumbnail',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to update thumbnail',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -481,12 +425,14 @@ class DesignController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $query = $request->query->get('q');
             if (!$query) {
-                return $this->json(['error' => 'Search query is required'], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Search query is required');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $page = max(1, (int) $request->query->get('page', 1));
@@ -501,46 +447,27 @@ class DesignController extends AbstractController
                 return $project->getUser() === $user || $project->getIsPublic();
             });
 
-            $designData = array_map(function (Design $design) {
-                return [
-                    'id' => $design->getId(),
-                    'name' => $design->getName(),
-                    'canvasWidth' => $design->getCanvasWidth(),
-                    'canvasHeight' => $design->getCanvasHeight(),
-                    'background' => $design->getBackground(),
-                    'thumbnail' => $design->getThumbnail(),
-                    'createdAt' => $design->getCreatedAt()->format('c'),
-                    'updatedAt' => $design->getUpdatedAt()?->format('c'),
-                    'layerCount' => count($design->getLayers()),
-                    'hasAnimations' => $design->getHasAnimations(),
-                    'project' => [
-                        'id' => $design->getProject()->getId(),
-                        'name' => $design->getProject()->getName(),
-                        'isPublic' => $design->getProject()->getIsPublic(),
-                        'user' => [
-                            'id' => $design->getProject()->getUser()->getId(),
-                            'name' => $design->getProject()->getUser()->getName(),
-                            'username' => $design->getProject()->getUser()->getUsername(),
-                        ],
-                    ],
-                ];
-            }, $accessibleDesigns);
+            $designResponses = array_map(
+                fn(Design $design) => $this->responseDTOFactory->createDesignResponse($design),
+                $accessibleDesigns
+            );
 
-            return $this->json([
-                'designs' => array_values($designData),
-                'pagination' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => count($accessibleDesigns),
-                    'totalPages' => ceil(count($accessibleDesigns) / $limit),
-                ]
-            ]);
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $designResponses,
+                $page,
+                $limit,
+                count($accessibleDesigns),
+                'Search results retrieved successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to search designs',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to search designs',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

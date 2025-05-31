@@ -18,6 +18,48 @@ export interface ApiResponse<T> {
   message?: string
 }
 
+// Authentication API
+export const authAPI = {
+  // Login user
+  login: (credentials: { email: string; password: string }) =>
+    api.post<ApiResponse<{ user: User; token: string }>>('/auth/login', credentials),
+
+  // Register new user
+  register: (data: {
+    firstName: string
+    lastName: string
+    email: string
+    password: string
+    confirmPassword: string
+  }) => api.post<ApiResponse<{ user: User; token: string }>>('/auth/register', data),
+
+  // Logout user
+  logout: () => api.post('/auth/logout'),
+
+  // Refresh token
+  refreshToken: () => api.post<ApiResponse<{ token: string }>>('/auth/refresh'),
+
+  // Forgot password
+  forgotPassword: (email: string) =>
+    api.post<ApiResponse<{ message: string }>>('/auth/forgot-password', { email }),
+
+  // Reset password
+  resetPassword: (data: {
+    token: string
+    email: string
+    password: string
+    confirmPassword: string
+  }) => api.post<ApiResponse<{ message: string }>>('/auth/reset-password', data),
+
+  // Verify email
+  verifyEmail: (token: string) =>
+    api.post<ApiResponse<{ message: string }>>('/auth/verify-email', { token }),
+
+  // Resend verification email
+  resendVerification: (email: string) =>
+    api.post<ApiResponse<{ message: string }>>('/auth/resend-verification', { email }),
+}
+
 // Design API
 export const designAPI = {
   // Get user's designs with pagination and filters
@@ -163,6 +205,21 @@ export const userAPI = {
   // Update user profile
   updateProfile: (data: Partial<User>) => 
     api.put<ApiResponse<User>>('/user/profile', data),
+
+  // Upload avatar
+  uploadAvatar: (file: File) => {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    return api.post<ApiResponse<{ avatar: string }>>('/user/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // Change password
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put<ApiResponse<{ message: string }>>('/user/password', data),
 
   // Update user preferences
   updatePreferences: (preferences: Record<string, any>) =>

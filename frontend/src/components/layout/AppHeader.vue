@@ -339,16 +339,17 @@ const authStore = useAuthStore()
 const icons = useIcons()
 const searchQuery = ref('')
 
-const userName = computed(() => authStore.user?.name || 'Demo User')
+const userName = computed(() => {
+  const user = authStore.user
+  return user ? `${user.firstName} ${user.lastName}` : 'Demo User'
+})
 const userEmail = computed(() => authStore.user?.email || 'demo@example.com')
 const userInitials = computed(() => {
-  const name = userName.value
-  return name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const user = authStore.user
+  if (user) {
+    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+  }
+  return 'DU'
 })
 
 // Search functionality

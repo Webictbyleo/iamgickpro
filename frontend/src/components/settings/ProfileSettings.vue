@@ -334,6 +334,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { CameraIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
+import { userAPI } from '@/services/api'
+import { useNotifications } from '@/composables/useNotifications'
 
 // Types
 interface UserProfile {
@@ -360,6 +362,9 @@ interface PasswordForm {
   newPassword: string
   confirmPassword: string
 }
+
+// Composables
+const { success, error } = useNotifications()
 
 // State
 const isSaving = ref(false)
@@ -418,102 +423,74 @@ const handleAvatarUpload = async (event: Event) => {
 
   // Validate file type
   if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file')
+    error('Invalid File Type', 'Please select a valid image file (JPEG, PNG, GIF, WebP)')
     return
   }
 
   // Validate file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    alert('File size must be less than 5MB')
+    error('File Too Large', 'File size must be less than 5MB')
     return
   }
+
+  // Store previous avatar for rollback
+  const previousAvatar = userProfile.value.avatar
 
   try {
     // Create preview URL
     const previewUrl = URL.createObjectURL(file)
     userProfile.value.avatar = previewUrl
 
-    // Upload to server
-    const formData = new FormData()
-    formData.append('avatar', file)
+    // Upload to server using centralized API
+    const response = await userAPI.uploadAvatar(file)
     
-    const response = await fetch('/api/user/avatar', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-      },
-      body: formData
-    })
+    // Update avatar with the server response
+    userProfile.value.avatar = response.data.data.avatar
+    success('Avatar Updated', 'Your profile picture has been uploaded successfully')
     
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`)
-    }
+    // Clean up the preview URL
+    URL.revokeObjectURL(previewUrl)
     
-    const data = await response.json()
+  } catch (uploadError) {
+    console.error('Error uploading avatar:', uploadError)
+    error('Upload Failed', 'Failed to upload avatar. Please try again.')
     
-    if (data.success) {
-      userProfile.value.avatar = data.avatar
-      console.log('Avatar uploaded successfully:', data.avatar)
-    } else {
-      throw new Error(data.error || 'Upload failed')
-    }
-  } catch (error) {
-    console.error('Error uploading avatar:', error)
-    alert('Failed to upload avatar. Please try again.')
-    // Revert preview if upload failed
-    userProfile.value.avatar = ''
+    // Revert to previous avatar if upload failed
+    userProfile.value.avatar = previousAvatar || ''
   }
 }
 
 const changePassword = async () => {
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    alert('New passwords do not match')
+    error('Password Mismatch', 'New passwords do not match')
     return
   }
 
   if (passwordForm.value.newPassword.length < 8) {
-    alert('New password must be at least 8 characters long')
+    error('Invalid Password', 'New password must be at least 8 characters long')
     return
   }
 
   passwordChanging.value = true
   try {
-    const response = await fetch('/api/user/password', {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        currentPassword: passwordForm.value.currentPassword,
-        newPassword: passwordForm.value.newPassword
-      })
+    const response = await userAPI.changePassword({
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword
     })
     
-    if (!response.ok) {
-      throw new Error(`Password change failed: ${response.statusText}`)
+    success('Password Changed', 'Your password has been updated successfully')
+    showPasswordChange.value = false
+    
+    // Reset form
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     }
     
-    const data = await response.json()
-    
-    if (data.success) {
-      console.log('Password changed successfully')
-      showPasswordChange.value = false
-      
-      // Reset form
-      passwordForm.value = {
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }
-      
-      alert('Password changed successfully!')
-    } else {
-      throw new Error(data.error || 'Password change failed')
-    }
-  } catch (error) {
-    console.error('Error changing password:', error)
-    alert('Failed to change password. Please try again.')
+  } catch (changeError) {
+    console.error('Error changing password:', changeError)
+    error('Password Change Failed', 'Failed to change password. Please check your current password and try again.')
   } finally {
     passwordChanging.value = false
   }
@@ -522,30 +499,16 @@ const changePassword = async () => {
 const saveProfile = async () => {
   isSaving.value = true
   try {
-    const response = await fetch('/api/user/profile', {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(userProfile.value)
-    })
+    // Create a clean profile object excluding readonly fields
+    const { createdAt, ...profileData } = userProfile.value
+    const response = await userAPI.updateProfile(profileData)
     
-    if (!response.ok) {
-      throw new Error(`Failed to save profile: ${response.statusText}`)
-    }
+    success('Profile Updated', 'Your profile has been saved successfully')
+    console.log('Profile saved successfully:', response.data.data)
     
-    const data = await response.json()
-    
-    if (data.success) {
-      console.log('Profile saved successfully:', data.user)
-      // Show success notification
-    } else {
-      throw new Error(data.error || 'Failed to save profile')
-    }
-  } catch (error) {
-    console.error('Error saving profile:', error)
-    // Show error notification
+  } catch (saveError) {
+    console.error('Error saving profile:', saveError)
+    error('Save Failed', 'Failed to save profile. Please try again.')
   } finally {
     isSaving.value = false
   }

@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\TypedResponseTrait;
+use App\DTO\Request\ChangePasswordRequestDTO;
+use App\DTO\Request\UpdateProfileRequestDTO;
 use App\Entity\User;
+use App\Service\ResponseDTOFactory;
 use App\Service\UserService;
 use App\Service\FileUploadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,79 +24,138 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[IsGranted('ROLE_USER')]
 class UserController extends AbstractController
 {
+    use TypedResponseTrait;
+
     public function __construct(
         private readonly UserService $userService,
         private readonly FileUploadService $fileUploadService,
         private readonly SerializerInterface $serializer,
-        private readonly ValidatorInterface $validator
+        private readonly ValidatorInterface $validator,
+        private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
+    /**
+     * Get current user's profile information
+     * 
+     * Returns comprehensive profile data including personal information,
+     * settings, and account details for the authenticated user.
+     * 
+     * @return JsonResponse User profile data with extended information
+     */
     #[Route('/profile', name: 'profile', methods: ['GET'])]
     public function getProfile(): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
-        return $this->json([
-            'id' => $user->getId(),
-            'firstName' => $user->getFirstName(),
-            'lastName' => $user->getLastName(),
-            'email' => $user->getEmail(),
-            'username' => $user->getUsername(),
-            'jobTitle' => $user->getJobTitle(),
-            'company' => $user->getCompany(),
-            'website' => $user->getWebsite(),
-            'portfolio' => $user->getPortfolio(),
-            'bio' => $user->getBio(),
-            'avatar' => $user->getAvatar(),
-            'socialLinks' => $user->getSocialLinks(),
-            'timezone' => $user->getTimezone(),
-            'language' => $user->getLanguage(),
-            'createdAt' => $user->getCreatedAt()->format('c'),
-            'updatedAt' => $user->getUpdatedAt()?->format('c'),
-        ]);
+        try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
+            return $this->userProfileResponse(
+                $this->responseDTOFactory->createUserProfileResponse($user)
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to retrieve profile'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
     }
 
+    /**
+     * Update current user's profile information
+     * 
+     * Updates user profile data including personal information, professional details,
+     * and account preferences. Uses comprehensive validation and returns updated profile.
+     * 
+     * @param Request $request HTTP request containing profile update data
+     * @return JsonResponse Updated user profile data or validation errors
+     */
     #[Route('/profile', name: 'update_profile', methods: ['PUT'])]
     public function updateProfile(Request $request): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
         try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
             $data = json_decode($request->getContent(), true);
             
             if (!is_array($data)) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Invalid JSON data'),
+                    Response::HTTP_BAD_REQUEST
+                );
             }
             
-            $updatedUser = $this->userService->updateProfile($user, $data);
+            // Create and validate DTO
+            $updateDTO = $this->serializer->deserialize(
+                $request->getContent(),
+                UpdateProfileRequestDTO::class,
+                'json'
+            );
             
-            return $this->json([
-                'success' => true,
-                'message' => 'Profile updated successfully',
-                'user' => json_decode($this->serializer->serialize($updatedUser, 'json', ['groups' => ['user:read']]), true)
-            ]);
+            $violations = $this->validator->validate($updateDTO);
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[$violation->getPropertyPath()] = $violation->getMessage();
+                }
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Validation failed', $errors),
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
             
+            if (!$updateDTO->hasAnyData()) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('No data provided for update'),
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            
+            $updatedUser = $this->userService->updateProfile($user, $updateDTO->toArray());
+            
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse(
+                    'Profile updated successfully',
+                    ['user' => $this->responseDTOFactory->createUserResponse($updatedUser, true)->toArray()]
+                )
+            );
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse($e->getMessage()),
+                Response::HTTP_BAD_REQUEST
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to update profile'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to update profile'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
+    /**
+     * Upload and update user avatar image
+     * 
+     * Handles avatar file upload, validation, and updates user profile.
+     * Automatically removes old avatar file and returns new avatar URL.
+     * 
+     * @param Request $request HTTP request containing avatar file
+     * @return JsonResponse Success response with new avatar URL or error details
+     */
     #[Route('/avatar', name: 'upload_avatar', methods: ['POST'])]
     public function uploadAvatar(Request $request): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
-        $file = $request->files->get('avatar');
-        if (!$file) {
-            return $this->json(['error' => 'No file uploaded'], Response::HTTP_BAD_REQUEST);
-        }
-        
         try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
+            $file = $request->files->get('avatar');
+            if (!$file) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('No file uploaded'),
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            
             $avatarFilename = $this->fileUploadService->uploadAvatar($file);
             $avatarUrl = $this->fileUploadService->getAvatarUrl($avatarFilename);
             
@@ -104,99 +167,201 @@ class UserController extends AbstractController
             $user->setAvatar($avatarUrl);
             $this->userService->updateProfile($user, []);
             
-            return $this->json([
-                'success' => true,
-                'message' => 'Avatar uploaded successfully',
-                'avatar' => $avatarUrl
-            ]);
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse(
+                    'Avatar uploaded successfully',
+                    ['avatar' => $avatarUrl]
+                )
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse($e->getMessage()),
+                Response::HTTP_BAD_REQUEST
+            );
         }
     }
 
+    /**
+     * Change user password
+     * 
+     * Updates user password after validating current password and ensuring
+     * new password meets security requirements including confirmation match.
+     * 
+     * @param Request $request HTTP request containing password change data
+     * @return JsonResponse Success confirmation or validation errors
+     */
     #[Route('/password', name: 'change_password', methods: ['PUT'])]
     public function changePassword(Request $request): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
-        $data = json_decode($request->getContent(), true);
-        
-        if (!isset($data['currentPassword']) || !isset($data['newPassword'])) {
-            return $this->json(['error' => 'Current password and new password are required'], Response::HTTP_BAD_REQUEST);
-        }
-        
         try {
-            $this->userService->changePassword($user, $data['currentPassword'], $data['newPassword']);
-            return $this->json(['success' => true, 'message' => 'Password changed successfully']);
+            /** @var User $user */
+            $user = $this->getUser();
+            
+            // Create and validate DTO
+            $changePasswordDTO = $this->serializer->deserialize(
+                $request->getContent(),
+                ChangePasswordRequestDTO::class,
+                'json'
+            );
+            
+            $violations = $this->validator->validate($changePasswordDTO);
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[$violation->getPropertyPath()] = $violation->getMessage();
+                }
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Validation failed', $errors),
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            
+            $this->userService->changePassword(
+                $user,
+                $changePasswordDTO->currentPassword,
+                $changePasswordDTO->newPassword
+            );
+            
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse('Password changed successfully')
+            );
         } catch (\Symfony\Component\Security\Core\Exception\AccessDeniedException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse($e->getMessage()),
+                Response::HTTP_BAD_REQUEST
+            );
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse($e->getMessage()),
+                Response::HTTP_BAD_REQUEST
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to change password'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to change password'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
+    /**
+     * Request user data download for GDPR compliance
+     * 
+     * Initiates a background process to prepare comprehensive data export
+     * for the user, including all personal data and content.
+     * 
+     * @return JsonResponse Confirmation message with estimated completion time
+     */
     #[Route('/settings/privacy/download', name: 'download_data', methods: ['POST'])]
     public function requestDataDownload(): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
-        // In a real implementation, this would trigger a background job
-        // to prepare the user's data export
-        
-        return $this->json([
-            'message' => 'Data download request submitted',
-            'estimatedTime' => '24 hours'
-        ]);
+        try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
+            // In a real implementation, this would trigger a background job
+            // to prepare the user's data export
+            
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse(
+                    'Data download request submitted',
+                    ['estimatedTime' => '24 hours']
+                )
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to process download request'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
     }
 
+    /**
+     * Export user data in portable format
+     * 
+     * Generates and returns comprehensive user data export including
+     * all user content, settings, and account information.
+     * 
+     * @return JsonResponse Complete user data export or error details
+     */
     #[Route('/settings/privacy/export', name: 'export_data', methods: ['POST'])]
     public function exportPortableData(): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
         try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
             $exportData = $this->userService->generateDataExport($user);
             
-            return $this->json([
-                'success' => true,
-                'message' => 'Data export completed',
-                'data' => $exportData
-            ]);
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse(
+                    'Data export completed',
+                    ['data' => $exportData]
+                )
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to export data'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to export data'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
+    /**
+     * Delete user account and all associated data
+     * 
+     * Initiates account deletion process which removes all user data,
+     * content, and associated resources permanently.
+     * 
+     * @return JsonResponse Confirmation of deletion initiation or error details
+     */
     #[Route('/settings/privacy/delete', name: 'delete_account', methods: ['DELETE'])]
     public function deleteAccount(): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
         try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
             $this->userService->deleteUserAccount($user);
-            return $this->json(['message' => 'Account deletion initiated']);
+            
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse('Account deletion initiated')
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to delete account'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to delete account'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
+    /**
+     * Get user subscription information
+     * 
+     * Returns current subscription details including plan type, billing status,
+     * usage limits, and subscription features for the authenticated user.
+     * 
+     * @return JsonResponse Subscription data or error details
+     */
     #[Route('/subscription', name: 'subscription', methods: ['GET'])]
     public function getSubscription(): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        
         try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
             $subscriptionData = $this->userService->getSubscriptionData($user);
-            return $this->json($subscriptionData);
+            
+            return $this->successResponse(
+                $this->responseDTOFactory->createSuccessResponse(
+                    'Subscription data retrieved successfully',
+                    $subscriptionData
+                )
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to get subscription data'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to get subscription data'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 }

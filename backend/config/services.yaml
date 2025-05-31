@@ -76,3 +76,11 @@ services:
         arguments:
             $avatarUploadDirectory: '%app.avatar_directory%'
             $mediaUploadDirectory: '%app.media_directory%'
+
+    # Custom argument resolver for DTOs
+    App\ArgumentResolver\RequestDTOResolver:
+        tags:
+            - { name: controller.argument_value_resolver }
+
+    # Response DTO Factory service
+    App\Service\ResponseDTOFactory: ~

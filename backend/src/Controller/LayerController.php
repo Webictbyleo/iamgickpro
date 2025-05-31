@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\TypedResponseTrait;
+use App\DTO\BulkUpdateLayersRequestDTO;
+use App\DTO\CreateLayerRequestDTO;
+use App\DTO\DuplicateLayerRequestDTO;
+use App\DTO\MoveLayerRequestDTO;
+use App\DTO\UpdateLayerRequestDTO;
 use App\Entity\Layer;
 use App\Entity\Design;
 use App\Entity\User;
 use App\Repository\LayerRepository;
 use App\Repository\DesignRepository;
+use App\Service\ResponseDTOFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -23,89 +29,64 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[IsGranted('ROLE_USER')]
 class LayerController extends AbstractController
 {
+    use TypedResponseTrait;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LayerRepository $layerRepository,
         private readonly DesignRepository $designRepository,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
+        private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
     #[Route('', name: 'create', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    public function create(CreateLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
-            }
-
-            if (!isset($data['designId'])) {
-                return $this->json(['error' => 'Design ID is required'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $design = $this->designRepository->find($data['designId']);
+            $design = $this->designRepository->findOneBy(['uuid' => $dto->designId]);
             if (!$design) {
-                return $this->json(['error' => 'Design not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this design
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
             $layer = new Layer();
-            $layer->setName($data['name'] ?? 'Layer');
-            $layer->setType($data['type'] ?? 'rectangle');
-            $layer->setData($data['data'] ?? []);
-            $layer->setX($data['x'] ?? 0);
-            $layer->setY($data['y'] ?? 0);
-            $layer->setWidth($data['width'] ?? 100);
-            $layer->setHeight($data['height'] ?? 100);
-            $layer->setRotation($data['rotation'] ?? 0);
-            $layer->setScaleX($data['scaleX'] ?? 1);
-            $layer->setScaleY($data['scaleY'] ?? 1);
-            $layer->setOpacity($data['opacity'] ?? 1);
-            $layer->setVisible($data['visible'] ?? true);
-            $layer->setLocked($data['locked'] ?? false);
+            $layer->setName($dto->name);
+            $layer->setType($dto->type);
+            $layer->setProperties($dto->properties);
+            $layer->setTransform($dto->transform);
+            $layer->setVisible($dto->visible);
+            $layer->setLocked($dto->locked);
             $layer->setDesign($design);
 
             // Set parent if specified
-            if (isset($data['parentId'])) {
-                $parent = $this->layerRepository->find($data['parentId']);
+            if ($dto->parentLayerId) {
+                $parent = $this->layerRepository->findOneBy(['uuid' => $dto->parentLayerId]);
                 if ($parent && $parent->getDesign() === $design) {
                     $layer->setParent($parent);
                 }
             }
 
             // Set z-index (auto-increment if not specified)
-            if (isset($data['zIndex'])) {
-                $layer->setZIndex($data['zIndex']);
+            if ($dto->zIndex !== null) {
+                $layer->setZIndex($dto->zIndex);
             } else {
                 $maxZIndex = $this->layerRepository->getMaxZIndex($design);
                 $layer->setZIndex($maxZIndex + 1);
             }
 
-            // Set animations if provided
-            if (isset($data['animations'])) {
-                $layer->setAnimations($data['animations']);
-                // Update design animation status
-                if (!empty($data['animations'])) {
-                    $design->setHasAnimations(true);
-                }
-            }
-
-            // Set mask if provided
-            if (isset($data['mask'])) {
-                $layer->setMask($data['mask']);
-            }
-
-            // Validate layer
             $errors = $this->validator->validate($layer);
             if (count($errors) > 0) {
                 $errorMessages = [];
@@ -113,46 +94,28 @@ class LayerController extends AbstractController
                     $errorMessages[] = $error->getMessage();
                 }
                 
-                return $this->json([
-                    'error' => 'Validation failed',
-                    'details' => $errorMessages
-                ], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->persist($layer);
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Layer created successfully',
-                'layer' => [
-                    'id' => $layer->getId(),
-                    'name' => $layer->getName(),
-                    'type' => $layer->getType(),
-                    'data' => $layer->getData(),
-                    'x' => $layer->getX(),
-                    'y' => $layer->getY(),
-                    'width' => $layer->getWidth(),
-                    'height' => $layer->getHeight(),
-                    'rotation' => $layer->getRotation(),
-                    'scaleX' => $layer->getScaleX(),
-                    'scaleY' => $layer->getScaleY(),
-                    'opacity' => $layer->getOpacity(),
-                    'visible' => $layer->isVisible(),
-                    'locked' => $layer->isLocked(),
-                    'zIndex' => $layer->getZIndex(),
-                    'parentId' => $layer->getParent()?->getId(),
-                    'animations' => $layer->getAnimations(),
-                    'mask' => $layer->getMask(),
-                    'createdAt' => $layer->getCreatedAt()->format('c'),
-                    'updatedAt' => $layer->getUpdatedAt()?->format('c'),
-                ]
-            ], Response::HTTP_CREATED);
+            $layerResponse = $this->responseDTOFactory->createLayerResponse(
+                $layer,
+                'Layer created successfully'
+            );
+            return $this->layerResponse($layerResponse, Response::HTTP_CREATED);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to create layer',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to create layer',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -162,169 +125,100 @@ class LayerController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $layer = $this->layerRepository->find($id);
             if (!$layer) {
-                return $this->json(['error' => 'Layer not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user has access to this layer
             $design = $layer->getDesign();
             $project = $design->getProject();
             if ($project->getUser() !== $user && !$project->getIsPublic()) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            return $this->json([
-                'layer' => [
-                    'id' => $layer->getId(),
-                    'name' => $layer->getName(),
-                    'type' => $layer->getType(),
-                    'data' => $layer->getData(),
-                    'x' => $layer->getX(),
-                    'y' => $layer->getY(),
-                    'width' => $layer->getWidth(),
-                    'height' => $layer->getHeight(),
-                    'rotation' => $layer->getRotation(),
-                    'scaleX' => $layer->getScaleX(),
-                    'scaleY' => $layer->getScaleY(),
-                    'opacity' => $layer->getOpacity(),
-                    'visible' => $layer->isVisible(),
-                    'locked' => $layer->isLocked(),
-                    'zIndex' => $layer->getZIndex(),
-                    'parentId' => $layer->getParent()?->getId(),
-                    'animations' => $layer->getAnimations(),
-                    'mask' => $layer->getMask(),
-                    'createdAt' => $layer->getCreatedAt()->format('c'),
-                    'updatedAt' => $layer->getUpdatedAt()?->format('c'),
-                    'children' => array_map(function ($child) {
-                        return [
-                            'id' => $child->getId(),
-                            'name' => $child->getName(),
-                            'type' => $child->getType(),
-                        ];
-                    }, $layer->getChildren()->toArray()),
-                ]
-            ]);
+            $layerResponse = $this->responseDTOFactory->createLayerResponse(
+                $layer,
+                'Layer retrieved successfully'
+            );
+            return $this->layerResponse($layerResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to fetch layer',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch layer',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update(int $id, Request $request): JsonResponse
+    public function update(int $id, UpdateLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $layer = $this->layerRepository->find($id);
             if (!$layer) {
-                return $this->json(['error' => 'Layer not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this layer
             $design = $layer->getDesign();
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
+            // Check if there's any data to update
+            if (!$dto->hasAnyData()) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('No data provided for update');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             // Update allowed fields
-            if (isset($data['name'])) {
-                $layer->setName($data['name']);
+            if ($dto->name !== null) {
+                $layer->setName($dto->name);
             }
 
-            if (isset($data['type'])) {
-                $layer->setType($data['type']);
+            if ($dto->properties !== null) {
+                $layer->setProperties($dto->properties);
             }
 
-            if (isset($data['data'])) {
-                $layer->setData($data['data']);
+            if ($dto->transform !== null) {
+                $layer->setTransform($dto->transform);
             }
 
-            if (isset($data['x'])) {
-                $layer->setX($data['x']);
+            if ($dto->visible !== null) {
+                $layer->setVisible($dto->visible);
             }
 
-            if (isset($data['y'])) {
-                $layer->setY($data['y']);
+            if ($dto->locked !== null) {
+                $layer->setLocked($dto->locked);
             }
 
-            if (isset($data['width'])) {
-                $layer->setWidth($data['width']);
+            if ($dto->zIndex !== null) {
+                $layer->setZIndex($dto->zIndex);
             }
 
-            if (isset($data['height'])) {
-                $layer->setHeight($data['height']);
-            }
-
-            if (isset($data['rotation'])) {
-                $layer->setRotation($data['rotation']);
-            }
-
-            if (isset($data['scaleX'])) {
-                $layer->setScaleX($data['scaleX']);
-            }
-
-            if (isset($data['scaleY'])) {
-                $layer->setScaleY($data['scaleY']);
-            }
-
-            if (isset($data['opacity'])) {
-                $layer->setOpacity($data['opacity']);
-            }
-
-            if (isset($data['visible'])) {
-                $layer->setVisible($data['visible']);
-            }
-
-            if (isset($data['locked'])) {
-                $layer->setLocked($data['locked']);
-            }
-
-            if (isset($data['zIndex'])) {
-                $layer->setZIndex($data['zIndex']);
-            }
-
-            if (isset($data['parentId'])) {
-                if ($data['parentId'] === null) {
-                    $layer->setParent(null);
-                } else {
-                    $parent = $this->layerRepository->find($data['parentId']);
-                    if ($parent && $parent->getDesign() === $design) {
-                        $layer->setParent($parent);
-                    }
+            if ($dto->parentLayerId !== null) {
+                $parent = $this->layerRepository->findOneBy(['uuid' => $dto->parentLayerId]);
+                if ($parent && $parent->getDesign() === $design) {
+                    $layer->setParent($parent);
                 }
             }
 
-            if (isset($data['animations'])) {
-                $layer->setAnimations($data['animations']);
-                // Update design animation status
-                $hasAnimations = !empty($data['animations']) || 
-                               $design->getLayers()->exists(function($key, $l) use ($layer) {
-                                   return $l !== $layer && !empty($l->getAnimations());
-                               });
-                $design->setHasAnimations($hasAnimations);
-            }
-
-            if (isset($data['mask'])) {
-                $layer->setMask($data['mask']);
-            }
-
-            // Validate layer
             $errors = $this->validator->validate($layer);
             if (count($errors) > 0) {
                 $errorMessages = [];
@@ -332,44 +226,27 @@ class LayerController extends AbstractController
                     $errorMessages[] = $error->getMessage();
                 }
                 
-                return $this->json([
-                    'error' => 'Validation failed',
-                    'details' => $errorMessages
-                ], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Layer updated successfully',
-                'layer' => [
-                    'id' => $layer->getId(),
-                    'name' => $layer->getName(),
-                    'type' => $layer->getType(),
-                    'data' => $layer->getData(),
-                    'x' => $layer->getX(),
-                    'y' => $layer->getY(),
-                    'width' => $layer->getWidth(),
-                    'height' => $layer->getHeight(),
-                    'rotation' => $layer->getRotation(),
-                    'scaleX' => $layer->getScaleX(),
-                    'scaleY' => $layer->getScaleY(),
-                    'opacity' => $layer->getOpacity(),
-                    'visible' => $layer->isVisible(),
-                    'locked' => $layer->isLocked(),
-                    'zIndex' => $layer->getZIndex(),
-                    'parentId' => $layer->getParent()?->getId(),
-                    'animations' => $layer->getAnimations(),
-                    'mask' => $layer->getMask(),
-                    'updatedAt' => $layer->getUpdatedAt()?->format('c'),
-                ]
-            ]);
+            $layerResponse = $this->responseDTOFactory->createLayerResponse(
+                $layer,
+                'Layer updated successfully'
+            );
+            return $this->layerResponse($layerResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to update layer',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to update layer',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -379,125 +256,108 @@ class LayerController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $layer = $this->layerRepository->find($id);
             if (!$layer) {
-                return $this->json(['error' => 'Layer not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this layer
             $design = $layer->getDesign();
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
             $this->entityManager->remove($layer);
             $this->entityManager->flush();
 
-            return $this->json(['message' => 'Layer deleted successfully']);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse('Layer deleted successfully');
+            return $this->successResponse($successResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to delete layer',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to delete layer',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{id}/duplicate', name: 'duplicate', methods: ['POST'])]
-    public function duplicate(int $id, Request $request): JsonResponse
+    public function duplicate(int $id, DuplicateLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $originalLayer = $this->layerRepository->find($id);
             if (!$originalLayer) {
-                return $this->json(['error' => 'Layer not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this layer
             $design = $originalLayer->getDesign();
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            $newName = $data['name'] ?? $originalLayer->getName() . ' Copy';
-            $offsetX = $data['offsetX'] ?? 10;
-            $offsetY = $data['offsetY'] ?? 10;
+            $newName = $dto->name ?? $originalLayer->getName() . ' Copy';
+            $offsetX = $dto->offsetX ?? 10;
+            $offsetY = $dto->offsetY ?? 10;
 
             $duplicatedLayer = $this->layerRepository->duplicateLayer($originalLayer, $newName, $offsetX, $offsetY);
 
-            return $this->json([
-                'message' => 'Layer duplicated successfully',
-                'layer' => [
-                    'id' => $duplicatedLayer->getId(),
-                    'name' => $duplicatedLayer->getName(),
-                    'type' => $duplicatedLayer->getType(),
-                    'data' => $duplicatedLayer->getData(),
-                    'x' => $duplicatedLayer->getX(),
-                    'y' => $duplicatedLayer->getY(),
-                    'width' => $duplicatedLayer->getWidth(),
-                    'height' => $duplicatedLayer->getHeight(),
-                    'rotation' => $duplicatedLayer->getRotation(),
-                    'scaleX' => $duplicatedLayer->getScaleX(),
-                    'scaleY' => $duplicatedLayer->getScaleY(),
-                    'opacity' => $duplicatedLayer->getOpacity(),
-                    'visible' => $duplicatedLayer->isVisible(),
-                    'locked' => $duplicatedLayer->isLocked(),
-                    'zIndex' => $duplicatedLayer->getZIndex(),
-                    'parentId' => $duplicatedLayer->getParent()?->getId(),
-                    'animations' => $duplicatedLayer->getAnimations(),
-                    'mask' => $duplicatedLayer->getMask(),
-                    'createdAt' => $duplicatedLayer->getCreatedAt()->format('c'),
-                    'updatedAt' => $duplicatedLayer->getUpdatedAt()?->format('c'),
-                ]
-            ], Response::HTTP_CREATED);
+            $layerResponse = $this->responseDTOFactory->createLayerResponse(
+                $duplicatedLayer,
+                'Layer duplicated successfully'
+            );
+            return $this->layerResponse($layerResponse, Response::HTTP_CREATED);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to duplicate layer',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to duplicate layer',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{id}/move', name: 'move', methods: ['PUT'])]
-    public function move(int $id, Request $request): JsonResponse
+    public function move(int $id, MoveLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $layer = $this->layerRepository->find($id);
             if (!$layer) {
-                return $this->json(['error' => 'Layer not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user owns this layer
             $design = $layer->getDesign();
             if ($design->getProject()->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
-            }
-
-            $direction = $data['direction'] ?? null;
-            $targetZIndex = $data['targetZIndex'] ?? null;
-
-            if ($direction) {
+            if ($dto->direction) {
                 // Move up/down in z-index
-                switch ($direction) {
+                switch ($dto->direction) {
                     case 'up':
                         $this->layerRepository->moveLayerUp($layer);
                         break;
@@ -511,48 +371,48 @@ class LayerController extends AbstractController
                         $this->layerRepository->moveLayerToBottom($layer);
                         break;
                     default:
-                        return $this->json(['error' => 'Invalid direction'], Response::HTTP_BAD_REQUEST);
+                        $errorResponse = $this->responseDTOFactory->createErrorResponse('Invalid direction');
+                        return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
                 }
-            } elseif ($targetZIndex !== null) {
+            } elseif ($dto->targetZIndex !== null) {
                 // Move to specific z-index
-                $this->layerRepository->moveLayerToZIndex($layer, $targetZIndex);
+                $this->layerRepository->moveLayerToZIndex($layer, $dto->targetZIndex);
             } else {
-                return $this->json(['error' => 'Direction or targetZIndex is required'], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Direction or targetZIndex is required');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Layer moved successfully',
-                'zIndex' => $layer->getZIndex()
-            ]);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                'Layer moved successfully',
+                ['zIndex' => $layer->getZIndex()]
+            );
+            return $this->successResponse($successResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to move layer',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to move layer',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/bulk-update', name: 'bulk_update', methods: ['PUT'])]
-    public function bulkUpdate(Request $request): JsonResponse
+    public function bulkUpdate(BulkUpdateLayersRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            $data = json_decode($request->getContent(), true);
-            if (!$data || !isset($data['layers']) || !is_array($data['layers'])) {
-                return $this->json(['error' => 'Invalid data: layers array is required'], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $updatedLayers = [];
             $errors = [];
 
-            foreach ($data['layers'] as $layerData) {
+            foreach ($dto->layers as $layerData) {
                 if (!isset($layerData['id'])) {
                     $errors[] = 'Layer ID is required for each layer';
                     continue;
@@ -571,12 +431,14 @@ class LayerController extends AbstractController
                     continue;
                 }
 
-                // Update layer properties
-                foreach (['name', 'x', 'y', 'width', 'height', 'rotation', 'scaleX', 'scaleY', 'opacity', 'visible', 'locked', 'zIndex', 'data', 'animations', 'mask'] as $property) {
-                    if (isset($layerData[$property])) {
-                        $setter = 'set' . ucfirst($property);
-                        if (method_exists($layer, $setter)) {
-                            $layer->$setter($layerData[$property]);
+                // Update layer properties from the updates array
+                if (isset($layerData['updates']) && is_array($layerData['updates'])) {
+                    foreach (['name', 'x', 'y', 'width', 'height', 'rotation', 'scaleX', 'scaleY', 'opacity', 'visible', 'locked', 'zIndex', 'data', 'animations', 'mask'] as $property) {
+                        if (isset($layerData['updates'][$property])) {
+                            $setter = 'set' . ucfirst($property);
+                            if (method_exists($layer, $setter)) {
+                                $layer->$setter($layerData['updates'][$property]);
+                            }
                         }
                     }
                 }
@@ -593,25 +455,27 @@ class LayerController extends AbstractController
             }
 
             if (!empty($errors)) {
-                return $this->json([
-                    'error' => 'Some layers could not be updated',
-                    'details' => $errors,
-                    'updatedLayers' => $updatedLayers
-                ], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Some layers could not be updated',
+                    $errors
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Layers updated successfully',
-                'updatedLayers' => $updatedLayers
-            ]);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                'Layers updated successfully',
+                ['updatedLayers' => $updatedLayers]
+            );
+            return $this->successResponse($successResponse);
 
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to update layers',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to update layers',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

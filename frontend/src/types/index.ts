@@ -1,10 +1,24 @@
 export interface User {
   id: string
   email: string
-  name: string
+  firstName: string
+  lastName: string
+  jobTitle?: string
+  company?: string
+  website?: string
+  portfolio?: string
+  bio?: string
   avatar?: string
+  role: string
+  socialLinks?: {
+    twitter?: string
+    linkedin?: string
+    dribbble?: string
+    behance?: string
+  }
   createdAt: Date
-  updatedAt: Date
+  updatedAt?: Date
+  lastLoginAt?: Date
 }
 
 export interface Design {

@@ -32,7 +32,7 @@
                   <h1 class="text-3xl lg:text-4xl font-bold text-white leading-tight">
                     Welcome back,
                     <span class="bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
-                      {{ user?.name || 'Designer' }}
+                      {{ user?.firstName || 'Designer' }}
                     </span>!
                   </h1>
                   <p class="text-lg text-white/90 mt-2">

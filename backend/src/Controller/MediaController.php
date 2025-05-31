@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\TypedResponseTrait;
+use App\DTO\BulkDeleteMediaRequestDTO;
+use App\DTO\CreateMediaRequestDTO;
+use App\DTO\DuplicateMediaRequestDTO;
+use App\DTO\SearchMediaRequestDTO;
+use App\DTO\StockSearchRequestDTO;
+use App\DTO\UpdateMediaRequestDTO;
 use App\Entity\Media;
 use App\Entity\User;
 use App\Repository\MediaRepository;
+use App\Service\ResponseDTOFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -21,38 +28,31 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[IsGranted('ROLE_USER')]
 class MediaController extends AbstractController
 {
+    use TypedResponseTrait;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly MediaRepository $mediaRepository,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
+        private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
     #[Route('', name: 'list', methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function list(SearchMediaRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-            $type = $request->query->get('type');
-            $source = $request->query->get('source');
-            $search = $request->query->get('search');
+            $filters = $dto->getFilters();
+            $offset = $dto->getOffset();
 
-            $filters = [];
-            if ($type) {
-                $filters['type'] = $type;
-            }
-            if ($source) {
-                $filters['source'] = $source;
-            }
-
-            $media = $this->mediaRepository->findByFilters($filters, $page, $limit, $search);
-            $total = $this->mediaRepository->countByFilters($filters, $search);
+            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
+            $total = $this->mediaRepository->countByFilters($filters, $dto->search);
 
             $mediaData = array_map(function (Media $media) {
                 return [
@@ -77,17 +77,22 @@ class MediaController extends AbstractController
                 ];
             }, $media);
 
-            return $this->json([
-                'media' => $mediaData,
-                'pagination' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => $total,
-                    'pages' => (int) ceil($total / $limit),
-                ],
-            ]);
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $mediaData,
+                $dto->page,
+                $dto->limit,
+                $total,
+                'Media list retrieved successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to fetch media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch media list',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -97,83 +102,62 @@ class MediaController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $media = $this->mediaRepository->findOneBy(['uuid' => $uuid]);
             if (!$media) {
-                return $this->json(['error' => 'Media not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Media not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user can access this media (assume all media is accessible for now)
             // TODO: Implement proper access control based on media visibility settings
 
-            return $this->json([
-                'media' => [
-                    'id' => $media->getId(),
-                    'uuid' => $media->getUuid()->toRfc4122(),
-                    'name' => $media->getName(),
-                    'type' => $media->getType(),
-                    'mimeType' => $media->getMimeType(),
-                    'size' => $media->getSize(),
-                    'url' => $media->getUrl(),
-                    'thumbnailUrl' => $media->getThumbnailUrl(),
-                    'width' => $media->getWidth(),
-                    'height' => $media->getHeight(),
-                    'duration' => $media->getDuration(),
-                    'source' => $media->getSource(),
-                    'sourceId' => $media->getSourceId(),
-                    'metadata' => $media->getMetadata(),
-                    'tags' => $media->getTags(),
-                    'attribution' => $media->getAttribution(),
-                    'license' => $media->getLicense(),
-                    'isPremium' => $media->isIsPremium(),
-                    'isActive' => $media->isIsActive(),
-                    'uploadedBy' => $media->getUser() ? [
-                        'id' => $media->getUser()->getId(),
-                        'username' => $media->getUser()->getUsername(),
-                    ] : null,
-                    'createdAt' => $media->getCreatedAt()->format('c'),
-                    'updatedAt' => $media->getUpdatedAt()?->format('c'),
-                ],
-            ]);
+            $mediaResponse = $this->responseDTOFactory->createMediaResponse(
+                $media,
+                'Media retrieved successfully'
+            );
+            return $this->mediaResponse($mediaResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to fetch media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    public function create(CreateMediaRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $media = new Media();
-            $media->setName($data['name'] ?? '');
-            $media->setType($data['type'] ?? 'image');
-            $media->setMimeType($data['mimeType'] ?? '');
-            $media->setSize($data['size'] ?? 0);
-            $media->setUrl($data['url'] ?? '');
-            $media->setThumbnailUrl($data['thumbnailUrl'] ?? null);
-            $media->setWidth($data['width'] ?? null);
-            $media->setHeight($data['height'] ?? null);
-            $media->setDuration($data['duration'] ?? null);
-            $media->setSource($data['source'] ?? 'upload');
-            $media->setSourceId($data['sourceId'] ?? null);
-            $media->setMetadata($data['metadata'] ?? []);
-            $media->setTags($data['tags'] ?? []);
-            $media->setAttribution($data['attribution'] ?? null);
-            $media->setLicense($data['license'] ?? null);
-            $media->setIsPremium($data['isPremium'] ?? false);
-            $media->setIsActive($data['isActive'] ?? true);
+            $media->setName($dto->name);
+            $media->setType($dto->type);
+            $media->setMimeType($dto->mimeType);
+            $media->setSize($dto->size);
+            $media->setUrl($dto->url);
+            $media->setThumbnailUrl($dto->thumbnailUrl);
+            $media->setWidth($dto->width);
+            $media->setHeight($dto->height);
+            $media->setDuration($dto->duration);
+            $media->setSource($dto->source);
+            $media->setSourceId($dto->sourceId);
+            $media->setMetadata($dto->metadata ?? []);
+            $media->setTags($dto->tags ?? []);
+            $media->setAttribution($dto->attribution);
+            $media->setLicense($dto->license);
+            $media->setIsPremium($dto->isPremium);
+            $media->setIsActive($dto->isActive);
             $media->setUser($user);
 
             $errors = $this->validator->validate($media);
@@ -182,74 +166,75 @@ class MediaController extends AbstractController
                 foreach ($errors as $error) {
                     $errorMessages[] = $error->getMessage();
                 }
-                return $this->json(['error' => 'Validation failed', 'details' => $errorMessages], Response::HTTP_BAD_REQUEST);
+                
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->persist($media);
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Media created successfully',
-                'media' => [
-                    'id' => $media->getId(),
-                    'uuid' => $media->getUuid()->toRfc4122(),
-                    'name' => $media->getName(),
-                    'type' => $media->getType(),
-                    'mimeType' => $media->getMimeType(),
-                    'size' => $media->getSize(),
-                    'url' => $media->getUrl(),
-                    'thumbnailUrl' => $media->getThumbnailUrl(),
-                    'source' => $media->getSource(),
-                    'metadata' => $media->getMetadata(),
-                    'tags' => $media->getTags(),
-                    'isPremium' => $media->isIsPremium(),
-                    'isActive' => $media->isIsActive(),
-                    'createdAt' => $media->getCreatedAt()->format('c'),
-                ],
-            ], Response::HTTP_CREATED);
+            $mediaResponse = $this->responseDTOFactory->createMediaResponse(
+                $media,
+                'Media created successfully'
+            );
+            return $this->mediaResponse($mediaResponse, Response::HTTP_CREATED);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to create media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to create media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/{uuid}', name: 'update', methods: ['PUT'])]
-    public function update(string $uuid, Request $request): JsonResponse
+    public function update(string $uuid, UpdateMediaRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $media = $this->mediaRepository->findOneBy(['uuid' => $uuid]);
             if (!$media) {
-                return $this->json(['error' => 'Media not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Media not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user can edit this media
             if ($media->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $data = json_decode($request->getContent(), true);
-            if (!$data) {
-                return $this->json(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
+            // Check if there's any data to update
+            if (!$dto->hasAnyData()) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('No data provided for update');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
-            if (isset($data['name'])) {
-                $media->setName($data['name']);
+            // Update allowed fields
+            if ($dto->name !== null) {
+                $media->setName($dto->name);
             }
-            if (isset($data['metadata'])) {
-                $media->setMetadata($data['metadata']);
+            if ($dto->metadata !== null) {
+                $media->setMetadata($dto->metadata);
             }
-            if (isset($data['tags'])) {
-                $media->setTags($data['tags']);
+            if ($dto->tags !== null) {
+                $media->setTags($dto->tags);
             }
-            if (isset($data['isPremium'])) {
-                $media->setIsPremium($data['isPremium']);
+            if ($dto->isPremium !== null) {
+                $media->setIsPremium($dto->isPremium);
             }
-            if (isset($data['isActive'])) {
-                $media->setIsActive($data['isActive']);
+            if ($dto->isActive !== null) {
+                $media->setIsActive($dto->isActive);
             }
 
             $errors = $this->validator->validate($media);
@@ -258,32 +243,28 @@ class MediaController extends AbstractController
                 foreach ($errors as $error) {
                     $errorMessages[] = $error->getMessage();
                 }
-                return $this->json(['error' => 'Validation failed', 'details' => $errorMessages], Response::HTTP_BAD_REQUEST);
+                
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => 'Media updated successfully',
-                'media' => [
-                    'id' => $media->getId(),
-                    'uuid' => $media->getUuid(),
-                    'filename' => $media->getFilename(),
-                    'originalName' => $media->getOriginalName(),
-                    'type' => $media->getType(),
-                    'mimeType' => $media->getMimeType(),
-                    'size' => $media->getSize(),
-                    'url' => $media->getUrl(),
-                    'thumbnailUrl' => $media->getThumbnailUrl(),
-                    'source' => $media->getSource(),
-                    'metadata' => $media->getMetadata(),
-                    'tags' => $media->getTags(),
-                    'isPublic' => $media->isPublic(),
-                    'updatedAt' => $media->getUpdatedAt()?->format('c'),
-                ],
-            ]);
+            $mediaResponse = $this->responseDTOFactory->createMediaResponse(
+                $media,
+                'Media updated successfully'
+            );
+            return $this->mediaResponse($mediaResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to update media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to update media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -293,53 +274,50 @@ class MediaController extends AbstractController
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $media = $this->mediaRepository->findOneBy(['uuid' => $uuid]);
             if (!$media) {
-                return $this->json(['error' => 'Media not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Media not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user can delete this media
             if ($media->getUser() !== $user) {
-                return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
             $this->entityManager->remove($media);
             $this->entityManager->flush();
 
-            return $this->json(['message' => 'Media deleted successfully']);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse('Media deleted successfully');
+            return $this->successResponse($successResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to delete media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to delete media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/search', name: 'search', methods: ['GET'])]
-    public function search(Request $request): JsonResponse
+    public function search(SearchMediaRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $query = $request->query->get('q', '');
-            $type = $request->query->get('type');
-            $source = $request->query->get('source');
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-
-            $filters = [];
-            if ($type) {
-                $filters['type'] = $type;
-            }
-            if ($source) {
-                $filters['source'] = $source;
-            }
-
-            $media = $this->mediaRepository->findByFilters($filters, $page, $limit, $query);
-            $total = $this->mediaRepository->countByFilters($filters, $query);
+            $filters = $dto->getFilters();
+            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
+            $total = $this->mediaRepository->countByFilters($filters, $dto->search);
 
             $mediaData = array_map(function (Media $media) {
                 return [
@@ -360,33 +338,39 @@ class MediaController extends AbstractController
                 ];
             }, $media);
 
-            return $this->json([
-                'media' => $mediaData,
-                'pagination' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => $total,
-                    'pages' => (int) ceil($total / $limit),
-                ],
-                'query' => $query,
-            ]);
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $mediaData,
+                $dto->page,
+                $dto->limit,
+                $total,
+                'Media search completed successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to search media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to search media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/duplicate/{uuid}', name: 'duplicate', methods: ['POST'])]
-    public function duplicate(string $uuid): JsonResponse
+    public function duplicate(string $uuid, DuplicateMediaRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $originalMedia = $this->mediaRepository->findOneBy(['uuid' => $uuid]);
             if (!$originalMedia) {
-                return $this->json(['error' => 'Media not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Media not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             // Check if user can access this media (assume all media is accessible for duplication)
@@ -394,82 +378,67 @@ class MediaController extends AbstractController
 
             $duplicatedMedia = $this->mediaRepository->duplicateMedia($originalMedia, $user);
 
-            return $this->json([
-                'message' => 'Media duplicated successfully',
-                'media' => [
-                    'id' => $duplicatedMedia->getId(),
-                    'uuid' => $duplicatedMedia->getUuid(),
-                    'filename' => $duplicatedMedia->getFilename(),
-                    'originalName' => $duplicatedMedia->getOriginalName(),
-                    'type' => $duplicatedMedia->getType(),
-                    'mimeType' => $duplicatedMedia->getMimeType(),
-                    'size' => $duplicatedMedia->getSize(),
-                    'url' => $duplicatedMedia->getUrl(),
-                    'thumbnailUrl' => $duplicatedMedia->getThumbnailUrl(),
-                    'source' => $duplicatedMedia->getSource(),
-                    'metadata' => $duplicatedMedia->getMetadata(),
-                    'tags' => $duplicatedMedia->getTags(),
-                    'isPublic' => $duplicatedMedia->isPublic(),
-                    'createdAt' => $duplicatedMedia->getCreatedAt()->format('c'),
-                ],
-            ], Response::HTTP_CREATED);
+            $mediaResponse = $this->responseDTOFactory->createMediaResponse(
+                $duplicatedMedia,
+                'Media duplicated successfully'
+            );
+            return $this->mediaResponse($mediaResponse, Response::HTTP_CREATED);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to duplicate media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to duplicate media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/stock/search', name: 'stock_search', methods: ['GET'])]
-    public function stockSearch(Request $request): JsonResponse
+    public function stockSearch(StockSearchRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
-
-            $query = $request->query->get('q', '');
-            $provider = $request->query->get('provider', 'unsplash');
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
 
             // TODO: Implement stock media API integration
             // This would integrate with Unsplash, Pexels, Pixabay, etc.
             
-            return $this->json([
-                'message' => 'Stock media search not yet implemented',
-                'query' => $query,
-                'provider' => $provider,
-                'pagination' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => 0,
-                    'pages' => 0,
-                ],
-                'media' => [],
-            ]);
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                [], // Empty media array for now
+                $dto->page,
+                $dto->limit,
+                0, // Total count
+                'Stock media search not yet implemented'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to search stock media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to search stock media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/bulk/delete', name: 'bulk_delete', methods: ['DELETE'])]
-    public function bulkDelete(Request $request): JsonResponse
+    public function bulkDelete(BulkDeleteMediaRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
             if (!$user instanceof User) {
-                return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            $data = json_decode($request->getContent(), true);
-            if (!$data || !isset($data['uuids']) || !is_array($data['uuids'])) {
-                return $this->json(['error' => 'Invalid data: uuids array required'], Response::HTTP_BAD_REQUEST);
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
             $deleted = 0;
             $failed = [];
 
-            foreach ($data['uuids'] as $uuid) {
+            foreach ($dto->uuids as $uuid) {
                 $media = $this->mediaRepository->findOneBy(['uuid' => $uuid]);
                 if (!$media) {
                     $failed[] = ['uuid' => $uuid, 'reason' => 'Media not found'];
@@ -487,13 +456,21 @@ class MediaController extends AbstractController
 
             $this->entityManager->flush();
 
-            return $this->json([
-                'message' => sprintf('Bulk delete completed: %d deleted, %d failed', $deleted, count($failed)),
-                'deleted' => $deleted,
-                'failed' => $failed,
-            ]);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                sprintf('Bulk delete completed: %d deleted, %d failed', $deleted, count($failed)),
+                [
+                    'deleted' => $deleted,
+                    'failed' => $failed,
+                ]
+            );
+            return $this->successResponse($successResponse);
+
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Failed to bulk delete media: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to bulk delete media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

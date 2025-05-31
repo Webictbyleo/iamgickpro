@@ -47,10 +47,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write'])]
     private string $lastName;
 
-    #[ORM\Column(type: 'string', length: 100, unique: true)]
-    #[Assert\NotBlank]
+    #[ORM\Column(type: 'string', length: 100, unique: true, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private string $username;
+    private ?string $username = null;
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['user:read'])]
@@ -245,14 +244,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        // Note: createdAt is readonly, but we allow setting during construction
-        $reflection = new \ReflectionProperty($this, 'createdAt');
-        $reflection->setAccessible(true);
-        $reflection->setValue($this, $createdAt);
-        return $this;
-    }
+    // Note: createdAt is readonly and set in constructor - no setter needed
 
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
@@ -329,12 +321,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->getFullName();
     }
 
-    public function getUsername(): string
+    public function getUsername(): ?string
     {
         return $this->username;
     }
 
-    public function setUsername(string $username): self
+    public function setUsername(?string $username): self
     {
         $this->username = $username;
         $this->touch();
