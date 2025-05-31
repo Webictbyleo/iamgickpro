@@ -233,10 +233,12 @@
                   </template>
                 </div>
                 
-                <!-- Preview Button -->
+                <!-- Preview Button - Only for media types -->
                 <button 
-                  @click.stop="openResult(result)"
+                  v-if="result.type === 'media'"
+                  @click.stop="openMediaPreview(result)"
                   class="bg-black/20 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-black/30 transition-all duration-200"
+                  title="Preview Media"
                 >
                   <EyeIcon class="w-4 h-4" />
                 </button>
@@ -360,6 +362,28 @@
       @close="closeExportModal"
       @exported="handleExportComplete"
     />
+    
+    <!-- Media Preview Modal -->
+    <MediaPreviewModal
+      :is-open="showMediaPreview"
+      :media="mediaToPreview"
+      @close="closeMediaPreview"
+      @addToDesign="handleAddToDesign"
+      @download="handleDownloadMedia"
+    />
+    
+    <!-- Export Details Modal -->
+    <ExportDetailsModal
+      :is-open="showExportDetailsModal"
+      :export-job="exportJobFromResult"
+      @close="closeExportDetailsModal"
+      @download="handleExportDownload"
+      @retry="handleExportRetry"
+      @cancel="handleExportCancel"
+      @share="handleExportShare"
+      @duplicate="handleExportDuplicate"
+      @edit-original="handleEditOriginal"
+    />
   </AppLayout>
 </template>
 
@@ -385,8 +409,27 @@ import {
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
+import MediaPreviewModal from '@/components/modals/MediaPreviewModal.vue'
+import ExportDetailsModal from '@/components/modals/ExportDetailsModal.vue'
 
 // Types
+interface MediaItem {
+  id: string
+  title: string
+  url: string
+  type: string
+  size?: number
+  author?: string
+  created_at: string
+  thumbnail?: string
+  dimensions?: {
+    width: number
+    height: number
+  }
+  metadata?: Record<string, any>
+  tags?: string[]
+}
+
 interface SearchResult {
   id: string
   type: 'design' | 'template' | 'media' | 'export'
@@ -434,6 +477,14 @@ const searchTime = ref<number | null>(null)
 // Export modal state
 const showExportModal = ref(false)
 const designToExport = ref<SearchResult | null>(null)
+
+// Export details modal state
+const showExportDetailsModal = ref(false)
+const exportToView = ref<SearchResult | null>(null)
+
+// Media preview modal state
+const showMediaPreview = ref(false)
+const mediaToPreview = ref<MediaItem | null>(null)
 
 // Content filters
 const contentFilters = ref<ContentFilter[]>([
@@ -547,7 +598,8 @@ const performSearch = async () => {
     // Mock search results
     const mockResults: SearchResult[] = []
     for (let i = 1; i <= 12; i++) {
-      const type = ['design', 'template', 'media', 'export'][Math.floor(Math.random() * 4)] as any
+      const types = ['design', 'template', 'media', 'export']
+      const type = types[Math.floor(Math.random() * types.length)] as any
       const hasAnimation = Math.random() > 0.7 // 30% chance of having animation
       const isVideo = Math.random() > 0.8 // 20% chance of being a video
       
@@ -561,7 +613,7 @@ const performSearch = async () => {
         created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
         isPremium: Math.random() > 0.7,
         hasAnimation,
-        isVideo,
+        isVideo: type === 'media' ? (Math.random() > 0.6) : false, // Higher chance for media to be video
         duration: (hasAnimation || isVideo) ? Math.floor(Math.random() * 30) + 5 : undefined, // 5-35 seconds
         stats: {
           likes: Math.floor(Math.random() * 1000),
@@ -630,24 +682,131 @@ const showPopular = () => {
 }
 
 const openResult = (result: SearchResult) => {
-  // Navigate to appropriate view based on result type
+  // Handle different result types with specific actions
   switch (result.type) {
+    case 'media':
+      // For media, open media preview modal
+      openMediaPreview(result)
+      break
     case 'design':
+      // For designs, open in editor
       router.push(`/editor/${result.id}`)
       break
     case 'template':
-      router.push(`/templates/${result.id}`)
-      break
-    case 'media':
-      router.push(`/media?selected=${result.id}`)
+      // For templates, load template in editor (create new design from template)
+      router.push(`/editor/new?template=${result.id}`)
       break
     case 'export':
-      router.push(`/exports/${result.id}`)
+      // For exports, show export details modal
+      openExportDetails(result)
       break
     default:
       console.log('Opening result:', result)
   }
 }
+
+// Media preview handlers
+const convertToMediaItem = (result: SearchResult): MediaItem => {
+  // Determine proper MIME type based on result properties
+  let mimeType = 'image/jpeg' // Default to image
+  let mediaUrl = result.thumbnail || `https://picsum.photos/800/600?random=${result.id}`
+  
+  if (result.isVideo) {
+    mimeType = 'video/mp4'
+    // For video, use a sample video URL
+    mediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+  } else if (result.type === 'media') {
+    // For media type, assign different media types for variety
+    const random = Math.random()
+    if (random < 0.6) {
+      mimeType = Math.random() > 0.5 ? 'image/jpeg' : 'image/png'
+      mediaUrl = `https://picsum.photos/800/600?random=${result.id}`
+    } else if (random < 0.8) {
+      mimeType = 'video/mp4'
+      mediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+    } else if (random < 0.95) {
+      mimeType = 'audio/mp3'
+      mediaUrl = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'
+    } else {
+      mimeType = 'application/pdf'
+      mediaUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+    }
+  }
+  
+  console.log('Converting SearchResult to MediaItem:', { 
+    resultType: result.type, 
+    isVideo: result.isVideo, 
+    mimeType, 
+    mediaUrl 
+  })
+  
+  // Convert SearchResult to MediaItem format
+  return {
+    id: result.id,
+    title: result.title,
+    url: mediaUrl,
+    type: mimeType, // Use proper MIME type instead of content type
+    size: Math.floor(Math.random() * 5000000) + 1000000, // Mock file size (1-6MB)
+    author: result.author,
+    created_at: result.created_at,
+    thumbnail: result.thumbnail,
+    dimensions: {
+      width: 800 + Math.floor(Math.random() * 400),
+      height: 600 + Math.floor(Math.random() * 400)
+    },
+    metadata: {
+      format: result.isVideo ? 'mp4' : 'jpeg',
+      duration: result.duration,
+      hasAnimation: result.hasAnimation
+    },
+    tags: ['design', 'stock', 'media']
+  }
+}
+
+const openMediaPreview = (result: SearchResult) => {
+  mediaToPreview.value = convertToMediaItem(result)
+  showMediaPreview.value = true
+}
+
+const closeMediaPreview = () => {
+  showMediaPreview.value = false
+  mediaToPreview.value = null
+}
+
+const handleAddToDesign = (media: MediaItem) => {
+  // Add media to current design or create new design
+  router.push(`/editor?media=${media.id}`)
+  closeMediaPreview()
+}
+
+const handleDownloadMedia = (media: MediaItem) => {
+  // Download the media file
+  console.log('Downloading media:', media.title)
+  
+  // Create temporary download link
+  const link = document.createElement('a')
+  link.href = media.url
+  link.download = media.title || 'media-file'
+  link.target = '_blank'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  
+  // Optional: Show success notification
+  console.log(`Download started for "${media.title}"`)
+}
+
+// Export details handlers
+const openExportDetails = (result: SearchResult) => {
+  exportToView.value = result
+  showExportDetailsModal.value = true
+}
+
+const closeExportDetailsModal = () => {
+  showExportDetailsModal.value = false
+  exportToView.value = null
+}
+
 
 // Type-specific action handlers
 const editDesign = (result: SearchResult) => {
@@ -696,6 +855,16 @@ const getExportStatusLabel = (status?: string): string => {
   return statusLabels[status || 'pending'] || 'Unknown'
 }
 
+const getExportStatusClass = (status?: string): string => {
+  const statusClasses: Record<string, string> = {
+    pending: 'text-yellow-600',
+    processing: 'text-blue-600',
+    completed: 'text-green-600',
+    failed: 'text-red-600'
+  }
+  return statusClasses[status || 'pending'] || 'text-gray-600'
+}
+
 // Export modal handlers
 const closeExportModal = () => {
   showExportModal.value = false
@@ -717,6 +886,78 @@ const goToPage = (page: number) => {
     currentPage.value = page
     performSearch()
   }
+}
+
+// Computed property to convert SearchResult to ExportJob format
+const exportJobFromResult = computed(() => {
+  if (!exportToView.value) return null
+  
+  const result = exportToView.value
+  return {
+    id: result.id,
+    title: result.title,
+    description: result.description,
+    thumbnail: result.thumbnail,
+    exportStatus: result.exportStatus || 'pending',
+    created_at: result.created_at,
+    author: result.author,
+    url: result.url,
+    dimensions: {
+      width: 1920, // Default dimensions, could be dynamic
+      height: 1080
+    },
+    format: 'PNG', // Default format, could be dynamic
+    quality: 'High', // Default quality, could be dynamic
+    metadata: {}
+  }
+})
+
+// ExportDetailsModal event handlers
+const handleExportDownload = (job: any) => {
+  if (job.url && job.exportStatus === 'completed') {
+    // Create temporary download link
+    const link = document.createElement('a')
+    link.href = job.url
+    link.download = `${job.title}.png` // Could be dynamic based on format
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    console.log(`Download started for export: "${job.title}"`)
+  } else {
+    console.log('Export not ready for download:', job.exportStatus)
+  }
+}
+
+const handleExportRetry = (job: any) => {
+  console.log('Retrying export:', job.title)
+  // Implement retry logic here
+  // This could trigger a new export job or restart a failed one
+}
+
+const handleExportCancel = (job: any) => {
+  console.log('Cancelling export:', job.title)
+  // Implement cancel logic here
+  // This would stop a processing export job
+}
+
+const handleExportShare = (job: any) => {
+  console.log('Sharing export:', job.title)
+  // Implement share logic here
+  // This could open a share modal or copy a link to clipboard
+}
+
+const handleExportDuplicate = (job: any) => {
+  console.log('Duplicating export:', job.title)
+  // Implement duplicate logic here
+  // This could open the export modal with the same settings
+}
+
+const handleEditOriginal = (job: any) => {
+  console.log('Editing original design for export:', job.title)
+  // Navigate to editor with the original design
+  router.push(`/editor/${job.id}`)
 }
 
 // Initialize from route query
