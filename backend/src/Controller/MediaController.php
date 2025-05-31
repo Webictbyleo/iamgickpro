@@ -24,6 +24,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Media Controller
+ * 
+ * Manages media file operations including upload, retrieval, updating, and deletion.
+ * Handles media search, duplication, stock media integration, and bulk operations.
+ * All endpoints require authentication and enforce user ownership for security.
+ */
 #[Route('/api/media', name: 'api_media_')]
 #[IsGranted('ROLE_USER')]
 class MediaController extends AbstractController
@@ -38,6 +45,22 @@ class MediaController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
+    /**
+     * List media files for authenticated user
+     * 
+     * Returns a paginated list of media files belonging to the authenticated user.
+     * Supports filtering by type, format, and search functionality.
+     * 
+     * @param SearchMediaRequestDTO $dto Search and filter parameters including:
+     *                                  - page: Page number (default: 1, min: 1)
+     *                                  - limit: Items per page (default: 20, max: 100)
+     *                                  - type: Media type filter (image, video, audio, document)
+     *                                  - format: File format filter (jpg, png, mp4, etc.)
+     *                                  - search: Search term for filename/description
+     *                                  - sort: Sort field (name, size, created_at, updated_at)
+     *                                  - order: Sort direction (asc, desc)
+     * @return JsonResponse<MediaListResponseDTO|ErrorResponseDTO> Paginated list of media files or error response
+     */
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(SearchMediaRequestDTO $dto): JsonResponse
     {
@@ -96,6 +119,15 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Get details of a specific media file
+     * 
+     * Returns detailed information about a single media file including metadata.
+     * Only allows access to media files owned by the authenticated user.
+     * 
+     * @param string $uuid The media file UUID
+     * @return JsonResponse<MediaResponseDTO|ErrorResponseDTO> Media file details or error response
+     */
     #[Route('/{uuid}', name: 'show', methods: ['GET'])]
     public function show(string $uuid): JsonResponse
     {
@@ -130,6 +162,33 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Create a new media file entry
+     * 
+     * Creates a new media file record in the database with the provided metadata.
+     * This endpoint handles media file upload processing and validation.
+     * All uploaded media files are associated with the authenticated user.
+     * 
+     * @param CreateMediaRequestDTO $dto Media creation data including:
+     *                                  - name: Display name for the media file (required)
+     *                                  - type: Media type (image, video, audio, document)
+     *                                  - mimeType: MIME type of the file (e.g., image/jpeg)
+     *                                  - size: File size in bytes
+     *                                  - url: Storage URL for the media file
+     *                                  - thumbnailUrl: URL for the thumbnail image
+     *                                  - width: Image/video width in pixels
+     *                                  - height: Image/video height in pixels
+     *                                  - duration: Video/audio duration in seconds
+     *                                  - source: Source identifier (upload, stock, etc.)
+     *                                  - sourceId: External source ID if applicable
+     *                                  - metadata: Additional file metadata as JSON
+     *                                  - tags: Array of tags for categorization
+     *                                  - attribution: Attribution text for stock media
+     *                                  - license: License information
+     *                                  - isPremium: Whether media requires premium access
+     *                                  - isActive: Whether media is active/published
+     * @return JsonResponse<MediaResponseDTO|ErrorResponseDTO> Created media record or validation errors
+     */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(CreateMediaRequestDTO $dto): JsonResponse
     {
@@ -192,6 +251,23 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Update media file metadata
+     * 
+     * Updates the metadata and properties of an existing media file.
+     * Only allows updating specific fields like name, metadata, tags, and status flags.
+     * Core file properties like URL, type, and dimensions cannot be modified.
+     * Users can only update media files they own.
+     * 
+     * @param string $uuid The media file UUID to update
+     * @param UpdateMediaRequestDTO $dto Update data including:
+     *                                  - name: New display name for the media file
+     *                                  - metadata: Updated metadata as JSON object
+     *                                  - tags: Updated array of tags for categorization
+     *                                  - isPremium: Updated premium access requirement
+     *                                  - isActive: Updated active/published status
+     * @return JsonResponse<MediaResponseDTO|ErrorResponseDTO> Updated media record or error response
+     */
     #[Route('/{uuid}', name: 'update', methods: ['PUT'])]
     public function update(string $uuid, UpdateMediaRequestDTO $dto): JsonResponse
     {
@@ -268,6 +344,16 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Delete a media file
+     * 
+     * Permanently removes a media file record from the database.
+     * This operation also triggers cleanup of associated file storage.
+     * Users can only delete media files they own for security.
+     * 
+     * @param string $uuid The media file UUID to delete
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success confirmation or error response
+     */
     #[Route('/{uuid}', name: 'delete', methods: ['DELETE'])]
     public function delete(string $uuid): JsonResponse
     {
@@ -305,6 +391,23 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Search media files
+     * 
+     * Performs advanced search across user's media library with filtering and sorting.
+     * Supports full-text search on filenames, descriptions, and tags.
+     * Returns paginated results with comprehensive media metadata.
+     * 
+     * @param SearchMediaRequestDTO $dto Search parameters including:
+     *                                  - search: Search term for filename/description/tags
+     *                                  - type: Media type filter (image, video, audio, document)
+     *                                  - format: File format filter (jpg, png, mp4, etc.)
+     *                                  - page: Page number (default: 1, min: 1)
+     *                                  - limit: Items per page (default: 20, max: 100)
+     *                                  - sort: Sort field (name, size, created_at, updated_at)
+     *                                  - order: Sort direction (asc, desc)
+     * @return JsonResponse<MediaListResponseDTO|ErrorResponseDTO> Filtered and sorted media results or error response
+     */
     #[Route('/search', name: 'search', methods: ['GET'])]
     public function search(SearchMediaRequestDTO $dto): JsonResponse
     {
@@ -357,6 +460,18 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Duplicate a media file
+     * 
+     * Creates a copy of an existing media file for the authenticated user.
+     * The duplicated media inherits all properties from the original but gets
+     * a new UUID and is owned by the current user. This allows users to
+     * create personal copies of accessible media files.
+     * 
+     * @param string $uuid The UUID of the media file to duplicate
+     * @param DuplicateMediaRequestDTO $dto Duplication parameters (currently unused but reserved for future options)
+     * @return JsonResponse<MediaResponseDTO|ErrorResponseDTO> Duplicated media record or error response
+     */
     #[Route('/duplicate/{uuid}', name: 'duplicate', methods: ['POST'])]
     public function duplicate(string $uuid, DuplicateMediaRequestDTO $dto): JsonResponse
     {
@@ -393,6 +508,24 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Search stock media from external providers
+     * 
+     * Integrates with external stock media APIs (Unsplash, Pexels, Pixabay, etc.)
+     * to provide users with access to high-quality stock images and videos.
+     * Results include licensing information and attribution requirements.
+     * Currently in development - returns empty results with implementation notice.
+     * 
+     * @param StockSearchRequestDTO $dto Stock search parameters including:
+     *                                  - query: Search term for stock media
+     *                                  - category: Media category filter
+     *                                  - orientation: Image orientation (landscape, portrait, square)
+     *                                  - color: Color filter for search results
+     *                                  - page: Page number for pagination
+     *                                  - limit: Number of results per page
+     *                                  - provider: Specific stock provider to search
+     * @return JsonResponse<MediaListResponseDTO|ErrorResponseDTO> Stock media search results or error response
+     */
     #[Route('/stock/search', name: 'stock_search', methods: ['GET'])]
     public function stockSearch(StockSearchRequestDTO $dto): JsonResponse
     {
@@ -425,6 +558,18 @@ class MediaController extends AbstractController
         }
     }
 
+    /**
+     * Bulk delete multiple media files
+     * 
+     * Deletes multiple media files in a single operation for efficiency.
+     * Processes each file individually with proper permission checks.
+     * Returns detailed results including successful deletions and failures.
+     * Users can only delete media files they own.
+     * 
+     * @param BulkDeleteMediaRequestDTO $dto Bulk deletion data including:
+     *                                      - uuids: Array of media file UUIDs to delete
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Bulk operation results with success/failure counts or error response
+     */
     #[Route('/bulk/delete', name: 'bulk_delete', methods: ['DELETE'])]
     public function bulkDelete(BulkDeleteMediaRequestDTO $dto): JsonResponse
     {

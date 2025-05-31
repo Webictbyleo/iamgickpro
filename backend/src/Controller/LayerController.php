@@ -25,6 +25,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Layer Controller
+ * 
+ * Manages design layer operations including creation, modification, deletion, and organization.
+ * Handles layer positioning, duplication, and bulk operations for design elements.
+ * All operations enforce design ownership validation and proper layer hierarchy management.
+ * Layers are the core building blocks of designs in the canvas editor system.
+ */
 #[Route('/api/layers', name: 'api_layers_')]
 #[IsGranted('ROLE_USER')]
 class LayerController extends AbstractController
@@ -40,6 +48,27 @@ class LayerController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
+    /**
+     * Create a new layer in a design
+     * 
+     * Creates a new layer with specified properties and adds it to the target design.
+     * Automatically assigns appropriate z-index and validates design ownership.
+     * Supports various layer types including text, shape, image, and group layers.
+     * 
+     * @param CreateLayerRequestDTO $dto Layer creation data including:
+     *                                  - designId: Target design UUID (required)
+     *                                  - type: Layer type (text, shape, image, group, etc.)
+     *                                  - name: Display name for the layer
+     *                                  - properties: Layer-specific properties as JSON
+     *                                  - position: Layer position coordinates (x, y)
+     *                                  - dimensions: Layer dimensions (width, height)
+     *                                  - rotation: Layer rotation angle in degrees
+     *                                  - opacity: Layer opacity (0-1)
+     *                                  - visible: Whether layer is visible
+     *                                  - locked: Whether layer is locked for editing
+     *                                  - zIndex: Optional z-index for layer ordering
+     * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Created layer data or error response
+     */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(CreateLayerRequestDTO $dto): JsonResponse
     {
@@ -119,6 +148,15 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Get details of a specific layer
+     * 
+     * Returns comprehensive information about a single layer including all properties,
+     * position, styling, and metadata. Validates access permissions through design ownership.
+     * 
+     * @param int $id The layer ID to retrieve
+     * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Layer details or error response
+     */
     #[Route('/{id}', name: 'show', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
@@ -158,6 +196,26 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Update an existing layer
+     * 
+     * Modifies layer properties including position, dimensions, styling, and content.
+     * Supports partial updates with validation and maintains layer hierarchy integrity.
+     * Users can only update layers in designs they own.
+     * 
+     * @param int $id The layer ID to update
+     * @param UpdateLayerRequestDTO $dto Layer update data including:
+     *                                  - name: Updated display name
+     *                                  - properties: Updated layer-specific properties
+     *                                  - position: New position coordinates (x, y)
+     *                                  - dimensions: New dimensions (width, height)
+     *                                  - rotation: Updated rotation angle
+     *                                  - opacity: Updated opacity value
+     *                                  - visible: Updated visibility state
+     *                                  - locked: Updated lock state
+     *                                  - zIndex: New z-index for reordering
+     * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Updated layer data or error response
+     */
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
     public function update(int $id, UpdateLayerRequestDTO $dto): JsonResponse
     {
@@ -250,6 +308,16 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Delete a layer from a design
+     * 
+     * Permanently removes a layer and all its associated data from the design.
+     * Automatically adjusts z-indexes of remaining layers to maintain proper ordering.
+     * Users can only delete layers in designs they own.
+     * 
+     * @param int $id The layer ID to delete
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success confirmation or error response
+     */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
@@ -288,6 +356,19 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Duplicate a layer within a design
+     * 
+     * Creates an exact copy of an existing layer with all properties and styling.
+     * The duplicated layer is positioned slightly offset from the original and
+     * assigned a new z-index to appear on top. Maintains all layer relationships.
+     * 
+     * @param int $id The layer ID to duplicate
+     * @param DuplicateLayerRequestDTO $dto Duplication options including:
+     *                                     - offset: Position offset for the duplicate (optional)
+     *                                     - namePrefix: Prefix for the duplicated layer name
+     * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Duplicated layer data or error response
+     */
     #[Route('/{id}/duplicate', name: 'duplicate', methods: ['POST'])]
     public function duplicate(int $id, DuplicateLayerRequestDTO $dto): JsonResponse
     {
@@ -332,6 +413,20 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Move a layer within the design hierarchy
+     * 
+     * Changes the layer's position in the z-index stack or moves it to a specific position.
+     * Supports moving layers up/down in the stack or to absolute positions.
+     * Automatically adjusts other layers' z-indexes to maintain proper ordering.
+     * 
+     * @param int $id The layer ID to move
+     * @param MoveLayerRequestDTO $dto Movement instructions including:
+     *                               - direction: Movement direction (up, down, top, bottom)
+     *                               - targetZIndex: Specific z-index to move to
+     *                               - steps: Number of positions to move (for relative moves)
+     * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Updated layer with new position or error response
+     */
     #[Route('/{id}/move', name: 'move', methods: ['PUT'])]
     public function move(int $id, MoveLayerRequestDTO $dto): JsonResponse
     {
@@ -399,6 +494,23 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Bulk update multiple layers
+     * 
+     * Updates multiple layers in a single operation for performance efficiency.
+     * Processes each layer individually with proper validation and permission checks.
+     * Returns detailed results including successful updates and any failures.
+     * 
+     * @param BulkUpdateLayersRequestDTO $dto Bulk update data including:
+     *                                       - layers: Array of layer update objects, each containing:
+     *                                         - id: Layer ID to update (required)
+     *                                         - properties: Properties to update
+     *                                         - position: New position coordinates
+     *                                         - dimensions: New dimensions
+     *                                         - visible: Visibility state
+     *                                         - locked: Lock state
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Bulk operation results with success/failure details or error response
+     */
     #[Route('/bulk-update', name: 'bulk_update', methods: ['PUT'])]
     public function bulkUpdate(BulkUpdateLayersRequestDTO $dto): JsonResponse
     {

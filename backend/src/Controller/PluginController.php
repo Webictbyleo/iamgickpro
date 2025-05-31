@@ -23,6 +23,14 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Plugin Controller
+ * 
+ * Manages the plugin system including plugin registration, approval, installation, and management.
+ * Handles plugin file uploads, metadata management, and lifecycle operations.
+ * Provides marketplace functionality for plugin discovery and category management.
+ * Includes admin approval workflow and user plugin management features.
+ */
 #[Route('/api/plugins', name: 'api_plugins_')]
 class PluginController extends AbstractController
 {
@@ -238,6 +246,15 @@ class PluginController extends AbstractController
      * @param Plugin $plugin The plugin entity to delete
      * @return JsonResponse Success message or error response
      */
+    /**
+     * Delete a plugin
+     * 
+     * Permanently removes a plugin from the system. Only the plugin developer
+     * or administrators can delete plugins. This action is irreversible.
+     * 
+     * @param Plugin $plugin The plugin entity to delete
+     * @return JsonResponse Success confirmation or error response
+     */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_USER')]
     public function delete(Plugin $plugin): JsonResponse
@@ -398,6 +415,15 @@ class PluginController extends AbstractController
      * 
      * @param Plugin $plugin The plugin entity to approve
      * @return JsonResponse Approval confirmation with plugin data
+     */
+    /**
+     * Approve a plugin (Admin only)
+     * 
+     * Changes plugin status to approved, making it available in the marketplace.
+     * Records approval timestamp and reviewing administrator.
+     * 
+     * @param Plugin $plugin The plugin entity to approve
+     * @return JsonResponse Approval confirmation or error response
      */
     #[Route('/{id}/approve', name: 'approve', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN')]

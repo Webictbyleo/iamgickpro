@@ -26,6 +26,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Design Controller
+ * 
+ * Manages design operations including creation, retrieval, updating, and deletion.
+ * Handles design duplication, thumbnail management, and search functionality.
+ * All endpoints require authentication and enforce user ownership for security.
+ */
 #[Route('/api/designs', name: 'api_designs_')]
 #[IsGranted('ROLE_USER')]
 class DesignController extends AbstractController
@@ -41,6 +48,21 @@ class DesignController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
+    /**
+     * List designs for authenticated user
+     * 
+     * Returns a paginated list of designs belonging to the authenticated user.
+     * Supports filtering by project, status, and search functionality.
+     * 
+     * @param Request $request HTTP request with optional query parameters:
+     *                        - page: Page number (default: 1, min: 1)
+     *                        - limit: Items per page (default: 20, max: 100)
+     *                        - project_id: Filter by project ID
+     *                        - search: Search term for design name/description
+     *                        - sort: Sort field (name, created_at, updated_at)
+     *                        - order: Sort direction (asc, desc)
+     * @return JsonResponse<DesignListResponseDTO|ErrorResponseDTO> Paginated list of designs or error response
+     */
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
@@ -98,6 +120,22 @@ class DesignController extends AbstractController
      * 
      * @param CreateDesignRequestDTO $dto Design creation data
      * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO>
+     */
+    /**
+     * Create a new design
+     * 
+     * Creates a new design with the provided information and associates it with the authenticated user.
+     * Validates design data and initializes default canvas settings.
+     * 
+     * @param CreateDesignRequestDTO $dto Design creation data including:
+     *                                   - name: Design name (required)
+     *                                   - description: Design description (optional)
+     *                                   - projectId: Associated project ID (optional)
+     *                                   - canvasData: Initial canvas configuration (optional)
+     *                                   - thumbnail: Design thumbnail URL (optional)
+     *                                   - width: Canvas width in pixels (default: 800)
+     *                                   - height: Canvas height in pixels (default: 600)
+     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO> Created design details or error response
      */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(CreateDesignRequestDTO $dto): JsonResponse
@@ -167,6 +205,15 @@ class DesignController extends AbstractController
         }
     }
 
+    /**
+     * Get details of a specific design
+     * 
+     * Returns detailed information about a single design including canvas data and layers.
+     * Only allows access to designs owned by the authenticated user or public designs.
+     * 
+     * @param int $id The design ID
+     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO> Design details or error response
+     */
     #[Route('/{id}', name: 'show', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
@@ -205,6 +252,23 @@ class DesignController extends AbstractController
         }
     }
 
+    /**
+     * Update an existing design
+     * 
+     * Updates design information and canvas data with the provided information.
+     * Only allows updates to designs owned by the authenticated user.
+     * Supports partial updates and handles canvas data versioning.
+     * 
+     * @param int $id The design ID to update
+     * @param UpdateDesignRequestDTO $dto Updated design data including:
+     *                                   - name: Design name (optional)
+     *                                   - description: Design description (optional)
+     *                                   - canvasData: Updated canvas configuration (optional)
+     *                                   - thumbnail: Design thumbnail URL (optional)
+     *                                   - width: Canvas width in pixels (optional)
+     *                                   - height: Canvas height in pixels (optional)
+     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO> Updated design details or error response
+     */
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
     public function update(int $id, UpdateDesignRequestDTO $dto): JsonResponse
     {
@@ -292,6 +356,16 @@ class DesignController extends AbstractController
         }
     }
 
+    /**
+     * Delete a design
+     * 
+     * Permanently deletes a design and all its associated data (layers, media files, export jobs).
+     * Only allows deletion of designs owned by the authenticated user.
+     * This action cannot be undone.
+     * 
+     * @param int $id The design ID to delete
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success confirmation or error response
+     */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
@@ -329,6 +403,20 @@ class DesignController extends AbstractController
         }
     }
 
+    /**
+     * Duplicate an existing design
+     * 
+     * Creates a copy of an existing design with all its layers and settings.
+     * Only allows duplication of designs owned by the authenticated user or public designs.
+     * The duplicated design is always private and owned by the authenticated user.
+     * 
+     * @param int $id The design ID to duplicate
+     * @param DuplicateDesignRequestDTO $dto Duplication options including:
+     *                                      - name: Name for the duplicated design (optional, defaults to "Copy of {original name}")
+     *                                      - projectId: Target project ID (optional)
+     *                                      - includeLayers: Whether to include all layers (default: true)
+     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO> Duplicated design details or error response
+     */
     #[Route('/{id}/duplicate', name: 'duplicate', methods: ['POST'])]
     public function duplicate(int $id, DuplicateDesignRequestDTO $dto): JsonResponse
     {
@@ -379,6 +467,19 @@ class DesignController extends AbstractController
         }
     }
 
+    /**
+     * Update design thumbnail
+     * 
+     * Updates the thumbnail image for a design.
+     * Only allows updates to designs owned by the authenticated user.
+     * Validates thumbnail format and size requirements.
+     * 
+     * @param int $id The design ID to update thumbnail for
+     * @param UpdateDesignThumbnailRequestDTO $dto Thumbnail data including:
+     *                                             - thumbnail: Base64 encoded image or URL (required)
+     *                                             - format: Image format (png, jpg, webp)
+     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO> Updated design details or error response
+     */
     #[Route('/{id}/thumbnail', name: 'update_thumbnail', methods: ['PUT'])]
     public function updateThumbnail(int $id, UpdateDesignThumbnailRequestDTO $dto): JsonResponse
     {
@@ -419,6 +520,21 @@ class DesignController extends AbstractController
         }
     }
 
+    /**
+     * Search designs
+     * 
+     * Performs a comprehensive search across designs accessible to the authenticated user.
+     * Searches in design names, descriptions, and associated project information.
+     * 
+     * @param Request $request HTTP request with search parameters:
+     *                        - q: Search query term (required)
+     *                        - page: Page number (default: 1, min: 1)
+     *                        - limit: Items per page (default: 20, max: 100)
+     *                        - project_id: Filter by specific project (optional)
+     *                        - sort: Sort field (relevance, name, created_at, updated_at)
+     *                        - order: Sort direction (asc, desc)
+     * @return JsonResponse<SearchResponseDTO|ErrorResponseDTO> Search results or error response
+     */
     #[Route('/search', name: 'search', methods: ['GET'])]
     public function search(Request $request): JsonResponse
     {

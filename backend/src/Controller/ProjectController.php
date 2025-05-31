@@ -24,6 +24,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Project Controller
+ * 
+ * Manages project operations including creation, retrieval, updating, and deletion.
+ * Handles project sharing, duplication, and public project discovery.
+ * All endpoints require authentication and enforce user ownership for security.
+ */
 #[Route('/api/projects', name: 'api_projects_')]
 #[IsGranted('ROLE_USER')]
 class ProjectController extends AbstractController
@@ -38,6 +45,21 @@ class ProjectController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
+    /**
+     * List projects for authenticated user
+     * 
+     * Returns a paginated list of projects belonging to the authenticated user.
+     * Supports filtering by status, sorting by various fields, and search functionality.
+     * 
+     * @param Request $request HTTP request with optional query parameters:
+     *                        - page: Page number (default: 1, min: 1)
+     *                        - limit: Items per page (default: 20, max: 100)
+     *                        - sort: Sort field (name, created_at, updated_at)
+     *                        - order: Sort direction (asc, desc)
+     *                        - search: Search term for project name/description
+     *                        - status: Filter by project status
+     * @return JsonResponse<ProjectListResponseDTO|ErrorResponseDTO> Paginated list of projects or error response
+     */
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
@@ -93,6 +115,20 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * Create a new project
+     * 
+     * Creates a new project with the provided information and associates it with the authenticated user.
+     * Validates project data and sets default values for optional fields.
+     * 
+     * @param CreateProjectRequestDTO $dto Project creation data including:
+     *                                    - name: Project name (required)
+     *                                    - description: Project description (optional)
+     *                                    - thumbnail: Project thumbnail URL (optional)
+     *                                    - isPublic: Whether project is publicly visible (default: false)
+     *                                    - tags: Array of project tags (optional)
+     * @return JsonResponse<ProjectResponseDTO|ErrorResponseDTO> Created project details or error response
+     */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(CreateProjectRequestDTO $dto): JsonResponse
     {
@@ -147,6 +183,15 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * Get details of a specific project
+     * 
+     * Returns detailed information about a single project.
+     * Only allows access to projects owned by the authenticated user or public projects.
+     * 
+     * @param int $id The project ID
+     * @return JsonResponse<ProjectResponseDTO|ErrorResponseDTO> Project details or error response
+     */
     #[Route('/{id}', name: 'show', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
@@ -184,6 +229,22 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * Update an existing project
+     * 
+     * Updates project information with the provided data.
+     * Only allows updates to projects owned by the authenticated user.
+     * Validates updated data and handles partial updates.
+     * 
+     * @param int $id The project ID to update
+     * @param UpdateProjectRequestDTO $dto Updated project data including:
+     *                                     - name: Project name (optional)
+     *                                     - description: Project description (optional)
+     *                                     - thumbnail: Project thumbnail URL (optional)
+     *                                     - isPublic: Whether project is publicly visible (optional)
+     *                                     - tags: Array of project tags (optional)
+     * @return JsonResponse<ProjectResponseDTO|ErrorResponseDTO> Updated project details or error response
+     */
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
     public function update(int $id, UpdateProjectRequestDTO $dto): JsonResponse
     {
@@ -265,6 +326,16 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * Delete a project
+     * 
+     * Permanently deletes a project and all its associated data (designs, media files, etc.).
+     * Only allows deletion of projects owned by the authenticated user.
+     * This action cannot be undone.
+     * 
+     * @param int $id The project ID to delete
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success confirmation or error response
+     */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
@@ -302,6 +373,20 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * Duplicate an existing project
+     * 
+     * Creates a copy of an existing project with all its designs and settings.
+     * Only allows duplication of projects owned by the authenticated user or public projects.
+     * The duplicated project is always private and owned by the authenticated user.
+     * 
+     * @param int $id The project ID to duplicate
+     * @param DuplicateProjectRequestDTO $dto Duplication options including:
+     *                                        - name: Name for the duplicated project (optional, defaults to "Copy of {original name}")
+     *                                        - includeDesigns: Whether to include designs (default: true)
+     *                                        - includeMedia: Whether to include media files (default: true)
+     * @return JsonResponse<ProjectResponseDTO|ErrorResponseDTO> Duplicated project details or error response
+     */
     #[Route('/{id}/duplicate', name: 'duplicate', methods: ['POST'])]
     public function duplicate(int $id, DuplicateProjectRequestDTO $dto): JsonResponse
     {
@@ -342,6 +427,22 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * List public projects
+     * 
+     * Returns a paginated list of publicly shared projects from all users.
+     * Supports search, filtering, and sorting functionality for project discovery.
+     * 
+     * @param SearchProjectsRequestDTO $dto Search and filter parameters including:
+     *                                     - page: Page number (default: 1, min: 1)
+     *                                     - limit: Items per page (default: 20, max: 100)
+     *                                     - search: Search term for project name/description
+     *                                     - tags: Array of tags to filter by
+     *                                     - sort: Sort field (name, created_at, updated_at, views)
+     *                                     - order: Sort direction (asc, desc)
+     *                                     - category: Project category filter
+     * @return JsonResponse<ProjectListResponseDTO|ErrorResponseDTO> Paginated list of public projects or error response
+     */
     #[Route('/public', name: 'public', methods: ['GET'])]
     public function publicProjects(SearchProjectsRequestDTO $dto): JsonResponse
     {
@@ -399,6 +500,16 @@ class ProjectController extends AbstractController
         }
     }
 
+    /**
+     * Toggle project sharing status
+     * 
+     * Toggles the public/private status of a project.
+     * Only allows modification of projects owned by the authenticated user.
+     * Updates the project's visibility and sharing settings.
+     * 
+     * @param int $id The project ID to toggle sharing for
+     * @return JsonResponse<ProjectResponseDTO|ErrorResponseDTO> Updated project details or error response
+     */
     #[Route('/{id}/share', name: 'toggle_share', methods: ['POST'])]
     public function toggleShare(int $id): JsonResponse
     {

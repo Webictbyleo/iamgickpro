@@ -15,6 +15,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Search Controller
+ * 
+ * Provides comprehensive search functionality across all platform content types.
+ * Handles global search, content-specific searches, and search suggestions.
+ * Supports full-text search with filtering, pagination, and relevance scoring.
+ * All searches respect user permissions and visibility settings.
+ */
 #[Route('/api/search')]
 #[IsGranted('ROLE_USER')]
 class SearchController extends AbstractController

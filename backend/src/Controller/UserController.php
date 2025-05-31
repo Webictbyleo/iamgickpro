@@ -21,6 +21,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * User Controller
+ * 
+ * Manages user account operations including profile management, avatar uploads,
+ * password changes, privacy settings, and subscription information.
+ * Handles personal data export/download and account deletion functionality.
+ * All endpoints require authentication and operate on the current user's data.
+ */
 #[Route('/api/user', name: 'api_user_')]
 #[IsGranted('ROLE_USER')]
 class UserController extends AbstractController

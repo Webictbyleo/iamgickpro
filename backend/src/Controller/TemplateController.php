@@ -21,6 +21,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Template Controller
+ * 
+ * Manages design templates including browsing, creation, usage tracking, and categorization.
+ * Provides template marketplace functionality with search, filtering, and category management.
+ * Handles template usage analytics and supports both public and user-created templates.
+ * Templates serve as starting points for new design projects.
+ */
 #[Route('/api/templates', name: 'api_templates_')]
 class TemplateController extends AbstractController
 {
