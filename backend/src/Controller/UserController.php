@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Request\ChangePasswordRequestDTO;
 use App\DTO\Request\UpdateProfileRequestDTO;
+use App\DTO\Request\UploadAvatarRequestDTO;
 use App\Entity\User;
 use App\Service\ResponseDTOFactory;
 use App\Service\UserService;
@@ -66,43 +67,15 @@ class UserController extends AbstractController
      * Updates user profile data including personal information, professional details,
      * and account preferences. Uses comprehensive validation and returns updated profile.
      * 
-     * @param Request $request HTTP request containing profile update data
+     * @param UpdateProfileRequestDTO $updateDTO Profile update data transfer object
      * @return JsonResponse Updated user profile data or validation errors
      */
     #[Route('/profile', name: 'update_profile', methods: ['PUT'])]
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(UpdateProfileRequestDTO $updateDTO): JsonResponse
     {
         try {
             /** @var User $user */
             $user = $this->getUser();
-            
-            $data = json_decode($request->getContent(), true);
-            
-            if (!is_array($data)) {
-                return $this->errorResponse(
-                    $this->responseDTOFactory->createErrorResponse('Invalid JSON data'),
-                    Response::HTTP_BAD_REQUEST
-                );
-            }
-            
-            // Create and validate DTO
-            $updateDTO = $this->serializer->deserialize(
-                $request->getContent(),
-                UpdateProfileRequestDTO::class,
-                'json'
-            );
-            
-            $violations = $this->validator->validate($updateDTO);
-            if (count($violations) > 0) {
-                $errors = [];
-                foreach ($violations as $violation) {
-                    $errors[$violation->getPropertyPath()] = $violation->getMessage();
-                }
-                return $this->errorResponse(
-                    $this->responseDTOFactory->createErrorResponse('Validation failed', $errors),
-                    Response::HTTP_BAD_REQUEST
-                );
-            }
             
             if (!$updateDTO->hasAnyData()) {
                 return $this->errorResponse(
@@ -138,25 +111,24 @@ class UserController extends AbstractController
      * Handles avatar file upload, validation, and updates user profile.
      * Automatically removes old avatar file and returns new avatar URL.
      * 
-     * @param Request $request HTTP request containing avatar file
+     * @param UploadAvatarRequestDTO $dto Validated avatar upload data
      * @return JsonResponse Success response with new avatar URL or error details
      */
     #[Route('/avatar', name: 'upload_avatar', methods: ['POST'])]
-    public function uploadAvatar(Request $request): JsonResponse
+    public function uploadAvatar(UploadAvatarRequestDTO $dto): JsonResponse
     {
         try {
             /** @var User $user */
             $user = $this->getUser();
             
-            $file = $request->files->get('avatar');
-            if (!$file) {
+            if (!$dto->avatar) {
                 return $this->errorResponse(
                     $this->responseDTOFactory->createErrorResponse('No file uploaded'),
                     Response::HTTP_BAD_REQUEST
                 );
             }
             
-            $avatarFilename = $this->fileUploadService->uploadAvatar($file);
+            $avatarFilename = $this->fileUploadService->uploadAvatar($dto->avatar);
             $avatarUrl = $this->fileUploadService->getAvatarUrl($avatarFilename);
             
             // Delete old avatar if exists
@@ -187,39 +159,20 @@ class UserController extends AbstractController
      * Updates user password after validating current password and ensuring
      * new password meets security requirements including confirmation match.
      * 
-     * @param Request $request HTTP request containing password change data
+     * @param ChangePasswordRequestDTO $dto Validated password change data
      * @return JsonResponse Success confirmation or validation errors
      */
     #[Route('/password', name: 'change_password', methods: ['PUT'])]
-    public function changePassword(Request $request): JsonResponse
+    public function changePassword(ChangePasswordRequestDTO $dto): JsonResponse
     {
         try {
             /** @var User $user */
             $user = $this->getUser();
             
-            // Create and validate DTO
-            $changePasswordDTO = $this->serializer->deserialize(
-                $request->getContent(),
-                ChangePasswordRequestDTO::class,
-                'json'
-            );
-            
-            $violations = $this->validator->validate($changePasswordDTO);
-            if (count($violations) > 0) {
-                $errors = [];
-                foreach ($violations as $violation) {
-                    $errors[$violation->getPropertyPath()] = $violation->getMessage();
-                }
-                return $this->errorResponse(
-                    $this->responseDTOFactory->createErrorResponse('Validation failed', $errors),
-                    Response::HTTP_BAD_REQUEST
-                );
-            }
-            
             $this->userService->changePassword(
                 $user,
-                $changePasswordDTO->currentPassword,
-                $changePasswordDTO->newPassword
+                $dto->currentPassword,
+                $dto->newPassword
             );
             
             return $this->successResponse(

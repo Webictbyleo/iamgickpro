@@ -8,6 +8,7 @@ use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Request\CreatePluginRequestDTO;
 use App\DTO\Request\RejectPluginRequestDTO;
 use App\DTO\Request\UpdatePluginRequestDTO;
+use App\DTO\Request\UploadPluginFileRequestDTO;
 use App\Entity\Plugin;
 use App\Repository\PluginRepository;
 use App\Service\ResponseDTOFactory;
@@ -338,12 +339,12 @@ class PluginController extends AbstractController
      * Performs validation and stores the file securely.
      * 
      * @param Plugin $plugin The plugin entity to upload files for
-     * @param Request $request HTTP request containing the uploaded file
+     * @param UploadPluginFileRequestDTO $dto Validated file upload data
      * @return JsonResponse Upload confirmation or error response
      */
     #[Route('/{id}/upload-file', name: 'upload_file', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
-    public function uploadFile(Plugin $plugin, Request $request): JsonResponse
+    public function uploadFile(Plugin $plugin, UploadPluginFileRequestDTO $dto): JsonResponse
     {
         try {
             // Only developer can upload files
@@ -354,20 +355,9 @@ class PluginController extends AbstractController
                 );
             }
 
-            /** @var UploadedFile $file */
-            $file = $request->files->get('file');
-            if (!$file) {
+            if (!$dto->file) {
                 return $this->errorResponse(
                     $this->responseDTOFactory->createErrorResponse('No file uploaded'),
-                    Response::HTTP_BAD_REQUEST
-                );
-            }
-
-            // Validate file type (only allow zip files for now)
-            $allowedTypes = ['application/zip', 'application/x-zip-compressed'];
-            if (!in_array($file->getMimeType(), $allowedTypes)) {
-                return $this->errorResponse(
-                    $this->responseDTOFactory->createErrorResponse('Invalid file type. Only ZIP files are allowed.'),
                     Response::HTTP_BAD_REQUEST
                 );
             }
@@ -375,7 +365,7 @@ class PluginController extends AbstractController
             // Generate unique filename
             $fileName = uniqid() . '_' . $plugin->getId() . '.zip';
 
-            $file->move($this->pluginUploadDirectory, $fileName);
+            $dto->file->move($this->pluginUploadDirectory, $fileName);
             // TODO: Store file path in a separate table or service
             // $plugin->setFilePath($this->pluginUploadDirectory . '/' . $fileName);
             // $plugin->setFileSize($file->getSize());

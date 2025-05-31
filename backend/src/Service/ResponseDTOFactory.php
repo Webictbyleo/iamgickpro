@@ -123,7 +123,28 @@ class ResponseDTOFactory
      */
     public function createDesignResponse(Design $design, string $message = 'Design retrieved successfully'): DesignResponseDTO
     {
-        return DesignResponseDTO::fromDesign($design, $message);
+        $designData = [
+            'id' => $design->getId(),
+            'uuid' => $design->getUuid(),
+            'title' => $design->getTitle(),
+            'data' => $design->getData(),
+            'width' => $design->getWidth(),
+            'height' => $design->getHeight(),
+            'background' => $design->getBackground(),
+            'thumbnail' => $design->getThumbnail(),
+            'hasAnimation' => $design->getHasAnimation(),
+            'fps' => $design->getFps(),
+            'duration' => $design->getDuration(),
+            'projectId' => $design->getProject()?->getId(),
+            'createdAt' => $design->getCreatedAt()->format('c'),
+            'updatedAt' => $design->getUpdatedAt()?->format('c')
+        ];
+
+        return new DesignResponseDTO(
+            success: true,
+            message: $message,
+            design: $designData
+        );
     }
 
     /**
@@ -131,7 +152,24 @@ class ResponseDTOFactory
      */
     public function createProjectResponse(Project $project, string $message = 'Project retrieved successfully'): ProjectResponseDTO
     {
-        return ProjectResponseDTO::fromProject($project, $message);
+        $projectData = [
+            'id' => $project->getId(),
+            'uuid' => $project->getUuid(),
+            'name' => $project->getName(),
+            'description' => $project->getDescription(),
+            'thumbnail' => $project->getThumbnail(),
+            'isPublic' => $project->getIsPublic(),
+            'userId' => $project->getUser()->getId(),
+            'designsCount' => $project->getDesigns()->count(),
+            'createdAt' => $project->getCreatedAt()?->format('c'),
+            'updatedAt' => $project->getUpdatedAt()?->format('c')
+        ];
+
+        return new ProjectResponseDTO(
+            success: true,
+            message: $message,
+            project: $projectData
+        );
     }
 
     /**
@@ -141,7 +179,7 @@ class ResponseDTOFactory
     {
         $mediaData = [
             'id' => $media->getId(),
-            'uuid' => $media->getUuid()->toRfc4122(),
+            'uuid' => $media->getUuid(),
             'name' => $media->getName(),
             'type' => $media->getType(),
             'mimeType' => $media->getMimeType(),
@@ -181,7 +219,7 @@ class ResponseDTOFactory
     {
         $templateData = [
             'id' => $template->getId(),
-            'uuid' => $template->getUuid()->toRfc4122(),
+            'uuid' => $template->getUuid(),
             'name' => $template->getName(),
             'description' => $template->getDescription(),
             'category' => $template->getCategory(),
@@ -217,7 +255,7 @@ class ResponseDTOFactory
         $templatesData = array_map(function (Template $template) {
             return [
                 'id' => $template->getId(),
-                'uuid' => $template->getUuid()->toRfc4122(),
+                'uuid' => $template->getUuid(),
                 'name' => $template->getName(),
                 'description' => $template->getDescription(),
                 'category' => $template->getCategory(),
@@ -269,7 +307,7 @@ class ResponseDTOFactory
                 'mask' => $layer->getMask(),
                 'design' => $layer->getDesign() ? [
                     'id' => $layer->getDesign()->getId(),
-                    'uuid' => $layer->getDesign()->getUuid()->toRfc4122(),
+                    'uuid' => $layer->getDesign()->getUuid(),
                     'name' => $layer->getDesign()->getName(),
                 ] : null,
                 'parent' => $layer->getParent() ? [
@@ -342,7 +380,7 @@ class ResponseDTOFactory
         return new ExportJobResponseDTO(
             success: true,
             message: $message ?: 'Export job retrieved successfully',
-            exportJob: $data
+            job: $data
         );
     }
 
@@ -362,7 +400,7 @@ class ResponseDTOFactory
         return new ExportJobResponseDTO(
             success: true,
             message: $message ?: 'Export jobs retrieved successfully',
-            exportJobs: $jobsData,
+            jobs: $jobsData,
             total: $total,
             page: $page,
             totalPages: (int) ceil((float) $total / (float) $limit)
@@ -459,10 +497,13 @@ class ResponseDTOFactory
     public function createSearchResponse(array $results, int $total, int $page, int $limit, string $query): SearchResponseDTO
     {
         return new SearchResponseDTO(
+            success: true,
+            message: 'Search completed successfully',
             results: $results,
+            query: $query,
             total: $total,
             page: $page,
-            query: $query
+            totalPages: (int) ceil((float) $total / (float) $limit)
         );
     }
 
@@ -473,7 +514,7 @@ class ResponseDTOFactory
      */
     public function createPaginatedResponse(array $data, int $page, int $limit, int $total, string $message = 'Success'): PaginatedResponseDTO
     {
-        $totalPages = ceil($total / $limit);
+        $totalPages = (int) ceil((float) $total / (float) $limit);
         
         return new PaginatedResponseDTO(
             data: $data,

@@ -20,6 +20,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Export Job Controller
+ * 
+ * Manages export job operations for design rendering and file generation.
+ * Handles job creation, monitoring, cancellation, retry, and file download functionality.
+ * All endpoints require authentication and enforce user ownership for security.
+ */
 #[Route('/api/export-jobs', name: 'api_export_jobs_')]
 class ExportJobController extends AbstractController
 {
@@ -32,6 +39,19 @@ class ExportJobController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
+    /**
+     * List export jobs for authenticated user
+     * 
+     * Returns a paginated list of export jobs belonging to the authenticated user.
+     * Supports filtering by status and format, with configurable pagination.
+     * 
+     * @param Request $request HTTP request with optional query parameters:
+     *                        - page: Page number (default: 1, min: 1)
+     *                        - limit: Items per page (default: 20, max: 50)
+     *                        - status: Filter by job status (pending, processing, completed, failed, cancelled)
+     *                        - format: Filter by export format (png, jpg, svg, mp4, gif)
+     * @return JsonResponse<ExportJobListResponseDTO|ErrorResponseDTO> Paginated list of export jobs or error response
+     */
     #[Route('', name: 'list', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function list(Request $request): JsonResponse
@@ -67,6 +87,15 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Get details of a specific export job
+     * 
+     * Returns detailed information about a single export job.
+     * Only allows access to export jobs owned by the authenticated user.
+     * 
+     * @param ExportJob $exportJob The export job entity (auto-resolved by Symfony)
+     * @return JsonResponse<ExportJobResponseDTO|ErrorResponseDTO> Export job details or error response
+     */
     #[Route('/{id}', name: 'show', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function show(ExportJob $exportJob): JsonResponse
@@ -91,6 +120,24 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Create a new export job
+     * 
+     * Creates a new export job for rendering a design in the specified format and settings.
+     * Validates user access to the design and enqueues the job for background processing.
+     * 
+     * @param CreateExportJobRequestDTO $dto Export job configuration including:
+     *                                      - designId: ID of the design to export
+     *                                      - format: Output format (png, jpg, svg, mp4, gif)
+     *                                      - quality: Export quality (1-100)
+     *                                      - width: Output width in pixels
+     *                                      - height: Output height in pixels
+     *                                      - scale: Scale factor for the export
+     *                                      - transparent: Whether to use transparent background
+     *                                      - backgroundColor: Background color (if not transparent)
+     *                                      - animationSettings: Animation configuration for video formats
+     * @return JsonResponse<ExportJobResponseDTO|ErrorResponseDTO> Created export job details or error response
+     */
     #[Route('', name: 'create', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     public function create(CreateExportJobRequestDTO $dto): JsonResponse
@@ -157,9 +204,18 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Update an export job (Not allowed)
+     * 
+     * Export jobs are immutable after creation and cannot be modified.
+     * This endpoint always returns an error indicating that modifications are not permitted.
+     * 
+     * @param ExportJob $exportJob The export job entity (auto-resolved by Symfony)
+     * @return JsonResponse<ErrorResponseDTO> Error response indicating operation not allowed
+     */
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
     #[IsGranted('ROLE_USER')]
-    public function update(ExportJob $exportJob, Request $request): JsonResponse
+    public function update(ExportJob $exportJob): JsonResponse
     {
         try {
             // Only allow access to own export jobs
@@ -183,6 +239,16 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Delete an export job
+     * 
+     * Deletes an export job and its associated output file.
+     * Only allows deletion of jobs in pending, failed, or completed status.
+     * Only allows access to export jobs owned by the authenticated user.
+     * 
+     * @param ExportJob $exportJob The export job entity (auto-resolved by Symfony)
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success confirmation or error response
+     */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_USER')]
     public function delete(ExportJob $exportJob): JsonResponse
@@ -227,6 +293,16 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Cancel a pending or processing export job
+     * 
+     * Cancels an export job that is currently pending or being processed.
+     * Sets the job status to cancelled and stops any ongoing processing.
+     * Only allows access to export jobs owned by the authenticated user.
+     * 
+     * @param ExportJob $exportJob The export job entity (auto-resolved by Symfony)
+     * @return JsonResponse<ExportJobResponseDTO|ErrorResponseDTO> Updated export job details or error response
+     */
     #[Route('/{id}/cancel', name: 'cancel', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     public function cancel(ExportJob $exportJob): JsonResponse
@@ -262,6 +338,17 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Retry a failed export job
+     * 
+     * Resets a failed export job back to pending status for re-processing.
+     * Clears error messages and resets progress to zero.
+     * Only allows retry of jobs with failed status.
+     * Only allows access to export jobs owned by the authenticated user.
+     * 
+     * @param ExportJob $exportJob The export job entity (auto-resolved by Symfony)
+     * @return JsonResponse<ExportJobResponseDTO|ErrorResponseDTO> Updated export job details or error response
+     */
     #[Route('/{id}/retry', name: 'retry', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     public function retry(ExportJob $exportJob): JsonResponse
@@ -302,6 +389,17 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Download export job output file
+     * 
+     * Downloads the generated file from a completed export job.
+     * Returns the file as an attachment with appropriate headers.
+     * Only allows download of completed jobs with existing output files.
+     * Only allows access to export jobs owned by the authenticated user.
+     * 
+     * @param ExportJob $exportJob The export job entity (auto-resolved by Symfony)
+     * @return Response File download response with proper headers or error response
+     */
     #[Route('/{id}/download', name: 'download', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function download(ExportJob $exportJob): Response
@@ -346,6 +444,14 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Get export job statistics for authenticated user
+     * 
+     * Returns comprehensive statistics about the user's export job usage,
+     * including totals by status, format breakdown, and success rate.
+     * 
+     * @return JsonResponse<array|ErrorResponseDTO> Export job statistics or error response
+     */
     #[Route('/stats', name: 'stats', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function stats(): JsonResponse
@@ -372,6 +478,15 @@ class ExportJobController extends AbstractController
         }
     }
 
+    /**
+     * Get export job queue status (Admin only)
+     * 
+     * Returns system-wide export job queue statistics and health information.
+     * Includes pending/processing job counts, average processing times, and queue health metrics.
+     * Only accessible to users with ROLE_ADMIN.
+     * 
+     * @return JsonResponse<array|ErrorResponseDTO> Queue status information or error response
+     */
     #[Route('/queue-status', name: 'queue_status', methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN')]
     public function queueStatus(): JsonResponse
