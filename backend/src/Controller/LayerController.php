@@ -97,8 +97,8 @@ class LayerController extends AbstractController
             $layer = new Layer();
             $layer->setName($dto->name);
             $layer->setType($dto->type);
-            $layer->setProperties($dto->properties);
-            $layer->setTransform($dto->transform);
+            $layer->setProperties($dto->getPropertiesArray());
+            $layer->setTransform($dto->getTransformArray());
             $layer->setVisible($dto->visible);
             $layer->setLocked($dto->locked);
             $layer->setDesign($design);
@@ -254,11 +254,11 @@ class LayerController extends AbstractController
             }
 
             if ($dto->properties !== null) {
-                $layer->setProperties($dto->properties);
+                $layer->setProperties($dto->getPropertiesArray());
             }
 
             if ($dto->transform !== null) {
-                $layer->setTransform($dto->transform);
+                $layer->setTransform($dto->getTransformArray());
             }
 
             if ($dto->visible !== null) {

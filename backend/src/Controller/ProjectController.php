@@ -145,7 +145,7 @@ class ProjectController extends AbstractController
             $project = new Project();
             $project->setName($dto->name);
             $project->setDescription($dto->description ?? '');
-            $project->setTags($dto->tags);
+            $project->setTags($dto->getTagsArray());
             $project->setIsPublic($dto->isPublic);
             $project->setUser($user);
 
@@ -286,7 +286,7 @@ class ProjectController extends AbstractController
             }
 
             if ($dto->tags !== null) {
-                $project->setTags($dto->tags);
+                $project->setTags($dto->getTagsArray());
             }
 
             if ($dto->isPublic !== null) {

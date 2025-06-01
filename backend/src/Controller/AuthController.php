@@ -274,7 +274,7 @@ class AuthController extends AbstractController
             }
 
             if ($dto->settings !== null) {
-                $user->setSettings($dto->settings);
+                $user->setSettings($dto->getSettingsArray());
             }
 
             // Entity validation (additional business rules)

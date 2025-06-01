@@ -161,7 +161,7 @@ class DesignController extends AbstractController
             $design->setHeight($dto->height);
             $design->setCanvasWidth($dto->width);
             $design->setCanvasHeight($dto->height);
-            $design->setData($dto->data);
+            $design->setData($dto->getDataArray());
             $design->setBackground(['type' => 'color', 'color' => '#ffffff']); // Default background
             
             if ($dto->description) {
@@ -310,7 +310,7 @@ class DesignController extends AbstractController
             }
 
             if ($dto->data !== null) {
-                $design->setData($dto->data);
+                $design->setData($dto->getDataArray());
             }
 
             if ($dto->description !== null) {

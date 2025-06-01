@@ -216,7 +216,7 @@ class MediaController extends AbstractController
             $media->setSource($dto->source);
             $media->setSourceId($dto->sourceId);
             $media->setMetadata($dto->metadata ?? []);
-            $media->setTags($dto->tags ?? []);
+            $media->setTags($dto->getTagsArray() ?? []);
             $media->setAttribution($dto->attribution);
             $media->setLicense($dto->license);
             $media->setIsPremium($dto->isPremium);
@@ -308,7 +308,7 @@ class MediaController extends AbstractController
                 $media->setMetadata($dto->metadata);
             }
             if ($dto->tags !== null) {
-                $media->setTags($dto->tags);
+                $media->setTags($dto->getTagsArray());
             }
             if ($dto->isPremium !== null) {
                 $media->setIsPremium($dto->isPremium);

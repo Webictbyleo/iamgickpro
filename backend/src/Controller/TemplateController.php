@@ -178,7 +178,7 @@ class TemplateController extends AbstractController
             $template->setName($dto->name);
             $template->setDescription($dto->description);
             $template->setCategory($dto->category);
-            $template->setTags($dto->tags);
+            $template->setTags($dto->getTagsArray());
             $template->setWidth($dto->width);
             $template->setHeight($dto->height);
             $template->setCanvasSettings($dto->canvasSettings);
