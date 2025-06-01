@@ -7,188 +7,10 @@
     },
     "item": [
         {
-            "name": "MediaController",
+            "name": "AuthController",
             "item": [
                 {
-                    "name": "List media files for authenticated user",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Create a new media file entry",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Bulk delete multiple media files",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/bulk\/delete",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "bulk",
-                                "delete"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Duplicate a media file",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/duplicate\/{uuid}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "duplicate",
-                                "{uuid}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Search media files",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/search",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "search"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Search stock media from external providers",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/stock\/search",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "stock",
-                                "search"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Get details of a specific media file",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{uuid}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{uuid}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Update media file metadata",
+                    "name": "Change user password",
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -202,20 +24,22 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{uuid}",
+                            "raw": "{{base_url}}\/api\/auth\/change-password",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "{uuid}"
+                                "api",
+                                "auth",
+                                "change-password"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Delete a media file",
+                    "name": "Authenticate user and return JWT token",
                     "request": {
-                        "method": "DELETE",
+                        "method": "POST",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -227,12 +51,122 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{uuid}",
+                            "raw": "{{base_url}}\/api\/auth\/login",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "{uuid}"
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Logout user",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/auth\/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get current authenticated user profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/auth\/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update user profile information",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/auth\/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "profile"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Register a new user account",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/auth\/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
                             ]
                         }
                     }
@@ -257,12 +191,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/designs",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "designs"
                             ]
                         }
                     }
@@ -282,12 +217,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/designs",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "designs"
                             ]
                         }
                     }
@@ -307,11 +243,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/search",
+                            "raw": "{{base_url}}\/api\/designs\/search",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "designs",
                                 "search"
                             ]
                         }
@@ -332,11 +270,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/designs\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "designs",
                                 "{id}"
                             ]
                         }
@@ -357,11 +297,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/designs\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "designs",
                                 "{id}"
                             ]
                         }
@@ -382,11 +324,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/designs\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "designs",
                                 "{id}"
                             ]
                         }
@@ -407,11 +351,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/duplicate",
+                            "raw": "{{base_url}}\/api\/designs\/{id}\/duplicate",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "designs",
                                 "{id}",
                                 "duplicate"
                             ]
@@ -433,557 +379,15 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/thumbnail",
+                            "raw": "{{base_url}}\/api\/designs\/{id}\/thumbnail",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "designs",
                                 "{id}",
                                 "thumbnail"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "AuthController",
-            "item": [
-                {
-                    "name": "Change user password",
-                    "request": {
-                        "method": "PUT",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/change-password",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "change-password"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Authenticate user and return JWT token",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/login",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "login"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Logout user",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/logout",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "logout"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Get current authenticated user profile",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/me",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "me"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Update user profile information",
-                    "request": {
-                        "method": "PUT",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/profile",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "profile"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Register a new user account",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/register",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "register"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "ProjectController",
-            "item": [
-                {
-                    "name": "List projects for authenticated user",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Create a new project",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "List public projects",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/public",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "public"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Get details of a specific project",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Update an existing project",
-                    "request": {
-                        "method": "PUT",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Delete a project",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Duplicate an existing project",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}\/duplicate",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}",
-                                "duplicate"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Toggle project sharing status",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}\/share",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}",
-                                "share"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "LayerController",
-            "item": [
-                {
-                    "name": "Create a new layer in a design",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Bulk update multiple layers",
-                    "request": {
-                        "method": "PUT",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/bulk-update",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "bulk-update"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Get details of a specific layer",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Update an existing layer",
-                    "request": {
-                        "method": "PUT",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Delete a layer from a design",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Duplicate a layer within a design",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}\/duplicate",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}",
-                                "duplicate"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Move a layer within the design hierarchy",
-                    "request": {
-                        "method": "PUT",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/{id}\/move",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "{id}",
-                                "move"
                             ]
                         }
                     }
@@ -1008,12 +412,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/export-jobs",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "export-jobs"
                             ]
                         }
                     }
@@ -1033,12 +438,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/export-jobs",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "export-jobs"
                             ]
                         }
                     }
@@ -1058,11 +464,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/queue-status",
+                            "raw": "{{base_url}}\/api\/export-jobs\/queue-status",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "queue-status"
                             ]
                         }
@@ -1083,11 +491,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/stats",
+                            "raw": "{{base_url}}\/api\/export-jobs\/stats",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "stats"
                             ]
                         }
@@ -1108,11 +518,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/export-jobs\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "{id}"
                             ]
                         }
@@ -1133,11 +545,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/export-jobs\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "{id}"
                             ]
                         }
@@ -1158,11 +572,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/export-jobs\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "{id}"
                             ]
                         }
@@ -1183,11 +599,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/cancel",
+                            "raw": "{{base_url}}\/api\/export-jobs\/{id}\/cancel",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "{id}",
                                 "cancel"
                             ]
@@ -1209,11 +627,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/download",
+                            "raw": "{{base_url}}\/api\/export-jobs\/{id}\/download",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "{id}",
                                 "download"
                             ]
@@ -1235,11 +655,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/retry",
+                            "raw": "{{base_url}}\/api\/export-jobs\/{id}\/retry",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "export-jobs",
                                 "{id}",
                                 "retry"
                             ]
@@ -1249,35 +671,10 @@
             ]
         },
         {
-            "name": "TemplateController",
+            "name": "LayerController",
             "item": [
                 {
-                    "name": "List available templates with filtering and pagination",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Create a new template",
+                    "name": "Create a new layer in a design",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -1291,18 +688,46 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/layers",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "layers"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Get available template categories",
+                    "name": "Bulk update multiple layers",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/layers\/bulk-update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "layers",
+                                "bulk-update"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get details of a specific layer",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1316,20 +741,22 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/categories",
+                            "raw": "{{base_url}}\/api\/layers\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "categories"
+                                "api",
+                                "layers",
+                                "{id}"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Search templates with advanced filtering",
+                    "name": "Update an existing layer",
                     "request": {
-                        "method": "GET",
+                        "method": "PUT",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -1341,20 +768,22 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/search",
+                            "raw": "{{base_url}}\/api\/layers\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "search"
+                                "api",
+                                "layers",
+                                "{id}"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Get details of a specific template",
+                    "name": "Delete a layer from a design",
                     "request": {
-                        "method": "GET",
+                        "method": "DELETE",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -1366,18 +795,20 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{uuid}",
+                            "raw": "{{base_url}}\/api\/layers\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "{uuid}"
+                                "api",
+                                "layers",
+                                "{id}"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Use a template to create a new design",
+                    "name": "Duplicate a layer within a design",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -1391,13 +822,43 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{uuid}\/use",
+                            "raw": "{{base_url}}\/api\/layers\/{id}\/duplicate",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "{uuid}",
-                                "use"
+                                "api",
+                                "layers",
+                                "{id}",
+                                "duplicate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Move a layer within the design hierarchy",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/layers\/{id}\/move",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "layers",
+                                "{id}",
+                                "move"
                             ]
                         }
                     }
@@ -1405,10 +866,10 @@
             ]
         },
         {
-            "name": "SearchController",
+            "name": "MediaController",
             "item": [
                 {
-                    "name": "Perform a global search across multiple content types",
+                    "name": "List media files for authenticated user",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1422,45 +883,21 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/media",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Search specifically for media files",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application\/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}\/media",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
+                                "api",
                                 "media"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Search specifically for user projects",
+                    "name": "Create a new media file entry",
                     "request": {
-                        "method": "GET",
+                        "method": "POST",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -1472,20 +909,21 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/projects",
+                            "raw": "{{base_url}}\/api\/media",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "projects"
+                                "api",
+                                "media"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Get search suggestions based on user query",
+                    "name": "Bulk delete multiple media files",
                     "request": {
-                        "method": "GET",
+                        "method": "DELETE",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -1497,18 +935,49 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/suggestions",
+                            "raw": "{{base_url}}\/api\/media\/bulk\/delete",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "suggestions"
+                                "api",
+                                "media",
+                                "bulk",
+                                "delete"
                             ]
                         }
                     }
                 },
                 {
-                    "name": "Search specifically for templates",
+                    "name": "Duplicate a media file",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/media\/duplicate\/{uuid}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "media",
+                                "duplicate",
+                                "{uuid}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Search media files",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1522,12 +991,123 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/templates",
+                            "raw": "{{base_url}}\/api\/media\/search",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "templates"
+                                "api",
+                                "media",
+                                "search"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Search stock media from external providers",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/media\/stock\/search",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "media",
+                                "stock",
+                                "search"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get details of a specific media file",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/media\/{uuid}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "media",
+                                "{uuid}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update media file metadata",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/media\/{uuid}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "media",
+                                "{uuid}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete a media file",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/media\/{uuid}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "media",
+                                "{uuid}"
                             ]
                         }
                     }
@@ -1552,12 +1132,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/plugins",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "plugins"
                             ]
                         }
                     }
@@ -1577,12 +1158,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}",
+                            "raw": "{{base_url}}\/api\/plugins",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                ""
+                                "api",
+                                "plugins"
                             ]
                         }
                     }
@@ -1602,11 +1184,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/categories",
+                            "raw": "{{base_url}}\/api\/plugins\/categories",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "categories"
                             ]
                         }
@@ -1627,11 +1211,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/my-plugins",
+                            "raw": "{{base_url}}\/api\/plugins\/my-plugins",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "my-plugins"
                             ]
                         }
@@ -1652,11 +1238,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}"
                             ]
                         }
@@ -1677,11 +1265,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}"
                             ]
                         }
@@ -1702,11 +1292,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}"
                             ]
                         }
@@ -1727,11 +1319,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/approve",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}\/approve",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}",
                                 "approve"
                             ]
@@ -1753,11 +1347,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/install",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}\/install",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}",
                                 "install"
                             ]
@@ -1779,11 +1375,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/reject",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}\/reject",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}",
                                 "reject"
                             ]
@@ -1805,11 +1403,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/uninstall",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}\/uninstall",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}",
                                 "uninstall"
                             ]
@@ -1831,13 +1431,402 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/{id}\/upload-file",
+                            "raw": "{{base_url}}\/api\/plugins\/{id}\/upload-file",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "plugins",
                                 "{id}",
                                 "upload-file"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ProjectController",
+            "item": [
+                {
+                    "name": "List projects for authenticated user",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create a new project",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List public projects",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects\/public",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "public"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get details of a specific project",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects\/{id}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{id}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update an existing project",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects\/{id}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{id}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete a project",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects\/{id}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{id}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Duplicate an existing project",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects\/{id}\/duplicate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{id}",
+                                "duplicate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Toggle project sharing status",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/projects\/{id}\/share",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{id}",
+                                "share"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "TemplateController",
+            "item": [
+                {
+                    "name": "List available templates with filtering and pagination",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/templates",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "templates"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create a new template",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/templates",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "templates"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get available template categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/templates\/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "templates",
+                                "categories"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Search templates with advanced filtering",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/templates\/search",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "templates",
+                                "search"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get details of a specific template",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/templates\/{uuid}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "templates",
+                                "{uuid}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Use a template to create a new design",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/templates\/{uuid}\/use",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "templates",
+                                "{uuid}",
+                                "use"
                             ]
                         }
                     }
@@ -1862,11 +1851,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/avatar",
+                            "raw": "{{base_url}}\/api\/user\/avatar",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "avatar"
                             ]
                         }
@@ -1887,11 +1878,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/password",
+                            "raw": "{{base_url}}\/api\/user\/password",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "password"
                             ]
                         }
@@ -1912,11 +1905,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/profile",
+                            "raw": "{{base_url}}\/api\/user\/profile",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "profile"
                             ]
                         }
@@ -1937,11 +1932,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/profile",
+                            "raw": "{{base_url}}\/api\/user\/profile",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "profile"
                             ]
                         }
@@ -1962,11 +1959,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/settings\/privacy\/delete",
+                            "raw": "{{base_url}}\/api\/user\/settings\/privacy\/delete",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "settings",
                                 "privacy",
                                 "delete"
@@ -1989,11 +1988,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/settings\/privacy\/download",
+                            "raw": "{{base_url}}\/api\/user\/settings\/privacy\/download",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "settings",
                                 "privacy",
                                 "download"
@@ -2016,11 +2017,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/settings\/privacy\/export",
+                            "raw": "{{base_url}}\/api\/user\/settings\/privacy\/export",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "settings",
                                 "privacy",
                                 "export"
@@ -2043,11 +2046,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/subscription",
+                            "raw": "{{base_url}}\/api\/user\/subscription",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
+                                "api",
+                                "user",
                                 "subscription"
                             ]
                         }

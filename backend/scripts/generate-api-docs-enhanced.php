@@ -334,7 +334,7 @@ class EnhancedApiDocGenerator
      */
     private function loadRoutes(): void
     {
-        $this->routes = $this->parseRoutesFromDirectory();
+        $this->routes = $this->parseRoutesFromSymfonyRouter();
         
         // Apply filters
         if (!empty($this->config['exclude_controllers'])) {
@@ -357,136 +357,143 @@ class EnhancedApiDocGenerator
     }
 
     /**
-     * Parse routes with better error handling and caching
+     * Parse routes using Symfony's debug:router command for accurate route information
      */
-    private function parseRoutesFromDirectory(): array
+    private function parseRoutesFromSymfonyRouter(): array
     {
-        $cacheKey = 'routes_' . md5(__DIR__ . '/../src/Controller');
+        $cacheKey = 'symfony_routes_' . md5(__DIR__ . '/../');
         
         if ($this->config['cache_enabled'] && isset($this->cache[$cacheKey])) {
             return $this->cache[$cacheKey];
         }
         
-        $routes = [];
-        $controllerDir = __DIR__ . '/../src/Controller';
+        $this->output->writeln('<info>Loading routes from Symfony router...</info>');
         
-        if (!is_dir($controllerDir)) {
-            $this->output->writeln('<warning>Controller directory not found</warning>');
-            return $routes;
+        // Use Symfony's debug:router command to get accurate route information
+        $routesJson = shell_exec('cd ' . __DIR__ . '/../ && php bin/console debug:router --format=json 2>/dev/null');
+        
+        if (!$routesJson) {
+            $this->output->writeln('<error>Failed to execute debug:router command</error>');
+            return [];
         }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($controllerDir, \RecursiveDirectoryIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                try {
-                    $fileRoutes = $this->extractRoutesFromController($file->getPathname());
-                    $routes = array_merge($routes, $fileRoutes);
-                } catch (\Throwable $e) {
-                    $this->output->writeln(sprintf(
-                        '<warning>Failed to parse controller %s: %s</warning>',
-                        $file->getFilename(),
-                        $e->getMessage()
-                    ));
+        
+        $allRoutes = json_decode($routesJson, true);
+        
+        if (!$allRoutes) {
+            $this->output->writeln('<error>Failed to parse router JSON output</error>');
+            return [];
+        }
+        
+        $routes = [];
+        
+        foreach ($allRoutes as $name => $route) {
+            // Filter for API routes
+            if (str_starts_with($name, 'api_') && str_starts_with($route['path'], '/api/')) {
+                $controller = $route['defaults']['_controller'] ?? null;
+                
+                if (!$controller) {
+                    continue;
                 }
+                
+                // Parse controller and action
+                [$controllerClass, $action] = $this->parseControllerAction($controller);
+                
+                $routeData = [
+                    'name' => $name,
+                    'path' => $route['path'],
+                    'methods' => $this->extractHttpMethods($route),
+                    'controller' => $controllerClass,
+                    'action' => $action,
+                    'method_reflection' => $this->getMethodReflection($controllerClass, $action),
+                    'security' => [],
+                    'deprecated' => false,
+                    'tags' => [],
+                    'description' => ''
+                ];
+                
+                // Enhance with reflection data if available
+                if ($routeData['method_reflection']) {
+                    $method = $routeData['method_reflection'];
+                    $routeData['security'] = $this->extractSecurityInfo($method);
+                    $routeData['deprecated'] = $this->isDeprecated($method);
+                    $routeData['tags'] = $this->extractTags($method);
+                    $routeData['description'] = $this->extractMethodSummary($method);
+                }
+                
+                $routes[] = $routeData;
             }
         }
-
+        
         if ($this->config['cache_enabled']) {
             $this->cache[$cacheKey] = $routes;
         }
-
+        
+        $this->output->writeln(sprintf('<info>Loaded %d API routes</info>', count($routes)));
+        
         return $routes;
     }
-
+    
     /**
-     * Extract routes with enhanced reflection and security analysis
+     * Parse controller action string into class and method
      */
-    private function extractRoutesFromController(string $filePath): array
+    private function parseControllerAction(string $controller): array
     {
-        $content = file_get_contents($filePath);
-        $routes = [];
-
-        // Extract namespace and class name
-        if (!preg_match('/namespace\s+([^;]+);/', $content, $nsMatch) ||
-            !preg_match('/class\s+(\w+)/', $content, $classMatch)) {
-            return $routes;
+        if (str_contains($controller, '::')) {
+            [$class, $method] = explode('::', $controller, 2);
+            return [$class, $method];
         }
-
-        $className = $nsMatch[1] . '\\' . $classMatch[1];
-
-        if (!class_exists($className)) {
-            return $routes;
-        }
-
+        
+        // Handle invokable controllers
+        return [$controller, '__invoke'];
+    }
+    
+    /**
+     * Get method reflection safely
+     */
+    private function getMethodReflection(string $controllerClass, string $action): ?\ReflectionMethod
+    {
         try {
-            $reflection = new \ReflectionClass($className);
-            $routes = $this->extractRoutesFromReflection($reflection);
+            if (!class_exists($controllerClass)) {
+                return null;
+            }
+            
+            $reflection = new \ReflectionClass($controllerClass);
+            if (!$reflection->hasMethod($action)) {
+                return null;
+            }
+            
+            return $reflection->getMethod($action);
         } catch (\Throwable $e) {
             $this->output->writeln(sprintf(
-                '<warning>Failed to reflect class %s: %s</warning>',
-                $className,
+                '<warning>Failed to get method reflection for %s::%s: %s</warning>',
+                $controllerClass,
+                $action,
                 $e->getMessage()
             ));
+            return null;
         }
-
-        return $routes;
     }
-
+    
     /**
-     * Extract routes with security and deprecation analysis
+     * Extract HTTP methods from route information
      */
-    private function extractRoutesFromReflection(\ReflectionClass $reflection): array
+    private function extractHttpMethods(array $route): array
     {
-        $routes = [];
-        
-        foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-            // Skip inherited methods unless they have route attributes
-            if ($method->getDeclaringClass()->getName() !== $reflection->getName()) {
-                $hasRouteAttribute = false;
-                foreach ($method->getAttributes() as $attr) {
-                    if (str_contains($attr->getName(), 'Route')) {
-                        $hasRouteAttribute = true;
-                        break;
-                    }
-                }
-                if (!$hasRouteAttribute) {
-                    continue;
-                }
-            }
-
-            $attributes = $method->getAttributes();
-            
-            foreach ($attributes as $attribute) {
-                $attributeName = $attribute->getName();
-                
-                if (str_contains($attributeName, 'Route')) {
-                    $args = $attribute->getArguments();
-                    
-                    $route = [
-                        'path' => $args[0] ?? '',
-                        'methods' => $args['methods'] ?? ['GET'],
-                        'controller' => $reflection->getName(),
-                        'action' => $method->getName(),
-                        'method_reflection' => $method,
-                        'security' => $this->extractSecurityInfo($method),
-                        'deprecated' => $this->isDeprecated($method),
-                        'tags' => $this->extractTags($method),
-                        'description' => $this->extractMethodSummary($method)
-                    ];
-                    
-                    if (isset($args['name'])) {
-                        $route['name'] = $args['name'];
-                    }
-                    
-                    $routes[] = $route;
-                }
-            }
+        if (isset($route['method']) && $route['method'] !== 'ANY') {
+            return explode('|', $route['method']);
         }
         
-        return $routes;
+        // Infer method from route name if not specified
+        $path = $route['path'];
+        if (str_contains($path, 'create') || str_contains($path, 'register') || str_contains($path, 'login')) {
+            return ['POST'];
+        } elseif (str_contains($path, 'update') || str_contains($path, 'change')) {
+            return ['PUT', 'PATCH'];
+        } elseif (str_contains($path, 'delete')) {
+            return ['DELETE'];
+        }
+        
+        return ['GET'];
     }
 
     /**
@@ -640,6 +647,9 @@ class EnhancedApiDocGenerator
     /**
      * Generate enhanced DTO documentation with circular reference detection
      */
+    /**
+     * Generate enhanced DTO documentation with better structure
+     */
     private function generateDtoDocumentation(string $className, int $depth = 0): string
     {
         // Prevent infinite recursion
@@ -659,7 +669,7 @@ class EnhancedApiDocGenerator
         
         try {
             $reflection = new \ReflectionClass($className);
-            $output = $this->generateClassDocumentation($reflection, $depth);
+            $output = $this->generateEnhancedClassDocumentation($reflection, $depth);
             $this->processedClasses[$className] = $output;
             
             unset($this->circularRefs[$className]);
@@ -668,6 +678,256 @@ class EnhancedApiDocGenerator
             unset($this->circularRefs[$className]);
             return "Error processing class $className: " . $e->getMessage() . "\n";
         }
+    }
+
+    /**
+     * Generate enhanced class documentation as a TypeScript interface
+     */
+    private function generateEnhancedClassDocumentation(\ReflectionClass $reflection, int $depth = 0): string
+    {
+        $className = $reflection->getShortName();
+        $output = "**{$className}**\n\n";
+        
+        // Class description
+        $classDoc = $this->extractClassDocumentation($reflection);
+        if ($classDoc) {
+            $output .= "$classDoc\n\n";
+        }
+        
+        // Properties with TypeScript interface format
+        $properties = $this->extractClassProperties($reflection, $depth);
+        
+        if (!empty($properties)) {
+            $output .= "```typescript\ninterface $className {\n";
+            
+            foreach ($properties as $property) {
+                $output .= $this->generateTypeScriptPropertyDefinition($property, $depth);
+            }
+            
+            $output .= "}\n```\n";
+        } else {
+            $output .= "*No properties documented*\n\n";
+        }
+        
+        return $output;
+    }
+
+    /**
+     * Generate a TypeScript property definition with comments for documentation
+     */
+    private function generateTypeScriptPropertyDefinition(array $property, int $depth): string
+    {
+        $name = $property['name'];
+        $type = $this->convertToTypeScriptType($property['type']);
+        $required = $property['required'] ?? !($property['nullable'] ?? false);
+        
+        $output = "";
+        
+        // Add JSDoc comment if there's a description
+        if (!empty($property['description'])) {
+            // Format description as JSDoc comment
+            $lines = explode("\n", $this->sanitizeDescription($property['description']));
+            $output .= "  /**\n";
+            foreach ($lines as $line) {
+                $output .= "   * " . trim($line) . "\n";
+            }
+            
+            // Add default value if present
+            if (!$required && isset($property['default'])) {
+                $defaultValue = is_string($property['default']) 
+                    ? "'{$property['default']}'" 
+                    : var_export($property['default'], true);
+                $output .= "   * @default {$defaultValue}\n";
+            }
+            
+            // Add validation constraints as JSDoc
+            if (!empty($property['validation'])) {
+                foreach ($property['validation'] as $constraint) {
+                    $output .= "   * @" . $this->formatValidationConstraintForJSDoc($constraint) . "\n";
+                }
+            }
+            $output .= "   */\n";
+        }
+        
+        // Add the property definition
+        $output .= "  " . $name . ($required ? "" : "?") . ": " . $type . ";\n\n";
+        
+        return $output;
+    }
+    
+    /**
+     * Format validation constraint for JSDoc comment
+     */
+    private function formatValidationConstraintForJSDoc(string $constraint): string
+    {
+        // Convert constraint to a JSDoc-friendly format
+        $constraint = str_replace(['(', ')', ','], ['=', '', ' '], $constraint);
+        return "validation " . $constraint;
+    }
+    
+    /**
+     * Convert PHP type to TypeScript type
+     */
+    private function convertToTypeScriptType(string $phpType): string
+    {
+        // Handle union types
+        if (str_contains($phpType, '|')) {
+            $types = explode('|', $phpType);
+            $tsTypes = [];
+            
+            foreach ($types as $type) {
+                $tsTypes[] = $this->convertSingleTypeToTypeScript(trim($type));
+            }
+            
+            return implode(' | ', $tsTypes);
+        }
+        
+        return $this->convertSingleTypeToTypeScript($phpType);
+    }
+    
+    /**
+     * Convert a single PHP type to TypeScript
+     */
+    private function convertSingleTypeToTypeScript(string $phpType): string
+    {
+        switch ($phpType) {
+            case 'string':
+                return 'string';
+            case 'int':
+            case 'float':
+            case 'double':
+                return 'number';
+            case 'bool':
+            case 'boolean':
+                return 'boolean';
+            case 'array':
+                return 'any[]';
+            case 'object':
+                return 'Record<string, any>';
+            case 'mixed':
+                return 'any';
+            case 'null':
+                return 'null';
+            default:
+                // Handle class types
+                if (str_contains($phpType, '\\')) {
+                    // Extract short name of the class
+                    $parts = explode('\\', $phpType);
+                    return end($parts);
+                }
+                // For array types like string[]
+                if (str_ends_with($phpType, '[]')) {
+                    $baseType = substr($phpType, 0, -2);
+                    return $this->convertToTypeScriptType($baseType) . '[]';
+                }
+                return $phpType;
+        }
+    }
+
+    /**
+     * Generate enhanced property documentation in table format (legacy format)
+     */
+    private function generateEnhancedPropertyDocumentation(array $property, int $depth = 0): string
+    {
+        $name = $property['name'];
+        $type = $this->formatTypeForDisplay($property['type']);
+        $required = $property['required'] ? 'Yes' : 'No';
+        $description = $this->sanitizeDescription($property['description'] ?? '');
+        
+        return "| `{$name}` | {$type} | {$required} | {$description} |\n";
+    }
+
+    /**
+     * Format type information for better display
+     */
+    private function formatTypeForDisplay(string $type): string
+    {
+        // Handle array types
+        if (str_contains($type, 'array')) {
+            return '`array`';
+        }
+        
+        // Handle DTO types
+        if (str_contains($type, 'DTO') || str_contains($type, 'App\\')) {
+            $shortName = substr(strrchr($type, '\\'), 1) ?: $type;
+            return "`{$shortName}`";
+        }
+        
+        // Handle union types
+        if (str_contains($type, '|')) {
+            $types = array_map('trim', explode('|', $type));
+            $formattedTypes = array_map(fn($t) => "`{$t}`", $types);
+            return implode(' \\| ', $formattedTypes);
+        }
+        
+        // Handle primitive types
+        $primitiveTypes = ['string', 'int', 'integer', 'float', 'bool', 'boolean', 'array', 'object'];
+        if (in_array(strtolower($type), $primitiveTypes)) {
+            return "`{$type}`";
+        }
+        
+        return "`{$type}`";
+    }
+
+    /**
+     * Sanitize description for table display
+     */
+    private function sanitizeDescription(string $description): string
+    {
+        // Remove newlines and extra spaces
+        $description = preg_replace('/\s+/', ' ', trim($description));
+        
+        // Escape pipe characters for table format
+        $description = str_replace('|', '\\|', $description);
+        
+        // Limit length for readability
+        if (strlen($description) > 100) {
+            $description = substr($description, 0, 97) . '...';
+        }
+        
+        return $description ?: 'No description available';
+    }
+
+    /**
+     * Format validation information for display
+     */
+    private function formatValidationInfo(array $validation): string
+    {
+        if (empty($validation)) {
+            return '';
+        }
+        
+        $validationParts = [];
+        
+        foreach ($validation as $constraint) {
+            if (str_contains($constraint, 'NotBlank')) {
+                $validationParts[] = 'Required';
+            } elseif (str_contains($constraint, 'Email')) {
+                $validationParts[] = 'Email format';
+            } elseif (str_contains($constraint, 'Length')) {
+                if (preg_match('/min:\s*(\d+)/', $constraint, $matches)) {
+                    $validationParts[] = "Min length: {$matches[1]}";
+                }
+                if (preg_match('/max:\s*(\d+)/', $constraint, $matches)) {
+                    $validationParts[] = "Max length: {$matches[1]}";
+                }
+            } elseif (str_contains($constraint, 'Range')) {
+                if (preg_match('/min:\s*(\d+)/', $constraint, $matches)) {
+                    $validationParts[] = "Min: {$matches[1]}";
+                }
+                if (preg_match('/max:\s*(\d+)/', $constraint, $matches)) {
+                    $validationParts[] = "Max: {$matches[1]}";
+                }
+            } elseif (str_contains($constraint, 'Choice')) {
+                if (preg_match('/choices:\s*\[(.*?)\]/', $constraint, $matches)) {
+                    $choices = explode(',', $matches[1]);
+                    $choicesStr = implode(', ', array_map('trim', $choices));
+                    $validationParts[] = "Choices: {$choicesStr}";
+                }
+            }
+        }
+        
+        return !empty($validationParts) ? '*(' . implode(', ', $validationParts) . ')*' : '';
     }
 
     /**
@@ -719,6 +979,302 @@ class EnhancedApiDocGenerator
         }
         
         return $example;
+    }
+
+    /**
+     * Generate complete fetch request example from DTO class with clear API endpoint path
+     */
+    private function generateRequestExample(string $className): string
+    {
+        if (!$this->config['show_request_examples'] || !class_exists($className)) {
+            return '';
+        }
+
+        try {
+            $reflection = new \ReflectionClass($className);
+            $example = $this->generateDtoExample($reflection);
+            $jsonData = json_encode($example, JSON_PRETTY_PRINT);
+            
+            // Get current route URL and method
+            $routeUrl = $this->getCurrentRouteUrl();
+            $routeMethod = $this->getCurrentRouteMethod();
+            $requiresAuth = $this->currentRouteRequiresAuth();
+            
+            // Format the example data for readability
+            $prettyJsonLines = explode("\n", $jsonData);
+            $indentedJson = implode("\n    ", $prettyJsonLines);
+            
+            $baseUrl = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'example.com';
+            $fullUrl = "https://{$baseUrl}{$routeUrl}";
+            
+            // Generate fetch example
+            $fetchExample = "```javascript\n";
+            $fetchExample .= "// Example API Request for " . $routeMethod . " " . $routeUrl . "\n";
+            $fetchExample .= "async function example" . ucfirst(strtolower($routeMethod)) . "Request() {\n";
+            $fetchExample .= "  const url = '" . $fullUrl . "';\n";
+            $fetchExample .= "  const requestData = " . $indentedJson . ";\n\n";
+            
+            $fetchExample .= "  try {\n";
+            $fetchExample .= "    const response = await fetch(url, {\n";
+            $fetchExample .= "      method: '{$routeMethod}',\n";
+            $fetchExample .= "      headers: {\n";
+            $fetchExample .= "        'Content-Type': 'application/json',\n";
+            
+            if ($requiresAuth) {
+                $fetchExample .= "        'Authorization': 'Bearer YOUR_JWT_TOKEN', // This endpoint requires authentication\n";
+            }
+            
+            $fetchExample .= "      },\n";
+            
+            if ($routeMethod !== 'GET') {
+                $fetchExample .= "      body: JSON.stringify(requestData)\n";
+            }
+            
+            $fetchExample .= "    });\n\n";
+            $fetchExample .= "    if (!response.ok) {\n";
+            $fetchExample .= "      throw new Error('API error: ' + response.status);\n";
+            $fetchExample .= "    }\n\n";
+            $fetchExample .= "    const data = await response.json();\n";
+            $fetchExample .= "    console.log('Success:', data);\n";
+            $fetchExample .= "    return data;\n";
+            $fetchExample .= "  } catch (error) {\n";
+            $fetchExample .= "    console.error('Error:', error);\n";
+            $fetchExample .= "    throw error;\n";
+            $fetchExample .= "  }\n";
+            $fetchExample .= "}\n";
+            $fetchExample .= "```\n";
+            
+            return $fetchExample;
+        } catch (\Exception $e) {
+            return "Error generating example: " . $e->getMessage() . "\n";
+        }
+    }
+    
+    /**
+     * Check if the current route requires authentication
+     */
+    private function currentRouteRequiresAuth(): bool
+    {
+        if (!isset($this->currentRoute)) {
+            return false;
+        }
+        
+        // Check for security attributes like IsGranted
+        if (!empty($this->currentRoute['security'])) {
+            return true;
+        }
+        
+        // Check controller method for security attributes
+        if (isset($this->currentRoute['method_reflection'])) {
+            $method = $this->currentRoute['method_reflection'];
+            $attributes = $method->getAttributes();
+            
+            foreach ($attributes as $attribute) {
+                $name = $attribute->getName();
+                if (str_contains($name, 'IsGranted') || str_contains($name, 'Security')) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Get the current route URL for examples
+     */
+    private function getCurrentRouteUrl(): string
+    {
+        if (isset($this->currentRoute) && !empty($this->currentRoute['path'])) {
+            // Get the complete route path, ensuring it has the proper format
+            $path = $this->currentRoute['path'];
+            
+            // Remove API prefix if it's already there to avoid duplication
+            if (strpos($path, '/api') === 0) {
+                return $path;
+            } else {
+                return '/api' . $path;
+            }
+        }
+        
+        return '/api/example/endpoint';
+    }
+    
+    /**
+     * Get the current route method for examples
+     */
+    private function getCurrentRouteMethod(): string
+    {
+        if (isset($this->currentRoute) && !empty($this->currentRoute['methods'])) {
+            return strtoupper($this->currentRoute['methods'][0] ?? 'POST');
+        }
+        
+        return 'POST';
+    }
+
+    /**
+     * Generate example data structure for a DTO
+     */
+    private function generateDtoExample(\ReflectionClass $reflection): array
+    {
+        $example = [];
+        
+        // Handle promoted constructor parameters
+        $constructor = $reflection->getConstructor();
+        if ($constructor) {
+            foreach ($constructor->getParameters() as $param) {
+                if ($param->isPromoted()) {
+                    $example[$param->getName()] = $this->generatePropertyExample($param);
+                }
+            }
+        }
+        
+        // Handle regular properties
+        foreach ($reflection->getProperties() as $property) {
+            if (!$this->isPromotedProperty($reflection, $property->getName())) {
+                $example[$property->getName()] = $this->generateRegularPropertyExample($property);
+            }
+        }
+        
+        return $example;
+    }
+
+    /**
+     * Generate example value for a promoted property parameter
+     */
+    private function generatePropertyExample(\ReflectionParameter $param): mixed
+    {
+        $type = $param->getType();
+        $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : 'mixed';
+        
+        // Handle nullable types
+        if ($type && $type->allowsNull() && $param->isOptional()) {
+            return null;
+        }
+        
+        return $this->generateExampleValue($typeName, $param->getName());
+    }
+
+    /**
+     * Generate example value for a regular property
+     */
+    private function generateRegularPropertyExample(\ReflectionProperty $property): mixed
+    {
+        $type = $property->getType();
+        $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : 'mixed';
+        
+        return $this->generateExampleValue($typeName, $property->getName());
+    }
+
+    /**
+     * Generate example value based on type and property name
+     */
+    private function generateExampleValue(string $typeName, string $propertyName): mixed
+    {
+        // Handle DTO types
+        if (str_contains($typeName, 'App\\DTO\\') && class_exists($typeName)) {
+            try {
+                $reflection = new \ReflectionClass($typeName);
+                return $this->generateDtoExample($reflection);
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+        
+        // Handle arrays
+        if ($typeName === 'array') {
+            // Generate array examples based on property name
+            if (str_contains(strtolower($propertyName), 'id')) {
+                return [1, 2, 3];
+            } elseif (str_contains(strtolower($propertyName), 'tag')) {
+                return ['tag1', 'tag2'];
+            } elseif (str_contains(strtolower($propertyName), 'name')) {
+                return ['Example Name 1', 'Example Name 2'];
+            } else {
+                return ['example_item'];
+            }
+        }
+        
+        // Handle primitive types with property name hints
+        switch ($typeName) {
+            case 'string':
+                return $this->generateStringExample($propertyName);
+            case 'int':
+            case 'integer':
+                return $this->generateIntExample($propertyName);
+            case 'float':
+                return 3.14;
+            case 'bool':
+            case 'boolean':
+                return true;
+            case \DateTimeInterface::class:
+            case \DateTime::class:
+                return date('c');
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Generate contextual string examples based on property name
+     */
+    private function generateStringExample(string $propertyName): string
+    {
+        $lowerName = strtolower($propertyName);
+        
+        if (str_contains($lowerName, 'email')) {
+            return 'user@example.com';
+        } elseif (str_contains($lowerName, 'name')) {
+            return 'Example Name';
+        } elseif (str_contains($lowerName, 'title')) {
+            return 'Example Title';
+        } elseif (str_contains($lowerName, 'description')) {
+            return 'This is an example description.';
+        } elseif (str_contains($lowerName, 'url')) {
+            return 'https://example.com';
+        } elseif (str_contains($lowerName, 'password')) {
+            return 'secure_password123';
+        } elseif (str_contains($lowerName, 'token')) {
+            return 'example_token_12345';
+        } elseif (str_contains($lowerName, 'category')) {
+            return 'category_example';
+        } elseif (str_contains($lowerName, 'type')) {
+            return 'example_type';
+        } elseif (str_contains($lowerName, 'status')) {
+            return 'active';
+        } elseif (str_contains($lowerName, 'id')) {
+            return 'example_id_123';
+        } else {
+            return 'example_string';
+        }
+    }
+
+    /**
+     * Generate contextual integer examples based on property name
+     */
+    private function generateIntExample(string $propertyName): int
+    {
+        $lowerName = strtolower($propertyName);
+        
+        if (str_contains($lowerName, 'id')) {
+            return 123;
+        } elseif (str_contains($lowerName, 'count')) {
+            return 10;
+        } elseif (str_contains($lowerName, 'size')) {
+            return 100;
+        } elseif (str_contains($lowerName, 'width')) {
+            return 800;
+        } elseif (str_contains($lowerName, 'height')) {
+            return 600;
+        } elseif (str_contains($lowerName, 'age')) {
+            return 25;
+        } elseif (str_contains($lowerName, 'page')) {
+            return 1;
+        } elseif (str_contains($lowerName, 'limit')) {
+            return 20;
+        } else {
+            return 42;
+        }
     }
 
     /**
@@ -843,17 +1399,55 @@ class EnhancedApiDocGenerator
     }
 
     // Placeholder methods for different output formats
+    /**
+     * Generate enhanced controller documentation with better organization
+     */
     private function generateControllerDocumentation(string $controller, array $routes): string
     {
-        $output = "## $controller\n\n";
+        $output = $this->generateControllerHeader($controller, $routes);
+        $output .= $this->generateControllerDescription($routes);
+        $output .= $this->generateControllerRoutes($routes);
         
-        // Add controller description if available
-        $reflection = new \ReflectionClass($routes[0]['controller']);
-        $classDoc = $this->extractClassDocumentation($reflection);
+        return $output;
+    }
+
+    /**
+     * Generate controller header with route count
+     */
+    private function generateControllerHeader(string $controller, array $routes): string
+    {
+        $routeCount = count($routes);
+        $routeWord = $routeCount === 1 ? 'route' : 'routes';
         
-        if ($classDoc) {
-            $output .= "$classDoc\n\n";
+        return "## {$controller}\n\n*{$routeCount} {$routeWord}*\n\n";
+    }
+
+    /**
+     * Generate controller description from class documentation
+     */
+    private function generateControllerDescription(array $routes): string
+    {
+        try {
+            $reflection = new \ReflectionClass($routes[0]['controller']);
+            $classDoc = $this->extractClassDocumentation($reflection);
+            
+            if ($classDoc) {
+                return "{$classDoc}\n\n";
+            }
+        } catch (\Exception $e) {
+            // Log error but continue
         }
+        
+        return '';
+    }
+
+    /**
+     * Generate all routes for a controller with filtering
+     */
+    private function generateControllerRoutes(array $routes): string
+    {
+        $output = '';
+        $routeNumber = 1;
         
         foreach ($routes as $route) {
             // Skip deprecated routes if configured
@@ -861,35 +1455,70 @@ class EnhancedApiDocGenerator
                 continue;
             }
             
+            // Add route number for better navigation
+            $output .= "<!-- Route {$routeNumber} -->\n";
             $output .= $this->generateRouteDocumentation($route);
+            $routeNumber++;
         }
         
         return $output;
     }
 
     /**
+    /**
+     * Generate documentation for a single route with improved readability
+     */
+    /**
+     * Property to store current route being processed for example generation
+     */
+    private $currentRoute = null;
+    
+    /**
      * Generate documentation for a single route
      */
     private function generateRouteDocumentation(array $route): string
     {
+        // Set current route for example generation
+        $this->currentRoute = $route;
+        
         $method = $route['method_reflection'];
+        $output = $this->generateRouteHeader($route);
+        $output .= $this->generateRouteMetadata($route);
+        $output .= $this->generateRouteDescription($method);
+        $output .= $this->generateRouteParameters($method);
+        $output .= $this->generateRequestBodySection($method);
+        $output .= $this->generateResponseSection($method);
+        $output .= $this->generateRouteFooter();
+        
+        return $output;
+    }
+
+    /**
+     * Generate route header with method and path
+     */
+    private function generateRouteHeader(array $route): string
+    {
         $methodsList = implode(', ', $route['methods']);
-        $output = "### " . strtoupper($methodsList) . " " . $route['path'];
+        $header = "### " . strtoupper($methodsList) . " " . $route['path'];
         
         if ($route['deprecated']) {
-            $output .= " ⚠️ *Deprecated*";
+            $header .= " ⚠️ *Deprecated*";
         }
         
-        $output .= "\n\n";
+        return $header . "\n\n";
+    }
+
+    /**
+     * Generate route metadata (security, tags)
+     */
+    private function generateRouteMetadata(array $route): string
+    {
+        $output = '';
         
         // Security annotations
         if (!empty($route['security']) && $this->config['include_security']) {
-            $output .= "**Security:** ";
-            $securityInfo = [];
-            foreach ($route['security'] as $security) {
-                $securityInfo[] = $security['type'];
-            }
-            $output .= implode(', ', $securityInfo) . "\n\n";
+            $securityTypes = array_column($route['security'], 'type');
+            $output .= "**Security:** " . implode(', ', $securityTypes) . "\n\n";
         }
         
         // Tags
@@ -897,41 +1526,375 @@ class EnhancedApiDocGenerator
             $output .= "**Tags:** " . implode(', ', $route['tags']) . "\n\n";
         }
         
-        // Method description
+        return $output;
+    }
+
+    /**
+     * Generate route description from method documentation
+     */
+    private function generateRouteDescription(\ReflectionMethod $method): string
+    {
         $methodDoc = $this->extractMethodDocumentation($method);
-        if ($methodDoc) {
-            $output .= "$methodDoc\n\n";
-        }
-        
-        // Parameters
+        return $methodDoc ? "$methodDoc\n\n" : '';
+    }
+
+    /**
+     * Generate route parameters section
+     */
+    private function generateRouteParameters(\ReflectionMethod $method): string
+    {
         $parameters = $this->extractMethodParameters($method);
-        if (!empty($parameters)) {
-            $output .= "#### Parameters\n\n";
-            foreach ($parameters as $param) {
-                $output .= $this->generateParameterDocumentation($param);
-            }
-            $output .= "\n";
+        if (empty($parameters)) {
+            return '';
         }
         
-        // Request body (for POST/PUT/PATCH)
-        $requestBody = $this->extractRequestBodyInfo($method);
-        if ($requestBody) {
-            $output .= "#### Request Body\n\n";
-            $output .= $this->generateDtoDocumentation($requestBody);
-            $output .= "\n";
+        $output = "#### Parameters\n\n";
+        foreach ($parameters as $param) {
+            $output .= $this->generateParameterDocumentation($param);
         }
         
-        // Response
-        $response = $this->extractResponseInfo($method);
-        if ($response) {
-            $output .= "#### Response\n\n";
-            $output .= $this->generateDtoDocumentation($response);
-            $output .= "\n";
+        return $output . "\n";
+    }
+
+    /**
+     * Generate request body section with improved DTO detection
+     */
+    private function generateRequestBodySection(\ReflectionMethod $method): string
+    {
+        $requestDto = $this->extractRequestDto($method);
+        if (!$requestDto) {
+            return '';
         }
         
-        $output .= "---\n\n";
+        $output = "#### Request Body\n\n";
+        $output .= $this->generateDtoDocumentation($requestDto);
+        $output .= "\n";
+        
+        if ($this->config['show_request_examples']) {
+            $output .= "**Example Request:**\n\n";
+            $output .= $this->generateRequestExample($requestDto);
+            $output .= "\n";
+        }
         
         return $output;
+    }
+
+    /**
+     * Generate response section with improved DTO detection - using JSON format
+     */
+    private function generateResponseSection(\ReflectionMethod $method): string
+    {
+        $responseDto = $this->extractResponseDto($method);
+        if (!$responseDto) {
+            return '';
+        }
+        
+        $output = "#### Response\n\n";
+        
+        // For responses, we just show the JSON schema
+        try {
+            $reflection = new \ReflectionClass($responseDto);
+            $example = $this->generateDtoExample($reflection);
+            
+            $output .= "**Response Schema:**\n\n";
+            $output .= "```json\n" . json_encode($example, JSON_PRETTY_PRINT) . "\n```\n\n";
+        } catch (\Exception $e) {
+            $output .= "Error generating response schema: " . $e->getMessage() . "\n\n";
+            // Fallback to TypeScript interface
+            $output .= $this->generateDtoDocumentation($responseDto);
+        }
+        
+        return $output;
+    }
+
+    /**
+     * Generate route footer
+     */
+    private function generateRouteFooter(): string
+    {
+        return "---\n\n";
+    }
+
+    /**
+     * Extract Request DTO from method parameters with improved detection
+     */
+    private function extractRequestDto(\ReflectionMethod $method): ?string
+    {
+        foreach ($method->getParameters() as $param) {
+            $type = $param->getType();
+            if (!$type || !$type instanceof \ReflectionNamedType) {
+                continue;
+            }
+            
+            $typeName = $type->getName();
+            
+            // Enhanced DTO detection patterns - use actual type hints
+            if ($this->isValidRequestDto($typeName)) {
+                return $typeName;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Extract Response DTO from method return type and PHPDoc annotations
+     */
+    private function extractResponseDto(\ReflectionMethod $method): ?string
+    {
+        // First, try to extract from PHPDoc @return annotation
+        $responseDto = $this->extractResponseDtoFromPhpDoc($method);
+        if ($responseDto) {
+            return $responseDto;
+        }
+        
+        // Fallback to return type analysis
+        $returnType = $method->getReturnType();
+        if (!$returnType || !$returnType instanceof \ReflectionNamedType) {
+            return null;
+        }
+        
+        $typeName = $returnType->getName();
+        
+        // If it's JsonResponse, we already tried PHPDoc, so return null
+        if ($typeName === 'Symfony\\Component\\HttpFoundation\\JsonResponse') {
+            return null;
+        }
+        
+        // Check if the return type itself is a DTO
+        if ($this->isValidResponseDto($typeName)) {
+            return $typeName;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Extract Response DTO from PHPDoc @return annotation
+     */
+    private function extractResponseDtoFromPhpDoc(\ReflectionMethod $method): ?string
+    {
+        $docComment = $method->getDocComment();
+        if (!$docComment) {
+            return null;
+        }
+        
+        // Use raw parsing instead of phpDocumentor library to avoid compatibility issues
+        return $this->extractResponseDtoFromRawDocComment($method);
+    }
+
+    /**
+     * Fallback method to extract Response DTO from raw doc comment
+     */
+    private function extractResponseDtoFromRawDocComment(\ReflectionMethod $method): ?string
+    {
+        $docComment = $method->getDocComment();
+        if (!$docComment) {
+            return null;
+        }
+        
+        // Look for @return JsonResponse<SomeDTO> patterns using regex
+        if (preg_match('/@return\s+JsonResponse<([^>]+)>/', $docComment, $matches)) {
+            $dtoTypes = $matches[1];
+            
+            // Handle union types
+            if (str_contains($dtoTypes, '|')) {
+                $types = array_map('trim', explode('|', $dtoTypes));
+                // Return the first non-error DTO
+                foreach ($types as $type) {
+                    if (!str_contains($type, 'Error') && $this->isValidResponseDto($type)) {
+                        return $this->resolveFullClassName($type, $method);
+                    }
+                }
+                // If no non-error DTO found, return the first valid one
+                foreach ($types as $type) {
+                    if ($this->isValidResponseDto($type)) {
+                        return $this->resolveFullClassName($type, $method);
+                    }
+                }
+            } else {
+                // Single DTO type
+                if ($this->isValidResponseDto($dtoTypes)) {
+                    return $this->resolveFullClassName($dtoTypes, $method);
+                }
+            }
+        }
+        
+        // Look for direct DTO return types
+        if (preg_match('/@return\s+([A-Za-z_\\\\]+ResponseDTO[A-Za-z_]*)/', $docComment, $matches)) {
+            $dtoType = $matches[1];
+            if ($this->isValidResponseDto($dtoType)) {
+                return $this->resolveFullClassName($dtoType, $method);
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Resolve full class name from short name using method's use statements
+     */
+    private function resolveFullClassName(string $className, \ReflectionMethod $method): string
+    {
+        // If already a full class name, return as is
+        if (str_contains($className, '\\')) {
+            return $className;
+        }
+        
+        // Try to resolve using the method's declaring class namespace
+        $declaringClass = $method->getDeclaringClass();
+        $namespace = $declaringClass->getNamespaceName();
+        
+        // Common DTO namespace patterns
+        $possibleNamespaces = [
+            $namespace . '\\DTO\\' . $className,
+            $namespace . '\\DTO\\Response\\' . $className,
+            'App\\DTO\\' . $className,
+            'App\\DTO\\Response\\' . $className,
+        ];
+        
+        foreach ($possibleNamespaces as $fullClassName) {
+            if (class_exists($fullClassName)) {
+                return $fullClassName;
+            }
+        }
+        
+        // If not found, return the original className
+        return $className;
+    }
+
+    /**
+     * Check if a class is a valid Request DTO
+     */
+    private function isValidRequestDto(string $className): bool
+    {
+        // Skip primitive types and built-in classes
+        if (!str_contains($className, '\\')) {
+            // Try to resolve as short class name
+            $className = $this->resolveFullClassNameForValidation($className);
+            if (!$className || !class_exists($className)) {
+                return false;
+            }
+        } elseif (!class_exists($className)) {
+            return false;
+        }
+        
+        // Skip Symfony built-in classes
+        if (str_starts_with($className, 'Symfony\\')) {
+            return false;
+        }
+        
+        $patterns = [
+            '/.*RequestDTO$/i',
+            '/.*Request$/i'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $className)) {
+                return true;
+            }
+        }
+        
+        // Check if it's in a DTO namespace and has DTO-like structure
+        return str_contains($className, 'DTO') && $this->isDtoClass($className);
+    }
+
+    /**
+     * Check if a class is a valid Response DTO
+     */
+    private function isValidResponseDto(string $className): bool
+    {
+        // Skip primitive types and built-in classes
+        if (!str_contains($className, '\\')) {
+            // Try to resolve as short class name
+            $className = $this->resolveFullClassNameForValidation($className);
+            if (!$className || !class_exists($className)) {
+                return false;
+            }
+        } elseif (!class_exists($className)) {
+            return false;
+        }
+        
+        // Skip Symfony built-in classes
+        if (str_starts_with($className, 'Symfony\\')) {
+            return false;
+        }
+        
+        $patterns = [
+            '/.*ResponseDTO$/i',
+            '/.*Response$/i'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $className)) {
+                return true;
+            }
+        }
+        
+        // Check if it's in a DTO namespace
+        return str_contains($className, 'DTO') && $this->isDtoClass($className);
+    }
+
+    /**
+     * Helper method to resolve full class name for validation
+     */
+    private function resolveFullClassNameForValidation(string $className): ?string
+    {
+        // Common DTO namespace patterns to check
+        $possibleNamespaces = [
+            'App\\DTO\\' . $className,
+            'App\\DTO\\Response\\' . $className,
+            'App\\DTO\\Request\\' . $className,
+        ];
+        
+        foreach ($possibleNamespaces as $fullClassName) {
+            if (class_exists($fullClassName)) {
+                return $fullClassName;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if a class is a DTO class by examining its structure
+     */
+    private function isDtoClass(string $className): bool
+    {
+        try {
+            $reflection = new \ReflectionClass($className);
+            
+            // Check if it's in a DTO namespace
+            if (str_contains($reflection->getNamespaceName(), 'DTO')) {
+                return true;
+            }
+            
+            // Check for readonly properties (common in DTOs)
+            $hasReadonlyProperties = false;
+            foreach ($reflection->getProperties() as $property) {
+                if ($property->isReadOnly()) {
+                    $hasReadonlyProperties = true;
+                    break;
+                }
+            }
+            
+            // Check for promoted constructor parameters (common in modern DTOs)
+            $hasPromotedParameters = false;
+            $constructor = $reflection->getConstructor();
+            if ($constructor) {
+                foreach ($constructor->getParameters() as $param) {
+                    if ($param->isPromoted()) {
+                        $hasPromotedParameters = true;
+                        break;
+                    }
+                }
+            }
+            
+            return $hasReadonlyProperties || $hasPromotedParameters;
+            
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -1028,45 +1991,6 @@ class EnhancedApiDocGenerator
     }
 
     /**
-     * Extract request body information
-     */
-    private function extractRequestBodyInfo(\ReflectionMethod $method): ?string
-    {
-        foreach ($method->getParameters() as $param) {
-            $type = $param->getType();
-            if ($type && $type instanceof \ReflectionNamedType) {
-                $typeName = $type->getName();
-                if (str_contains($typeName, 'DTO') && str_contains($typeName, 'Request')) {
-                    return $typeName;
-                }
-            }
-        }
-        
-        return null;
-    }
-
-    /**
-     * Extract response information
-     */
-    private function extractResponseInfo(\ReflectionMethod $method): ?string
-    {
-        $returnType = $method->getReturnType();
-        
-        if (!$returnType) {
-            return null;
-        }
-        
-        if ($returnType instanceof \ReflectionNamedType) {
-            $typeName = $returnType->getName();
-            if (str_contains($typeName, 'Response') || str_contains($typeName, 'DTO')) {
-                return $typeName;
-            }
-        }
-        
-        return null;
-    }
-
-    /**
      * Generate parameter documentation
      */
     private function generateParameterDocumentation(array $param): string
@@ -1082,32 +2006,6 @@ class EnhancedApiDocGenerator
         }
         
         $output .= "\n";
-        
-        return $output;
-    }
-
-    /**
-     * Generate class documentation using modern PHP reflection
-     */
-    private function generateClassDocumentation(\ReflectionClass $reflection, int $depth = 0): string
-    {
-        $output = "**{$reflection->getShortName()}**\n\n";
-        
-        // Class description
-        $classDoc = $this->extractClassDocumentation($reflection);
-        if ($classDoc) {
-            $output .= "$classDoc\n\n";
-        }
-        
-        // Properties
-        $properties = $this->extractClassProperties($reflection, $depth);
-        
-        if (!empty($properties)) {
-            $output .= "Properties:\n\n";
-            foreach ($properties as $property) {
-                $output .= $this->generatePropertyDocumentation($property, $depth);
-            }
-        }
         
         return $output;
     }
@@ -1497,8 +2395,6 @@ class EnhancedApiDocGenerator
             }
         }
         
-        $output .= "\n\n";
-        
         return $output;
     }
 
@@ -1523,7 +2419,7 @@ class EnhancedApiDocGenerator
             }
             
             if (class_exists($singleType)) {
-                $expanded[] = $this->generateClassDocumentation(new \ReflectionClass($singleType), $depth);
+                $expanded[] = $this->generateEnhancedClassDocumentation(new \ReflectionClass($singleType), $depth);
             }
         }
         
@@ -1970,7 +2866,7 @@ class EnhancedApiDocGenerator
         foreach ($this->processedClasses as $className => $documentation) {
             if (str_contains($className, 'DTO')) {
                 $schemaName = $this->getSchemaName($className);
-                $schemas[$schemaName] = $this->generateOpenApiSchema($className);
+                $schemas[$schemaName] = $this->generateDtoOpenApiSchema($className);
             }
         }
         return $schemas;
