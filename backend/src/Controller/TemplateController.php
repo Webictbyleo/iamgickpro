@@ -7,6 +7,11 @@ namespace App\Controller;
 use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Request\CreateTemplateRequestDTO;
 use App\DTO\Request\SearchTemplateRequestDTO;
+use App\DTO\Response\DesignResponseDTO;
+use App\DTO\Response\ErrorResponseDTO;
+use App\DTO\Response\SuccessResponseDTO;
+use App\DTO\Response\TemplateResponseDTO;
+use App\DTO\Response\TemplateSearchResponseDTO;
 use App\Entity\Design;
 use App\Entity\Project;
 use App\Entity\Template;
@@ -227,7 +232,7 @@ class TemplateController extends AbstractController
      *                                     - category: Category filter
      *                                     - page: Page number for pagination
      *                                     - limit: Number of results per page
-     * @return JsonResponse<TemplateResponseDTO|ErrorResponseDTO> Search results or error response
+     * @return JsonResponse<TemplateSearchResponseDTO|ErrorResponseDTO> Search results or error response
      */
     #[Route('/search', name: 'search', methods: ['GET'])]
     public function search(SearchTemplateRequestDTO $dto): JsonResponse
@@ -280,14 +285,37 @@ class TemplateController extends AbstractController
 
             $total = (int) $totalQb->getQuery()->getSingleScalarResult();
 
-            $templateResponse = $this->responseDTOFactory->createTemplateListResponse(
-                $templates,
-                $total,
+            // Convert templates to response data array
+            $templateData = array_map(function ($template) {
+                return [
+                    'id' => $template->getId(),
+                    'uuid' => $template->getUuid(),
+                    'name' => $template->getName(),
+                    'description' => $template->getDescription(),
+                    'category' => $template->getCategory(),
+                    'tags' => $template->getTags(),
+                    'thumbnailUrl' => $template->getThumbnailUrl(),
+                    'previewUrl' => $template->getPreviewUrl(),
+                    'width' => $template->getWidth(),
+                    'height' => $template->getHeight(),
+                    'isPremium' => $template->isIsPremium(),
+                    'isActive' => $template->isIsActive(),
+                    'rating' => (float) $template->getRating(),
+                    'ratingCount' => $template->getRatingCount(),
+                    'usageCount' => $template->getUsageCount(),
+                    'createdAt' => $template->getCreatedAt()?->format('c'),
+                    'updatedAt' => $template->getUpdatedAt()?->format('c'),
+                ];
+            }, $templates);
+
+            $searchResponse = $this->responseDTOFactory->createTemplateSearchResponse(
+                $templateData,
                 $dto->page,
                 $dto->limit,
+                $total,
                 $query ? "Search results for: {$query}" : 'Template search results'
             );
-            return $this->templateResponse($templateResponse);
+            return $this->templateSearchResponse($searchResponse);
 
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(

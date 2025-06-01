@@ -9,6 +9,10 @@ use App\DTO\DuplicateDesignRequestDTO;
 use App\DTO\SearchRequestDTO;
 use App\DTO\UpdateDesignRequestDTO;
 use App\DTO\UpdateDesignThumbnailRequestDTO;
+use App\DTO\Response\DesignResponseDTO;
+use App\DTO\Response\ErrorResponseDTO;
+use App\DTO\Response\PaginatedResponseDTO;
+use App\DTO\Response\SuccessResponseDTO;
 use App\Entity\Design;
 use App\Entity\Project;
 use App\Entity\User;
@@ -528,7 +532,7 @@ class DesignController extends AbstractController
      *                        - project_id: Filter by specific project (optional)
      *                        - sort: Sort field (relevance, name, created_at, updated_at)
      *                        - order: Sort direction (asc, desc)
-     * @return JsonResponse<SearchResponseDTO|ErrorResponseDTO> Search results or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Search results or error response
      */
     #[Route('/search', name: 'search', methods: ['GET'])]
     public function search(Request $request): JsonResponse

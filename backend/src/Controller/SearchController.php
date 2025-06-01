@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\TypedResponseTrait;
+use App\DTO\Response\ErrorResponseDTO;
+use App\DTO\Response\SearchResponseDTO;
+use App\DTO\Response\SuccessResponseDTO;
 use App\Entity\User;
 use App\Service\ResponseDTOFactory;
 use App\Service\SearchService;

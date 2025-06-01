@@ -6,7 +6,10 @@ namespace App\Controller;
 
 use App\DTO\CreateProjectRequestDTO;
 use App\DTO\DuplicateProjectRequestDTO;
+use App\DTO\Response\ErrorResponseDTO;
+use App\DTO\Response\PaginatedResponseDTO;
 use App\DTO\Response\ProjectResponseDTO;
+use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\SearchProjectsRequestDTO;
 use App\DTO\UpdateProjectRequestDTO;
 use App\Entity\Project;

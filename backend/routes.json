@@ -1,0 +1,1586 @@
+{
+    "_preview_error": {
+        "path": "\/_error\/{code}.{_format}",
+        "pathRegex": "{^\/_error\/(?P<code>\\d+)(?:\\.(?P<_format>[^\/]++))?$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "error_controller::preview",
+            "_format": "html"
+        },
+        "requirements": {
+            "code": "\\d+"
+        },
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_wdt": {
+        "path": "\/_wdt\/{token}",
+        "pathRegex": "{^\/_wdt\/(?P<token>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::toolbarAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_home": {
+        "path": "\/_profiler\/",
+        "pathRegex": "{^\/_profiler\/$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::homeAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_search": {
+        "path": "\/_profiler\/search",
+        "pathRegex": "{^\/_profiler\/search$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::searchAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_search_bar": {
+        "path": "\/_profiler\/search_bar",
+        "pathRegex": "{^\/_profiler\/search_bar$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::searchBarAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_phpinfo": {
+        "path": "\/_profiler\/phpinfo",
+        "pathRegex": "{^\/_profiler\/phpinfo$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::phpinfoAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_xdebug": {
+        "path": "\/_profiler\/xdebug",
+        "pathRegex": "{^\/_profiler\/xdebug$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::xdebugAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_font": {
+        "path": "\/_profiler\/font\/{fontName}.woff2",
+        "pathRegex": "{^\/_profiler\/font\/(?P<fontName>[^\/\\.]++)\\.woff2$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::fontAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_search_results": {
+        "path": "\/_profiler\/{token}\/search\/results",
+        "pathRegex": "{^\/_profiler\/(?P<token>[^\/]++)\/search\/results$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::searchResultsAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_open_file": {
+        "path": "\/_profiler\/open",
+        "pathRegex": "{^\/_profiler\/open$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::openAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler": {
+        "path": "\/_profiler\/{token}",
+        "pathRegex": "{^\/_profiler\/(?P<token>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.profiler::panelAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_router": {
+        "path": "\/_profiler\/{token}\/router",
+        "pathRegex": "{^\/_profiler\/(?P<token>[^\/]++)\/router$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.router::panelAction"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_exception": {
+        "path": "\/_profiler\/{token}\/exception",
+        "pathRegex": "{^\/_profiler\/(?P<token>[^\/]++)\/exception$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.exception_panel::body"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "_profiler_exception_css": {
+        "path": "\/_profiler\/{token}\/exception.css",
+        "pathRegex": "{^\/_profiler\/(?P<token>[^\/]++)\/exception\\.css$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "ANY",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "web_profiler.controller.exception_panel::stylesheet"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_auth_register": {
+        "path": "\/api\/auth\/register",
+        "pathRegex": "{^\/api\/auth\/register$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\AuthController::register"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_auth_login": {
+        "path": "\/api\/auth\/login",
+        "pathRegex": "{^\/api\/auth\/login$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\AuthController::login"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_auth_me": {
+        "path": "\/api\/auth\/me",
+        "pathRegex": "{^\/api\/auth\/me$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\AuthController::me"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_auth_update_profile": {
+        "path": "\/api\/auth\/profile",
+        "pathRegex": "{^\/api\/auth\/profile$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\AuthController::updateProfile"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_auth_change_password": {
+        "path": "\/api\/auth\/change-password",
+        "pathRegex": "{^\/api\/auth\/change\\-password$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\AuthController::changePassword"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_auth_logout": {
+        "path": "\/api\/auth\/logout",
+        "pathRegex": "{^\/api\/auth\/logout$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\AuthController::logout"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_index": {
+        "path": "\/api\/designs",
+        "pathRegex": "{^\/api\/designs$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::index"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_create": {
+        "path": "\/api\/designs",
+        "pathRegex": "{^\/api\/designs$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_show": {
+        "path": "\/api\/designs\/{id}",
+        "pathRegex": "{^\/api\/designs\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_update": {
+        "path": "\/api\/designs\/{id}",
+        "pathRegex": "{^\/api\/designs\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::update"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_delete": {
+        "path": "\/api\/designs\/{id}",
+        "pathRegex": "{^\/api\/designs\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::delete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_duplicate": {
+        "path": "\/api\/designs\/{id}\/duplicate",
+        "pathRegex": "{^\/api\/designs\/(?P<id>[^\/]++)\/duplicate$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::duplicate"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_update_thumbnail": {
+        "path": "\/api\/designs\/{id}\/thumbnail",
+        "pathRegex": "{^\/api\/designs\/(?P<id>[^\/]++)\/thumbnail$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::updateThumbnail"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_designs_search": {
+        "path": "\/api\/designs\/search",
+        "pathRegex": "{^\/api\/designs\/search$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\DesignController::search"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_list": {
+        "path": "\/api\/export-jobs",
+        "pathRegex": "{^\/api\/export\\-jobs$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::list"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_show": {
+        "path": "\/api\/export-jobs\/{id}",
+        "pathRegex": "{^\/api\/export\\-jobs\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_create": {
+        "path": "\/api\/export-jobs",
+        "pathRegex": "{^\/api\/export\\-jobs$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_update": {
+        "path": "\/api\/export-jobs\/{id}",
+        "pathRegex": "{^\/api\/export\\-jobs\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::update"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_delete": {
+        "path": "\/api\/export-jobs\/{id}",
+        "pathRegex": "{^\/api\/export\\-jobs\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::delete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_cancel": {
+        "path": "\/api\/export-jobs\/{id}\/cancel",
+        "pathRegex": "{^\/api\/export\\-jobs\/(?P<id>[^\/]++)\/cancel$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::cancel"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_retry": {
+        "path": "\/api\/export-jobs\/{id}\/retry",
+        "pathRegex": "{^\/api\/export\\-jobs\/(?P<id>[^\/]++)\/retry$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::retry"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_download": {
+        "path": "\/api\/export-jobs\/{id}\/download",
+        "pathRegex": "{^\/api\/export\\-jobs\/(?P<id>[^\/]++)\/download$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::download"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_stats": {
+        "path": "\/api\/export-jobs\/stats",
+        "pathRegex": "{^\/api\/export\\-jobs\/stats$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::stats"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_export_jobs_queue_status": {
+        "path": "\/api\/export-jobs\/queue-status",
+        "pathRegex": "{^\/api\/export\\-jobs\/queue\\-status$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ExportJobController::queueStatus"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_create": {
+        "path": "\/api\/layers",
+        "pathRegex": "{^\/api\/layers$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_show": {
+        "path": "\/api\/layers\/{id}",
+        "pathRegex": "{^\/api\/layers\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_update": {
+        "path": "\/api\/layers\/{id}",
+        "pathRegex": "{^\/api\/layers\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::update"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_delete": {
+        "path": "\/api\/layers\/{id}",
+        "pathRegex": "{^\/api\/layers\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::delete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_duplicate": {
+        "path": "\/api\/layers\/{id}\/duplicate",
+        "pathRegex": "{^\/api\/layers\/(?P<id>[^\/]++)\/duplicate$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::duplicate"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_move": {
+        "path": "\/api\/layers\/{id}\/move",
+        "pathRegex": "{^\/api\/layers\/(?P<id>[^\/]++)\/move$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::move"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_layers_bulk_update": {
+        "path": "\/api\/layers\/bulk-update",
+        "pathRegex": "{^\/api\/layers\/bulk\\-update$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\LayerController::bulkUpdate"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_list": {
+        "path": "\/api\/media",
+        "pathRegex": "{^\/api\/media$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::list"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_show": {
+        "path": "\/api\/media\/{uuid}",
+        "pathRegex": "{^\/api\/media\/(?P<uuid>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_create": {
+        "path": "\/api\/media",
+        "pathRegex": "{^\/api\/media$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_update": {
+        "path": "\/api\/media\/{uuid}",
+        "pathRegex": "{^\/api\/media\/(?P<uuid>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::update"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_delete": {
+        "path": "\/api\/media\/{uuid}",
+        "pathRegex": "{^\/api\/media\/(?P<uuid>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::delete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_search": {
+        "path": "\/api\/media\/search",
+        "pathRegex": "{^\/api\/media\/search$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::search"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_duplicate": {
+        "path": "\/api\/media\/duplicate\/{uuid}",
+        "pathRegex": "{^\/api\/media\/duplicate\/(?P<uuid>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::duplicate"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_stock_search": {
+        "path": "\/api\/media\/stock\/search",
+        "pathRegex": "{^\/api\/media\/stock\/search$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::stockSearch"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_media_bulk_delete": {
+        "path": "\/api\/media\/bulk\/delete",
+        "pathRegex": "{^\/api\/media\/bulk\/delete$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\MediaController::bulkDelete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_list": {
+        "path": "\/api\/plugins",
+        "pathRegex": "{^\/api\/plugins$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::list"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_show": {
+        "path": "\/api\/plugins\/{id}",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_create": {
+        "path": "\/api\/plugins",
+        "pathRegex": "{^\/api\/plugins$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_update": {
+        "path": "\/api\/plugins\/{id}",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::update"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_delete": {
+        "path": "\/api\/plugins\/{id}",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::delete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_install": {
+        "path": "\/api\/plugins\/{id}\/install",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)\/install$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::install"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_uninstall": {
+        "path": "\/api\/plugins\/{id}\/uninstall",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)\/uninstall$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::uninstall"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_upload_file": {
+        "path": "\/api\/plugins\/{id}\/upload-file",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)\/upload\\-file$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::uploadFile"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_approve": {
+        "path": "\/api\/plugins\/{id}\/approve",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)\/approve$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::approve"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_reject": {
+        "path": "\/api\/plugins\/{id}\/reject",
+        "pathRegex": "{^\/api\/plugins\/(?P<id>[^\/]++)\/reject$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::reject"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_categories": {
+        "path": "\/api\/plugins\/categories",
+        "pathRegex": "{^\/api\/plugins\/categories$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::categories"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_plugins_my_plugins": {
+        "path": "\/api\/plugins\/my-plugins",
+        "pathRegex": "{^\/api\/plugins\/my\\-plugins$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\PluginController::myPlugins"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_index": {
+        "path": "\/api\/projects",
+        "pathRegex": "{^\/api\/projects$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::index"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_create": {
+        "path": "\/api\/projects",
+        "pathRegex": "{^\/api\/projects$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_show": {
+        "path": "\/api\/projects\/{id}",
+        "pathRegex": "{^\/api\/projects\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_update": {
+        "path": "\/api\/projects\/{id}",
+        "pathRegex": "{^\/api\/projects\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::update"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_delete": {
+        "path": "\/api\/projects\/{id}",
+        "pathRegex": "{^\/api\/projects\/(?P<id>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::delete"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_duplicate": {
+        "path": "\/api\/projects\/{id}\/duplicate",
+        "pathRegex": "{^\/api\/projects\/(?P<id>[^\/]++)\/duplicate$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::duplicate"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_public": {
+        "path": "\/api\/projects\/public",
+        "pathRegex": "{^\/api\/projects\/public$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::publicProjects"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_projects_toggle_share": {
+        "path": "\/api\/projects\/{id}\/share",
+        "pathRegex": "{^\/api\/projects\/(?P<id>[^\/]++)\/share$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\ProjectController::toggleShare"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "search": {
+        "path": "\/api\/search",
+        "pathRegex": "{^\/api\/search$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\SearchController::search"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "search_templates": {
+        "path": "\/api\/search\/templates",
+        "pathRegex": "{^\/api\/search\/templates$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\SearchController::searchTemplates"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "search_media": {
+        "path": "\/api\/search\/media",
+        "pathRegex": "{^\/api\/search\/media$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\SearchController::searchMedia"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "search_projects": {
+        "path": "\/api\/search\/projects",
+        "pathRegex": "{^\/api\/search\/projects$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\SearchController::searchProjects"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "search_suggestions": {
+        "path": "\/api\/search\/suggestions",
+        "pathRegex": "{^\/api\/search\/suggestions$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\SearchController::getSearchSuggestions"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_templates_list": {
+        "path": "\/api\/templates",
+        "pathRegex": "{^\/api\/templates$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\TemplateController::list"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_templates_show": {
+        "path": "\/api\/templates\/{uuid}",
+        "pathRegex": "{^\/api\/templates\/(?P<uuid>[^\/]++)$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\TemplateController::show"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_templates_create": {
+        "path": "\/api\/templates",
+        "pathRegex": "{^\/api\/templates$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\TemplateController::create"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_templates_search": {
+        "path": "\/api\/templates\/search",
+        "pathRegex": "{^\/api\/templates\/search$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\TemplateController::search"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_templates_use": {
+        "path": "\/api\/templates\/{uuid}\/use",
+        "pathRegex": "{^\/api\/templates\/(?P<uuid>[^\/]++)\/use$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\TemplateController::useTemplate"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_templates_categories": {
+        "path": "\/api\/templates\/categories",
+        "pathRegex": "{^\/api\/templates\/categories$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\TemplateController::getCategories"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_profile": {
+        "path": "\/api\/user\/profile",
+        "pathRegex": "{^\/api\/user\/profile$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::getProfile"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_update_profile": {
+        "path": "\/api\/user\/profile",
+        "pathRegex": "{^\/api\/user\/profile$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::updateProfile"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_upload_avatar": {
+        "path": "\/api\/user\/avatar",
+        "pathRegex": "{^\/api\/user\/avatar$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::uploadAvatar"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_change_password": {
+        "path": "\/api\/user\/password",
+        "pathRegex": "{^\/api\/user\/password$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "PUT",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::changePassword"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_download_data": {
+        "path": "\/api\/user\/settings\/privacy\/download",
+        "pathRegex": "{^\/api\/user\/settings\/privacy\/download$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::requestDataDownload"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_export_data": {
+        "path": "\/api\/user\/settings\/privacy\/export",
+        "pathRegex": "{^\/api\/user\/settings\/privacy\/export$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "POST",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::exportPortableData"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_delete_account": {
+        "path": "\/api\/user\/settings\/privacy\/delete",
+        "pathRegex": "{^\/api\/user\/settings\/privacy\/delete$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "DELETE",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::deleteAccount"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    },
+    "api_user_subscription": {
+        "path": "\/api\/user\/subscription",
+        "pathRegex": "{^\/api\/user\/subscription$}sDu",
+        "host": "ANY",
+        "hostRegex": "",
+        "scheme": "ANY",
+        "method": "GET",
+        "class": "Symfony\\Component\\Routing\\Route",
+        "defaults": {
+            "_controller": "App\\Controller\\UserController::getSubscription"
+        },
+        "requirements": "NO CUSTOM",
+        "options": {
+            "compiler_class": "Symfony\\Component\\Routing\\RouteCompiler",
+            "utf8": true
+        }
+    }
+}

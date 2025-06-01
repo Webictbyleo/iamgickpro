@@ -16,6 +16,7 @@ use App\DTO\Response\ProjectResponseDTO;
 use App\DTO\Response\SearchResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\Response\TemplateResponseDTO;
+use App\DTO\Response\TemplateSearchResponseDTO;
 use App\DTO\Response\UserProfileResponseDTO;
 use App\DTO\Response\UserResponseDTO;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -134,6 +135,14 @@ trait TypedResponseTrait
      * Create a typed JSON response with PaginatedResponseDTO
      */
     protected function paginatedResponse(PaginatedResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return $this->json($dto->toArray(), $status);
+    }
+
+    /**
+     * Create a typed JSON response with TemplateSearchResponseDTO
+     */
+    protected function templateSearchResponse(TemplateSearchResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
     {
         return $this->json($dto->toArray(), $status);
     }

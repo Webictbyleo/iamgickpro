@@ -6,6 +6,9 @@ namespace App\Controller;
 
 use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Request\CreateExportJobRequestDTO;
+use App\DTO\Response\ErrorResponseDTO;
+use App\DTO\Response\ExportJobResponseDTO;
+use App\DTO\Response\SuccessResponseDTO;
 use App\Entity\ExportJob;
 use App\Repository\ExportJobRepository;
 use App\Service\ResponseDTOFactory;

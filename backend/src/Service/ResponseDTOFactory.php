@@ -16,6 +16,7 @@ use App\DTO\Response\ProjectResponseDTO;
 use App\DTO\Response\SearchResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\Response\TemplateResponseDTO;
+use App\DTO\Response\TemplateSearchResponseDTO;
 use App\DTO\Response\UserProfileResponseDTO;
 use App\DTO\Response\UserResponseDTO;
 use App\Entity\User;
@@ -522,6 +523,45 @@ class ResponseDTOFactory
             limit: $limit,
             total: $total,
             totalPages: $totalPages,
+            message: $message
+        );
+    }
+
+    /**
+     * Create template search response with template data array
+     *
+     * @param array<int, array{
+     *     id: int,
+     *     uuid: string,
+     *     name: string,
+     *     description: string,
+     *     category: string,
+     *     tags: array<int, string>,
+     *     thumbnailUrl: string,
+     *     previewUrl: string,
+     *     width: int,
+     *     height: int,
+     *     isPremium: bool,
+     *     isActive: bool,
+     *     rating: float,
+     *     ratingCount: int,
+     *     usageCount: int,
+     *     createdAt: string,
+     *     updatedAt: string
+     * }> $templates Array of template data with specific structure
+     * @param int $page Current page number
+     * @param int $limit Items per page
+     * @param int $total Total number of templates found
+     * @param string $message Response message
+     * @return TemplateSearchResponseDTO
+     */
+    public function createTemplateSearchResponse(array $templates, int $page, int $limit, int $total, string $message = 'Template search completed successfully'): TemplateSearchResponseDTO
+    {
+        return TemplateSearchResponseDTO::create(
+            templates: $templates,
+            page: $page,
+            limit: $limit,
+            total: $total,
             message: $message
         );
     }
