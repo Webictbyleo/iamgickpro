@@ -296,4 +296,23 @@ class TemplateRepository extends ServiceEntityRepository
         
         return $stmt->executeQuery()->fetchAllAssociative();
     }
+
+    /**
+     * Get all distinct categories from active public templates
+     */
+    public function findAllCategories(): array
+    {
+        $result = $this->createQueryBuilder('t')
+            ->select('DISTINCT t.category')
+            ->andWhere('t.isPublic = :public')
+            ->andWhere('t.deletedAt IS NULL')
+            ->andWhere('t.category IS NOT NULL')
+            ->setParameter('public', true)
+            ->orderBy('t.category', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        // Extract just the category names from the result array
+        return array_map(fn($item) => $item['category'], $result);
+    }
 }

@@ -59,7 +59,7 @@ class MediaController extends AbstractController
      *                                  - search: Search term for filename/description
      *                                  - sort: Sort field (name, size, created_at, updated_at)
      *                                  - order: Sort direction (asc, desc)
-     * @return JsonResponse<MediaListResponseDTO|ErrorResponseDTO> Paginated list of media files or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Paginated list of media files or error response
      */
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(SearchMediaRequestDTO $dto): JsonResponse
@@ -406,7 +406,7 @@ class MediaController extends AbstractController
      *                                  - limit: Items per page (default: 20, max: 100)
      *                                  - sort: Sort field (name, size, created_at, updated_at)
      *                                  - order: Sort direction (asc, desc)
-     * @return JsonResponse<MediaListResponseDTO|ErrorResponseDTO> Filtered and sorted media results or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Filtered and sorted media results or error response
      */
     #[Route('/search', name: 'search', methods: ['GET'])]
     public function search(SearchMediaRequestDTO $dto): JsonResponse
@@ -524,7 +524,7 @@ class MediaController extends AbstractController
      *                                  - page: Page number for pagination
      *                                  - limit: Number of results per page
      *                                  - provider: Specific stock provider to search
-     * @return JsonResponse<MediaListResponseDTO|ErrorResponseDTO> Stock media search results or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Stock media search results or error response
      */
     #[Route('/stock/search', name: 'stock_search', methods: ['GET'])]
     public function stockSearch(StockSearchRequestDTO $dto): JsonResponse

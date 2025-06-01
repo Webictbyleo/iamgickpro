@@ -50,7 +50,7 @@ class ExportJobController extends AbstractController
      *                        - limit: Items per page (default: 20, max: 50)
      *                        - status: Filter by job status (pending, processing, completed, failed, cancelled)
      *                        - format: Filter by export format (png, jpg, svg, mp4, gif)
-     * @return JsonResponse<ExportJobListResponseDTO|ErrorResponseDTO> Paginated list of export jobs or error response
+     * @return JsonResponse<ExportJobResponseDTO|ErrorResponseDTO> Paginated list of export jobs or error response
      */
     #[Route('', name: 'list', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]

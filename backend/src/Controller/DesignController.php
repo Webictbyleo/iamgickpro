@@ -61,7 +61,7 @@ class DesignController extends AbstractController
      *                        - search: Search term for design name/description
      *                        - sort: Sort field (name, created_at, updated_at)
      *                        - order: Sort direction (asc, desc)
-     * @return JsonResponse<DesignListResponseDTO|ErrorResponseDTO> Paginated list of designs or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Paginated list of designs or error response
      */
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse

@@ -58,7 +58,7 @@ class ProjectController extends AbstractController
      *                        - order: Sort direction (asc, desc)
      *                        - search: Search term for project name/description
      *                        - status: Filter by project status
-     * @return JsonResponse<ProjectListResponseDTO|ErrorResponseDTO> Paginated list of projects or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Paginated list of projects or error response
      */
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
@@ -441,7 +441,7 @@ class ProjectController extends AbstractController
      *                                     - sort: Sort field (name, created_at, updated_at, views)
      *                                     - order: Sort direction (asc, desc)
      *                                     - category: Project category filter
-     * @return JsonResponse<ProjectListResponseDTO|ErrorResponseDTO> Paginated list of public projects or error response
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Paginated list of public projects or error response
      */
     #[Route('/public', name: 'public', methods: ['GET'])]
     public function publicProjects(SearchProjectsRequestDTO $dto): JsonResponse
