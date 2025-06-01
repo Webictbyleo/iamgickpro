@@ -6,9 +6,24 @@ namespace App\DTO;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Data Transfer Object for stock media search requests.
+ * 
+ * Handles search operations for stock media from external providers
+ * like Unsplash, Pexels, and Pixabay. Provides structured search
+ * parameters for integrating with third-party stock media APIs
+ * to expand the available media library for users.
+ */
 readonly class StockSearchRequestDTO
 {
     public function __construct(
+        /**
+         * Search query for stock media.
+         * 
+         * The search term to find relevant stock photos and videos
+         * from external providers. Must be descriptive enough to
+         * return meaningful results from stock media APIs.
+         */
         #[Assert\NotBlank(message: 'Query is required for stock search')]
         #[Assert\Length(
             min: 1,
@@ -18,12 +33,26 @@ readonly class StockSearchRequestDTO
         )]
         public string $query,
 
+        /**
+         * Page number for stock media results pagination.
+         * 
+         * Specifies which page of stock media results to return
+         * from the external provider's API. Used to implement
+         * pagination for large result sets.
+         */
         #[Assert\Range(
             min: 1,
             notInRangeMessage: 'Page must be {{ min }} or greater'
         )]
         public int $page = 1,
 
+        /**
+         * Number of stock media items per page.
+         * 
+         * Controls how many stock media items are requested from
+         * the external provider. Limited to prevent API rate
+         * limiting and maintain performance.
+         */
         #[Assert\Range(
             min: 1,
             max: 50,
@@ -31,12 +60,26 @@ readonly class StockSearchRequestDTO
         )]
         public int $limit = 20,
 
+        /**
+         * Type of stock media to search for.
+         * 
+         * Specifies whether to search for images or videos from
+         * the stock media provider. Defaults to images as they
+         * are more commonly used in designs.
+         */
         #[Assert\Choice(
             choices: ['image', 'video'],
             message: 'Type must be one of: image, video'
         )]
         public string $type = 'image',
 
+        /**
+         * Stock media provider source.
+         * 
+         * Specifies which external stock media provider to search.
+         * Each provider has different content, licensing, and API
+         * characteristics. Defaults to Unsplash for high-quality images.
+         */
         #[Assert\Choice(
             choices: ['unsplash', 'pexels', 'pixabay'],
             message: 'Source must be one of: unsplash, pexels, pixabay'
@@ -45,6 +88,14 @@ readonly class StockSearchRequestDTO
     ) {
     }
 
+    /**
+     * Calculate pagination offset for stock media API.
+     * 
+     * Calculates the offset parameter needed for stock media
+     * provider APIs based on the current page and limit values.
+     * 
+     * @return int Offset for stock media API pagination
+     */
     public function getOffset(): int
     {
         return ($this->page - 1) * $this->limit;

@@ -8,7 +8,7 @@ This documentation provides comprehensive information about the IamgickPro Desig
 **Authentication**: JWT Bearer Token (where required)  
 **Content-Type**: `application/json`
 
-*Generated on: 2025-06-01 18:31:53*
+*Generated on: 2025-06-01 18:56:25*
 
 ---
 
@@ -34,6 +34,8 @@ The following TypeScript interfaces define the structure of requests and respons
 ### Request Schemas
 
 #### BulkDeleteMediaRequestDTO
+
+> Data Transfer Object for bulk media deletion requests.
 
 ```typescript
 interface BulkDeleteMediaRequestDTO {
@@ -239,27 +241,33 @@ interface CreateProjectRequestDTO {
 
 #### DuplicateDesignRequestDTO
 
+> Data Transfer Object for design duplication requests.
+
 ```typescript
 interface DuplicateDesignRequestDTO {
-  name?: string;  // Display name
-  projectId?: number;  // ProjectId value
+  name?: string;  // Custom name for the duplicated design. If provided, this will be used as the name for the new design. If null, the system will automatically generate a name like "Copy of {original name}". Must be ...
+  projectId?: number;  // Target project ID for the duplicated design. If provided, the duplicated design will be placed in the specified project. The user must have write access to the target project. If null, the design i...
 }
 ```
 
 #### DuplicateLayerRequestDTO
 
+> Data Transfer Object for layer duplication requests.
+
 ```typescript
 interface DuplicateLayerRequestDTO {
-  name?: string;  // Display name
-  targetDesignId?: string;  // TargetDesignId value
+  name?: string;  // Custom name for the duplicated layer. If provided, this will be used as the name for the new layer. If null, the system will automatically generate a name based on the original layer name (e. g. , ...
+  targetDesignId?: string;  // Target design ID for cross-design duplication. If provided, the layer will be duplicated into the specified design instead of the current design. The user must have write access to the target desig...
 }
 ```
 
 #### DuplicateMediaRequestDTO
 
+> Data Transfer Object for media file duplication requests.
+
 ```typescript
 interface DuplicateMediaRequestDTO {
-  name?: string;  // Display name
+  name?: string;  // Custom name for the duplicated media file. If provided, this will be used as the name for the duplicated media file. If null, the system will automatically generate a name like "Copy of {original n...
 }
 ```
 
@@ -307,45 +315,53 @@ interface RegisterRequestDTO {
 
 #### SearchMediaRequestDTO
 
+> Data Transfer Object for media search and filtering requests.
+
 ```typescript
 interface SearchMediaRequestDTO {
-  page?: number;  // Current page number
-  limit?: number;  // Items per page
+  page?: number;  // Page number for pagination. Specifies which page of media results to return. Must be 1 or greater for valid pagination.
+  limit?: number;  // Number of media items per page. Controls how many media files are returned per page. Limited to a maximum of 50 to maintain performance.
   type?: string;  // Type value
   source?: string;  // Source value
-  search?: string;  // Search value
-  tags?: string;  // Tags value
+  search?: string;  // Search query term. Text to search for in media file names, descriptions, and metadata. When null, no text-based filtering is applied.
+  tags?: string;  // Comma-separated list of tags for filtering. Tags to filter media by. Multiple tags can be specified separated by commas. The system will find media that matches any of the specified tags.
 }
 ```
 
 #### SearchProjectsRequestDTO
 
+> Data Transfer Object for project search requests.
+
 ```typescript
 interface SearchProjectsRequestDTO {
-  page?: number;  // Current page number
-  limit?: number;  // Items per page
-  search?: string;  // Search value
-  tags?: string;  // Tags value
+  page?: number;  // Page number for pagination. Specifies which page of project results to return. Must be 1 or greater for valid pagination navigation.
+  limit?: number;  // Number of projects per page. Controls how many projects are returned per page. Limited to a maximum of 50 to maintain performance and reasonable response times.
+  search?: string;  // Search query for project names and descriptions. Text to search for in project names, descriptions, and other searchable fields. When null, no text-based filtering is applied to the results.
+  tags?: string;  // Comma-separated list of tags for filtering. Tags to filter projects by. Multiple tags can be specified separated by commas. The system will find projects that match any of the specified tags.
 }
 ```
 
 #### SearchRequestDTO
 
+> Data Transfer Object for general search requests.
+
 ```typescript
 interface SearchRequestDTO {
-  query: string;  // Query value
-  page?: number;  // Current page number
-  limit?: number;  // Items per page
+  query: string;  // Search query term. The text to search for across entity names, descriptions, and other searchable fields. Must be at least 1 character and no longer than 255 characters to prevent abuse.
+  page?: number;  // Page number for pagination. Specifies which page of results to return. Must be a positive integer starting from 1. Used for implementing pagination in search results.
+  limit?: number;  // Number of items per page. Controls how many search results are returned per page. Limited to a maximum of 50 items to maintain performance and prevent excessive data transfer.
 }
 ```
 
 #### StockSearchRequestDTO
 
+> Data Transfer Object for stock media search requests.
+
 ```typescript
 interface StockSearchRequestDTO {
-  query: string;  // Query value
-  page?: number;  // Current page number
-  limit?: number;  // Items per page
+  query: string;  // Search query for stock media. The search term to find relevant stock photos and videos from external providers. Must be descriptive enough to return meaningful results from stock media APIs.
+  page?: number;  // Page number for stock media results pagination. Specifies which page of stock media results to return from the external provider's API. Used to implement pagination for large result sets.
+  limit?: number;  // Number of stock media items per page. Controls how many stock media items are requested from the external provider. Limited to prevent API rate limiting and maintain performance.
   type?: string;  // Type value
   source?: string;  // Source value
 }
