@@ -1,0 +1,55 @@
+{
+  "output_format": "markdown",
+  "max_depth": 5,
+  "include_examples": true,
+  "include_validation": true,
+  "include_security": true,
+  "group_by_tags": false,
+  "show_deprecated": true,
+  "cache_enabled": true,
+  "sort_routes": "path",
+  "show_request_examples": true,
+  "show_response_examples": true,
+  "generate_postman_collection": true,
+  "openapi_version": "3.0.3",
+  "exclude_controllers": [],
+  "include_only_controllers": [],
+  "exclude_routes": [
+    "/health",
+    "/metrics"
+  ],
+  "custom_settings": {
+    "api_title": "Design Platform API",
+    "api_version": "1.0.0",
+    "api_description": "Comprehensive API for the modern web-based design platform",
+    "contact": {
+      "name": "API Support",
+      "email": "api-support@example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "security_schemes": {
+    "bearerAuth": {
+      "type": "http",
+      "scheme": "bearer",
+      "bearerFormat": "JWT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.example.com/v1",
+      "description": "Staging server"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Development server"
+    }
+  ]
+}

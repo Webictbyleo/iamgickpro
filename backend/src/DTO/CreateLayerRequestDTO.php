@@ -6,6 +6,9 @@ namespace App\DTO;
 
 use App\DTO\ValueObject\Transform;
 use App\DTO\ValueObject\LayerProperties;
+use App\DTO\ValueObject\TextLayerProperties;
+use App\DTO\ValueObject\ImageLayerProperties;
+use App\DTO\ValueObject\ShapeLayerProperties;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -55,8 +58,10 @@ final readonly class CreateLayerRequestDTO
          * Layer-specific visual and behavior properties
          * Contains type-specific attributes like text styling, image src, or shape appearance
          * Structure depends on layer type and is validated accordingly
+         * 
+         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties
          */
-        public LayerProperties $properties,
+        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties $properties,
 
         /**
          * 2D transformation matrix for initial layer positioning

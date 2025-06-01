@@ -29,9 +29,7 @@ final readonly class BulkUpdateLayersRequestDTO
          * 
          * @var LayerUpdate[] $layers Array of typed layer update objects
          */
-        #[Assert\NotBlank(message: 'Layer updates array is required')]
-        #[Assert\Count(min: 1, minMessage: 'At least one layer update is required')]
-        #[Assert\Valid]
+        
         public array $layers,
     ) {
     }

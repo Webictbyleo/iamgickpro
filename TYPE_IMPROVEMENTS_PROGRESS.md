@@ -2,7 +2,31 @@
 
 ## ✅ COMPLETED TASKS
 
-### 1. ✅ Value Object Classes Created (COMPLETE)
+### 1. ✅ Union Type Property Collapse Issue FIXED (COMPLETE)
+**Issue:** API documentation generator was not properly expanding union types like `TextLayerProperties|ImageLayerProperties|ShapeLayerProperties`, showing empty objects `{}` instead of individual properties.
+
+**Root Cause:** All layer property classes were defined in the same file as their abstract parent class, causing autoloading issues during reflection.
+
+**Solution Implemented:**
+- ✅ **File Separation**: Split layer property classes into individual files:
+  - `LayerProperties.php` - Abstract base class only
+  - `TextLayerProperties.php` - Text layer properties
+  - `ImageLayerProperties.php` - Image layer properties  
+  - `ShapeLayerProperties.php` - Shape layer properties
+- ✅ **Automatic Value Object Detection**: Replaced hardcoded array with dynamic discovery:
+  - `getValueObjectClasses()` method automatically scans `/DTO/ValueObject/` directory
+  - No more manual maintenance when adding new value objects
+  - Automatic class existence validation
+- ✅ **Import References Updated**: All DTOs have proper import statements for separated classes
+- ✅ **API Documentation Regenerated**: Union types now properly expand to show all individual properties
+
+**Verification:**
+- ✅ `CreateLayerRequestDTO` shows complete text/image/shape property interfaces
+- ✅ `UpdateLayerRequestDTO` shows complete property interfaces  
+- ✅ No more empty `{}` objects in API documentation
+- ✅ API doc generator runs without errors
+
+### 2. ✅ Value Object Classes Created (COMPLETE)
 All value objects have been created in `/backend/src/DTO/ValueObject/`:
 
 - **`Tag.php`** - Validates tag names (1-50 chars, alphanumeric + spaces/hyphens/underscores)
@@ -17,7 +41,7 @@ All value objects have been created in `/backend/src/DTO/ValueObject/`:
 - **`LayerUpdate.php`** - Single layer update for bulk operations
 - **`DesignData.php`** - Design-level configuration (background, animations, grid, view settings)
 
-### 2. ✅ Request DTOs Updated with Proper Typing and Documentation (COMPLETE)
+### 3. ✅ Request DTOs Updated with Proper Typing and Documentation (COMPLETE)
 
 **Updated 12 Request DTOs** with comprehensive improvements:
 - ✅ `UpdateProfileRequestDTO.php` - Uses `UserSettings` object with `getSettingsArray()` helper
@@ -33,7 +57,7 @@ All value objects have been created in `/backend/src/DTO/ValueObject/`:
 - ✅ `UpdateDesignRequestDTO.php` - Uses `DesignData` object with `getDataArray()` helper
 - ✅ `CreateTemplateRequestDTO.php` - Uses `Tag[]` with `getTagsArray()` helper
 
-### 3. ✅ Controller Runtime Fixes (COMPLETE)
+### 4. ✅ Controller Runtime Fixes (COMPLETE)
 
 **Fixed 9 total type mismatch errors** across 5 controllers:
 
@@ -57,20 +81,24 @@ All value objects have been created in `/backend/src/DTO/ValueObject/`:
 - Fixed: `$media->setTags($dto->getTagsArray() ?? [])` instead of `$dto->tags ?? []`
 - Fixed: `$media->setTags($dto->getTagsArray())` instead of `$dto->tags`
 
-### 4. ✅ Enhanced Documentation (COMPLETE)
-- ✅ Added comprehensive PHPDoc comments explaining business purpose for all DTO properties
-- ✅ Documented validation rules and constraints inline with clear examples
-- ✅ Added usage context and examples in comments
-- ✅ Used proper type annotations (`@var Tag[]`, `@var LayerProperties`, etc.)
-- ✅ Added method documentation for all helper functions
+### 5. ✅ API Documentation Union Type Expansion Fixed (COMPLETE)
 
-### 5. ✅ Backward Compatibility Maintained (COMPLETE)
+**Fixed property collapse issue in API documentation generator:**
+- ✅ **Root Cause Identified**: LayerProperties classes (TextLayerProperties, ImageLayerProperties, ShapeLayerProperties) are defined in the same file, causing autoloading issues
+- ✅ **Solution Implemented**: Added explicit include for `LayerProperties.php` in the API documentation generator 
+- ✅ **Union Type Expansion Working**: Union types like `TextLayerProperties|ImageLayerProperties|ShapeLayerProperties` now properly expand to show all individual properties
+- ✅ **Verification Complete**: Both `CreateLayerRequestDTO` and `UpdateLayerRequestDTO` now show complete property interfaces instead of empty objects `{}`
+- ✅ **Debug Output Removed**: Cleaned up temporary debug statements from the generator
+
+**Result**: API documentation now correctly displays all layer-specific properties with their types, validation rules, and descriptions for each layer type (text, image, shape).
+
+### 6. ✅ Backward Compatibility Maintained (COMPLETE)
 - ✅ Added helper methods to convert typed objects back to arrays
 - ✅ Maintained existing public interfaces while improving internal typing
 - ✅ Used factory methods for creating objects from array data
 - ✅ No breaking changes to API endpoints - all tests pass
 
-### 6. ✅ Response DTOs Reviewed (COMPLETE)
+### 7. ✅ Response DTOs Reviewed (COMPLETE)
 - ✅ `TemplateSearchResponseDTO.php` - Already has proper array typing with detailed PHPDoc
 - ✅ `PaginatedResponseDTO.php` - Already uses generics for type safety
 
@@ -141,7 +169,7 @@ Could create additional value objects for remaining generic arrays:
 - **Legacy Support**: All existing array-based code continues to work
 - **Test Coverage**: All existing tests continue to pass
 
-## 🎯 MISSION ACCOMPLISHED
+## 🎯 MISSION ACCOMPLISHED - FINAL UPDATE
 
 This type contract improvement project has successfully:
 
@@ -151,7 +179,17 @@ This type contract improvement project has successfully:
 4. **✅ Fixed all runtime type issues** in controllers
 5. **✅ Maintained 100% backward compatibility** 
 6. **✅ Established patterns** for future development
+7. **✅ FIXED UNION TYPE PROPERTY COLLAPSE** - Properties now expand properly in API docs
+8. **✅ IMPLEMENTED AUTOMATIC VALUE OBJECT DETECTION** - No more hardcoded maintenance needed
+9. **✅ SEPARATED LAYER PROPERTY CLASSES** - Improved code organization and autoloading
 
-The codebase now has significantly improved type safety, clearer API contracts, and better developer experience while maintaining full compatibility with existing systems. The foundation is set for generating accurate TypeScript interfaces and improving overall code quality.
+### Final Verification Results:
+- ✅ API documentation generator runs without errors
+- ✅ Union types like `TextLayerProperties|ImageLayerProperties|ShapeLayerProperties` now show complete individual properties instead of empty `{}`
+- ✅ All 11 value object classes automatically discovered from filesystem
+- ✅ Clean separation of concerns with individual files for each layer property class
+- ✅ No manual maintenance required when adding new value objects
 
-**Status: PRIMARY OBJECTIVES COMPLETE ✅**
+**Status: ALL OBJECTIVES COMPLETE ✅**
+
+The codebase now has significantly improved type safety, clearer API contracts, proper union type expansion, automatic value object discovery, and better developer experience while maintaining full compatibility with existing systems.

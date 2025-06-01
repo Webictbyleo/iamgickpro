@@ -63,8 +63,8 @@ class EnhancedApiDocGenerator
         $lines = file($file);
         $constructorLines = array_slice($lines, $startLine-1, $endLine-$startLine+1);
         $joined = implode("\n", $constructorLines);
-        // Match all docblock+parameter pairs
-        $pattern = '/(\/\*\*.*?\*\/)[^\S\r\n]*[\r\n]+[^\S\r\n]*((?:public|protected|private)?\s*readonly\s*\??[\\\w\[\]]+\s*\$([a-zA-Z0-9_]+))/s';
+        // Match all docblock+parameter pairs, accounting for PHP attributes between docblock and parameter
+        $pattern = '/(\/\*\*.*?\*\/)\s*(?:#\[[^\]]*\]\s*)*((?:public|protected|private)?\s*readonly\s*\??[\\\w\[\]]+\s*\$([a-zA-Z0-9_]+))/s';
         preg_match_all($pattern, $joined, $matches, PREG_SET_ORDER);
         $result = [];
         foreach ($matches as $m) {
@@ -366,20 +366,31 @@ class EnhancedApiDocGenerator
         $startLine = $constructor->getStartLine();
         $endLine = $constructor->getEndLine();
         
-        // Get the content around the constructor, with more context
-        $contextStart = max(0, $startLine - 10);
-        $contextEnd = min(count($lines), $endLine + 5);
-        $contextLines = array_slice($lines, $contextStart, $contextEnd - $contextStart);
-        $content = implode('', $contextLines);
+        // Get the content of the constructor method only
+        $constructorLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
+        $content = implode('', $constructorLines);
         
-        // Look for a more specific pattern: docblock followed directly by parameter declaration
-        // This pattern looks for /** ... */ followed by optional whitespace/attributes, then the parameter
-        $pattern = '/\/\*\*(?:[^*]|\*(?!\/))*\*\/\s*(?:#\[[^\]]*\]\s*)*public\s+[^$]*\$' . preg_quote($paramName, '/') . '/s';
+        // Look for the specific parameter docblock pattern
+        // This pattern looks for /** ... */ followed by optional whitespace, then the parameter declaration
+        $paramPattern = '/\/\*\*(?:[^*]|\*(?!\/))*\*\/\s*(?:(?:#\[[^\]]*\]\s*)*(?:public|protected|private)\s+[^$]*?)?\$' . preg_quote($paramName, '/') . '/s';
         
-        if (preg_match($pattern, $content, $matches)) {
-            // Extract just the docblock part
+        if (preg_match($paramPattern, $content, $matches)) {
+            // Extract just the docblock part - find the /** ... */ block
             if (preg_match('/(\/\*\*(?:[^*]|\*(?!\/))*\*\/)/', $matches[0], $docMatches)) {
-                return $docMatches[1];
+                $docblock = $docMatches[1];
+                
+                // Verify this docblock is specifically for this parameter by checking if it's immediately before the parameter
+                // Split on the docblock and check what follows
+                $parts = explode($docblock, $content, 2);
+                if (count($parts) === 2) {
+                    $afterDocblock = $parts[1];
+                    // Remove whitespace and attributes, then check if we find our parameter
+                    $cleanAfter = preg_replace('/^\s*(?:#\[[^\]]*\]\s*)*/', '', $afterDocblock);
+                    if (strpos($cleanAfter, '$' . $paramName) === 0 || 
+                        preg_match('/^(?:public|protected|private)\s+[^$]*\$' . preg_quote($paramName, '/') . '/', $cleanAfter)) {
+                        return $docblock;
+                    }
+                }
             }
         }
         
@@ -929,16 +940,40 @@ class EnhancedApiDocGenerator
      * Check if a constructor parameter is a promoted property
      */
     /**
+     * Get all available value object classes
+     */
+    private function getValueObjectClasses(): array
+    {
+        static $valueObjectClasses = null;
+        
+        if ($valueObjectClasses === null) {
+            $valueObjectClasses = [];
+            $valueObjectDir = __DIR__ . '/../src/DTO/ValueObject';
+            
+            if (is_dir($valueObjectDir)) {
+                $files = glob($valueObjectDir . '/*.php');
+                foreach ($files as $file) {
+                    $className = basename($file, '.php');
+                    $fqn = 'App\\DTO\\ValueObject\\' . $className;
+                    
+                    // Check if the class actually exists and is loadable
+                    if (class_exists($fqn)) {
+                        $valueObjectClasses[] = $className;
+                    }
+                }
+            }
+        }
+        
+        return $valueObjectClasses;
+    }
+
+    /**
      * Check if a type is a value object class
      */
     private function isValueObjectClass(string $type): bool
     {
-        // Check if it's one of our known value object types
-        $valueObjectTypes = [
-            'Tag', 'Transform', 'LayerProperties', 'UserSettings', 
-            'ProjectSettings', 'MediaMetadata', 'LayerUpdate', 'DesignData',
-            'TextLayerProperties', 'ImageLayerProperties', 'ShapeLayerProperties'
-        ];
+        // Check if it's one of our discovered value object types
+        $valueObjectTypes = $this->getValueObjectClasses();
         
         if (in_array($type, $valueObjectTypes)) {
             return true;
@@ -1669,7 +1704,8 @@ MD;
                 if ($unionType === 'null') {
                     continue; // Skip null in union types for TypeScript
                 }
-                $expandedTypes[] = $this->expandValueObjectType($unionType);
+                $expanded = $this->expandValueObjectType($unionType);
+                $expandedTypes[] = $expanded;
             }
             
             if (count($expandedTypes) === 1) {
@@ -1688,7 +1724,8 @@ MD;
         
         // Check if it's a value object
         if ($this->isValueObjectClass($type)) {
-            return $this->generateValueObjectInterface($type);
+            $interface = $this->generateValueObjectInterface($type);
+            return $interface;
         }
         
         return $type;
@@ -1699,8 +1736,14 @@ MD;
      */
     private function generateValueObjectInterface(string $valueObjectType): string
     {
-        // Try to resolve the full class name
-        $className = $this->resolveValueObjectClassName($valueObjectType);
+        // Special handling for layer properties classes that are defined in the same file
+        if (in_array($valueObjectType, ['TextLayerProperties', 'ImageLayerProperties', 'ShapeLayerProperties'])) {
+            $className = 'App\\DTO\\ValueObject\\' . $valueObjectType;
+        } else {
+            // Try to resolve the full class name
+            $className = $this->resolveValueObjectClassName($valueObjectType);
+        }
+        
         if (!$className || !class_exists($className)) {
             return $valueObjectType; // Return original if can't resolve
         }
