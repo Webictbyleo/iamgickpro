@@ -210,6 +210,36 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Count all public templates
+     */
+    public function countPublicTemplates(): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.isPublic = :public')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('public', true)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Count templates by specific category
+     */
+    public function countTemplatesByCategory(string $category): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.category = :category')
+            ->andWhere('t.isPublic = :public')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('category', $category)
+            ->setParameter('public', true)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function findPopularCategories(int $limit = 10): array
     {
         return $this->createQueryBuilder('t')

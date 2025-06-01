@@ -70,8 +70,7 @@ class TemplateController extends AbstractController
 
             if ($category) {
                 $templates = $this->templateRepository->findByCategory($category, $limit, $offset);
-                // For category-specific count, we'll count manually for now
-                $total = count($this->templateRepository->findByCategory($category, 1000, 0));
+                $total = $this->templateRepository->countTemplatesByCategory($category);
             } else {
                 // If no category, find all public templates
                 $templates = $this->templateRepository->findBy(
@@ -80,7 +79,7 @@ class TemplateController extends AbstractController
                     $limit,
                     $offset
                 );
-                $total = $this->templateRepository->count(['isPublic' => true, 'deletedAt' => null]);
+                $total = $this->templateRepository->countPublicTemplates();
             }
 
             $templateResponse = $this->responseDTOFactory->createTemplateListResponse(

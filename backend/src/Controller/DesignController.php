@@ -115,12 +115,7 @@ class DesignController extends AbstractController
         }
     }
 
-    /**
-     * Create a new design
-     * 
-     * @param CreateDesignRequestDTO $dto Design creation data
-     * @return JsonResponse<DesignResponseDTO|ErrorResponseDTO>
-     */
+    
     /**
      * Create a new design
      * 
