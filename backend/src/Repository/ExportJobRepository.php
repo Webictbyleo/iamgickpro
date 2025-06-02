@@ -12,6 +12,23 @@ use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Types\Types;
 
 /**
+ * Export Job Repository
+ * 
+ * This repository manages the persistence and querying of export jobs within the design platform.
+ * Export jobs represent background tasks that convert designs into various output formats (PNG, JPEG, 
+ * SVG, PDF, MP4, GIF, etc.). The repository handles job queue management, status tracking, retry logic,
+ * performance monitoring, and cleanup operations.
+ * 
+ * Key functionalities:
+ * - Job queue management with priority-based processing
+ * - Status tracking (queued, processing, completed, failed)
+ * - Retry mechanisms for failed jobs
+ * - Performance analytics and processing time statistics
+ * - File size monitoring and storage optimization
+ * - Cleanup of expired and old export jobs
+ * - User quota tracking and export history
+ * - System health monitoring and queue depth analysis
+ * 
  * @extends ServiceEntityRepository<ExportJob>
  */
 class ExportJobRepository extends ServiceEntityRepository
@@ -21,6 +38,12 @@ class ExportJobRepository extends ServiceEntityRepository
         parent::__construct($registry, ExportJob::class);
     }
 
+    /**
+     * Persist an export job entity
+     * 
+     * @param ExportJob $entity The export job to save
+     * @param bool $flush Whether to immediately flush changes to database
+     */
     public function save(ExportJob $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -30,6 +53,12 @@ class ExportJobRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * Remove an export job entity
+     * 
+     * @param ExportJob $entity The export job to remove
+     * @param bool $flush Whether to immediately flush changes to database
+     */
     public function remove(ExportJob $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
@@ -42,9 +71,15 @@ class ExportJobRepository extends ServiceEntityRepository
 
 
     /**
-     * Find export jobs by design
+     * Find export jobs associated with a specific design
+     * 
+     * Retrieves all export jobs that were created for a particular design,
+     * ordered by creation date (most recent first). Useful for showing
+     * export history for a design.
      *
-     * @return ExportJob[]
+     * @param Design $design The design to find export jobs for
+     * @param int $limit Maximum number of jobs to return
+     * @return ExportJob[] Array of export jobs for the design
      */
     public function findByDesign(Design $design, int $limit = 20): array
     {
@@ -59,8 +94,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find export jobs by status
+     * 
+     * Retrieves export jobs filtered by their current status (queued, processing,
+     * completed, failed). Results are ordered by creation time for queue processing.
      *
-     * @return ExportJob[]
+     * @param string $status The status to filter by
+     * @param int $limit Maximum number of jobs to return
+     * @return ExportJob[] Array of export jobs with the specified status
      */
     public function findByStatus(string $status, int $limit = 100): array
     {
@@ -75,8 +115,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find pending export jobs (queued or processing)
+     * 
+     * Retrieves jobs that are either waiting in queue or currently being processed.
+     * Results are ordered by priority (highest first) then by creation time (oldest first)
+     * to ensure fair queue processing.
      *
-     * @return ExportJob[]
+     * @param int $limit Maximum number of pending jobs to return
+     * @return ExportJob[] Array of pending export jobs ordered by priority and age
      */
     public function findPendingJobs(int $limit = 100): array
     {
@@ -92,6 +137,11 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find next job to process based on priority and creation time
+     * 
+     * Retrieves the next job that should be processed by the export worker.
+     * Uses priority-based scheduling with FIFO for same-priority jobs.
+     *
+     * @return ExportJob|null The next job to process, or null if queue is empty
      */
     public function findNextJobToProcess(): ?ExportJob
     {
@@ -107,8 +157,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find stuck jobs (processing for too long)
+     * 
+     * Identifies export jobs that have been in processing status for longer than
+     * the specified threshold, indicating they may have crashed or become stuck.
+     * Used by cleanup scripts to reset or retry stuck jobs.
      *
-     * @return ExportJob[]
+     * @param \DateTimeInterface $threshold Jobs started before this time are considered stuck
+     * @return ExportJob[] Array of jobs that appear to be stuck in processing
      */
     public function findStuckJobs(\DateTimeInterface $threshold): array
     {
@@ -123,8 +178,12 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find expired export jobs
+     * 
+     * Retrieves export jobs that have passed their expiration date and should be
+     * cleaned up to free storage space. Only includes completed or failed jobs
+     * as active jobs should not be expired.
      *
-     * @return ExportJob[]
+     * @return ExportJob[] Array of expired export jobs ready for cleanup
      */
     public function findExpiredJobs(): array
     {
@@ -141,9 +200,14 @@ class ExportJobRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find jobs by format
+     * Find jobs by export format
+     * 
+     * Retrieves export jobs filtered by their output format (PNG, JPEG, SVG, etc.).
+     * Useful for analyzing format-specific usage patterns and performance metrics.
      *
-     * @return ExportJob[]
+     * @param string $format The export format to filter by (e.g., 'png', 'jpeg', 'svg')
+     * @param int $limit Maximum number of jobs to return
+     * @return ExportJob[] Array of export jobs for the specified format
      */
     public function findByFormat(string $format, int $limit = 50): array
     {
@@ -158,6 +222,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Get export statistics for a user
+     * 
+     * Generates comprehensive statistics about a user's export activity including
+     * total counts by status and format breakdown. Used for user dashboards and
+     * quota management.
+     *
+     * @param User $user The user to generate statistics for
+     * @return array Statistics including total, completed, failed counts and format breakdown
      */
     public function getUserExportStats(User $user): array
     {
@@ -180,6 +251,12 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Get system-wide export statistics
+     * 
+     * Provides comprehensive system-level metrics including export counts by status,
+     * average processing times, and format distribution. Used for system monitoring
+     * and performance analysis.
+     *
+     * @return array System statistics including totals, processing times, and format breakdown
      */
     public function getSystemExportStats(): array
     {
@@ -205,6 +282,12 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Get export queue depth by priority
+     * 
+     * Analyzes the current queue depth grouped by priority level to help
+     * with capacity planning and queue management. Shows how many jobs
+     * are waiting at each priority level.
+     *
+     * @return array Queue depth statistics grouped by priority level
      */
     public function getQueueDepth(): array
     {
@@ -223,8 +306,15 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find recent exports for a user
+     * 
+     * Retrieves a user's export jobs from the specified time period,
+     * ordered by creation date. Used for user export history and
+     * recent activity displays.
      *
-     * @return ExportJob[]
+     * @param User $user The user to find exports for
+     * @param int $days Number of days to look back (default: 7)
+     * @param int $limit Maximum number of exports to return
+     * @return ExportJob[] Array of recent export jobs for the user
      */
     public function findRecentExports(User $user, int $days = 7, int $limit = 20): array
     {
@@ -243,8 +333,15 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find exports by file size range
+     * 
+     * Retrieves completed export jobs whose output files fall within the specified
+     * size range. Useful for storage analysis and identifying large files that
+     * may need optimization.
      *
-     * @return ExportJob[]
+     * @param int $minSize Minimum file size in bytes
+     * @param int $maxSize Maximum file size in bytes
+     * @param int $limit Maximum number of exports to return
+     * @return ExportJob[] Array of exports within the specified file size range
      */
     public function findByFileSizeRange(int $minSize, int $maxSize, int $limit = 50): array
     {
@@ -263,6 +360,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Count exports by user in time period
+     * 
+     * Counts the number of export jobs created by a user since the specified date.
+     * Used for quota enforcement and usage tracking.
+     *
+     * @param User $user The user to count exports for
+     * @param \DateTimeInterface $since Count exports created after this date
+     * @return int Number of exports created by the user in the time period
      */
     public function countUserExportsInPeriod(User $user, \DateTimeInterface $since): int
     {
@@ -278,6 +382,12 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Get processing time statistics
+     * 
+     * Analyzes processing times for completed export jobs grouped by format.
+     * Provides average, minimum, and maximum processing times to help with
+     * performance optimization and capacity planning.
+     *
+     * @return array Processing time statistics including avg, min, max times by format
      */
     public function getProcessingTimeStats(): array
     {
@@ -302,6 +412,12 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Cleanup old completed exports
+     * 
+     * Removes completed and failed export jobs that are older than the specified
+     * date to free up database space. Part of regular maintenance operations.
+     *
+     * @param \DateTimeInterface $before Remove jobs created before this date
+     * @return int Number of export jobs deleted
      */
     public function cleanupOldExports(\DateTimeInterface $before): int
     {
@@ -317,6 +433,12 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Reset stuck jobs to queued status
+     * 
+     * Resets jobs that have been processing for too long back to queued status
+     * so they can be retried. Clears processing metadata to allow fresh attempts.
+     *
+     * @param \DateTimeInterface $threshold Jobs started before this time will be reset
+     * @return int Number of jobs reset to queued status
      */
     public function resetStuckJobs(\DateTimeInterface $threshold): int
     {
@@ -337,8 +459,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Get failed exports with error analysis
+     * 
+     * Retrieves detailed information about failed export jobs for error analysis
+     * and debugging. Includes error messages, user context, and design information
+     * to help identify patterns in failures.
      *
-     * @return ExportJob[]
+     * @param \DateTimeInterface $since Only include failures after this date
+     * @return ExportJob[] Array of failed exports with analysis data
      */
     public function getFailedExportsAnalysis(\DateTimeInterface $since): array
     {
@@ -364,7 +491,14 @@ class ExportJobRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get export volume by time period
+     * Get export volume statistics by time period
+     * 
+     * Provides daily export volume statistics over the specified time period.
+     * Includes total exports, success/failure rates, and total file sizes.
+     * Used for trend analysis and capacity planning.
+     *
+     * @param int $days Number of days to analyze (default: 30)
+     * @return array Daily export statistics including counts and file sizes
      */
     public function getExportVolumeStats(int $days = 30): array
     {
@@ -388,8 +522,13 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find exports that can be retried
+     * 
+     * Identifies failed export jobs that are eligible for retry based on
+     * retry count limits and recent failure time. Used by automated retry
+     * systems to recover from transient failures.
      *
-     * @return ExportJob[]
+     * @param int $maxRetries Maximum number of retries allowed per job
+     * @return ExportJob[] Array of failed exports eligible for retry
      */
     public function findRetryableExports(int $maxRetries = 3): array
     {
@@ -407,6 +546,17 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Find export jobs by user with optional filtering
+     * 
+     * Retrieves export jobs for a specific user with optional filtering by status
+     * and format. Supports pagination for large result sets. Used for user
+     * export history and management interfaces.
+     *
+     * @param User $user The user to find export jobs for
+     * @param string|null $status Optional status filter
+     * @param string|null $format Optional format filter
+     * @param int $page Page number for pagination (1-based)
+     * @param int $limit Number of results per page
+     * @return ExportJob[] Array of export jobs matching the criteria
      */
     public function findByUser($user, ?string $status = null, ?string $format = null, int $page = 1, int $limit = 20): array
     {
@@ -435,6 +585,14 @@ class ExportJobRepository extends ServiceEntityRepository
 
     /**
      * Count export jobs by user with optional filtering
+     * 
+     * Counts the total number of export jobs for a user matching the specified
+     * filters. Used in conjunction with findByUser() to support pagination.
+     *
+     * @param User $user The user to count export jobs for
+     * @param string|null $status Optional status filter
+     * @param string|null $format Optional format filter
+     * @return int Total count of matching export jobs
      */
     public function countByUser($user, ?string $status = null, ?string $format = null): int
     {
@@ -457,7 +615,14 @@ class ExportJobRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get statistics for a user's export jobs
+     * Get comprehensive statistics for a user's export jobs
+     * 
+     * Provides detailed statistics about a user's export activity including
+     * totals by status, format breakdown, and success rates. Used for user
+     * dashboards and account management.
+     *
+     * @param User $user The user to generate statistics for
+     * @return array Comprehensive export statistics including totals and format breakdown
      */
     public function getUserStats($user): array
     {
@@ -494,7 +659,13 @@ class ExportJobRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get queue statistics for administrators
+     * Get queue statistics for system administrators
+     * 
+     * Provides real-time queue health metrics for system monitoring including
+     * current queue depths, processing times, and overall system health status.
+     * Used by admin dashboards and monitoring systems.
+     *
+     * @return array Queue health statistics including depths, times, and health status
      */
     public function getQueueStats(): array
     {

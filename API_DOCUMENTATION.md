@@ -4,7 +4,7 @@ Comprehensive API for the modern web-based design platform
 
 **Version:** 1.0.0
 
-**Generated on:** 2025-06-02 15:13:26
+**Generated on:** 2025-06-02 16:18:08
 **Generator:** Enhanced API Documentation Generator v2.0
 **Symfony Version:** 7.0.10
 **PHP Version:** 8.4.7

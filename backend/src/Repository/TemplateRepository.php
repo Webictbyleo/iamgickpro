@@ -9,6 +9,12 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
+ * Repository for Template entity operations.
+ * 
+ * Provides methods for querying and retrieving Template entities with various filters
+ * and criteria. Handles template categorization, ratings, usage tracking, and
+ * recommendation systems. Supports both free and premium template operations.
+ * 
  * @extends ServiceEntityRepository<Template>
  */
 class TemplateRepository extends ServiceEntityRepository
@@ -18,6 +24,15 @@ class TemplateRepository extends ServiceEntityRepository
         parent::__construct($registry, Template::class);
     }
 
+    /**
+     * Find a template by its UUID.
+     * 
+     * Searches for a template with the specified UUID, excluding soft-deleted templates.
+     * UUIDs are used for public-facing template identification.
+     * 
+     * @param string $uuid The UUID of the template to find
+     * @return Template|null The Template entity if found, null otherwise
+     */
     public function findByUuid(string $uuid): ?Template
     {
         return $this->createQueryBuilder('t')
@@ -28,6 +43,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * Find public templates with pagination.
+     * 
+     * Retrieves publicly available templates ordered by usage count and rating.
+     * Used for the main template gallery and browsing features.
+     * 
+     * @param int $limit Maximum number of templates to return (default: 20)
+     * @param int $offset Number of templates to skip for pagination (default: 0)
+     * @return Template[] Array of public Template entities
+     */
     public function findPublicTemplates(int $limit = 20, int $offset = 0): array
     {
         return $this->createQueryBuilder('t')
@@ -42,6 +67,17 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find templates by category with pagination.
+     * 
+     * Retrieves public templates belonging to a specific category,
+     * ordered by usage count. Used for category-based browsing.
+     * 
+     * @param string $category The category to filter templates by
+     * @param int $limit Maximum number of templates to return (default: 20)
+     * @param int $offset Number of templates to skip for pagination (default: 0)
+     * @return Template[] Array of Template entities in the specified category
+     */
     public function findByCategory(string $category, int $limit = 20, int $offset = 0): array
     {
         return $this->createQueryBuilder('t')
@@ -57,6 +93,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find templates by specific tags.
+     * 
+     * Retrieves public templates that contain all of the specified tags.
+     * Uses JSON operations to search within the tags array field.
+     * 
+     * @param array $tags Array of tags that templates must contain
+     * @param int $limit Maximum number of templates to return (default: 20)
+     * @return Template[] Array of Template entities containing all specified tags
+     */
     public function findByTags(array $tags, int $limit = 20): array
     {
         $qb = $this->createQueryBuilder('t')
@@ -76,6 +122,16 @@ class TemplateRepository extends ServiceEntityRepository
                   ->getResult();
     }
 
+    /**
+     * Find premium templates with pagination.
+     * 
+     * Retrieves paid/premium templates ordered by rating and usage count.
+     * Used for premium template sections and subscription features.
+     * 
+     * @param int $limit Maximum number of templates to return (default: 20)
+     * @param int $offset Number of templates to skip for pagination (default: 0)
+     * @return Template[] Array of premium Template entities
+     */
     public function findPremiumTemplates(int $limit = 20, int $offset = 0): array
     {
         return $this->createQueryBuilder('t')
@@ -92,6 +148,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find free templates with pagination.
+     * 
+     * Retrieves free templates ordered by usage count and rating.
+     * Used for showcasing free content and attracting new users.
+     * 
+     * @param int $limit Maximum number of templates to return (default: 20)
+     * @param int $offset Number of templates to skip for pagination (default: 0)
+     * @return Template[] Array of free Template entities
+     */
     public function findFreeTemplates(int $limit = 20, int $offset = 0): array
     {
         return $this->createQueryBuilder('t')
@@ -108,6 +174,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Search templates by name or description.
+     * 
+     * Performs a case-insensitive search on template names and descriptions.
+     * Uses LIKE pattern matching for flexible searching across public templates.
+     * 
+     * @param string $query The search query to match against template fields
+     * @param int $limit Maximum number of results to return (default: 20)
+     * @return Template[] Array of Template entities matching the search criteria
+     */
     public function search(string $query, int $limit = 20): array
     {
         return $this->createQueryBuilder('t')
@@ -122,6 +198,15 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find most popular templates.
+     * 
+     * Retrieves the most frequently used templates ordered by usage count.
+     * Used for homepage featured sections and trending template displays.
+     * 
+     * @param int $limit Maximum number of popular templates to return (default: 10)
+     * @return Template[] Array of the most popular Template entities
+     */
     public function findMostPopular(int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
@@ -134,6 +219,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find top-rated templates.
+     * 
+     * Retrieves templates with the highest ratings above a minimum threshold.
+     * Combines rating and usage count for balanced quality recommendations.
+     * 
+     * @param int $limit Maximum number of top-rated templates to return (default: 10)
+     * @param float $minRating Minimum rating threshold (default: 4.0)
+     * @return Template[] Array of top-rated Template entities
+     */
     public function findTopRated(int $limit = 10, float $minRating = 4.0): array
     {
         return $this->createQueryBuilder('t')
@@ -149,6 +244,18 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find templates by dimensions with tolerance.
+     * 
+     * Searches for templates that have dimensions within a specified tolerance
+     * of the given width and height. Useful for finding templates that match
+     * specific canvas sizes or aspect ratios.
+     * 
+     * @param int $width The target width in pixels
+     * @param int $height The target height in pixels
+     * @param int $tolerance The allowed deviation in pixels (default: 50)
+     * @return Template[] Array of Template entities matching the dimension criteria
+     */
     public function findByDimensions(int $width, int $height, int $tolerance = 50): array
     {
         return $this->createQueryBuilder('t')
@@ -166,6 +273,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find recently added templates.
+     * 
+     * Retrieves templates that were created within the specified number of days.
+     * Used for "New Templates" sections and keeping content fresh.
+     * 
+     * @param int $days Number of days to look back (default: 7)
+     * @param int $limit Maximum number of templates to return (default: 20)
+     * @return Template[] Array of recently added Template entities
+     */
     public function findRecentlyAdded(int $days = 7, int $limit = 20): array
     {
         $since = new \DateTimeImmutable("-{$days} days");
@@ -182,6 +299,16 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find recommended templates.
+     * 
+     * Retrieves templates that have been manually marked as recommended
+     * by administrators. Used for curated template collections and
+     * editorial picks.
+     * 
+     * @param int $limit Maximum number of recommended templates to return (default: 10)
+     * @return Template[] Array of recommended Template entities
+     */
     public function findRecommended(int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
@@ -197,6 +324,14 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Count templates by category.
+     * 
+     * Returns statistics showing how many templates exist in each category.
+     * Used for category navigation and analytics dashboards.
+     * 
+     * @return array Array with category and count fields, ordered by count (highest first)
+     */
     public function countByCategory(): array
     {
         return $this->createQueryBuilder('t')
@@ -211,7 +346,12 @@ class TemplateRepository extends ServiceEntityRepository
     }
 
     /**
-     * Count all public templates
+     * Count all public templates.
+     * 
+     * Returns the total number of publicly available templates,
+     * excluding soft-deleted templates. Used for platform statistics.
+     * 
+     * @return int Total number of public templates
      */
     public function countPublicTemplates(): int
     {
@@ -225,7 +365,13 @@ class TemplateRepository extends ServiceEntityRepository
     }
 
     /**
-     * Count templates by specific category
+     * Count templates by specific category.
+     * 
+     * Returns the number of public templates in a specific category,
+     * excluding soft-deleted templates. Used for category-specific statistics.
+     * 
+     * @param string $category The category to count templates for
+     * @return int Number of templates in the specified category
      */
     public function countTemplatesByCategory(string $category): int
     {
@@ -240,6 +386,15 @@ class TemplateRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Find popular categories with usage statistics.
+     * 
+     * Analyzes template usage to determine the most popular categories.
+     * Returns categories with template count and total usage metrics.
+     * 
+     * @param int $limit Maximum number of popular categories to return (default: 10)
+     * @return array Array with category, templateCount, and totalUsage fields
+     */
     public function findPopularCategories(int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
@@ -254,6 +409,14 @@ class TemplateRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Increment the usage count for a template.
+     * 
+     * Atomically increments the usage counter when a template is used.
+     * This helps track template popularity and usage statistics.
+     * 
+     * @param Template $template The template to increment usage count for
+     */
     public function incrementUsageCount(Template $template): void
     {
         $this->createQueryBuilder('t')
@@ -265,6 +428,15 @@ class TemplateRepository extends ServiceEntityRepository
             ->execute();
     }
 
+    /**
+     * Update the rating for a template.
+     * 
+     * Updates the template's rating with a new calculated value.
+     * Typically called after processing user ratings and calculating averages.
+     * 
+     * @param Template $template The template to update
+     * @param float $newRating The new rating value to set
+     */
     public function updateRating(Template $template, float $newRating): void
     {
         $template->setRating(number_format($newRating, 2));
@@ -272,6 +444,17 @@ class TemplateRepository extends ServiceEntityRepository
         $this->getEntityManager()->flush();
     }
 
+    /**
+     * Find templates similar to a given template.
+     * 
+     * Uses category matching and tag similarity to find related templates.
+     * Excludes the current template from results. Used for recommendation
+     * systems and "You might also like" features.
+     * 
+     * @param Template $template The reference template to find similar ones for
+     * @param int $limit Maximum number of similar templates to return (default: 5)
+     * @return Template[] Array of similar Template entities
+     */
     public function findSimilarTemplates(Template $template, int $limit = 5): array
     {
         $qb = $this->createQueryBuilder('t')
@@ -300,6 +483,16 @@ class TemplateRepository extends ServiceEntityRepository
                   ->getResult();
     }
 
+    /**
+     * Find the most popular tags across all public templates.
+     * 
+     * Analyzes all public templates to determine the most frequently used tags.
+     * Uses native SQL with JSON functions to extract and count individual tags
+     * from the JSON tags field. Returns tag names with their usage counts.
+     * 
+     * @param int $limit Maximum number of popular tags to return (default: 20)
+     * @return array Array of tags with 'tag' and 'count' fields, ordered by popularity
+     */
     public function findPopularTags(int $limit = 20): array
     {
         $sql = "
@@ -328,7 +521,12 @@ class TemplateRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get all distinct categories from active public templates
+     * Get all distinct categories from active public templates.
+     * 
+     * Returns a simple array of unique category names from all public templates.
+     * Used for populating category filters and navigation menus.
+     * 
+     * @return array Array of category names
      */
     public function findAllCategories(): array
     {
