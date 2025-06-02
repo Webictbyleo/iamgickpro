@@ -2064,6 +2064,11 @@
     "variable": [
         {
             "key": "baseUrl",
+            "value": "http:\/\/localhost:8000",
+            "description": "Development server"
+        },
+        {
+            "key": "baseUrl1",
             "value": "https:\/\/api.example.com\/v1",
             "description": "Production server"
         },
@@ -2073,9 +2078,9 @@
             "description": "Staging server"
         },
         {
-            "key": "baseUrl3",
-            "value": "http:\/\/localhost:8000",
-            "description": "Development server"
+            "key": "baseUrl4",
+            "value": "http:\/\/localhost:8080",
+            "description": "Testing server"
         },
         {
             "key": "bearerAuthToken",

@@ -38,18 +38,29 @@
       "bearerFormat": "JWT"
     }
   },
-  "servers": [
-    {
+  "servers": {
+    "prod": {
       "url": "https://api.example.com/v1",
       "description": "Production server"
     },
-    {
+    "staging": {
       "url": "https://staging-api.example.com/v1",
       "description": "Staging server"
     },
-    {
+    "dev": {
       "url": "http://localhost:8000",
       "description": "Development server"
+    },
+    "test": {
+      "url": "http://localhost:8080",
+      "description": "Testing server"
     }
-  ]
+  },
+  "server_environment_mapping": {
+    "dev": "dev",
+    "test": "test",
+    "staging": "staging",
+    "prod": "prod",
+    "production": "prod"
+  }
 }

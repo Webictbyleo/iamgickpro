@@ -4,7 +4,7 @@ Comprehensive API for the modern web-based design platform
 
 **Version:** 1.0.0
 
-**Generated on:** 2025-06-01 23:32:25
+**Generated on:** 2025-06-02 10:20:50
 **Generator:** Enhanced API Documentation Generator v2.0
 **Symfony Version:** 7.0.10
 **PHP Version:** 8.4.7
@@ -15,9 +15,14 @@ Comprehensive API for the modern web-based design platform
 
 ## Servers
 
+**Current Server (based on APP_ENV):** `http://localhost:8000` - Development server
+
+**All Available Servers:**
+
 - **Production server:** `https://api.example.com/v1`
 - **Staging server:** `https://staging-api.example.com/v1`
-- **Development server:** `http://localhost:8000`
+- **Development server:** `http://localhost:8000` *(current)*
+- **Testing server:** `http://localhost:8080`
 
 ## Authentication
 
@@ -348,7 +353,18 @@ interface UpdateProfileRequestDTO {
   /**
    * User's application settings and preferences Controls theme, language, notifications, auto-save, a...
    */
-  settings?: UserSettings;
+  settings?: {
+    theme?: string;
+    language?: string;
+    timezone?: string;
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+    autoSave?: boolean;
+    autoSaveInterval?: number;
+    gridSnap?: boolean;
+    gridSize?: number;
+    canvasQuality?: number;
+  };
 
 }
 ```
@@ -620,7 +636,14 @@ interface CreateDesignRequestDTO {
    * Design-level configuration and settings. Contains global design settings including canvas backgro...
    * @validation Valid
    */
-  data?: DesignData;
+  data?: {
+    backgroundColor?: string;
+    animationSettings?: Record<string, any>;
+    gridSettings?: Record<string, any>;
+    viewSettings?: Record<string, any>;
+    globalStyles?: Record<string, any>;
+    customProperties?: Record<string, any>;
+  };
 
   /**
    * Optional project ID to associate the design with. If provided, the design will be created within ...
@@ -834,7 +857,14 @@ interface UpdateDesignRequestDTO {
    * Updated design-level configuration and settings. If provided, merges with or replaces current des...
    * @validation Valid
    */
-  data?: DesignData;
+  data?: {
+    backgroundColor?: string;
+    animationSettings?: Record<string, any>;
+    gridSettings?: Record<string, any>;
+    viewSettings?: Record<string, any>;
+    globalStyles?: Record<string, any>;
+    customProperties?: Record<string, any>;
+  };
 
   /**
    * Updated project association for the design. If provided, moves the design to the specified projec...
@@ -1259,7 +1289,7 @@ interface CreateExportJobRequestDTO {
    * Animation-specific settings for video/GIF exports. Configuration for animated exports including: ...
    * @validation Type=type: 'array'  message: 'Animation settings must be an array'
    */
-  animationSettings?: any[];
+  animationSettings?: Record<string, any>;
 
 }
 ```
@@ -1619,12 +1649,53 @@ interface CreateLayerRequestDTO {
   /**
    * Layer-specific visual and behavior properties Contains type-specific attributes like text styling...
    */
-  properties: TextLayerProperties | ImageLayerProperties | ShapeLayerProperties;
+  properties: {
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    fontStyle?: string;
+    textAlign?: string;
+    color?: string;
+    lineHeight?: number;
+    letterSpacing?: number;
+    textDecoration?: string;
+  } | {
+    src?: string;
+    alt?: string;
+    objectFit?: string;
+    objectPosition?: string;
+    quality?: number;
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    blur?: number;
+  } | {
+    shapeType?: string;
+    fillColor?: string;
+    fillOpacity?: number;
+    strokeColor?: string;
+    strokeWidth?: number;
+    strokeOpacity?: number;
+    borderRadius?: number;
+    sides?: number;
+  };
 
   /**
    * 2D transformation matrix for initial layer positioning Controls position, size, rotation, scale, ...
    */
-  transform: Transform;
+  transform: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    scaleX?: number;
+    scaleY?: number;
+    skewX?: number;
+    skewY?: number;
+    opacity?: number;
+  };
 
   /**
    * Layer stacking order within the design Higher values appear above lower values in the visual stac...
@@ -1746,7 +1817,57 @@ interface BulkUpdateLayersRequestDTO {
   /**
    * Array of layer updates to perform in batch. Each LayerUpdate contains: - id: The unique identifie...
    */
-  layers: any[];
+  layers: {
+    id: number;
+    name?: string | null;
+    transform?: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    scaleX?: number;
+    scaleY?: number;
+    skewX?: number;
+    skewY?: number;
+    opacity?: number;
+  };
+    properties?: {
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    fontStyle?: string;
+    textAlign?: string;
+    color?: string;
+    lineHeight?: number;
+    letterSpacing?: number;
+    textDecoration?: string;
+  } | {
+    src?: string;
+    alt?: string;
+    objectFit?: string;
+    objectPosition?: string;
+    quality?: number;
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    blur?: number;
+  } | {
+    shapeType?: string;
+    fillColor?: string;
+    fillOpacity?: number;
+    strokeColor?: string;
+    strokeWidth?: number;
+    strokeOpacity?: number;
+    borderRadius?: number;
+    sides?: number;
+  };
+    zIndex?: number | null;
+    visible?: boolean | null;
+    locked?: boolean | null;
+    parentLayerId?: string | null;
+  }[];
 
 }
 ```
@@ -1862,12 +1983,53 @@ interface UpdateLayerRequestDTO {
   /**
    * Layer-specific visual and behavior properties Contains type-specific attributes like text styling...
    */
-  properties?: TextLayerProperties | ImageLayerProperties | ShapeLayerProperties | null;
+  properties?: {
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    fontStyle?: string;
+    textAlign?: string;
+    color?: string;
+    lineHeight?: number;
+    letterSpacing?: number;
+    textDecoration?: string;
+  } | {
+    src?: string;
+    alt?: string;
+    objectFit?: string;
+    objectPosition?: string;
+    quality?: number;
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    blur?: number;
+  } | {
+    shapeType?: string;
+    fillColor?: string;
+    fillOpacity?: number;
+    strokeColor?: string;
+    strokeWidth?: number;
+    strokeOpacity?: number;
+    borderRadius?: number;
+    sides?: number;
+  };
 
   /**
    * 2D transformation matrix for layer positioning and scaling Controls position, size, rotation, sca...
    */
-  transform?: Transform;
+  transform?: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    scaleX?: number;
+    scaleY?: number;
+    skewX?: number;
+    skewY?: number;
+    opacity?: number;
+  };
 
   /**
    * Layer stacking order within its parent container Higher values appear above lower values in the v...
@@ -2380,13 +2542,27 @@ interface CreateMediaRequestDTO {
    * Technical metadata about the media file. Contains detailed information about the media file inclu...
    * @validation Valid
    */
-  metadata?: MediaMetadata;
+  metadata?: {
+    fileSize: number;
+    mimeType: string;
+    width?: number | null;
+    height?: number | null;
+    duration?: number | null;
+    bitrate?: number | null;
+    sampleRate?: number | null;
+    channels?: number | null;
+    colorSpace?: string | null;
+    hasTransparency?: boolean | null;
+    frameRate?: number | null;
+    codec?: string | null;
+    aspectRatio?: number | null;
+  };
 
   /**
    * Organizational tags for categorizing and searching media. Tags help users organize their media li...
    * @validation Valid
    */
-  tags?: any[];
+  tags?: Tag[];
 
   /**
    * Attribution text for the media creator. Required for some stock photo services and user-generated...
@@ -2511,7 +2687,7 @@ interface BulkDeleteMediaRequestDTO {
    * @validation Count=min: 1  max: 100  minMessage: 'At least one UUID is required'  maxMessage: 'Cannot delete more than 100 items at once'
    * @validation All=[Symfony\Component\Validator\Constraints\NotBlank  Symfony\Component\Validator\Constraints\Uuid]
    */
-  uuids: any[];
+  uuids: string[];
 
 }
 ```
@@ -2956,13 +3132,27 @@ interface UpdateMediaRequestDTO {
    * Updated organizational tags for the media. If provided, replaces the current tag set. Each tag mu...
    * @validation Valid
    */
-  tags?: any[];
+  tags?: Tag[] | null;
 
   /**
    * Updated technical metadata for the media file. If provided, replaces or merges with current metad...
    * @validation Valid
    */
-  metadata?: MediaMetadata;
+  metadata?: {
+    fileSize: number;
+    mimeType: string;
+    width?: number | null;
+    height?: number | null;
+    duration?: number | null;
+    bitrate?: number | null;
+    sampleRate?: number | null;
+    channels?: number | null;
+    colorSpace?: string | null;
+    hasTransparency?: boolean | null;
+    frameRate?: number | null;
+    codec?: string | null;
+    aspectRatio?: number | null;
+  };
 
   /**
    * Updated premium status for the media. If provided, changes whether the media requires a premium s...
@@ -3138,7 +3328,7 @@ interface CreatePluginRequestDTO {
    * @validation Count=min: 1  max: 5  minMessage: 'At least one category is required'  maxMessage: 'Cannot exceed 5 categories'
    * @validation All=[Symfony\Component\Validator\Constraints\NotBlank  Symfony\Component\Validator\Constraints\Length]
    */
-  categories: any[];
+  categories: string[];
 
   /**
    * Semantic version number of the plugin. Version identifier following semantic versioning (semver) ...
@@ -3153,14 +3343,14 @@ interface CreatePluginRequestDTO {
    * @validation Count=min: 1  minMessage: 'At least one permission is required'
    * @validation All=[Symfony\Component\Validator\Constraints\Choice]
    */
-  permissions: any[];
+  permissions: string[];
 
   /**
    * Plugin manifest configuration. JSON-formatted configuration containing plugin metadata, entry poi...
    * @validation NotBlank=message: 'Plugin manifest is required'
    * @validation Type=type: 'array'  message: 'Manifest must be a valid array'
    */
-  manifest: any[];
+  manifest: Record<string, any>;
 
 }
 ```
@@ -3296,7 +3486,7 @@ interface UpdatePluginRequestDTO {
    * @validation Count=min: 1  max: 5  minMessage: 'At least one category is required'  maxMessage: 'Cannot exceed 5 categories'
    * @validation All=[Symfony\Component\Validator\Constraints\NotBlank  Symfony\Component\Validator\Constraints\Length]
    */
-  categories?: any[];
+  categories?: string[] | null;
 
   /**
    * Updated semantic version number. If provided, updates the plugin version. Must follow semantic ve...
@@ -3308,13 +3498,13 @@ interface UpdatePluginRequestDTO {
    * Updated permission requirements. If provided, replaces the current permission set. Each permissio...
    * @validation All=[Symfony\Component\Validator\Constraints\Choice]
    */
-  permissions?: any[];
+  permissions?: string[] | null;
 
   /**
    * Updated plugin manifest configuration. If provided, replaces the current manifest. Contains plugi...
    * @validation Type=type: 'array'  message: 'Manifest must be a valid array'
    */
-  manifest?: any[];
+  manifest?: Record<string, any>;
 
   /**
    * Updated approval status for the plugin. If provided, changes the plugin's approval status in the ...
@@ -3647,13 +3837,26 @@ interface CreateProjectRequestDTO {
    * Project configuration settings including canvas dimensions, DPI, etc. Contains all technical sett...
    * @validation Valid
    */
-  settings: ProjectSettings;
+  settings: {
+    canvasWidth?: number;
+    canvasHeight?: number;
+    backgroundColor?: string;
+    orientation?: string;
+    units?: string;
+    dpi?: number;
+    gridVisible?: boolean;
+    rulersVisible?: boolean;
+    guidesVisible?: boolean;
+    snapToGrid?: boolean;
+    snapToGuides?: boolean;
+    snapToObjects?: boolean;
+  };
 
   /**
    * Organizational tags for categorizing and searching projects. Tags help users organize their proje...
    * @validation Valid
    */
-  tags?: any[];
+  tags?: Tag[];
 
   /**
    * Optional URL to a thumbnail image representing the project. Used for project previews in lists an...
@@ -3916,13 +4119,26 @@ interface UpdateProjectRequestDTO {
    * Updated project configuration settings. If provided, replaces or merges with current project sett...
    * @validation Valid
    */
-  settings?: ProjectSettings;
+  settings?: {
+    canvasWidth?: number;
+    canvasHeight?: number;
+    backgroundColor?: string;
+    orientation?: string;
+    units?: string;
+    dpi?: number;
+    gridVisible?: boolean;
+    rulersVisible?: boolean;
+    guidesVisible?: boolean;
+    snapToGrid?: boolean;
+    snapToGuides?: boolean;
+    snapToObjects?: boolean;
+  };
 
   /**
    * Updated organizational tags for the project. If provided, replaces the current tag set. Each tag ...
    * @validation Valid
    */
-  tags?: any[];
+  tags?: Tag[] | null;
 
   /**
    * Updated thumbnail URL for the project. If provided, replaces the current thumbnail. Should be a v...
@@ -4222,7 +4438,7 @@ interface CreateTemplateRequestDTO {
    * @validation Type=type: 'array'  message: 'Tags must be an array'
    * @validation Valid
    */
-  tags: any[];
+  tags: Tag[];
 
   /**
    * Canvas width in pixels (required, must be positive) Defines the template's design area width

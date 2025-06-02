@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Load environment variables from .env file
+use Symfony\Component\Dotenv\Dotenv;
+$dotenv = new Dotenv();
+$dotenv->loadEnv(__DIR__ . '/../.env');
+
 use phpDocumentor\Reflection\DocBlockFactory;
 use phpDocumentor\Reflection\DocBlock\Tags\Param;
 use phpDocumentor\Reflection\DocBlock\Tags\Var_;
@@ -83,6 +88,12 @@ class EnhancedApiDocGenerator
         if (file_exists($configFile)) {
             $this->output->writeln('<info>Configuration loaded from: ' . $configFile . '</info>');
         }
+        
+        // Display current environment and server info
+        $appEnv = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'dev';
+        $currentServer = $this->getCurrentServer();
+        $this->output->writeln(sprintf('<info>Environment: %s</info>', $appEnv));
+        $this->output->writeln(sprintf('<info>Current API Server: %s (%s)</info>', $currentServer['url'], $currentServer['description']));
     }
 
     /**
@@ -220,9 +231,7 @@ class EnhancedApiDocGenerator
                 'version' => $customSettings['api_version'] ?? '1.0.0',
                 'description' => $customSettings['api_description'] ?? 'Generated API documentation'
             ],
-            'servers' => $this->config['servers'] ?? [
-                ['url' => '/api', 'description' => 'Development server']
-            ],
+            'servers' => $this->getAllServersForOpenApi(),
             'paths' => [],
             'components' => [
                 'schemas' => [],
@@ -285,13 +294,24 @@ class EnhancedApiDocGenerator
         ];
 
         // Add server variables
-        if (isset($this->config['servers'])) {
-            foreach ($this->config['servers'] as $index => $server) {
-                $varName = $index === 0 ? 'baseUrl' : 'baseUrl' . ($index + 1);
+        $currentServer = $this->getCurrentServer();
+        $allServers = $this->getAllServersForOpenApi();
+        
+        // Add current server as primary baseUrl
+        $collection['variable'][] = [
+            'key' => 'baseUrl',
+            'value' => $currentServer['url'],
+            'description' => $currentServer['description'] ?? 'Current server URL'
+        ];
+        
+        // Add all available servers as alternatives
+        foreach ($allServers as $index => $server) {
+            if ($server['url'] !== $currentServer['url']) {
+                $varName = 'baseUrl' . ($index + 1);
                 $collection['variable'][] = [
                     'key' => $varName,
                     'value' => $server['url'],
-                    'description' => $server['description'] ?? 'Server URL'
+                    'description' => $server['description'] ?? 'Alternative server URL'
                 ];
             }
         }
@@ -718,7 +738,7 @@ class EnhancedApiDocGenerator
     private function generateTypeScriptPropertyDefinition(array $property, int $depth): string
     {
         $name = $property['name'];
-        $type = $this->convertToTypeScriptType($property['type']);
+        $type = $this->convertToTypeScriptType($property['type'], $depth);
         $required = $property['required'] ?? !($property['nullable'] ?? false);
         
         $output = "";
@@ -749,8 +769,13 @@ class EnhancedApiDocGenerator
             $output .= "   */\n";
         }
         
-        // Add the property definition
-        $output .= "  " . $name . ($required ? "" : "?") . ": " . $type . ";\n\n";
+        // Check if this is a complex type that should be expanded inline
+        $expandedType = $this->maybeExpandTypeInline($property['type'], $depth);
+        if ($expandedType !== null) {
+            $output .= "  " . $name . ($required ? "" : "?") . ": " . $expandedType . ";\n\n";
+        } else {
+            $output .= "  " . $name . ($required ? "" : "?") . ": " . $type . ";\n\n";
+        }
         
         return $output;
     }
@@ -768,7 +793,7 @@ class EnhancedApiDocGenerator
     /**
      * Convert PHP type to TypeScript type
      */
-    private function convertToTypeScriptType(string $phpType): string
+    private function convertToTypeScriptType(string $phpType, int $depth = 0): string
     {
         // Handle union types
         if (str_contains($phpType, '|')) {
@@ -776,24 +801,25 @@ class EnhancedApiDocGenerator
             $tsTypes = [];
             
             foreach ($types as $type) {
-                $tsTypes[] = $this->convertSingleTypeToTypeScript(trim($type));
+                $tsTypes[] = $this->convertSingleTypeToTypeScript(trim($type), $depth);
             }
             
             return implode(' | ', $tsTypes);
         }
         
-        return $this->convertSingleTypeToTypeScript($phpType);
+        return $this->convertSingleTypeToTypeScript($phpType, $depth);
     }
     
     /**
      * Convert a single PHP type to TypeScript
      */
-    private function convertSingleTypeToTypeScript(string $phpType): string
+    private function convertSingleTypeToTypeScript(string $phpType, int $depth = 0): string
     {
         switch ($phpType) {
             case 'string':
                 return 'string';
             case 'int':
+            case 'integer':
             case 'float':
             case 'double':
                 return 'number';
@@ -809,17 +835,71 @@ class EnhancedApiDocGenerator
             case 'null':
                 return 'null';
             default:
-                // Handle class types
+                // Handle complex array types like array<string, mixed>
+                if (preg_match('/^array<([^,]+),\s*([^>]+)>$/', $phpType, $matches)) {
+                    $keyType = $this->convertSingleTypeToTypeScript(trim($matches[1]), $depth);
+                    $valueType = $this->convertSingleTypeToTypeScript(trim($matches[2]), $depth);
+                    
+                    // If key is string, use Record, otherwise use Map notation
+                    if ($keyType === 'string') {
+                        return "Record<{$keyType}, {$valueType}>";
+                    } else {
+                        return "Map<{$keyType}, {$valueType}>";
+                    }
+                }
+                
+                // Handle simple array types like array<Type>
+                if (preg_match('/^array<([^>]+)>$/', $phpType, $matches)) {
+                    $elementType = $this->convertSingleTypeToTypeScript(trim($matches[1]), $depth);
+                    return "{$elementType}[]";
+                }
+                
+                // Handle array types like string[], int[], MyClass[]
+                if (str_ends_with($phpType, '[]')) {
+                    $baseType = substr($phpType, 0, -2);
+                    $convertedBase = $this->convertSingleTypeToTypeScript($baseType, $depth);
+                    return $convertedBase . '[]';
+                }
+                
+                // Handle class types with namespaces
                 if (str_contains($phpType, '\\')) {
                     // Extract short name of the class
                     $parts = explode('\\', $phpType);
-                    return end($parts);
+                    $shortName = end($parts);
+                    
+                    // Common known types that should have specific TypeScript representations
+                    switch ($shortName) {
+                        case 'DateTime':
+                        case 'DateTimeInterface':
+                            return 'string'; // ISO date string
+                        case 'UuidInterface':
+                        case 'Uuid':
+                            return 'string'; // UUID string
+                        default:
+                            return $shortName;
+                    }
                 }
-                // For array types like string[]
-                if (str_ends_with($phpType, '[]')) {
-                    $baseType = substr($phpType, 0, -2);
-                    return $this->convertToTypeScriptType($baseType) . '[]';
+                
+                // Handle known type aliases and common patterns
+                $typeMapping = [
+                    'DesignData' => 'DesignData',
+                    'Transform' => 'Transform', 
+                    'LayerProperties' => 'LayerProperties',
+                    'TextLayerProperties' => 'TextLayerProperties',
+                    'ImageLayerProperties' => 'ImageLayerProperties',
+                    'ShapeLayerProperties' => 'ShapeLayerProperties',
+                ];
+                
+                if (isset($typeMapping[$phpType])) {
+                    return $typeMapping[$phpType];
                 }
+                
+                // If it looks like a malformed array type, try to fix it
+                if (str_starts_with($phpType, 'array<') && !str_ends_with($phpType, '>')) {
+                    // Likely truncated, assume it's Record<string, any>
+                    return 'Record<string, any>';
+                }
+                
                 return $phpType;
         }
     }
@@ -1326,13 +1406,20 @@ class EnhancedApiDocGenerator
         }
         
         // Add servers information
-        if (isset($this->config['servers'])) {
-            $output .= "## Servers\n\n";
-            foreach ($this->config['servers'] as $server) {
-                $output .= "- **" . ($server['description'] ?? 'Server') . ":** `" . $server['url'] . "`\n";
+        $currentServer = $this->getCurrentServer();
+        $allServers = $this->getAllServersForOpenApi();
+        
+        $output .= "## Servers\n\n";
+        $output .= "**Current Server (based on APP_ENV):** `" . $currentServer['url'] . "` - " . $currentServer['description'] . "\n\n";
+        
+        if (count($allServers) > 1) {
+            $output .= "**All Available Servers:**\n\n";
+            foreach ($allServers as $server) {
+                $isCurrent = $server['url'] === $currentServer['url'] ? ' *(current)*' : '';
+                $output .= "- **" . ($server['description'] ?? 'Server') . ":** `" . $server['url'] . "`" . $isCurrent . "\n";
             }
-            $output .= "\n";
         }
+        $output .= "\n";
         
         // Add authentication information
         if (isset($this->config['security_schemes'])) {
@@ -1975,19 +2062,212 @@ class EnhancedApiDocGenerator
     {
         $type = $param->getType();
         
-        if (!$type) {
-            return 'mixed';
-        }
-        
+        // First, try to get type from reflection
+        $reflectionType = null;
         if ($type instanceof \ReflectionNamedType) {
-            return $type->getName();
+            $reflectionType = $type->getName();
+        } elseif ($type instanceof \ReflectionUnionType) {
+            $reflectionType = implode('|', array_map(fn($t) => $t->getName(), $type->getTypes()));
         }
         
-        if ($type instanceof \ReflectionUnionType) {
-            return implode('|', array_map(fn($t) => $t->getName(), $type->getTypes()));
+        // Try to get more detailed type information from PHPDoc
+        $phpDocType = $this->extractTypeFromParameterDoc($param);
+        
+        // If PHPDoc provides more specific type information, use it
+        if (!empty($phpDocType) && $phpDocType !== 'mixed') {
+            // If reflection type is array but PHPDoc gives us array details, use PHPDoc
+            if ($reflectionType === 'array' && str_contains($phpDocType, '[]')) {
+                return $phpDocType;
+            }
+            // If PHPDoc provides a more specific class type
+            if (str_contains($phpDocType, '\\') && !str_contains($reflectionType ?? '', '\\')) {
+                return $phpDocType;
+            }
         }
         
-        return 'mixed';
+        return $reflectionType ?? 'mixed';
+    }
+    
+    /**
+     * Extract type information from parameter documentation
+     */
+    private function extractTypeFromParameterDoc(\ReflectionParameter $param): string
+    {
+        $constructor = $param->getDeclaringFunction();
+        if (!$constructor || !$constructor->getFileName()) {
+            return '';
+        }
+        
+        try {
+            $file = $constructor->getFileName();
+            $content = file_get_contents($file);
+            $tokens = token_get_all($content);
+            
+            // Find the parameter in the constructor and get its PHPDoc type
+            return $this->findParameterTypeInTokens($tokens, $param->getName());
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+    
+    /**
+     * Find parameter type in token stream
+     */
+    private function findParameterTypeInTokens(array $tokens, string $paramName): string
+    {
+        $tokenCount = count($tokens);
+        $lastDocComment = '';
+        
+        for ($i = 0; $i < $tokenCount; $i++) {
+            $token = $tokens[$i];
+            
+            // Store the last doc comment we encounter
+            if (is_array($token) && $token[0] === T_DOC_COMMENT) {
+                $lastDocComment = $token[1];
+                continue;
+            }
+            
+            // Look for variable that matches our parameter name
+            if (is_array($token) && $token[0] === T_VARIABLE && $token[1] === '$' . $paramName) {
+                // Check if this is in a constructor parameter context
+                if ($this->isInConstructorContext($tokens, $i)) {
+                    // Extract type from the doc comment
+                    $extractedType = $this->extractTypeFromDocComment($lastDocComment);
+                    if (!empty($extractedType)) {
+                        return $extractedType;
+                    }
+                    
+                    // Also try to find @var annotations specifically for this parameter
+                    $paramVarType = $this->extractVarAnnotationForParameter($lastDocComment, $paramName);
+                    if (!empty($paramVarType)) {
+                        return $paramVarType;
+                    }
+                }
+            }
+        }
+        
+        return '';
+    }
+    
+    /**
+     * Extract @var annotation for a specific parameter
+     */
+    private function extractVarAnnotationForParameter(string $docComment, string $paramName): string
+    {
+        // Look for @var annotations that might reference this parameter
+        // First try to match the entire type including angle brackets
+        if (preg_match('/@var\s+([^\s]+(?:<[^>]+>)?[^\s]*)(?:\s+\$' . preg_quote($paramName) . ')?/', $docComment, $matches)) {
+            return trim($matches[1]);
+        }
+        
+        // Fallback: look for @var followed by any type up to whitespace or $
+        if (preg_match('/@var\s+([^\s\$]+)(?:\s+\$' . preg_quote($paramName) . ')?/', $docComment, $matches)) {
+            $type = trim($matches[1]);
+            
+            // If we have angle brackets but they seem incomplete, try to extend
+            if (str_contains($type, '<') && !str_contains($type, '>')) {
+                // Look for the complete type in the line
+                $varPos = strpos($docComment, '@var');
+                if ($varPos !== false) {
+                    $line = substr($docComment, $varPos);
+                    if (preg_match('/@var\s+([^$\s]*<[^>]*>[^$\s]*)/', $line, $extendedMatches)) {
+                        return trim($extendedMatches[1]);
+                    }
+                }
+            }
+            
+            return $type;
+        }
+        
+        return '';
+    }
+    
+    /**
+     * Extract type from PHPDoc comment
+     */
+    private function extractTypeFromDocComment(string $docComment): string
+    {
+        if (empty($docComment)) {
+            return '';
+        }
+        
+        // Look for @var annotations first
+        // First try to match the entire type including angle brackets
+        if (preg_match('/@var\s+([^\s]+(?:<[^>]+>)?[^\s]*)/', $docComment, $matches)) {
+            $varType = trim($matches[1]);
+            
+            // If it's a detailed array type like array<string, mixed>, return that
+            if (str_contains($varType, 'array<')) {
+                return $varType;
+            }
+            
+            return $varType;
+        }
+        
+        // Fallback: look for @var followed by any type up to whitespace
+        if (preg_match('/@var\s+([^\s\$]+)/', $docComment, $matches)) {
+            $type = trim($matches[1]);
+            
+            // If we have angle brackets but they seem incomplete, try to extend
+            if (str_contains($type, '<') && !str_contains($type, '>')) {
+                // Look for the complete type in the line
+                $varPos = strpos($docComment, '@var');
+                if ($varPos !== false) {
+                    $line = substr($docComment, $varPos);
+                    if (preg_match('/@var\s+([^$\s]*<[^>]*>[^$\s]*)/', $line, $extendedMatches)) {
+                        return trim($extendedMatches[1]);
+                    }
+                }
+            }
+            
+            return $type;
+        }
+        
+        // Look for array type patterns in various formats
+        $arrayPatterns = [
+            '/array<([^>]+)>/',                           // array<Type>
+            '/([A-Z][a-zA-Z0-9\\\\]*)\[\]/',             // Type[]
+            '/array\s*\|\s*([A-Z][a-zA-Z0-9\\\\]*)\[\]/', // array|Type[]
+            '/([A-Z][a-zA-Z0-9\\\\]*)\[\]\s*\|/',        // Type[]|other
+        ];
+        
+        foreach ($arrayPatterns as $pattern) {
+            if (preg_match($pattern, $docComment, $matches)) {
+                if (isset($matches[1])) {
+                    // For array<Type> format, return as Type[]
+                    if (str_contains($pattern, 'array<')) {
+                        return $matches[1] . '[]';
+                    }
+                    // For Type[] format, return as-is
+                    return $matches[0];
+                }
+            }
+        }
+        
+        // Look for union types with specific patterns
+        if (preg_match('/([A-Z][a-zA-Z0-9\\\\]*(?:\|[A-Z][a-zA-Z0-9\\\\]*)+)/', $docComment, $matches)) {
+            return $matches[1];
+        }
+        
+        // Look for specific class names (DTOs, ValueObjects, etc.)
+        $classPatterns = [
+            '/App\\\\[A-Z][a-zA-Z0-9\\\\]*/',            // Full App namespaced classes
+            '/[A-Z][a-zA-Z0-9]*(?:DTO|Data|ValueObject|Properties|Transform)/', // Common class suffixes
+            '/(?:Text|Image|Shape)LayerProperties/',      // Specific layer properties
+        ];
+        
+        foreach ($classPatterns as $pattern) {
+            if (preg_match($pattern, $docComment, $matches)) {
+                return $matches[0];
+            }
+        }
+        
+        // Look for primitive array types
+        if (preg_match('/(string|int|float|bool|mixed)\[\]/', $docComment, $matches)) {
+            return $matches[0];
+        }
+        
+        return '';
     }
 
     /**
@@ -2062,11 +2342,31 @@ class EnhancedApiDocGenerator
     private function extractPromotedPropertyInfo(\ReflectionClass $reflection, \ReflectionParameter $param, int $depth = 0): array
     {
         $name = $param->getName();
-        $type = $this->getParameterTypeString($param);
+        $reflectionType = $this->getParameterTypeString($param);
         $required = !$param->isOptional();
         
-        // Extract PHPDoc using token parsing instead of regex
+        // Extract PHPDoc using token parsing
         $description = $this->extractPromotedParamPhpDoc($reflection, $param);
+        
+        // Try to extract more specific type from PHPDoc
+        $phpDocType = $this->extractTypeFromParameterDoc($param);
+        
+        // Use the more specific type
+        $type = $reflectionType;
+        if (!empty($phpDocType) && $phpDocType !== 'mixed') {
+            // If PHPDoc provides array details but reflection shows just 'array'
+            if ($reflectionType === 'array' && (str_contains($phpDocType, 'array<') || str_contains($phpDocType, '[]'))) {
+                $type = $phpDocType;
+            }
+            // If PHPDoc provides a more specific class type
+            elseif (str_contains($phpDocType, '\\') && !str_contains($reflectionType, '\\')) {
+                $type = $phpDocType;
+            }
+            // If PHPDoc provides union type information
+            elseif (str_contains($phpDocType, '|')) {
+                $type = $phpDocType;
+            }
+        }
         
         // Extract validation constraints
         $validation = $this->extractParameterValidation($param);
@@ -2189,7 +2489,7 @@ class EnhancedApiDocGenerator
             
             if (is_array($token) && $token[0] === T_STRING && $token[1] === '__construct') {
                 return true;
-            }
+                       }
             
             // Stop looking if we hit another function or class
             if (is_array($token) && ($token[0] === T_FUNCTION || $token[0] === T_CLASS)) {
@@ -2223,23 +2523,34 @@ class EnhancedApiDocGenerator
             return $this->parseDocCommentFallback($docComment);
         }
     }
-
+    
     /**
-     * Fallback doc comment parsing
+     * Fallback parsing for doc comments when phpDocumentor fails
      */
     private function parseDocCommentFallback(string $docComment): string
     {
+        // Remove /** and */ markers
+        $docComment = trim($docComment);
+        $docComment = preg_replace('/^\/\*\*\s*/', '', $docComment);
+        $docComment = preg_replace('/\s*\*\/$/', '', $docComment);
+        
+        // Split into lines and process
         $lines = explode("\n", $docComment);
         $description = [];
         
         foreach ($lines as $line) {
-            $line = trim($line, " \t/*");
+            // Remove leading * and whitespace
+            $line = preg_replace('/^\s*\*\s?/', '', $line);
+            $line = trim($line);
             
-            if (empty($line) || str_starts_with($line, '@')) {
+            // Skip @annotations but stop at them for description
+            if (str_starts_with($line, '@')) {
                 break;
             }
             
-            $description[] = $line;
+            if (!empty($line)) {
+                $description[] = $line;
+            }
         }
         
         return implode(' ', $description);
@@ -2263,6 +2574,7 @@ class EnhancedApiDocGenerator
      * Get property type string
      */
     private function getPropertyTypeString(\ReflectionProperty $property): string
+
     {
         $type = $property->getType();
         
@@ -2378,16 +2690,6 @@ class EnhancedApiDocGenerator
         }
         
         // Add union type expansion if applicable
-        if ($this->shouldExpandType($property['type']) && $depth < $this->maxDepth) {
-            $expanded = $this->expandUnionType($property['type'], $depth + 1);
-            if (!empty($expanded)) {
-                $output .= "\n\n$indent  **Union Type Details:**\n\n";
-                $expandedIndented = str_replace("\n", "\n$indent  ", $expanded);
-                $output .= "$indent  " . $expandedIndented;
-            }
-        }
-        
-        // Generate examples if configured
         if ($this->config['include_examples']) {
             $example = $this->generateExampleFromValidation($property['validation'], $property['type']);
             if (!empty($example)) {
@@ -2399,49 +2701,134 @@ class EnhancedApiDocGenerator
     }
 
     /**
-     * Expand union types into their component types with depth control
+     * Check if a type should be expanded inline and return the expanded structure
      */
-    private function expandUnionType(string $type, int $depth = 0): string
+    private function maybeExpandTypeInline(string $phpType, int $depth): ?string
     {
-        if (!$this->shouldExpandType($type) || $depth > $this->maxDepth) {
-            return '';
+        // Don't expand if we're too deep to prevent infinite recursion
+        if ($depth >= $this->maxDepth) {
+            return null;
         }
         
-        $types = explode('|', $type);
-        $expanded = [];
-        
-        foreach ($types as $singleType) {
-            $singleType = trim($singleType);
-            
-            // Skip null and primitive types
-            if ($singleType === 'null' || !str_contains($singleType, 'App\\DTO\\')) {
-                continue;
+        // Handle array types with complex elements
+        if (str_ends_with($phpType, '[]')) {
+            $baseType = substr($phpType, 0, -2);
+            $expandedElement = $this->maybeExpandTypeInline($baseType, $depth + 1);
+            if ($expandedElement !== null) {
+                return $expandedElement . '[]';
             }
+            return null;
+        }
+        
+        // Handle complex array types like array<string, mixed>
+        if (preg_match('/^array<([^,]+),\s*([^>]+)>$/', $phpType, $matches)) {
+            $keyType = $this->convertSingleTypeToTypeScript(trim($matches[1]), $depth);
+            $valueType = $this->convertSingleTypeToTypeScript(trim($matches[2]), $depth);
             
-            if (class_exists($singleType)) {
-                $expanded[] = $this->generateEnhancedClassDocumentation(new \ReflectionClass($singleType), $depth);
+            if ($keyType === 'string') {
+                return "Record<{$keyType}, {$valueType}>";
+            } else {
+                return "Map<{$keyType}, {$valueType}>";
             }
         }
         
-        return implode("\n", $expanded);
+        // Handle union types - expand each type that can be expanded
+        if (str_contains($phpType, '|')) {
+            $types = explode('|', $phpType);
+            $expandedTypes = [];
+            $hasComplexExpansion = false;
+            
+            foreach ($types as $type) {
+                $type = trim($type);
+                
+                // Skip null type in union expansion for cleaner output
+                if ($type === 'null') {
+                    continue;
+                }
+                
+                $expanded = $this->maybeExpandTypeInline($type, $depth + 1);
+                if ($expanded !== null && str_contains($expanded, '{')) {
+                    // This is a complex object expansion
+                    $expandedTypes[] = $expanded;
+                    $hasComplexExpansion = true;
+                } else {
+                    // Simple type or couldn't expand
+                    $simpleType = $this->convertSingleTypeToTypeScript($type, $depth);
+                    $expandedTypes[] = $simpleType;
+                }
+            }
+            
+            // Only return expanded union if we have complex expansions
+            if ($hasComplexExpansion && count($expandedTypes) > 1) {
+                return implode(' | ', $expandedTypes);
+            } elseif ($hasComplexExpansion && count($expandedTypes) == 1) {
+                return $expandedTypes[0];
+            }
+            
+            return null;
+        }
+        
+        // Check if this is a complex class that should be expanded
+        if (str_contains($phpType, '\\') && str_contains($phpType, 'App\\')) {
+            try {
+                if (class_exists($phpType)) {
+                    $reflection = new \ReflectionClass($phpType);
+                    return $this->generateInlineTypeStructure($reflection, $depth + 1);
+                }
+            } catch (\Exception $e) {
+                // If we can't reflect the class, fall back to simple type
+                return null;
+            }
+        }
+        
+        // Check for known complex types that should be expanded
+        $knownComplexTypes = [
+            'DesignData', 'Transform', 'LayerProperties', 
+            'TextLayerProperties', 'ImageLayerProperties', 'ShapeLayerProperties',
+            'LayerUpdate'
+        ];
+        
+        if (in_array($phpType, $knownComplexTypes)) {
+            $fullClassName = "App\\DTO\\ValueObject\\{$phpType}";
+            try {
+                if (class_exists($fullClassName)) {
+                    $reflection = new \ReflectionClass($fullClassName);
+                    return $this->generateInlineTypeStructure($reflection, $depth + 1);
+                }
+            } catch (\Exception $e) {
+                // Ignore and continue
+            }
+        }
+        
+        return null;
     }
-
+    
     /**
-     * Determine if a type should be expanded in documentation
+     * Generate inline type structure for complex objects
      */
-    private function shouldExpandType(string $type): bool
+    private function generateInlineTypeStructure(\ReflectionClass $reflection, int $depth): string
     {
-        // Expand union types that contain DTOs
-        if (str_contains($type, '|') && str_contains($type, 'App\\DTO\\')) {
-            return true;
+        $properties = $this->extractClassProperties($reflection, $depth);
+        
+        if (empty($properties)) {
+            return 'Record<string, any>';
         }
         
-        // Expand complex DTO types
-        if (str_contains($type, 'App\\DTO\\') && !str_contains($type, '[]')) {
-            return true;
+        $output = "{\n";
+        foreach ($properties as $property) {
+            $name = $property['name'];
+            $type = $this->convertToTypeScriptType($property['type'], $depth);
+            $required = $property['required'] ?? true;
+            
+            // Check for nested expansion
+            $expandedType = $this->maybeExpandTypeInline($property['type'], $depth);
+            $finalType = $expandedType ?? $type;
+            
+            $output .= "    " . $name . ($required ? "" : "?") . ": " . $finalType . ";\n";
         }
+        $output .= "  }";
         
-        return false;
+        return $output;
     }
 
     /**
@@ -2789,13 +3176,21 @@ class EnhancedApiDocGenerator
         }
         
         // Add servers info
-        if (isset($this->config['servers'])) {
-            $html .= '<div class="servers"><h3>Available Servers</h3><ul>';
-            foreach ($this->config['servers'] as $server) {
-                $html .= '<li><strong>' . htmlspecialchars($server['description'] ?? 'Server') . ':</strong> <code>' . htmlspecialchars($server['url']) . '</code></li>';
+        $currentServer = $this->getCurrentServer();
+        $allServers = $this->getAllServersForOpenApi();
+        
+        $html .= '<div class="servers"><h3>Available Servers</h3>';
+        $html .= '<div><strong>Current Server (based on APP_ENV):</strong> <code>' . htmlspecialchars($currentServer['url']) . '</code> - ' . htmlspecialchars($currentServer['description']) . '</div>';
+        
+        if (count($allServers) > 1) {
+            $html .= '<h4>All Servers:</h4><ul>';
+            foreach ($allServers as $server) {
+                $isCurrent = $server['url'] === $currentServer['url'] ? ' <em>(current)</em>' : '';
+                $html .= '<li><strong>' . htmlspecialchars($server['description'] ?? 'Server') . ':</strong> <code>' . htmlspecialchars($server['url']) . '</code>' . $isCurrent . '</li>';
             }
-            $html .= '</ul></div>';
+            $html .= '</ul>';
         }
+        $html .= '</div>';
         
         // Add authentication info
         if (isset($this->config['security_schemes'])) {
@@ -2903,121 +3298,59 @@ class EnhancedApiDocGenerator
         return preg_replace('/\{([^}]+)\}/', '{$1}', $path);
     }
 
-    // Helper methods for enhanced functionality
-    private function extractControllerDescription(string $controller, array $routes): string
+    /**
+     * Get the current server configuration based on APP_ENV environment variable
+     */
+    private function getCurrentServer(): array
     {
-        if (empty($routes)) return '';
+        $appEnv = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'dev';
         
-        try {
-            $reflection = new \ReflectionClass($routes[0]['controller']);
-            return $this->extractClassDocumentation($reflection);
-        } catch (\Exception $e) {
-            return '';
+        // Check if we have environment-based server configuration
+        if (isset($this->config['servers']) && is_array($this->config['servers'])) {
+            // Check if servers is an object (new format) with environment mapping
+            if (isset($this->config['server_environment_mapping'])) {
+                $environment = $this->config['server_environment_mapping'][$appEnv] ?? 'dev';
+                
+                if (isset($this->config['servers'][$environment])) {
+                    return $this->config['servers'][$environment];
+                }
+            }
+            
+            // If servers is an array (old format), return first server
+            if (isset($this->config['servers'][0])) {
+                return $this->config['servers'][0];
+            }
         }
-    }
-
-    private function formatRouteForJson(array $route): array
-    {
+        
+        // Fallback to default development server
         return [
-            'path' => $route['path'],
-            'methods' => $route['methods'],
-            'action' => $route['action'],
-            'description' => $route['description'],
-            'deprecated' => $route['deprecated'],
-            'security' => $route['security'],
-            'tags' => $route['tags']
+            'url' => 'http://localhost:8000',
+            'description' => 'Development server (fallback)'
         ];
     }
 
-    private function generateRouteHtmlDocumentation(array $route): string
+    /**
+     * Get all available servers in OpenAPI format
+     */
+    private function getAllServersForOpenApi(): array
     {
-        $methods = array_map('strtolower', $route['methods']);
-        $methodTags = implode(' ', array_map(fn($m) => "<span class='method $m'>$m</span>", $methods));
-        
-        $html = "<div class='route" . ($route['deprecated'] ? ' deprecated' : '') . "'>";
-        $html .= "<h3>$methodTags {$route['path']}</h3>";
-        $html .= "<p>{$route['description']}</p>";
-        $html .= "</div>";
-        
-        return $html;
-    }
-}
-
-/**
- * Main function to handle CLI execution
- */
-function main(): void
-{
-    global $argc, $argv;
-    
-    $options = getopt('', [
-        'format:', 'output:', 'config:', 'no-cache', 'include-examples', 
-        'exclude-deprecated', 'max-depth:', 'help'
-    ]);
-    
-    if (isset($options['help'])) {
-        echo "Enhanced API Documentation Generator\n";
-        echo "Usage: php generate-api-docs-enhanced.php [options]\n\n";
-        echo "Options:\n";
-        echo "  --format=FORMAT     Output format: markdown, json, html, openapi (default: markdown)\n";
-        echo "  --output=FILE       Output file path\n";
-        echo "  --config=FILE       Configuration file path\n";
-        echo "  --no-cache          Disable caching\n";
-        echo "  --include-examples  Include request/response examples\n";
-        echo "  --exclude-deprecated Hide deprecated endpoints\n";
-        echo "  --max-depth=N       Maximum recursion depth for DTOs (default: 5)\n";
-        echo "  --help              Show this help message\n";
-        exit(0);
-    }
-    
-    $config = [];
-    
-    if (isset($options['format'])) {
-        $config['output_format'] = $options['format'];
-    }
-    
-    if (isset($options['no-cache'])) {
-        $config['cache_enabled'] = false;
-    }
-    
-    if (isset($options['include-examples'])) {
-        $config['include_examples'] = true;
-    }
-    
-    if (isset($options['exclude-deprecated'])) {
-        $config['show_deprecated'] = false;
-    }
-    
-    if (isset($options['max-depth'])) {
-        $config['max_depth'] = (int)$options['max-depth'];
-    }
-    
-    // Load config file if specified
-    if (isset($options['config']) && file_exists($options['config'])) {
-        $fileConfig = json_decode(file_get_contents($options['config']), true);
-        if ($fileConfig) {
-            $config = array_merge($config, $fileConfig);
+        if (isset($this->config['servers']) && is_array($this->config['servers'])) {
+            // New format with environment-based servers
+            if (isset($this->config['server_environment_mapping'])) {
+                return array_values($this->config['servers']);
+            }
+            
+            // Old format - return as is
+            return $this->config['servers'];
         }
-    }
-    
-    $generator = new EnhancedApiDocGenerator($config);
-    $documentation = $generator->generate();
-    
-    if (isset($options['output'])) {
-        file_put_contents($options['output'], $documentation);
-        echo "Documentation written to: {$options['output']}\n";
-    } else {
-        // Write to default location based on format
-        $extension = match ($config['output_format'] ?? 'markdown') {
-            'json' => 'json',
-            'html' => 'html',
-            'openapi' => 'yaml',
-            default => 'md'
-        };
         
-        $outputFile = __DIR__ . "/../../API_DOCUMENTATION.$extension";
-        file_put_contents($outputFile, $documentation);
-        echo "Documentation generated: $outputFile\n";
+        // Fallback
+        return [
+            [
+                'url' => 'http://localhost:8000',
+                'description' => 'Development server'
+            ]
+        ];
     }
 }
 
@@ -3029,80 +3362,69 @@ if (php_sapi_name() === 'cli') {
     ]);
     
     if (isset($options['help'])) {
-        echo "Enhanced API Documentation Generator\n\n";
-        echo "Usage: php generate-api-docs-enhanced.php [options]\n\n";
-        echo "Options:\n";
-        echo "  --format=FORMAT     Output format (markdown, json, html, openapi)\n";
-        echo "  --output=FILE       Output file path\n";
-        echo "  --config=FILE       Configuration file path\n";
-        echo "  --cache             Enable caching (default)\n";
-        echo "  --no-cache          Disable caching\n";
-        echo "  --progress          Show progress bars\n";
-        echo "  --include-examples  Include request/response examples\n";
-        echo "  --exclude-deprecated Hide deprecated endpoints\n";
-        echo "  --max-depth=N       Maximum recursion depth for DTOs (default: 5)\n";
-        echo "  --help              Show this help message\n";
-        exit(0);
-    }
-    
-    $config = [];
-    
-    if (isset($options['format'])) {
-        $config['output_format'] = $options['format'];
-    }
-    
-    if (isset($options['no-cache'])) {
-        $config['cache_enabled'] = false;
-    }
-    
-    if (isset($options['include-examples'])) {
-        $config['include_examples'] = true;
-    }
-    
-    if (isset($options['exclude-deprecated'])) {
-        $config['show_deprecated'] = false;
-    }
-    
-    if (isset($options['max-depth'])) {
-        $config['max_depth'] = (int)$options['max-depth'];
-    }
-    
-    // Load config file if specified
-    if (isset($options['config']) && file_exists($options['config'])) {
-        $fileConfig = json_decode(file_get_contents($options['config']), true);
-        if ($fileConfig) {
-            $config = array_merge($config, $fileConfig);
-        }
-    }
-    
-    $generator = new EnhancedApiDocGenerator($config);
-    $documentation = $generator->generate();
-    
-    if (isset($options['output'])) {
-        file_put_contents($options['output'], $documentation);
-        echo "Documentation written to: {$options['output']}\n";
-    } else {
-        // Write to default location based on format
-        $extension = match ($config['output_format'] ?? 'markdown') {
-            'json' => 'json',
-            'html' => 'html',
-            'openapi' => 'yaml',
-            default => 'md'
-        };
-        
-        $outputFile = __DIR__ . "/../../API_DOCUMENTATION.$extension";
-        file_put_contents($outputFile, $documentation);
-        echo "Documentation generated: $outputFile\n";
+    echo "Enhanced API Documentation Generator\n\n";
+    echo "Usage: php generate-api-docs-enhanced.php [options]\n\n";
+    echo "Options:\n";
+    echo "  --format=FORMAT     Output format (markdown, json, html, openapi)\n";
+    echo "  --output=FILE       Output file path\n";
+    echo "  --config=FILE       Configuration file path\n";
+    echo "  --cache             Enable caching (default)\n";
+    echo "  --no-cache          Disable caching\n";
+    echo "  --progress          Show progress bars\n";
+    echo "  --include-examples  Include request/response examples\n";
+    echo "  --exclude-deprecated Hide deprecated endpoints\n";
+    echo "  --max-depth=N       Maximum recursion depth for DTOs (default: 5)\n";
+    echo "  --help              Show this help message\n";
+    exit(0);
+}
+
+$config = [];
+
+if (isset($options['format'])) {
+    $config['output_format'] = $options['format'];
+}
+
+if (isset($options['no-cache'])) {
+    $config['cache_enabled'] = false;
+}
+
+if (isset($options['include-examples'])) {
+    $config['include_examples'] = true;
+}
+
+if (isset($options['exclude-deprecated'])) {
+    $config['show_deprecated'] = false;
+}
+
+if (isset($options['max-depth'])) {
+    $config['max_depth'] = (int)$options['max-depth'];
+}
+
+// Load config file if specified
+if (isset($options['config']) && file_exists($options['config'])) {
+    $fileConfig = json_decode(file_get_contents($options['config']), true);
+    if ($fileConfig) {
+        $config = array_merge($config, $fileConfig);
     }
 }
 
-// Main execution
-if ($argc > 0 && basename($argv[0]) === basename(__FILE__)) {
-    try {
-        main();
-    } catch (Exception $e) {
-        echo "Error: " . $e->getMessage() . "\n";
-        echo "Use --help for usage information.\n";
-        exit(1);
-    }
+$generator = new EnhancedApiDocGenerator($config);
+$documentation = $generator->generate();
+
+if (isset($options['output'])) {
+    file_put_contents($options['output'], $documentation);
+    echo "Documentation written to: {$options['output']}\n";
+} else {
+    // Write to default location based on format
+    $extension = match ($config['output_format'] ?? 'markdown') {
+        'json' => 'json',
+        'html' => 'html',
+        'openapi' => 'yaml',
+        default => 'md'
+    };
+    
+    $outputFile = __DIR__ . "/../../API_DOCUMENTATION.$extension";
+    file_put_contents($outputFile, $documentation);
+    echo "Documentation generated: $outputFile\n";
+}
 }
