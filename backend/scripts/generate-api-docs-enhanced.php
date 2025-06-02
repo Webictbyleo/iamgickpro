@@ -16,6 +16,7 @@ use phpDocumentor\Reflection\Types\ContextFactory;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Enhanced API Documentation Generator for Symfony 7 + PHP 8.4
@@ -275,7 +276,13 @@ class EnhancedApiDocGenerator
         // Generate component schemas
         $openapi['components']['schemas'] = $this->generateOpenApiSchemas();
 
-        return json_encode($openapi, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        // Use proper YAML flags to preserve array structures and prevent empty arrays from becoming objects
+        return Yaml::dump(
+            $openapi, 
+            10, // inline depth
+            2,  // indentation
+            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE
+        );
     }
 
     /**
