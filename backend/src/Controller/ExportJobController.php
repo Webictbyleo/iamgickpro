@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Request\CreateExportJobRequestDTO;
+use App\DTO\Request\ExportJobListRequestDTO;
 use App\DTO\Response\ErrorResponseDTO;
 use App\DTO\Response\ExportJobResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
@@ -14,7 +15,6 @@ use App\Repository\ExportJobRepository;
 use App\Service\ResponseDTOFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -48,11 +48,7 @@ class ExportJobController extends AbstractController
      * Returns a paginated list of export jobs belonging to the authenticated user.
      * Supports filtering by status and format, with configurable pagination.
      * 
-     * @param Request $request HTTP request with optional query parameters:
-     *                        - page: Page number (default: 1, min: 1)
-     *                        - limit: Items per page (default: 20, max: 50)
-     *                        - status: Filter by job status (pending, processing, completed, failed, cancelled)
-     *                        - format: Filter by export format (png, jpg, svg, mp4, gif)
+     * @param Request $request HTTP request with optional query parameters
      * @return JsonResponse<ExportJobResponseDTO|ErrorResponseDTO> Paginated list of export jobs or error response
      */
     #[Route('', name: 'list', methods: ['GET'])]
@@ -60,27 +56,35 @@ class ExportJobController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         try {
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-            $status = $request->query->get('status');
-            $format = $request->query->get('format');
+            $dto = ExportJobListRequestDTO::fromRequest($request);
+
+            $errors = $this->validator->validate($dto);
+            if (count($errors) > 0) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse(
+                        'Invalid request parameters',
+                        ['errors' => (string) $errors]
+                    ),
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
 
             $jobs = $this->exportJobRepository->findByUser(
                 $this->getUser(),
-                $status,
-                $format,
-                $page,
-                $limit
+                $dto->status,
+                $dto->format,
+                $dto->page,
+                $dto->limit
             );
 
             $total = $this->exportJobRepository->countByUser(
                 $this->getUser(),
-                $status,
-                $format
+                $dto->status,
+                $dto->format
             );
 
             return $this->exportJobResponse(
-                $this->responseDTOFactory->createExportJobListResponse($jobs, $total, $page, $limit)
+                $this->responseDTOFactory->createExportJobListResponse($jobs, $total, $dto->page, $dto->limit)
             );
         } catch (\Exception $e) {
             return $this->errorResponse(

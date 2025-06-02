@@ -4,7 +4,7 @@ Comprehensive API for the modern web-based design platform
 
 **Version:** 1.0.0
 
-**Generated on:** 2025-06-02 10:20:50
+**Generated on:** 2025-06-02 13:48:38
 **Generator:** Enhanced API Documentation Generator v2.0
 **Symfony Version:** 7.0.10
 **PHP Version:** 8.4.7
@@ -577,10 +577,6 @@ List designs for authenticated user
 Returns a paginated list of designs belonging to the authenticated user.
 Supports filtering by project, status, and search functionality.
 
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
-
 #### Response
 
 **Response Schema:**
@@ -761,10 +757,6 @@ Search designs
 
 Performs a comprehensive search across designs accessible to the authenticated user.
 Searches in design names, descriptions, and associated project information.
-
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
 
 #### Response
 
@@ -1185,10 +1177,6 @@ List export jobs for authenticated user
 Returns a paginated list of export jobs belonging to the authenticated user.
 Supports filtering by status and format, with configurable pagination.
 
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
-
 #### Response
 
 **Response Schema:**
@@ -1422,10 +1410,6 @@ Get details of a specific export job
 Returns detailed information about a single export job.
 Only allows access to export jobs owned by the authenticated user.
 
-#### Parameters
-
-- **exportJob** (App\Entity\ExportJob)
-
 #### Response
 
 **Response Schema:**
@@ -1454,10 +1438,6 @@ Update an export job (Not allowed)
 
 Export jobs are immutable after creation and cannot be modified.
 This endpoint always returns an error indicating that modifications are not permitted.
-
-#### Parameters
-
-- **exportJob** (App\Entity\ExportJob)
 
 #### Response
 
@@ -1488,10 +1468,6 @@ Deletes an export job and its associated output file.
 Only allows deletion of jobs in pending, failed, or completed status.
 Only allows access to export jobs owned by the authenticated user.
 
-#### Parameters
-
-- **exportJob** (App\Entity\ExportJob)
-
 #### Response
 
 **Response Schema:**
@@ -1516,10 +1492,6 @@ Cancel a pending or processing export job
 Cancels an export job that is currently pending or being processed.
 Sets the job status to cancelled and stops any ongoing processing.
 Only allows access to export jobs owned by the authenticated user.
-
-#### Parameters
-
-- **exportJob** (App\Entity\ExportJob)
 
 #### Response
 
@@ -1552,10 +1524,6 @@ Returns the file as an attachment with appropriate headers.
 Only allows download of completed jobs with existing output files.
 Only allows access to export jobs owned by the authenticated user.
 
-#### Parameters
-
-- **exportJob** (App\Entity\ExportJob)
-
 ---
 
 <!-- Route 10 -->
@@ -1569,10 +1537,6 @@ Resets a failed export job back to pending status for re-processing.
 Clears error messages and resets progress to zero.
 Only allows retry of jobs with failed status.
 Only allows access to export jobs owned by the authenticated user.
-
-#### Parameters
-
-- **exportJob** (App\Entity\ExportJob)
 
 #### Response
 
@@ -3279,10 +3243,6 @@ Retrieve paginated list of plugins with filtering options
 Supports filtering by category, search terms, status, and sorting.
 Returns paginated results with plugin metadata.
 
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
-
 ---
 
 <!-- Route 2 -->
@@ -3422,10 +3382,6 @@ Get current user's plugins
 Returns paginated list of plugins created by the authenticated user,
 including all statuses (pending, approved, rejected).
 
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
-
 ---
 
 <!-- Route 5 -->
@@ -3435,10 +3391,6 @@ Retrieve detailed information about a specific plugin
 
 Returns comprehensive plugin details including manifest, permissions,
 and review information. Access is restricted based on plugin status and user role.
-
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
 
 ---
 
@@ -3451,10 +3403,6 @@ Update an existing plugin
 
 Updates plugin metadata. Only the plugin developer or admin can perform updates.
 Admin users can also modify the plugin status.
-
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
 
 #### Request Body
 
@@ -3567,10 +3515,6 @@ Delete a plugin
 Permanently removes a plugin from the system. Only the plugin developer
 or administrators can delete plugins. This action is irreversible.
 
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
-
 ---
 
 <!-- Route 8 -->
@@ -3582,10 +3526,6 @@ Approve a plugin (Admin only)
 
 Changes plugin status to approved, making it available in the marketplace.
 Records approval timestamp and reviewing administrator.
-
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
 
 ---
 
@@ -3599,10 +3539,6 @@ Install a plugin for the current user
 Installs an approved plugin for the authenticated user. Increments the
 installation count and handles plugin registration logic.
 
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
-
 ---
 
 <!-- Route 10 -->
@@ -3614,10 +3550,6 @@ Reject a plugin (Admin only)
 
 Changes plugin status to rejected with a provided reason.
 Records rejection timestamp and reviewing admin.
-
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
 
 #### Request Body
 
@@ -3676,10 +3608,6 @@ Uninstall a plugin for the current user
 Removes a plugin from the user's installed plugins and cleans up
 associated data and files.
 
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
-
 ---
 
 <!-- Route 12 -->
@@ -3691,10 +3619,6 @@ Upload a plugin file
 
 Allows plugin developers to upload plugin files (ZIP format).
 Performs validation and stores the file securely.
-
-#### Parameters
-
-- **plugin** (App\Entity\Plugin)
 
 #### Request Body
 
@@ -3770,10 +3694,6 @@ List projects for authenticated user
 
 Returns a paginated list of projects belonging to the authenticated user.
 Supports filtering by status, sorting by various fields, and search functionality.
-
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
 
 #### Response
 
@@ -4372,10 +4292,6 @@ List available templates with filtering and pagination
 Returns a paginated list of templates with optional category filtering.
 Includes template metadata, thumbnail images, and usage statistics.
 Both public templates and user-created templates are included in results.
-
-#### Parameters
-
-- **request** (Symfony\Component\HttpFoundation\Request)
 
 #### Response
 

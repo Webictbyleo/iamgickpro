@@ -185,12 +185,16 @@ class EnhancedApiDocGenerator
                 'symfony_version' => \Symfony\Component\HttpKernel\Kernel::VERSION,
                 'php_version' => PHP_VERSION
             ],
-            'controllers' => []
+            'controllers' => [],
+            'schemas' => []
         ];
 
         foreach ($controllers as $controller => $routes) {
             $documentation['controllers'][] = $this->generateControllerJsonData($controller, $routes);
         }
+
+        // Generate schemas for all DTOs encountered
+        $documentation['schemas'] = $this->generateJsonSchemas();
 
         return json_encode($documentation, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
@@ -1552,7 +1556,6 @@ class EnhancedApiDocGenerator
     }
 
     /**
-    /**
      * Generate documentation for a single route with improved readability
      */
     /**
@@ -2030,20 +2033,75 @@ class EnhancedApiDocGenerator
         $parameters = [];
         
         foreach ($method->getParameters() as $param) {
-            // Skip request/response objects and services
             $type = $param->getType();
+            
+            // Skip parameters that are classes/objects but not valid DTOs
             if ($type && $type instanceof \ReflectionNamedType) {
                 $typeName = $type->getName();
-                if (str_contains($typeName, 'Request') && str_contains($typeName, 'DTO')) {
-                    continue; // This will be handled as request body
+                
+                // Skip primitive types (string, int, bool, float, array)
+                $primitiveTypes = ['string', 'int', 'integer', 'bool', 'boolean', 'float', 'double', 'array', 'mixed'];
+                if (in_array($typeName, $primitiveTypes, true)) {
+                    $parameters[] = [
+                        'name' => $param->getName(),
+                        'type' => $this->getParameterTypeString($param),
+                        'required' => !$param->isOptional(),
+                        'default' => $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null
+                    ];
+                    continue;
                 }
-                if (str_contains($typeName, 'Service') || 
-                    str_contains($typeName, 'Repository') ||
-                    str_contains($typeName, 'Manager')) {
-                    continue; // Skip injected services
+                
+                // Skip Request DTOs (handled as request body)
+                if ($this->isValidRequestDto($typeName)) {
+                    continue;
+                }
+                
+                // Skip Response DTOs (not user input)
+                if ($this->isValidResponseDto($typeName)) {
+                    continue;
+                }
+                
+                // Skip auto-resolved class/object parameters (services, repositories, etc.)
+                if (class_exists($typeName)) {
+                    // Skip Symfony framework classes
+                    if (str_starts_with($typeName, 'Symfony\\') ||
+                        str_starts_with($typeName, 'Doctrine\\') ||
+                        str_starts_with($typeName, 'Psr\\')) {
+                        continue;
+                    }
+                    
+                    // Skip common service patterns
+                    if (str_contains($typeName, 'Service') ||
+                        str_contains($typeName, 'Repository') ||
+                        str_contains($typeName, 'Manager') ||
+                        str_contains($typeName, 'Handler') ||
+                        str_contains($typeName, 'Factory') ||
+                        str_contains($typeName, 'Helper') ||
+                        str_contains($typeName, 'Validator') ||
+                        str_contains($typeName, 'Normalizer') ||
+                        str_contains($typeName, 'Serializer') ||
+                        str_contains($typeName, 'EventDispatcher') ||
+                        str_contains($typeName, 'Logger') ||
+                        str_contains($typeName, 'Security') ||
+                        str_contains($typeName, 'TokenStorage')) {
+                        continue;
+                    }
+                    
+                    // Skip entity classes (typically injected via ParamConverter)
+                    if (str_contains($typeName, 'Entity\\') || 
+                        str_contains($typeName, '\\Entity\\')) {
+                        continue;
+                    }
+                    
+                    // Skip any remaining class/object types that aren't DTOs
+                    // Only allow classes that are explicitly DTOs or have DTO-like structure
+                    if (!$this->isDtoClass($typeName)) {
+                        continue;
+                    }
                 }
             }
             
+            // Include the parameter in documentation
             $parameters[] = [
                 'name' => $param->getName(),
                 'type' => $this->getParameterTypeString($param),
@@ -2166,7 +2224,7 @@ class EnhancedApiDocGenerator
             
             // If we have angle brackets but they seem incomplete, try to extend
             if (str_contains($type, '<') && !str_contains($type, '>')) {
-                // Look for the complete type in the line
+                               // Look for the complete type in the line
                 $varPos = strpos($docComment, '@var');
                 if ($varPos !== false) {
                     $line = substr($docComment, $varPos);
@@ -2489,7 +2547,7 @@ class EnhancedApiDocGenerator
             
             if (is_array($token) && $token[0] === T_STRING && $token[1] === '__construct') {
                 return true;
-                       }
+            }
             
             // Stop looking if we hit another function or class
             if (is_array($token) && ($token[0] === T_FUNCTION || $token[0] === T_CLASS)) {
@@ -2853,11 +2911,38 @@ class EnhancedApiDocGenerator
         }
         
         $formatted = [];
-        foreach ($security as $scheme) {
-            $formatted[] = [$scheme => []];
+        foreach ($security as $securityItem) {
+            // Handle different security data structures
+            if (is_string($securityItem)) {
+                // Simple string scheme name
+                $formatted[] = [$securityItem => []];
+            } elseif (is_array($securityItem) && isset($securityItem['type'])) {
+                // Security item with type and args (from extractSecurityInfo)
+                $schemeName = $this->mapSecurityTypeToSchemeName($securityItem['type']);
+                if ($schemeName) {
+                    $formatted[] = [$schemeName => []];
+                }
+            } elseif (is_array($securityItem)) {
+                // Already formatted OpenAPI security requirement
+                $formatted[] = $securityItem;
+            }
         }
         
         return $formatted;
+    }
+
+    /**
+     * Map security attribute type to OpenAPI security scheme name
+     */
+    private function mapSecurityTypeToSchemeName(string $type): ?string
+    {
+        return match (strtolower($type)) {
+            'security', 'isgranted', 'role' => 'bearerAuth',
+            'apikey' => 'apiKeyAuth',
+            'basic' => 'basicAuth',
+            'oauth' => 'oauth2',
+            default => 'bearerAuth' // Default fallback
+        };
     }
 
     /**
@@ -3079,6 +3164,143 @@ class EnhancedApiDocGenerator
         ];
     }
 
+    /**
+     * Extract controller description from class or routes
+     */
+    private function extractControllerDescription(string $controller, array $routes): string
+    {
+        try {
+            if (class_exists($controller)) {
+                $reflection = new \ReflectionClass($controller);
+                $docComment = $reflection->getDocComment();
+                if ($docComment) {
+                    return $this->extractDescriptionFromDocComment($docComment);
+                }
+            }
+        } catch (\Exception $e) {
+            // Ignore reflection errors
+        }
+
+        // Fallback to controller name processing
+        $parts = explode('\\', $controller);
+        $className = end($parts);
+        return str_replace('Controller', '', $className) . ' endpoints';
+    }
+
+    /**
+     * Format route for JSON output
+     */
+    private function formatRouteForJson(array $route): array
+    {
+        return [
+            'path' => $route['path'],
+            'methods' => $route['methods'] ?? ['GET'],
+            'name' => $route['name'] ?? '',
+            'description' => $route['description'] ?? '',
+            'summary' => $route['summary'] ?? '',
+            'parameters' => $route['parameters'] ?? [],
+            'request_body' => $this->formatJsonRequestBody($route),
+            'responses' => $this->formatJsonResponses($route),
+            'security' => $route['security'] ?? [],
+            'deprecated' => $route['deprecated'] ?? false,
+            'tags' => $route['tags'] ?? []
+        ];
+    }
+
+    /**
+     * Format request body for JSON output
+     */
+    private function formatJsonRequestBody(array $route): ?array
+    {
+        if (empty($route['request_body'])) {
+            return null;
+        }
+
+        $requestBody = [
+            'required' => true,
+            'content_type' => 'application/json',
+            'schema' => $this->generateJsonSchema($route['request_body'])
+        ];
+
+        if (!empty($route['request_body']['description'])) {
+            $requestBody['description'] = $route['request_body']['description'];
+        }
+
+        return $requestBody;
+    }
+
+    /**
+     * Format responses for JSON output
+     */
+    private function formatJsonResponses(array $route): array
+    {
+        $responses = [];
+
+        if (!empty($route['responses'])) {
+            foreach ($route['responses'] as $code => $response) {
+                $responses[$code] = [
+                    'description' => $response['description'] ?? 'Success',
+                    'content_type' => 'application/json',
+                    'schema' => $this->generateJsonSchema($response)
+                ];
+            }
+        } else {
+            // Default success response
+            $responses['200'] = [
+                'description' => 'Success',
+                'content_type' => 'application/json',
+                'schema' => ['type' => 'object']
+            ];
+        }
+
+        return $responses;
+    }
+
+    /**
+     * Generate JSON schema reference for type info
+     */
+    private function generateJsonSchema(array $typeInfo): array
+    {
+        if (empty($typeInfo['type'])) {
+            return ['type' => 'object'];
+        }
+
+        $type = $typeInfo['type'];
+        
+        // Handle primitive types
+        if (in_array($type, ['string', 'integer', 'number', 'boolean', 'array'])) {
+            $schema = ['type' => $type];
+
+            if ($type === 'array' && !empty($typeInfo['items'])) {
+                $schema['items'] = $this->generateJsonSchema($typeInfo['items']);
+            }
+
+            return $schema;
+        }
+
+        // Handle DTO types - create reference to schema
+        if (str_contains($type, 'App\\DTO\\') && class_exists($type)) {
+            $schemaName = $this->getSchemaName($type);
+            return ['$ref' => '#/schemas/' . $schemaName];
+        }
+
+        // Handle union types
+        if (str_contains($type, '|')) {
+            $types = array_map('trim', explode('|', $type));
+            $schemas = [];
+
+            foreach ($types as $singleType) {
+                if ($singleType !== 'null') {
+                    $schemas[] = $this->generateJsonSchema(['type' => $singleType]);
+                }
+            }
+
+            return ['oneOf' => $schemas];
+        }
+
+        return ['type' => 'object'];
+    }
+
     private function generateControllerHtmlDocumentation(string $controller, array $routes): string
     {
         $html = "<section id='" . $this->generateAnchor($controller) . "'>";
@@ -3093,6 +3315,94 @@ class EnhancedApiDocGenerator
         }
         
         $html .= "</section>";
+        return $html;
+    }
+
+    /**
+     * Generate HTML documentation for a single route
+     */
+    private function generateRouteHtmlDocumentation(array $route): string
+    {
+        $methodsList = implode(', ', $route['methods']);
+        $deprecated = $route['deprecated'] ? ' deprecated' : '';
+        
+        $html = "<div class='route-section{$deprecated}'>";
+        
+        // Route header
+        $html .= "<div class='route-header'>";
+        foreach ($route['methods'] as $method) {
+            $html .= "<span class='method " . strtolower($method) . "'>" . htmlspecialchars($method) . "</span> ";
+        }
+        $html .= "<code>" . htmlspecialchars($route['path']) . "</code>";
+        
+        if ($route['deprecated']) {
+            $html .= " <span class='deprecated-tag'>Deprecated</span>";
+        }
+        $html .= "</div>";
+        
+        // Description
+        if (!empty($route['description'])) {
+            $html .= "<p>" . htmlspecialchars($route['description']) . "</p>";
+        }
+        
+        // Security
+        if (!empty($route['security']) && $this->config['include_security']) {
+            $html .= "<div class='security'><strong>Security:</strong> ";
+            $securityTypes = array_map(function($sec) {
+                return htmlspecialchars($sec['type']);
+            }, $route['security']);
+            $html .= implode(', ', $securityTypes);
+            $html .= "</div>";
+        }
+        
+        // Parameters
+        if (!empty($route['parameters'])) {
+            $html .= "<h4>Parameters</h4><ul>";
+            foreach ($route['parameters'] as $param) {
+                $html .= "<li><code>" . htmlspecialchars($param['name']) . "</code> ";
+                $html .= "(" . htmlspecialchars($param['type']) . ")";
+                if (!empty($param['description'])) {
+                    $html .= " - " . htmlspecialchars($param['description']);
+                }
+                $html .= "</li>";
+            }
+            $html .= "</ul>";
+        }
+        
+        // Request Body
+        $requestDto = $this->extractRequestDto($route['method_reflection']);
+        if ($requestDto) {
+            $html .= "<h4>Request Body</h4>";
+            $html .= "<pre><code class='language-typescript'>";
+            $html .= htmlspecialchars($this->generateDtoDocumentation($requestDto));
+            $html .= "</code></pre>";
+            
+            if ($this->config['show_request_examples']) {
+                $html .= "<h5>Example Request</h5>";
+                $html .= "<pre><code class='language-json'>";
+                $html .= htmlspecialchars($this->generateRequestExample($requestDto));
+                $html .= "</code></pre>";
+            }
+        }
+        
+        // Response
+        $responseDto = $this->extractResponseDto($route['method_reflection']);
+        if ($responseDto) {
+            $html .= "<h4>Response</h4>";
+            try {
+                $reflection = new \ReflectionClass($responseDto);
+                $example = $this->generateDtoExample($reflection);
+                $html .= "<pre><code class='language-json'>";
+                $html .= htmlspecialchars(json_encode($example, JSON_PRETTY_PRINT));
+                $html .= "</code></pre>";
+            } catch (\Exception $e) {
+                $html .= "<pre><code class='language-typescript'>";
+                $html .= htmlspecialchars($this->generateDtoDocumentation($responseDto));
+                $html .= "</code></pre>";
+            }
+        }
+        
+        $html .= "</div>";
         return $html;
     }
 
@@ -3351,6 +3661,140 @@ class EnhancedApiDocGenerator
                 'description' => 'Development server'
             ]
         ];
+    }
+
+    /**
+     * Generate JSON schemas for all DTOs encountered
+     */
+    private function generateJsonSchemas(): array
+    {
+        $schemas = [];
+        foreach ($this->processedClasses as $className => $documentation) {
+            if (str_contains($className, 'DTO')) {
+                $schemaName = $this->getSchemaName($className);
+                $schemas[$schemaName] = $this->generateDtoJsonSchema($className);
+            }
+        }
+        return $schemas;
+    }
+
+    /**
+     * Generate JSON schema for a DTO class
+     */
+    private function generateDtoJsonSchema(string $className): array
+    {
+        try {
+            $reflection = new \ReflectionClass($className);
+            $schema = [
+                'name' => $this->getSchemaName($className),
+                'type' => 'object',
+                'properties' => [],
+                'required' => []
+            ];
+            
+            $constructor = $reflection->getConstructor();
+            if (!$constructor) {
+                return $schema;
+            }
+            
+            foreach ($constructor->getParameters() as $param) {
+                $paramType = $param->getType();
+                if (!$paramType) {
+                    continue;
+                }
+                
+                $typeName = $paramType instanceof \ReflectionNamedType ? $paramType->getName() : 'mixed';
+                $property = [
+                    'type' => $this->mapPhpTypeToJsonSchema($typeName),
+                    'description' => $this->extractParamDescription($reflection, $param->getName())
+                ];
+                
+                // Handle nullable types
+                if ($paramType->allowsNull()) {
+                    $property['nullable'] = true;
+                }
+                
+                // Add to required array if not optional
+                if (!$param->isOptional()) {
+                    $schema['required'][] = $param->getName();
+                }
+                
+                $schema['properties'][$param->getName()] = $property;
+            }
+            
+            // Add class description if available
+            $docComment = $reflection->getDocComment();
+            if ($docComment) {
+                $description = $this->extractDescriptionFromDocComment($docComment);
+                if ($description) {
+                    $schema['description'] = $description;
+                }
+            }
+            
+            return $schema;
+        } catch (\Exception $e) {
+            return [
+                'name' => $this->getSchemaName($className),
+                'type' => 'object',
+                'error' => 'Failed to generate schema: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Map PHP types to JSON Schema types
+     */
+    private function mapPhpTypeToJsonSchema(string $phpType): string
+    {
+        return match ($phpType) {
+            'int' => 'integer',
+            'float' => 'number',
+            'bool' => 'boolean',
+            'array' => 'array',
+            default => 'string'
+        };
+    }
+
+    /**
+     * Extract parameter description from class documentation
+     */
+    private function extractParamDescription(\ReflectionClass $reflection, string $paramName): string
+    {
+        $docComment = $reflection->getDocComment();
+        if (!$docComment) {
+            return '';
+        }
+        
+        // Look for @param annotations
+        if (preg_match('/@param\s+[^\s]+\s+\$' . preg_quote($paramName) . '\s+(.+)$/m', $docComment, $matches)) {
+            return trim($matches[1]);
+        }
+        
+        return '';
+    }
+
+    /**
+     * Extract description from doc comment
+     */
+    private function extractDescriptionFromDocComment(string $docComment): string
+    {
+        // Remove /** and */ and clean up
+        $cleaned = preg_replace('/^\s*\/\*\*\s*|\s*\*\/\s*$/', '', $docComment);
+        $cleaned = preg_replace('/^\s*\*\s?/m', '', $cleaned);
+        
+        // Get the first paragraph (before first @tag)
+        $lines = explode("\n", $cleaned);
+        $description = [];
+        
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || str_starts_with($line, '@')) {
+                break;
+            }
+            $description[] = $line;
+        }
+        
+        return implode(' ', $description);
     }
 }
 
