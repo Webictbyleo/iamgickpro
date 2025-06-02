@@ -432,7 +432,7 @@ const loadStockMedia = async () => {
       query: searchQuery.value,
       category: selectedType.value, // Use category instead of type for stock media
       page: currentPage.value,
-      per_page: 24
+      limit: 24
     })
     
     if (response.data) {
@@ -454,7 +454,7 @@ const loadUserUploads = async () => {
       search: searchQuery.value,
       type: selectedType.value as any,
       page: currentPage.value,
-      per_page: 24
+      limit: 24
     })
     
     if (response.data) {

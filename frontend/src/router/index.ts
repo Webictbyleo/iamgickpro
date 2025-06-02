@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
+import { useAuthStore } from '@/stores/auth'
 import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
@@ -84,13 +84,13 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
+  const authStore = useAuthStore()
   
   // Check if route requires authentication
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // Redirect to login if not authenticated
     next({ name: 'Login', query: { redirect: to.fullPath } })
-  } else if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated.value) {
+  } else if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
     // Redirect to dashboard if already authenticated and trying to access auth pages
     next({ name: 'Dashboard' })
   } else {

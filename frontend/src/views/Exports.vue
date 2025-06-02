@@ -195,7 +195,7 @@ const {
 const fetchJobs = () => {
   const params: any = {
     page: pagination.page,
-    per_page: pagination.per_page
+    limit: pagination.limit
   }
   
   if (filters.value.status) params.status = filters.value.status

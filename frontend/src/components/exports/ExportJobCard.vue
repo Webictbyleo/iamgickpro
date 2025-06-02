@@ -20,7 +20,7 @@
               <img
                 v-if="job.designThumbnail"
                 :src="job.designThumbnail"
-                :alt="job.designTitle"
+                :alt="job.designName"
                 class="w-full h-full object-cover"
               />
               <div v-else class="w-full h-full flex items-center justify-center">
@@ -32,7 +32,7 @@
           <!-- Job Details -->
           <div class="flex-1 min-w-0">
             <h3 class="text-lg font-medium text-gray-900 truncate">
-              {{ job.designTitle }}
+              {{ job.designName }}
             </h3>
             <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
               <span class="inline-flex items-center">
@@ -248,7 +248,7 @@ const formatFileSize = (bytes: number) => {
 }
 
 const copyJobInfo = async () => {
-  const info = `Job ID: ${props.job.id}\nDesign: ${props.job.designTitle}\nFormat: ${props.job.format.toUpperCase()}\nStatus: ${props.job.status}\nCreated: ${formatDate(props.job.createdAt)}`
+  const info = `Job ID: ${props.job.id}\nDesign: ${props.job.designName}\nFormat: ${props.job.format.toUpperCase()}\nStatus: ${props.job.status}\nCreated: ${formatDate(props.job.createdAt)}`
   
   try {
     await navigator.clipboard.writeText(info)

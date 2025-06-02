@@ -5,41 +5,6 @@ import { designAPI } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables/useNotifications'
 
-// Add type definitions for API responses
-interface ApiResponse<T> {
-  data: T
-  message?: string
-}
-
-// Define the paginated designs response structure
-interface DesignsApiResponse {
-  designs: Design[]
-  pagination: {
-    total: number
-    page: number
-    totalPages: number
-  }
-}
-
-// Define valid export formats
-type ExportFormat = 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg'
-
-interface CreateDesignRequest {
-  name: string
-  width: number
-  height: number
-  designData: DesignData
-}
-
-interface UpdateDesignRequest {
-  name: string
-  width: number
-  height: number
-  designData: DesignData
-  description?: string
-  projectId?: number
-}
-
 export const useDesignStore = defineStore('design', () => {
   const { designSaved, saveFailed, designDeleted, designExported, exportFailed, showError } = useNotifications()
   
@@ -50,7 +15,7 @@ export const useDesignStore = defineStore('design', () => {
   
   const hasCurrentDesign = computed(() => !!currentDesign.value)
   
-  const createNewDesign = (width = 800, height = 600): Design => {
+  const createNewDesign = (width = 800, height = 600) => {
     const authStore = useAuthStore()
     const newDesign: Design = {
       id: `design_${Date.now()}`,
@@ -76,7 +41,7 @@ export const useDesignStore = defineStore('design', () => {
     return newDesign
   }
   
-  const saveDesign = async (design?: Design): Promise<{ success: boolean; error?: string }> => {
+  const saveDesign = async (design?: Design) => {
     const designToSave = design || currentDesign.value
     if (!designToSave) return { success: false, error: 'No design to save' }
     
@@ -86,35 +51,32 @@ export const useDesignStore = defineStore('design', () => {
       
       designToSave.updatedAt = new Date().toISOString()
       
-      let response: { data?: ApiResponse<Design> }
-      
+      let response
       if (designToSave.id.startsWith('design_')) {
         // New design - create it
-        const createRequest: CreateDesignRequest = {
+        response = await designAPI.createDesign({
           name: designToSave.name,
           width: designToSave.width,
           height: designToSave.height,
           designData: designToSave.designData
-        }
-        response = await designAPI.createDesign(createRequest)
+        })
         
-        if (response.data?.data) {
-          // Update the local design with the server-generated data
+        if (response.data) {
+          // Update the local design with the server-generated ID
           const savedDesign = response.data.data
           Object.assign(designToSave, savedDesign)
           currentDesign.value = savedDesign
         }
       } else {
         // Existing design - update it
-        const updateRequest: UpdateDesignRequest = {
+        response = await designAPI.updateDesign(designToSave.id, {
           name: designToSave.name,
           width: designToSave.width,
           height: designToSave.height,
           designData: designToSave.designData,
           description: designToSave.description,
-          projectId: designToSave.projectId ? (typeof designToSave.projectId === 'string' ? parseInt(designToSave.projectId, 10) : designToSave.projectId) : undefined
-        }
-        response = await designAPI.updateDesign(designToSave.id, updateRequest)
+          projectId: designToSave.projectId ? parseInt(designToSave.projectId) : undefined
+        })
       }
       
       // Update local designs list
@@ -127,8 +89,8 @@ export const useDesignStore = defineStore('design', () => {
       
       designSaved(designToSave.name)
       return { success: true }
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Save failed'
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Save failed'
       error.value = errorMessage
       saveFailed(errorMessage)
       return { success: false, error: errorMessage }
@@ -137,21 +99,21 @@ export const useDesignStore = defineStore('design', () => {
     }
   }
   
-  const loadDesign = async (id: string): Promise<{ success: boolean; design?: Design; error?: string }> => {
+  const loadDesign = async (id: string) => {
     try {
       isLoading.value = true
       error.value = null
       
-      const response: { data?: ApiResponse<Design> } = await designAPI.getDesign(id)
+      const response = await designAPI.getDesign(id)
       
-      if (response.data?.data) {
+      if (response.data) {
         currentDesign.value = response.data.data
         return { success: true, design: response.data.data }
       }
       
       return { success: false, error: 'Design not found' }
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Load failed'
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Load failed'
       error.value = errorMessage
       showError('Failed to Load Design', errorMessage)
       return { success: false, error: errorMessage }
@@ -204,22 +166,22 @@ export const useDesignStore = defineStore('design', () => {
     }
   }
   
-  const loadUserDesigns = async (): Promise<{ success: boolean; error?: string }> => {
+  const loadUserDesigns = async () => {
     try {
       isLoading.value = true
       error.value = null
       
       const response = await designAPI.getDesigns()
       
-      if (response.data?.data?.designs) {
-        designs.value = response.data.data.designs
+      if (response.data?.data) {
+        designs.value = response.data.data
         return { success: true }
       }
       
       designs.value = []
       return { success: true }
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Load failed'
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Load failed'
       error.value = errorMessage
       showError('Failed to Load Designs', errorMessage)
       designs.value = []
@@ -229,7 +191,7 @@ export const useDesignStore = defineStore('design', () => {
     }
   }
   
-  const deleteDesign = async (id: string): Promise<{ success: boolean; error?: string }> => {
+  const deleteDesign = async (id: string) => {
     try {
       isLoading.value = true
       error.value = null
@@ -250,8 +212,8 @@ export const useDesignStore = defineStore('design', () => {
       
       designDeleted(designName)
       return { success: true }
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Delete failed'
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Delete failed'
       error.value = errorMessage
       showError('Failed to Delete Design', errorMessage)
       return { success: false, error: errorMessage }
@@ -260,7 +222,7 @@ export const useDesignStore = defineStore('design', () => {
     }
   }
   
-  const exportDesign = async (id: string, format: ExportFormat): Promise<{ success: boolean; data?: any; error?: string }> => {
+  const exportDesign = async (id: string, format: string) => {
     try {
       isLoading.value = true
       error.value = null
@@ -269,8 +231,8 @@ export const useDesignStore = defineStore('design', () => {
       
       designExported(format.toUpperCase())
       return { success: true, data: response.data }
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Export failed'
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Export failed'
       error.value = errorMessage
       exportFailed(errorMessage)
       return { success: false, error: errorMessage }
@@ -279,12 +241,12 @@ export const useDesignStore = defineStore('design', () => {
     }
   }
   
-  const duplicateDesign = async (id: string): Promise<{ success: boolean; design?: Design; error?: string }> => {
+  const duplicateDesign = async (id: string) => {
     try {
       isLoading.value = true
       error.value = null
       
-      const response: { data?: ApiResponse<Design> } = await designAPI.duplicateDesign(id)
+      const response = await designAPI.duplicateDesign(id)
       
       if (response.data?.data) {
         const duplicatedDesign = response.data.data
@@ -294,8 +256,8 @@ export const useDesignStore = defineStore('design', () => {
       }
       
       return { success: false, error: 'Duplication failed' }
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Duplication failed'
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Duplication failed'
       error.value = errorMessage
       showError('Failed to Duplicate Design', errorMessage)
       return { success: false, error: errorMessage }

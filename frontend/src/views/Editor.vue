@@ -47,13 +47,13 @@
           <h3 class="text-sm font-medium text-gray-900 mb-3">Layers</h3>
           <div class="space-y-2">
             <div 
-              v-if="designStore.currentDesign?.data.layers.length === 0"
+              v-if="designStore.currentDesign?.designData.layers.length === 0"
               class="text-sm text-gray-500 text-center py-4"
             >
               No layers yet
             </div>
             <div
-              v-for="layer in designStore.currentDesign?.data.layers"
+              v-for="layer in designStore.currentDesign?.designData.layers"
               :key="layer.id"
               class="p-2 bg-gray-50 rounded text-sm flex items-center justify-between hover:bg-gray-100 cursor-pointer"
             >

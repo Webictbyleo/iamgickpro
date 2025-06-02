@@ -88,7 +88,7 @@ const loadTemplates = async () => {
     isLoading.value = true
     const response = await templateAPI.getTemplates({
       page: 1,
-      per_page: 50
+      limit: 50
     })
     
     if (response.data) {
@@ -114,11 +114,11 @@ const handleTemplateSelected = async (template: Template) => {
   )
   
   // Copy template data to design
-  if (template.data) {
-    newDesign.data = { ...template.data }
+  if (template.designData) {
+    newDesign.designData = { ...template.designData }
   }
   
-  newDesign.title = `${template.title} Copy`
+  newDesign.name = `${template.name} Copy`
   
   // Save the design first
   const result = await designStore.saveDesign(newDesign)

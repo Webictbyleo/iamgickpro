@@ -1,304 +1,569 @@
+// filepath: /var/www/html/iamgickpro/frontend/src/services/api.ts
 import { api } from '../utils/api'
-import type { Design, Template, MediaItem, User, ExportJob, ExportOptions } from '@/types'
+import type { 
+  Design, 
+  Template, 
+  MediaItem, 
+  User, 
+  ExportJob, 
+  ExportOptions, 
+  Project,
+  Layer,
+  Plugin,
+  ApiResponse,
+  PaginatedApiResponse,
+  AuthApiResponse,
+  DashboardStats,
+  DesignAnalytics,
+  UserSubscription,
+  StorageUsage,
+  ShareDesignData,
+  ShareResponse,
+  Collaborator,
+  LoginCredentials,
+  RegisterData,
+  ResetPasswordData,
+  ChangePasswordData,
+  DesignSearchParams,
+  TemplateSearchParams,
+  MediaSearchParams,
+  ExportJobSearchParams,
+  StockMediaSearchParams,
+  DesignsApiResponse,
+  TemplatesApiResponse,
+  MediaListApiResponse,
+  ProjectsApiResponse,
+  ExportJobsApiResponse,
+  CreateLayerData,
+  UpdateLayerData,
+  DuplicateLayerData,
+  MoveLayerData,
+  BulkUpdateLayersData,
+  CreatePluginData,
+  UpdatePluginData,
+  RejectPluginData,
+  LayerApiResponse,
+  LayersApiResponse,
+  PluginApiResponse,
+  PluginsApiResponse,
+  PluginCategoriesApiResponse
+} from '@/types'
 
-export interface PaginatedResponse<T> {
-  data: T[]
-  meta: {
-    total: number
-    page: number
-    per_page: number
-    last_page: number
-    from: number
-    to: number
-  }
-}
-
-export interface ApiResponse<T> {
-  data: T
-  message?: string
-}
-
-// Authentication API
+// Authentication API - aligned with AuthController
 export const authAPI = {
-  // Login user
-  login: (credentials: { email: string; password: string }) =>
-    api.post<ApiResponse<{ user: User; token: string }>>('/auth/login', credentials),
+  // POST /auth/register
+  register: (data: RegisterData) => 
+    api.post<AuthApiResponse>('/auth/register', data),
 
-  // Register new user
-  register: (data: {
-    firstName: string
-    lastName: string
-    email: string
-    password: string
-    confirmPassword: string
-  }) => api.post<ApiResponse<{ user: User; token: string }>>('/auth/register', data),
+  // POST /auth/login
+  login: (credentials: LoginCredentials) =>
+    api.post<AuthApiResponse>('/auth/login', credentials),
 
-  // Logout user
-  logout: () => api.post('/auth/logout'),
+  // GET /auth/me
+  getCurrentUser: () => api.get<ApiResponse<User>>('/auth/me'),
 
-  // Refresh token
+  // PUT /auth/profile
+  updateProfile: (data: Partial<User>) =>
+    api.put<ApiResponse<User>>('/auth/profile', data),
+
+  // PUT /auth/change-password
+  changePassword: (data: ChangePasswordData) =>
+    api.put<ApiResponse<{ message: string }>>('/auth/change-password', data),
+
+  // POST /auth/logout
+  logout: () => api.post<ApiResponse<{ message: string }>>('/auth/logout'),
+
+  // Additional methods for compatibility
   refreshToken: () => api.post<ApiResponse<{ token: string }>>('/auth/refresh'),
-
-  // Forgot password
   forgotPassword: (email: string) =>
     api.post<ApiResponse<{ message: string }>>('/auth/forgot-password', { email }),
-
-  // Reset password
-  resetPassword: (data: {
-    token: string
-    email: string
-    password: string
-    confirmPassword: string
-  }) => api.post<ApiResponse<{ message: string }>>('/auth/reset-password', data),
-
-  // Verify email
+  resetPassword: (data: ResetPasswordData) => 
+    api.post<ApiResponse<{ message: string }>>('/auth/reset-password', data),
   verifyEmail: (token: string) =>
     api.post<ApiResponse<{ message: string }>>('/auth/verify-email', { token }),
-
-  // Resend verification email
   resendVerification: (email: string) =>
     api.post<ApiResponse<{ message: string }>>('/auth/resend-verification', { email }),
 }
 
-// Design API
+// Design API - aligned with DesignController (8 endpoints)
 export const designAPI = {
-  // Get user's designs with pagination and filters
-  getDesigns: (params?: {
-    page?: number
-    per_page?: number
-    search?: string
-    sort_by?: 'created_at' | 'updated_at' | 'name'
-    sort_order?: 'asc' | 'desc'
-  }) => api.get<PaginatedResponse<Design>>('/designs', { params }),
+  // GET /designs
+  getDesigns: (params?: DesignSearchParams) => 
+    api.get<DesignsApiResponse>('/designs', { params }),
 
-  // Get single design by ID
-  getDesign: (id: string) => api.get<ApiResponse<Design>>(`/designs/${id}`),
-
-  // Create new design
+  // POST /designs
   createDesign: (data: {
     name: string
     width: number
     height: number
-    template_id?: string
+    projectId?: number
+    description?: string
+    data?: any
   }) => api.post<ApiResponse<Design>>('/designs', data),
 
-  // Update design
-  updateDesign: (id: string, data: Partial<Design>) => 
-    api.put<ApiResponse<Design>>(`/designs/${id}`, data),
+  // GET /designs/{id}
+  getDesign: (id: string) => api.get<ApiResponse<Design>>(`/designs/${id}`),
 
-  // Delete design
-  deleteDesign: (id: string) => api.delete(`/designs/${id}`),
+  // PUT /designs/{id}
+  updateDesign: (id: string, data: {
+    name?: string
+    width?: number
+    height?: number
+    data?: any
+    description?: string
+    projectId?: number
+  }) => api.put<ApiResponse<Design>>(`/designs/${id}`, data),
 
-  // Duplicate design
-  duplicateDesign: (id: string) => api.post<ApiResponse<Design>>(`/designs/${id}/duplicate`),
+  // DELETE /designs/{id}
+  deleteDesign: (id: string) => api.delete<ApiResponse<{ message: string }>>(`/designs/${id}`),
 
-  // Save design data (canvas, layers, etc.)
-  saveDesignData: (id: string, data: any) => 
-    api.put<ApiResponse<Design>>(`/designs/${id}/data`, { data }),
+  // POST /designs/{id}/duplicate
+  duplicateDesign: (id: string, data?: {
+    name?: string
+    projectId?: number
+  }) => api.post<ApiResponse<Design>>(`/designs/${id}/duplicate`, data),
 
-  // Export design
-  exportDesign: (id: string, format: 'png' | 'jpg' | 'pdf' | 'svg') =>
+  // PUT /designs/{id}/thumbnail
+  updateThumbnail: (id: string, data: {
+    thumbnail: string
+    format?: string
+  }) => api.put<ApiResponse<Design>>(`/designs/${id}/thumbnail`, data),
+
+  // GET /designs/search
+  searchDesigns: (params: {
+    q: string
+    page?: number
+    limit?: number
+    project_id?: string
+    sort?: string
+    order?: string
+  }) => api.get<DesignsApiResponse>('/designs/search', { params }),
+
+  // Additional methods for compatibility
+  exportDesign: (id: string, format: 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg') =>
     api.post(`/designs/${id}/export`, { format }, { responseType: 'blob' }),
-
-  // Get recent designs
   getRecentDesigns: (limit = 8) => 
     api.get<ApiResponse<Design[]>>('/designs/recent', { params: { limit } }),
 }
 
-// Template API
-export const templateAPI = {
-  // Get templates with pagination and filters
-  getTemplates: (params?: {
-    page?: number
-    per_page?: number
-    category?: string
-    search?: string
-    is_premium?: boolean
-    sort_by?: 'created_at' | 'updated_at' | 'name' | 'popularity'
-    sort_order?: 'asc' | 'desc'
-  }) => api.get<PaginatedResponse<Template>>('/templates', { params }),
+// Export Jobs API - aligned with ExportJobController (10 endpoints)
+export const exportAPI = {
+  // GET /export-jobs
+  getExportJobs: (params?: ExportJobSearchParams) => 
+    api.get<ExportJobsApiResponse>('/export-jobs', { params }),
 
-  // Get template by ID
-  getTemplate: (id: string) => api.get<ApiResponse<Template>>(`/templates/${id}`),
+  // POST /export-jobs
+  createExportJob: (data: {
+    designId: number
+    format?: 'png' | 'jpeg' | 'svg' | 'pdf' | 'mp4' | 'gif'
+    quality?: 'low' | 'medium' | 'high' | 'ultra'
+    width?: number
+    height?: number
+    scale?: number
+    transparent?: boolean
+    backgroundColor?: string
+    animationSettings?: any[]
+  }) => api.post<ApiResponse<ExportJob>>('/export-jobs', data),
 
-  // Get featured templates
-  getFeaturedTemplates: (limit = 6) => 
-    api.get<ApiResponse<Template[]>>('/templates/featured', { params: { limit } }),
+  // GET /export-jobs/queue-status
+  getQueueStatus: () => api.get<ApiResponse<{
+    pending: number
+    processing: number
+    completed: number
+    failed: number
+  }>>('/export-jobs/queue-status'),
 
-  // Get template categories
-  getCategories: () => api.get<ApiResponse<string[]>>('/templates/categories'),
+  // GET /export-jobs/stats
+  getStats: () => api.get<ApiResponse<{
+    total: number
+    byStatus: Record<string, number>
+    byFormat: Record<string, number>
+    successRate: number
+  }>>('/export-jobs/stats'),
 
-  // Create design from template
-  createFromTemplate: (templateId: string, name?: string) =>
-    api.post<ApiResponse<Design>>(`/templates/${templateId}/create-design`, { name }),
+  // GET /export-jobs/{id}
+  getExportJob: (id: string) => api.get<ApiResponse<ExportJob>>(`/export-jobs/${id}`),
+
+  // PUT /export-jobs/{id} - Not allowed (returns error)
+  updateExportJob: (id: string, data: any) => 
+    api.put<ApiResponse<{ message: string }>>(`/export-jobs/${id}`, data),
+
+  // DELETE /export-jobs/{id}
+  deleteExportJob: (id: string) => api.delete<ApiResponse<{ message: string }>>(`/export-jobs/${id}`),
+
+  // POST /export-jobs/{id}/cancel
+  cancelExportJob: (id: string) => api.post<ApiResponse<ExportJob>>(`/export-jobs/${id}/cancel`),
+
+  // GET /export-jobs/{id}/download
+  downloadExport: (id: string) => 
+    api.get(`/export-jobs/${id}/download`, { responseType: 'blob' }),
+
+  // POST /export-jobs/{id}/retry
+  retryExportJob: (id: string) => api.post<ApiResponse<ExportJob>>(`/export-jobs/${id}/retry`),
 }
 
-// Media API
-export const mediaAPI = {
-  // Get user's media with pagination
-  getMedia: (params?: {
-    page?: number
-    per_page?: number
-    type?: 'image' | 'video' | 'audio'
-    search?: string
-    sort_by?: 'created_at' | 'updated_at' | 'name' | 'size'
-    sort_order?: 'asc' | 'desc'
-  }) => api.get<PaginatedResponse<MediaItem>>('/media', { params }),
+// Layer API - aligned with LayerController (7 endpoints)
+export const layerAPI = {
+  // POST /layers
+  createLayer: (data: CreateLayerData) => 
+    api.post<LayerApiResponse>('/layers', data),
 
-  // Upload media file
-  uploadMedia: (file: File, folder?: string) => {
+  // PUT /layers/bulk-update
+  bulkUpdateLayers: (data: BulkUpdateLayersData) => 
+    api.put<LayersApiResponse>('/layers/bulk-update', data),
+
+  // GET /layers/{id}
+  getLayer: (id: string) => api.get<LayerApiResponse>(`/layers/${id}`),
+
+  // PUT /layers/{id}
+  updateLayer: (id: string, data: UpdateLayerData) => 
+    api.put<LayerApiResponse>(`/layers/${id}`, data),
+
+  // DELETE /layers/{id}
+  deleteLayer: (id: string) => api.delete<ApiResponse<{ message: string }>>(`/layers/${id}`),
+
+  // POST /layers/{id}/duplicate
+  duplicateLayer: (id: string, data?: DuplicateLayerData) => 
+    api.post<LayerApiResponse>(`/layers/${id}/duplicate`, data),
+
+  // PUT /layers/{id}/move
+  moveLayer: (id: string, data: MoveLayerData) => 
+    api.put<LayerApiResponse>(`/layers/${id}/move`, data),
+}
+
+// Media API - aligned with MediaController (9 endpoints)
+export const mediaAPI = {
+  // GET /media
+  getMedia: (params?: MediaSearchParams) => 
+    api.get<MediaListApiResponse>('/media', { params }),
+
+  // POST /media
+  uploadMedia: (file: File, data?: {
+    name?: string
+    description?: string
+    tags?: string[]
+    folder?: string
+  }) => {
     const formData = new FormData()
     formData.append('file', file)
-    if (folder) formData.append('folder', folder)
+    if (data?.name) formData.append('name', data.name)
+    if (data?.description) formData.append('description', data.description)
+    if (data?.tags) formData.append('tags', JSON.stringify(data.tags))
+    if (data?.folder) formData.append('folder', data.folder)
     
-    return api.post<ApiResponse<MediaItem>>('/media/upload', formData, {
+    return api.post<ApiResponse<MediaItem>>('/media', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
 
-  // Delete media item
-  deleteMedia: (id: string) => api.delete(`/media/${id}`),
+  // DELETE /media/bulk/delete
+  bulkDeleteMedia: (data: {
+    mediaIds: string[]
+  }) => api.delete<ApiResponse<{ message: string }>>('/media/bulk/delete', { data }),
 
-  // Get stock media
-  getStockMedia: (params?: {
+  // POST /media/duplicate/{uuid}
+  duplicateMedia: (uuid: string, data?: {
+    name?: string
+    folder?: string
+  }) => api.post<ApiResponse<MediaItem>>(`/media/duplicate/${uuid}`, data),
+
+  // GET /media/search
+  searchMedia: (params: {
+    q: string
+    type?: string
+    format?: string
     page?: number
-    per_page?: number
-    query?: string
+    limit?: number
+  }) => api.get<MediaListApiResponse>('/media/search', { params }),
+
+  // GET /media/stock/search
+  searchStockMedia: (params: StockMediaSearchParams) => 
+    api.get<MediaListApiResponse>('/media/stock/search', { params }),
+
+  // GET /media/{uuid}
+  getMediaItem: (uuid: string) => api.get<ApiResponse<MediaItem>>(`/media/${uuid}`),
+
+  // PUT /media/{uuid}
+  updateMedia: (uuid: string, data: {
+    name?: string
+    description?: string
+    tags?: string[]
+    isActive?: boolean
+  }) => api.put<ApiResponse<MediaItem>>(`/media/${uuid}`, data),
+
+  // DELETE /media/{uuid}
+  deleteMedia: (uuid: string) => api.delete<ApiResponse<{ message: string }>>(`/media/${uuid}`),
+
+  // Additional methods for compatibility
+  getStockMedia: (params?: StockMediaSearchParams) => 
+    api.get<MediaListApiResponse>('/media/stock', { params }),
+}
+
+// Plugin API - aligned with PluginController (12 endpoints)
+export const pluginAPI = {
+  // GET /plugins
+  getPlugins: (params?: {
+    page?: number
+    limit?: number
     category?: string
-    color?: string
-    orientation?: 'landscape' | 'portrait' | 'square'
-  }) => api.get<PaginatedResponse<MediaItem>>('/media/stock', { params }),
+    search?: string
+    status?: string
+  }) => api.get<PluginsApiResponse>('/plugins', { params }),
+
+  // POST /plugins
+  createPlugin: (data: CreatePluginData) => 
+    api.post<PluginApiResponse>('/plugins', data),
+
+  // GET /plugins/categories
+  getCategories: () => api.get<PluginCategoriesApiResponse>('/plugins/categories'),
+
+  // GET /plugins/my-plugins
+  getMyPlugins: (params?: {
+    page?: number
+    limit?: number
+  }) => api.get<PluginsApiResponse>('/plugins/my-plugins', { params }),
+
+  // GET /plugins/{id}
+  getPlugin: (id: string) => api.get<PluginApiResponse>(`/plugins/${id}`),
+
+  // PUT /plugins/{id}
+  updatePlugin: (id: string, data: UpdatePluginData) => 
+    api.put<PluginApiResponse>(`/plugins/${id}`, data),
+
+  // DELETE /plugins/{id}
+  deletePlugin: (id: string) => api.delete<ApiResponse<{ message: string }>>(`/plugins/${id}`),
+
+  // POST /plugins/{id}/approve
+  approvePlugin: (id: string, data: {
+    notes?: string
+  }) => api.post<PluginApiResponse>(`/plugins/${id}/approve`, data),
+
+  // POST /plugins/{id}/install
+  installPlugin: (id: string) => api.post<ApiResponse<{ message: string }>>(`/plugins/${id}/install`),
+
+  // POST /plugins/{id}/reject
+  rejectPlugin: (id: string, data: RejectPluginData) => 
+    api.post<ApiResponse<{ message: string }>>(`/plugins/${id}/reject`, data),
+
+  // POST /plugins/{id}/uninstall
+  uninstallPlugin: (id: string) => api.post<ApiResponse<{ message: string }>>(`/plugins/${id}/uninstall`),
+
+  // POST /plugins/{id}/upload-file
+  uploadPluginFile: (id: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    return api.post<ApiResponse<{ fileUrl: string }>>(`/plugins/${id}/upload-file`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
 }
 
-// Analytics API
-export const analyticsAPI = {
-  // Get dashboard stats
-  getDashboardStats: () => api.get<ApiResponse<{
-    total_designs: number
-    total_templates_used: number
-    active_projects: number
-    storage_used: number
-    export_count: number
-    monthly_growth: {
-      designs: number
-      exports: number
-      templates: number
+// Project API - aligned with ProjectController (8 endpoints)
+export const projectAPI = {
+  // GET /projects
+  getProjects: (params?: {
+    page?: number
+    limit?: number
+    search?: string
+    tags?: string
+    status?: string
+    sort?: string
+    order?: string
+  }) => api.get<ProjectsApiResponse>('/projects', { params }),
+
+  // POST /projects
+  createProject: (data: {
+    name: string
+    description?: string
+    isPublic?: boolean
+    settings?: {
+      canvasWidth?: number
+      canvasHeight?: number
+      backgroundColor?: string
+      orientation?: string
+      units?: string
+      dpi?: number
+      gridVisible?: boolean
+      rulersVisible?: boolean
+      guidesVisible?: boolean
+      snapToGrid?: boolean
+      snapToGuides?: boolean
+      snapToObjects?: boolean
     }
-  }>>('/analytics/dashboard'),
+    tags?: string[]
+    thumbnail?: string
+  }) => api.post<ApiResponse<Project>>('/projects', data),
 
-  // Get design analytics
-  getDesignAnalytics: (designId: string) => 
-    api.get<ApiResponse<{
-      views: number
-      exports: number
-      shares: number
-      edit_time: number
-      last_opened: string
-    }>>(`/analytics/designs/${designId}`),
+  // GET /projects/public
+  getPublicProjects: (params?: {
+    page?: number
+    limit?: number
+    search?: string
+    tags?: string
+    sort?: string
+    order?: string
+  }) => api.get<ProjectsApiResponse>('/projects/public', { params }),
+
+  // GET /projects/{id}
+  getProject: (id: string) => api.get<ApiResponse<Project>>(`/projects/${id}`),
+
+  // PUT /projects/{id}
+  updateProject: (id: string, data: {
+    name?: string
+    description?: string
+    isPublic?: boolean
+    settings?: any
+    tags?: string[]
+    thumbnail?: string
+  }) => api.put<ApiResponse<Project>>(`/projects/${id}`, data),
+
+  // DELETE /projects/{id}
+  deleteProject: (id: string) => api.delete<ApiResponse<{ message: string }>>(`/projects/${id}`),
+
+  // POST /projects/{id}/duplicate
+  duplicateProject: (id: string, data?: {
+    name?: string
+    includeDesigns?: boolean
+  }) => api.post<ApiResponse<Project>>(`/projects/${id}/duplicate`, data),
+
+  // POST /projects/{id}/share
+  shareProject: (id: string, data: {
+    isPublic?: boolean
+    shareUrl?: string
+    permissions?: string[]
+  }) => api.post<ApiResponse<{ shareUrl: string }>>(`/projects/${id}/share`, data),
 }
 
-// User API
+// Template API - aligned with TemplateController (6 endpoints)
+export const templateAPI = {
+  // GET /templates
+  getTemplates: (params?: TemplateSearchParams) => 
+    api.get<TemplatesApiResponse>('/templates', { params }),
+
+  // POST /templates
+  createTemplate: (data: {
+    name: string
+    description?: string
+    category: string
+    designId: number
+    isPublic?: boolean
+    tags?: string[]
+    thumbnail?: string
+    previewImages?: string[]
+  }) => api.post<ApiResponse<Template>>('/templates', data),
+
+  // GET /templates/categories
+  getCategories: () => api.get<ApiResponse<string[]>>('/templates/categories'),
+
+  // GET /templates/search
+  searchTemplates: (params: {
+    q: string
+    category?: string
+    tags?: string
+    page?: number
+    limit?: number
+    sort?: string
+    order?: string
+  }) => api.get<TemplatesApiResponse>('/templates/search', { params }),
+
+  // GET /templates/{uuid}
+  getTemplate: (uuid: string) => api.get<ApiResponse<Template>>(`/templates/${uuid}`),
+
+  // POST /templates/{uuid}/use
+  useTemplate: (uuid: string, data?: {
+    name?: string
+    projectId?: number
+  }) => api.post<ApiResponse<Design>>(`/templates/${uuid}/use`, data),
+}
+
+// User API - aligned with UserController (8 endpoints)
 export const userAPI = {
-  // Get current user profile
-  getProfile: () => api.get<ApiResponse<User>>('/user/profile'),
-
-  // Update user profile
-  updateProfile: (data: Partial<User>) => 
-    api.put<ApiResponse<User>>('/user/profile', data),
-
-  // Upload avatar
+  // POST /user/avatar
   uploadAvatar: (file: File) => {
     const formData = new FormData()
     formData.append('avatar', file)
     return api.post<ApiResponse<{ avatar: string }>>('/user/avatar', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
 
-  // Change password
-  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+  // PUT /user/password
+  changePassword: (data: ChangePasswordData) =>
     api.put<ApiResponse<{ message: string }>>('/user/password', data),
 
-  // Update user preferences
-  updatePreferences: (preferences: Record<string, any>) =>
-    api.put<ApiResponse<User>>('/user/preferences', { preferences }),
+  // GET /user/profile
+  getProfile: () => api.get<ApiResponse<User>>('/user/profile'),
 
-  // Get user subscription info
-  getSubscription: () => api.get<ApiResponse<{
-    plan: string
-    status: string
-    expires_at: string
-    features: string[]
-  }>>('/user/subscription'),
+  // PUT /user/profile
+  updateProfile: (data: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    username?: string
+    bio?: string
+    website?: string
+    location?: string
+    timezone?: string
+    language?: string
+    settings?: any
+  }) => api.put<ApiResponse<User>>('/user/profile', data),
 
-  // Get user storage usage
-  getStorageUsage: () => api.get<ApiResponse<{
-    used: number
-    limit: number
-    percentage: number
-  }>>('/user/storage'),
+  // DELETE /user/settings/privacy/delete
+  deleteAccount: () => api.delete<ApiResponse<{ message: string }>>('/user/settings/privacy/delete'),
+
+  // POST /user/settings/privacy/download
+  downloadData: () => api.post('/user/settings/privacy/download', {}, { responseType: 'blob' }),
+
+  // POST /user/settings/privacy/export
+  exportData: (data: {
+    format: 'json' | 'csv' | 'xml'
+    includeDesigns?: boolean
+    includeMedia?: boolean
+    includeProjects?: boolean
+  }) => api.post<ApiResponse<{ downloadUrl: string }>>('/user/settings/privacy/export', data),
+
+  // GET /user/subscription
+  getSubscription: () => api.get<ApiResponse<UserSubscription>>('/user/subscription'),
+}
+
+// Search API - Additional endpoints for global search
+export const searchAPI = {
+  // Global search across all entities
+  globalSearch: (params: {
+    q: string
+    type?: 'designs' | 'templates' | 'projects' | 'media'
+    page?: number
+    limit?: number
+  }) => api.get<ApiResponse<{
+    designs: Design[]
+    templates: Template[]
+    projects: Project[]
+    media: MediaItem[]
+    totalResults: number
+  }>>('/search', { params }),
+}
+
+// Analytics API (if exists)
+export const analyticsAPI = {
+  // Get dashboard stats
+  getDashboardStats: () => api.get<ApiResponse<DashboardStats>>('/analytics/dashboard'),
+
+  // Get design analytics
+  getDesignAnalytics: (designId: string) => 
+    api.get<ApiResponse<DesignAnalytics>>(`/analytics/designs/${designId}`),
 }
 
 // Collaboration API (for future features)
 export const collaborationAPI = {
   // Share design
-  shareDesign: (designId: string, data: {
-    email?: string
-    permissions: 'view' | 'edit'
-    expires_at?: string
-  }) => api.post<ApiResponse<{ share_url: string }>>(`/designs/${designId}/share`, data),
+  shareDesign: (designId: string, data: ShareDesignData) => 
+    api.post<ApiResponse<ShareResponse>>(`/designs/${designId}/share`, data),
 
   // Get shared designs
-  getSharedDesigns: () => api.get<PaginatedResponse<Design>>('/designs/shared'),
+  getSharedDesigns: () => api.get<DesignsApiResponse>('/designs/shared'),
 
   // Get design collaborators
   getCollaborators: (designId: string) => 
-    api.get<ApiResponse<Array<{
-      user: User
-      permissions: string
-      joined_at: string
-    }>>>(`/designs/${designId}/collaborators`),
-}
-
-// Export Jobs API
-export const exportAPI = {
-  // Get user's export jobs with pagination and filters
-  getExportJobs: (params?: {
-    page?: number
-    per_page?: number
-    status?: 'pending' | 'processing' | 'completed' | 'failed'
-    format?: string
-    design_id?: string
-    sort_by?: 'created_at' | 'updated_at' | 'status'
-    sort_order?: 'asc' | 'desc'
-  }) => api.get<PaginatedResponse<ExportJob>>('/export-jobs', { params }),
-
-  // Get single export job by ID
-  getExportJob: (id: string) => api.get<ApiResponse<ExportJob>>(`/export-jobs/${id}`),
-
-  // Create new export job
-  createExportJob: (data: {
-    designId: string
-    format: 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg' | 'mp4' | 'gif'
-    options?: ExportOptions
-  }) => api.post<ApiResponse<ExportJob>>('/export-jobs', data),
-
-  // Cancel export job
-  cancelExportJob: (id: string) => api.delete(`/export-jobs/${id}`),
-
-  // Download completed export
-  downloadExport: (id: string) => 
-    api.get(`/export-jobs/${id}/download`, { responseType: 'blob' }),
-
-  // Get export job progress (for real-time updates)
-  getJobProgress: (id: string) => api.get<ApiResponse<{
-    status: string
-    progress: number
-    message?: string
-  }>>(`/export-jobs/${id}/progress`),
-
-  // Retry failed export job
-  retryExportJob: (id: string) => api.post<ApiResponse<ExportJob>>(`/export-jobs/${id}/retry`),
+    api.get<ApiResponse<Collaborator[]>>(`/designs/${designId}/collaborators`),
 }

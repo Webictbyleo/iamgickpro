@@ -19,10 +19,7 @@ export const useExportsStore = defineStore('exports', () => {
   const pagination = ref({
     total: 0,
     page: 1,
-    per_page: 20,
-    last_page: 1,
-    from: 0,
-    to: 0
+    totalPages: 1
   })
 
   // Computed properties
@@ -49,7 +46,7 @@ export const useExportsStore = defineStore('exports', () => {
   // Actions
   const fetchExportJobs = async (params?: {
     page?: number
-    per_page?: number
+    limit?: number
     status?: 'pending' | 'processing' | 'completed' | 'failed'
     format?: string
     design_id?: string
@@ -79,7 +76,7 @@ export const useExportsStore = defineStore('exports', () => {
 
   const createExportJob = async (data: {
     designId: string
-    designTitle: string
+    designName: string
     format: 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg' | 'mp4' | 'gif'
     options?: ExportOptions
   }) => {
@@ -96,7 +93,7 @@ export const useExportsStore = defineStore('exports', () => {
       if (response.data) {
         const newJob = response.data.data
         exportJobs.value.unshift(newJob)
-        showSuccess(`Your ${data.format.toUpperCase()} export for "${data.designTitle}" has been queued`)
+        showSuccess(`Your ${data.format.toUpperCase()} export for "${data.designName}" has been queued`)
         return { success: true, job: newJob }
       }
       
@@ -120,7 +117,7 @@ export const useExportsStore = defineStore('exports', () => {
       if (index >= 0) {
         const job = exportJobs.value[index]
         exportJobs.value.splice(index, 1)
-        showInfo(`Export job for "${job.designTitle}" has been cancelled`)
+        showInfo(`Export job for "${job.designName}" has been cancelled`)
       }
       
       return { success: true }
@@ -139,7 +136,7 @@ export const useExportsStore = defineStore('exports', () => {
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
-      link.download = `${job.designTitle}.${job.format}`
+      link.download = `${job.designName}.${job.format}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -163,7 +160,7 @@ export const useExportsStore = defineStore('exports', () => {
         const index = exportJobs.value.findIndex(job => job.id === id)
         if (index >= 0) {
           exportJobs.value[index] = updatedJob
-          showSuccess(`Retrying export for "${updatedJob.designTitle}"`)
+          showSuccess(`Retrying export for "${updatedJob.designName}"`)
         }
         return { success: true, job: updatedJob }
       }

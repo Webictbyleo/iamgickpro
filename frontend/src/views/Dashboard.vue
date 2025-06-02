@@ -342,16 +342,16 @@ const deleteDesign = async (design: Design) => {
 const useTemplate = async (template: Template) => {
   // Create new design from template
   const newDesign = designStore.createNewDesign(
-    template.dimensions.width,
-    template.dimensions.height
+    template.width,
+    template.height
   )
   
   // Copy template data to design
-  if (template.data) {
-    newDesign.data = { ...template.data }
+  if (template.designData) {
+    newDesign.designData = { ...template.designData }
   }
   
-  newDesign.title = `${template.title} Copy`
+  newDesign.name = `${template.name} Copy`
   
   // Save the design first
   const result = await designStore.saveDesign(newDesign)
@@ -403,7 +403,7 @@ const loadFeaturedTemplates = async () => {
   try {
     const response = await templateAPI.getTemplates({
       page: 1,
-      per_page: 6
+      limit: 6
     })
     
     if (response.data?.data) {
@@ -415,66 +415,114 @@ const loadFeaturedTemplates = async () => {
     featuredTemplates.value = [
       {
         id: '1',
-        title: 'Social Media Post',
+        uuid: 'template-1',
+        name: 'Social Media Post',
         category: 'Social Media',
         thumbnail: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=300&fit=crop',
-        dimensions: { width: 1080, height: 1080 },
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=300&fit=crop',
+        previewUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=600&h=600&fit=crop',
+        width: 1080,
+        height: 1080,
         isPremium: false,
+        isActive: true,
+        rating: 4.5,
+        ratingCount: 150,
+        usageCount: 1200,
         tags: ['social', 'instagram'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
       {
         id: '2',
-        title: 'Business Card',
+        uuid: 'template-2',
+        name: 'Business Card',
         category: 'Business',
         thumbnail: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=200&fit=crop',
-        dimensions: { width: 1050, height: 600 },
+        thumbnailUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=200&fit=crop',
+        previewUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=600&h=400&fit=crop',
+        width: 1050,
+        height: 600,
         isPremium: true,
+        isActive: true,
+        rating: 4.8,
+        ratingCount: 89,
+        usageCount: 650,
         tags: ['business', 'professional'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
       {
         id: '3',
-        title: 'Logo Design',
+        uuid: 'template-3',
+        name: 'Logo Design',
         category: 'Branding',
         thumbnail: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&h=300&fit=crop',
-        dimensions: { width: 500, height: 500 },
+        thumbnailUrl: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&h=300&fit=crop',
+        previewUrl: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=600&h=600&fit=crop',
+        width: 500,
+        height: 500,
         isPremium: false,
+        isActive: true,
+        rating: 4.3,
+        ratingCount: 205,
+        usageCount: 980,
         tags: ['logo', 'branding'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
       {
         id: '4',
-        title: 'YouTube Thumbnail',
+        uuid: 'template-4',
+        name: 'YouTube Thumbnail',
         category: 'Social Media',
         thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300&h=200&fit=crop',
-        dimensions: { width: 1280, height: 720 },
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300&h=200&fit=crop',
+        previewUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=400&fit=crop',
+        width: 1280,
+        height: 720,
         isPremium: false,
+        isActive: true,
+        rating: 4.6,
+        ratingCount: 320,
+        usageCount: 1500,
         tags: ['youtube', 'thumbnail'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
       {
         id: '5',
-        title: 'Presentation Slide',
+        uuid: 'template-5',
+        name: 'Presentation Slide',
         category: 'Presentation',
         thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=200&fit=crop',
-        dimensions: { width: 1920, height: 1080 },
+        thumbnailUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=200&fit=crop',
+        previewUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop',
+        width: 1920,
+        height: 1080,
         isPremium: true,
+        isActive: true,
+        rating: 4.7,
+        ratingCount: 156,
+        usageCount: 890,
         tags: ['presentation', 'slide'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
       {
         id: '6',
-        title: 'Instagram Story',
+        uuid: 'template-6',
+        name: 'Instagram Story',
         category: 'Social Media',
         thumbnail: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=200&h=350&fit=crop',
-        dimensions: { width: 1080, height: 1920 },
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=200&h=350&fit=crop',
+        previewUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=700&fit=crop',
+        width: 1080,
+        height: 1920,
         isPremium: false,
+        isActive: true,
+        rating: 4.4,
+        ratingCount: 278,
+        usageCount: 1350,
         tags: ['instagram', 'story'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

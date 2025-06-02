@@ -115,6 +115,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline'
 import { useNotifications } from '@/composables/useNotifications'
+import { userAPI } from '@/services/api'
 
 // Use notifications
 const { showSuccess, showError } = useNotifications()
@@ -137,22 +138,10 @@ const dataExport = reactive({
 const requestDataDownload = async () => {
   dataDownload.loading = true
   try {
-    const response = await fetch('/api/user/settings/privacy/download', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to request data download')
-    }
-    
-    const data = await response.json()
+    const response = await userAPI.downloadData()
     dataDownload.lastRequest = new Date()
     showSuccess('Data download request submitted successfully. You will receive an email with download instructions within 24 hours.')
-    console.log('Data download requested:', data.message)
+    console.log('Data download requested successfully')
   } catch (error) {
     console.error('Failed to request data download:', error)
     showError('Failed to request data download. Please try again later.')
@@ -164,31 +153,24 @@ const requestDataDownload = async () => {
 const exportPortableData = async () => {
   dataExport.loading = true
   try {
-    const response = await fetch('/api/user/settings/privacy/export', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await userAPI.exportData({
+      format: 'json',
+      includeDesigns: true,
+      includeMedia: true,
+      includeProjects: true
     })
     
-    if (!response.ok) {
-      throw new Error('Failed to export data')
-    }
-    
-    const result = await response.json()
     dataExport.lastExport = new Date()
     
-    // Download the exported data as JSON file
-    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `igpro-data-export-${new Date().toISOString().split('T')[0]}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    if (response.data?.data?.downloadUrl) {
+      // Use the download URL provided by the backend
+      const link = document.createElement('a')
+      link.href = response.data.data.downloadUrl
+      link.download = `igpro-data-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
     
     showSuccess('Data exported successfully! Your file has been downloaded.')
     console.log('Data export completed')
@@ -202,20 +184,8 @@ const exportPortableData = async () => {
 
 const deleteAccount = async () => {
   try {
-    const response = await fetch('/api/user/settings/privacy/delete', {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to delete account')
-    }
-    
-    const data = await response.json()
-    console.log('Account deletion initiated:', data.message)
+    const response = await userAPI.deleteAccount()
+    console.log('Account deletion initiated:', response.data?.message)
     showDeleteConfirmation.value = false
     
     showSuccess('Account deletion initiated successfully. We\'re sorry to see you go!')

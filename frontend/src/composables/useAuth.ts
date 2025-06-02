@@ -1,84 +1,36 @@
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { authAPI } from '@/services/api'
-import type { User } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from './useNotifications'
-
-// Global auth state
-const user = ref<User | null>(null)
-const token = ref<string | null>(localStorage.getItem('auth_token'))
-const isLoading = ref(false)
 
 export const useAuth = () => {
   const router = useRouter()
+  const authStore = useAuthStore()
   const { success, error } = useNotifications()
 
-  // Computed properties
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const isGuest = computed(() => !isAuthenticated.value)
-
-  // Initialize auth state from localStorage
-  const initializeAuth = async () => {
-    const storedToken = localStorage.getItem('auth_token')
-    const storedUser = localStorage.getItem('user_data')
-
-    if (storedToken && storedUser) {
-      token.value = storedToken
-      try {
-        user.value = JSON.parse(storedUser)
-        // Optionally verify token is still valid
-        await verifyToken()
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error)
-        logout()
-      }
-    }
-  }
-
-  // Verify token is still valid
-  const verifyToken = async () => {
-    if (!token.value) return false
-
-    try {
-      // This could call an endpoint like /auth/verify or get current user
-      const response = await authAPI.refreshToken()
-      token.value = response.data.data.token
-      localStorage.setItem('auth_token', token.value)
-      return true
-    } catch (error) {
-      console.error('Token verification failed:', error)
-      logout()
-      return false
-    }
-  }
+  // Computed properties from store
+  const isAuthenticated = computed(() => authStore.isAuthenticated)
+  const isGuest = computed(() => !authStore.isAuthenticated)
 
   // Login function
   const login = async (credentials: { email: string; password: string }) => {
-    isLoading.value = true
     try {
-      const response = await authAPI.login(credentials)
-      const { user: userData, token: authToken } = response.data.data
-
-      // Store auth data
-      user.value = userData
-      token.value = authToken
-      localStorage.setItem('auth_token', authToken)
-      localStorage.setItem('user_data', JSON.stringify(userData))
-
-      success('Welcome Back!', `Hello ${userData.firstName}, you're now logged in.`)
+      const result = await authStore.login(credentials)
       
-      // Redirect to dashboard or intended route
-      const redirectTo = router.currentRoute.value.query.redirect as string || '/dashboard'
-      router.push(redirectTo)
-
-      return { success: true, user: userData }
+      if (result.success) {
+        // Redirect to dashboard or intended route
+        const redirectTo = router.currentRoute.value.query.redirect as string || '/dashboard'
+        router.push(redirectTo)
+      } else {
+        error('Login Failed', result.error || 'Invalid email or password')
+      }
+      
+      return result
     } catch (loginError: any) {
       console.error('Login failed:', loginError)
       const message = loginError.response?.data?.message || 'Invalid email or password'
       error('Login Failed', message)
       return { success: false, error: message }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -90,66 +42,48 @@ export const useAuth = () => {
     password: string
     confirmPassword: string
   }) => {
-    isLoading.value = true
     try {
-      const response = await authAPI.register(data)
-      const { user: userData, token: authToken } = response.data.data
-
-      // Store auth data
-      user.value = userData
-      token.value = authToken
-      localStorage.setItem('auth_token', authToken)
-      localStorage.setItem('user_data', JSON.stringify(userData))
-
-      success('Account Created!', `Welcome to IamGickPro, ${userData.firstName}!`)
+      const result = await authStore.register(data)
       
-      // Redirect to dashboard
-      router.push('/dashboard')
-
-      return { success: true, user: userData }
+      if (result.success) {
+        success('Account Created!', `Welcome to IamGickPro, ${result.user?.firstName}!`)
+        router.push('/dashboard')
+      } else {
+        error('Registration Failed', result.error || 'Registration failed')
+      }
+      
+      return result
     } catch (registerError: any) {
       console.error('Registration failed:', registerError)
       const message = registerError.response?.data?.message || 'Registration failed'
       error('Registration Failed', message)
       return { success: false, error: message }
-    } finally {
-      isLoading.value = false
     }
   }
 
   // Logout function
   const logout = async () => {
-    try {
-      if (token.value) {
-        await authAPI.logout()
-      }
-    } catch (error) {
-      console.error('Logout API call failed:', error)
-    } finally {
-      // Clear local state regardless of API call result
-      user.value = null
-      token.value = null
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_data')
-      
-      success('Goodbye!', 'You have been logged out successfully.')
-      router.push('/login')
-    }
+    await authStore.logout()
+    success('Goodbye!', 'You have been logged out successfully.')
+    router.push('/login')
   }
 
   // Forgot password
   const forgotPassword = async (email: string) => {
-    isLoading.value = true
     try {
-      await authAPI.forgotPassword(email)
-      success('Reset Link Sent', 'Please check your email for password reset instructions.')
-      return { success: true }
+      const result = await authStore.forgotPassword(email)
+      
+      if (result.success) {
+        success('Reset Link Sent', 'Please check your email for password reset instructions.')
+      } else {
+        error('Reset Failed', result.error || 'Failed to send reset email')
+      }
+      
+      return result
     } catch (forgotError: any) {
       const message = forgotError.response?.data?.message || 'Failed to send reset email'
       error('Reset Failed', message)
       return { success: false, error: message }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -160,45 +94,42 @@ export const useAuth = () => {
     password: string
     confirmPassword: string
   }) => {
-    isLoading.value = true
     try {
-      await authAPI.resetPassword(data)
-      success('Password Reset', 'Your password has been reset successfully.')
-      router.push('/login')
-      return { success: true }
+      const result = await authStore.resetPassword(data)
+      
+      if (result.success) {
+        success('Password Reset', 'Your password has been reset successfully.')
+        router.push('/login')
+      } else {
+        error('Reset Failed', result.error || 'Failed to reset password')
+      }
+      
+      return result
     } catch (resetError: any) {
       const message = resetError.response?.data?.message || 'Failed to reset password'
       error('Reset Failed', message)
       return { success: false, error: message }
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Update user profile
-  const updateUser = (userData: Partial<User>) => {
-    if (user.value) {
-      user.value = { ...user.value, ...userData }
-      localStorage.setItem('user_data', JSON.stringify(user.value))
     }
   }
 
   return {
-    // State
-    user: computed(() => user.value),
-    token: computed(() => token.value),
-    isLoading: computed(() => isLoading.value),
+    // State from store
+    user: computed(() => authStore.user),
+    token: computed(() => authStore.token),
+    isLoading: computed(() => authStore.isLoading),
     isAuthenticated,
     isGuest,
 
-    // Methods
-    initializeAuth,
-    verifyToken,
+    // Methods that delegate to store
+    initializeAuth: authStore.initializeAuth,
+    verifyToken: authStore.verifyToken,
+    updateUser: authStore.updateUser,
+    
+    // Enhanced methods with UI feedback
     login,
     register,
     logout,
     forgotPassword,
     resetPassword,
-    updateUser,
   }
 }
