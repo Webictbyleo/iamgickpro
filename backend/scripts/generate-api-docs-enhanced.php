@@ -1890,6 +1890,19 @@ class EnhancedApiDocGenerator
     }
 
     /**
+     * Get reflection method for a class and method name
+     */
+    private function getReflectionMethod(string $className, string $methodName): ?\ReflectionMethod
+    {
+        try {
+            $reflectionClass = new \ReflectionClass($className);
+            return $reflectionClass->getMethod($methodName);
+        } catch (\ReflectionException $e) {
+            return null;
+        }
+    }
+
+    /**
      * Check if a class is a valid Response DTO
      */
     private function isValidResponseDto(string $className): bool
@@ -2987,21 +3000,45 @@ class EnhancedApiDocGenerator
      */
     private function extractOpenApiRequestBody(array $route): ?array
     {
-        if (empty($route['request_body'])) {
+        // Use the existing method reflection from route data
+        $reflectionMethod = $route['method_reflection'] ?? null;
+        if (!$reflectionMethod) {
             return null;
         }
+        
+        $requestDto = $this->extractRequestDto($reflectionMethod);
+        if (!$requestDto) {
+            return null;
+        }
+        
+        // Ensure the DTO is processed for schema generation
+        $this->generateDtoDocumentation($requestDto);
+        
+        // Generate component name for the DTO
+        $componentName = $this->getSchemaName($requestDto);
         
         $requestBody = [
             'required' => true,
             'content' => [
                 'application/json' => [
-                    'schema' => $this->generateOpenApiSchema($route['request_body'])
+                    'schema' => [
+                        '$ref' => "#/components/schemas/{$componentName}"
+                    ]
                 ]
             ]
         ];
         
-        if (!empty($route['request_body']['description'])) {
-            $requestBody['description'] = $route['request_body']['description'];
+        // Try to get description from DTO class docblock
+        try {
+            $dtoReflection = new \ReflectionClass($requestDto);
+            $docComment = $dtoReflection->getDocComment();
+            if ($docComment && preg_match('/@description\s+(.+)/', $docComment, $matches)) {
+                $requestBody['description'] = trim($matches[1]);
+            } else {
+                $requestBody['description'] = "Request body for {$route['action']} {$route['path']}";
+            }
+        } catch (\ReflectionException $e) {
+            $requestBody['description'] = "Request body for {$route['action']} {$route['path']}";
         }
         
         return $requestBody;
@@ -3212,18 +3249,39 @@ class EnhancedApiDocGenerator
      */
     private function formatJsonRequestBody(array $route): ?array
     {
-        if (empty($route['request_body'])) {
+        // Use the existing method reflection from route data
+        $reflectionMethod = $route['method_reflection'] ?? null;
+        if (!$reflectionMethod) {
             return null;
         }
+        
+        $requestDto = $this->extractRequestDto($reflectionMethod);
+        if (!$requestDto) {
+            return null;
+        }
+
+        // Ensure the DTO is processed for schema generation
+        $this->generateDtoDocumentation($requestDto);
 
         $requestBody = [
             'required' => true,
             'content_type' => 'application/json',
-            'schema' => $this->generateJsonSchema($route['request_body'])
+            'schema' => [
+                '$ref' => "#/components/schemas/" . $this->getSchemaName($requestDto)
+            ]
         ];
 
-        if (!empty($route['request_body']['description'])) {
-            $requestBody['description'] = $route['request_body']['description'];
+        // Try to get description from DTO class docblock
+        try {
+            $dtoReflection = new \ReflectionClass($requestDto);
+            $docComment = $dtoReflection->getDocComment();
+            if ($docComment && preg_match('/@description\s+(.+)/', $docComment, $matches)) {
+                $requestBody['description'] = trim($matches[1]);
+            } else {
+                $requestBody['description'] = "Request body for {$route['action']} {$route['path']}";
+            }
+        } catch (\ReflectionException $e) {
+            $requestBody['description'] = "Request body for {$route['action']} {$route['path']}";
         }
 
         return $requestBody;

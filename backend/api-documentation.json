@@ -1,0 +1,3194 @@
+{
+    "metadata": {
+        "generator": "Enhanced API Documentation Generator",
+        "version": "2.0.0",
+        "generated_at": "2025-06-02T14:27:01+00:00",
+        "symfony_version": "7.0.10",
+        "php_version": "8.4.7"
+    },
+    "controllers": [
+        {
+            "name": "AuthController",
+            "description": "Auth endpoints",
+            "routes": [
+                {
+                    "path": "/api/auth/change-password",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_auth_change_password",
+                    "description": "Change user password",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/ChangePasswordRequestDTO"
+                        },
+                        "description": "Request body for changePassword /api/auth/change-password"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/auth/login",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_auth_login",
+                    "description": "Authenticate user and return JWT token",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/LoginRequestDTO"
+                        },
+                        "description": "Request body for login /api/auth/login"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/auth/logout",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_auth_logout",
+                    "description": "Logout user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/auth/me",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_auth_me",
+                    "description": "Get current authenticated user profile",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/auth/profile",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_auth_update_profile",
+                    "description": "Update user profile information",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateProfileRequestDTO"
+                        },
+                        "description": "Request body for updateProfile /api/auth/profile"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/auth/register",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_auth_register",
+                    "description": "Register a new user account",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/RegisterRequestDTO"
+                        },
+                        "description": "Request body for register /api/auth/register"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "DesignController",
+            "description": "Design endpoints",
+            "routes": [
+                {
+                    "path": "/api/designs",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_designs_index",
+                    "description": "List designs for authenticated user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_designs_create",
+                    "description": "Create a new design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreateDesignRequestDTO"
+                        },
+                        "description": "Request body for create /api/designs"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs/search",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_designs_search",
+                    "description": "Search designs",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs/{id}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_designs_show",
+                    "description": "Get details of a specific design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs/{id}",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_designs_update",
+                    "description": "Update an existing design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateDesignRequestDTO"
+                        },
+                        "description": "Request body for update /api/designs/{id}"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs/{id}",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_designs_delete",
+                    "description": "Delete a design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs/{id}/duplicate",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_designs_duplicate",
+                    "description": "Duplicate an existing design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/DuplicateDesignRequestDTO"
+                        },
+                        "description": "Request body for duplicate /api/designs/{id}/duplicate"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/designs/{id}/thumbnail",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_designs_update_thumbnail",
+                    "description": "Update design thumbnail",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateDesignThumbnailRequestDTO"
+                        },
+                        "description": "Request body for updateThumbnail /api/designs/{id}/thumbnail"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "ExportJobController",
+            "description": "ExportJob endpoints",
+            "routes": [
+                {
+                    "path": "/api/export-jobs",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_export_jobs_list",
+                    "description": "List export jobs for authenticated user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_export_jobs_create",
+                    "description": "Create a new export job",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreateExportJobRequestDTO"
+                        },
+                        "description": "Request body for create /api/export-jobs"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/queue-status",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_export_jobs_queue_status",
+                    "description": "Get export job queue status (Admin only)",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_ADMIN"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/stats",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_export_jobs_stats",
+                    "description": "Get export job statistics for authenticated user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/{id}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_export_jobs_show",
+                    "description": "Get details of a specific export job",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/{id}",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_export_jobs_update",
+                    "description": "Update an export job (Not allowed)",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/{id}",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_export_jobs_delete",
+                    "description": "Delete an export job",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/{id}/cancel",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_export_jobs_cancel",
+                    "description": "Cancel a pending or processing export job",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/{id}/download",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_export_jobs_download",
+                    "description": "Download export job output file",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/export-jobs/{id}/retry",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_export_jobs_retry",
+                    "description": "Retry a failed export job",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "LayerController",
+            "description": "Layer endpoints",
+            "routes": [
+                {
+                    "path": "/api/layers",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_layers_create",
+                    "description": "Create a new layer in a design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreateLayerRequestDTO"
+                        },
+                        "description": "Request body for create /api/layers"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/layers/bulk-update",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_layers_bulk_update",
+                    "description": "Bulk update multiple layers",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/BulkUpdateLayersRequestDTO"
+                        },
+                        "description": "Request body for bulkUpdate /api/layers/bulk-update"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/layers/{id}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_layers_show",
+                    "description": "Get details of a specific layer",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/layers/{id}",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_layers_update",
+                    "description": "Update an existing layer",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateLayerRequestDTO"
+                        },
+                        "description": "Request body for update /api/layers/{id}"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/layers/{id}",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_layers_delete",
+                    "description": "Delete a layer from a design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/layers/{id}/duplicate",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_layers_duplicate",
+                    "description": "Duplicate a layer within a design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/DuplicateLayerRequestDTO"
+                        },
+                        "description": "Request body for duplicate /api/layers/{id}/duplicate"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/layers/{id}/move",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_layers_move",
+                    "description": "Move a layer within the design hierarchy",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/MoveLayerRequestDTO"
+                        },
+                        "description": "Request body for move /api/layers/{id}/move"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "MediaController",
+            "description": "Media endpoints",
+            "routes": [
+                {
+                    "path": "/api/media",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_media_list",
+                    "description": "List media files for authenticated user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/SearchMediaRequestDTO"
+                        },
+                        "description": "Request body for list /api/media"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_media_create",
+                    "description": "Create a new media file entry",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreateMediaRequestDTO"
+                        },
+                        "description": "Request body for create /api/media"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/bulk/delete",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_media_bulk_delete",
+                    "description": "Bulk delete multiple media files",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/BulkDeleteMediaRequestDTO"
+                        },
+                        "description": "Request body for bulkDelete /api/media/bulk/delete"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/duplicate/{uuid}",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_media_duplicate",
+                    "description": "Duplicate a media file",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/DuplicateMediaRequestDTO"
+                        },
+                        "description": "Request body for duplicate /api/media/duplicate/{uuid}"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/search",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_media_search",
+                    "description": "Search media files",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/SearchMediaRequestDTO"
+                        },
+                        "description": "Request body for search /api/media/search"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/stock/search",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_media_stock_search",
+                    "description": "Search stock media from external providers",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/StockSearchRequestDTO"
+                        },
+                        "description": "Request body for stockSearch /api/media/stock/search"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/{uuid}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_media_show",
+                    "description": "Get details of a specific media file",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/{uuid}",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_media_update",
+                    "description": "Update media file metadata",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateMediaRequestDTO"
+                        },
+                        "description": "Request body for update /api/media/{uuid}"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/media/{uuid}",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_media_delete",
+                    "description": "Delete a media file",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "PluginController",
+            "description": "Plugin endpoints",
+            "routes": [
+                {
+                    "path": "/api/plugins",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_plugins_list",
+                    "description": "Retrieve paginated list of plugins with filtering options",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_plugins_create",
+                    "description": "Create a new plugin",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreatePluginRequestDTO"
+                        },
+                        "description": "Request body for create /api/plugins"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/categories",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_plugins_categories",
+                    "description": "Get available plugin categories",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/my-plugins",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_plugins_my_plugins",
+                    "description": "Get current user's plugins",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_plugins_show",
+                    "description": "Retrieve detailed information about a specific plugin",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_plugins_update",
+                    "description": "Update an existing plugin",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdatePluginRequestDTO"
+                        },
+                        "description": "Request body for update /api/plugins/{id}"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_plugins_delete",
+                    "description": "Delete a plugin",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}/approve",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_plugins_approve",
+                    "description": "Approve a plugin (Admin only)",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_ADMIN"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}/install",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_plugins_install",
+                    "description": "Install a plugin for the current user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}/reject",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_plugins_reject",
+                    "description": "Reject a plugin (Admin only)",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/RejectPluginRequestDTO"
+                        },
+                        "description": "Request body for reject /api/plugins/{id}/reject"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_ADMIN"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}/uninstall",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_plugins_uninstall",
+                    "description": "Uninstall a plugin for the current user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/plugins/{id}/upload-file",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_plugins_upload_file",
+                    "description": "Upload a plugin file",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UploadPluginFileRequestDTO"
+                        },
+                        "description": "Request body for uploadFile /api/plugins/{id}/upload-file"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "ProjectController",
+            "description": "Project endpoints",
+            "routes": [
+                {
+                    "path": "/api/projects",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_projects_index",
+                    "description": "List projects for authenticated user",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_projects_create",
+                    "description": "Create a new project",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreateProjectRequestDTO"
+                        },
+                        "description": "Request body for create /api/projects"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects/public",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_projects_public",
+                    "description": "List public projects",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/SearchProjectsRequestDTO"
+                        },
+                        "description": "Request body for publicProjects /api/projects/public"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects/{id}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_projects_show",
+                    "description": "Get details of a specific project",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects/{id}",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_projects_update",
+                    "description": "Update an existing project",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateProjectRequestDTO"
+                        },
+                        "description": "Request body for update /api/projects/{id}"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects/{id}",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_projects_delete",
+                    "description": "Delete a project",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects/{id}/duplicate",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_projects_duplicate",
+                    "description": "Duplicate an existing project",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/DuplicateProjectRequestDTO"
+                        },
+                        "description": "Request body for duplicate /api/projects/{id}/duplicate"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/projects/{id}/share",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_projects_toggle_share",
+                    "description": "Toggle project sharing status",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "TemplateController",
+            "description": "Template endpoints",
+            "routes": [
+                {
+                    "path": "/api/templates",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_templates_list",
+                    "description": "List available templates with filtering and pagination",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/templates",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_templates_create",
+                    "description": "Create a new template",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/CreateTemplateRequestDTO"
+                        },
+                        "description": "Request body for create /api/templates"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/templates/categories",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_templates_categories",
+                    "description": "Get available template categories",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/templates/search",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_templates_search",
+                    "description": "Search templates with advanced filtering",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/SearchTemplateRequestDTO"
+                        },
+                        "description": "Request body for search /api/templates/search"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/templates/{uuid}",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_templates_show",
+                    "description": "Get details of a specific template",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/templates/{uuid}/use",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_templates_use",
+                    "description": "Use a template to create a new design",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [
+                        {
+                            "type": "IsGranted",
+                            "args": [
+                                "ROLE_USER"
+                            ]
+                        }
+                    ],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        },
+        {
+            "name": "UserController",
+            "description": "User endpoints",
+            "routes": [
+                {
+                    "path": "/api/user/avatar",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_user_upload_avatar",
+                    "description": "Upload and update user avatar image",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UploadAvatarRequestDTO"
+                        },
+                        "description": "Request body for uploadAvatar /api/user/avatar"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/password",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_user_change_password",
+                    "description": "Change user password",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/ChangePasswordRequestDTO"
+                        },
+                        "description": "Request body for changePassword /api/user/password"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/profile",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_user_profile",
+                    "description": "Get current user's profile information",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/profile",
+                    "methods": [
+                        "PUT"
+                    ],
+                    "name": "api_user_update_profile",
+                    "description": "Update current user's profile information",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": {
+                        "required": true,
+                        "content_type": "application/json",
+                        "schema": {
+                            "$ref": "#/components/schemas/UpdateProfileRequestDTO"
+                        },
+                        "description": "Request body for updateProfile /api/user/profile"
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/settings/privacy/delete",
+                    "methods": [
+                        "DELETE"
+                    ],
+                    "name": "api_user_delete_account",
+                    "description": "Delete user account and all associated data",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/settings/privacy/download",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_user_download_data",
+                    "description": "Request user data download for GDPR compliance",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/settings/privacy/export",
+                    "methods": [
+                        "POST"
+                    ],
+                    "name": "api_user_export_data",
+                    "description": "Export user data in portable format",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                },
+                {
+                    "path": "/api/user/subscription",
+                    "methods": [
+                        "GET"
+                    ],
+                    "name": "api_user_subscription",
+                    "description": "Get user subscription information",
+                    "summary": "",
+                    "parameters": [],
+                    "request_body": null,
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content_type": "application/json",
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "security": [],
+                    "deprecated": false,
+                    "tags": []
+                }
+            ]
+        }
+    ],
+    "schemas": {
+        "ChangePasswordRequestDTO": {
+            "name": "ChangePasswordRequestDTO",
+            "type": "object",
+            "properties": {
+                "currentPassword": {
+                    "type": "string",
+                    "description": ""
+                },
+                "newPassword": {
+                    "type": "string",
+                    "description": ""
+                },
+                "confirmPassword": {
+                    "type": "string",
+                    "description": ""
+                }
+            },
+            "required": [
+                "currentPassword",
+                "newPassword",
+                "confirmPassword"
+            ],
+            "description": "Data Transfer Object for password change requests."
+        },
+        "LoginRequestDTO": {
+            "name": "LoginRequestDTO",
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "description": ""
+                },
+                "password": {
+                    "type": "string",
+                    "description": ""
+                }
+            },
+            "required": [
+                "email",
+                "password"
+            ],
+            "description": "Data Transfer Object for user authentication login requests."
+        },
+        "UpdateProfileRequestDTO": {
+            "name": "UpdateProfileRequestDTO",
+            "type": "object",
+            "properties": {
+                "firstName": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "lastName": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "username": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "email": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "jobTitle": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "company": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "website": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "portfolio": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "bio": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "socialLinks": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "timezone": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "language": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for comprehensive profile update requests"
+        },
+        "RegisterRequestDTO": {
+            "name": "RegisterRequestDTO",
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "description": ""
+                },
+                "password": {
+                    "type": "string",
+                    "description": ""
+                },
+                "firstName": {
+                    "type": "string",
+                    "description": ""
+                },
+                "lastName": {
+                    "type": "string",
+                    "description": ""
+                },
+                "username": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [
+                "email",
+                "password",
+                "firstName",
+                "lastName"
+            ],
+            "description": "Data Transfer Object for user registration requests. Handles new user account creation with validation for all required fields. Used by the registration system to collect and validate user information before creating new accounts in the platform."
+        },
+        "CreateDesignRequestDTO": {
+            "name": "CreateDesignRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": ""
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "data": {
+                    "type": "string",
+                    "description": ""
+                },
+                "projectId": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "width": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "height": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "isPublic": {
+                    "type": "boolean",
+                    "description": ""
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "description": "Request DTO for creating a new design within a project."
+        },
+        "UpdateDesignRequestDTO": {
+            "name": "UpdateDesignRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "data": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "projectId": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPublic": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Request DTO for updating an existing design."
+        },
+        "DuplicateDesignRequestDTO": {
+            "name": "DuplicateDesignRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "projectId": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for design duplication requests."
+        },
+        "UpdateDesignThumbnailRequestDTO": {
+            "name": "UpdateDesignThumbnailRequestDTO",
+            "type": "object",
+            "properties": {
+                "thumbnail": {
+                    "type": "string",
+                    "description": ""
+                }
+            },
+            "required": [
+                "thumbnail"
+            ],
+            "description": "Data Transfer Object for design thumbnail update requests."
+        },
+        "CreateExportJobRequestDTO": {
+            "name": "CreateExportJobRequestDTO",
+            "type": "object",
+            "properties": {
+                "designId": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "format": {
+                    "type": "string",
+                    "description": ""
+                },
+                "quality": {
+                    "type": "string",
+                    "description": ""
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "scale": {
+                    "type": "number",
+                    "description": "",
+                    "nullable": true
+                },
+                "transparent": {
+                    "type": "boolean",
+                    "description": ""
+                },
+                "backgroundColor": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "animationSettings": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [
+                "designId"
+            ],
+            "description": "Data Transfer Object for export job creation requests."
+        },
+        "CreateLayerRequestDTO": {
+            "name": "CreateLayerRequestDTO",
+            "type": "object",
+            "properties": {
+                "designId": {
+                    "type": "string",
+                    "description": ""
+                },
+                "type": {
+                    "type": "string",
+                    "description": ""
+                },
+                "name": {
+                    "type": "string",
+                    "description": ""
+                },
+                "properties": {
+                    "type": "string",
+                    "description": ""
+                },
+                "transform": {
+                    "type": "string",
+                    "description": ""
+                },
+                "zIndex": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "visible": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "locked": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "parentLayerId": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [
+                "designId",
+                "type",
+                "name",
+                "properties",
+                "transform"
+            ],
+            "description": "Data Transfer Object for layer creation requests"
+        },
+        "BulkUpdateLayersRequestDTO": {
+            "name": "BulkUpdateLayersRequestDTO",
+            "type": "object",
+            "properties": {
+                "layers": {
+                    "type": "array",
+                    "description": ""
+                }
+            },
+            "required": [
+                "layers"
+            ],
+            "description": "Request DTO for performing bulk updates on multiple layers."
+        },
+        "UpdateLayerRequestDTO": {
+            "name": "UpdateLayerRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "properties": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "transform": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "zIndex": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "visible": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "locked": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "parentLayerId": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for layer update requests"
+        },
+        "DuplicateLayerRequestDTO": {
+            "name": "DuplicateLayerRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "targetDesignId": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for layer duplication requests."
+        },
+        "MoveLayerRequestDTO": {
+            "name": "MoveLayerRequestDTO",
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "targetZIndex": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for layer movement requests."
+        },
+        "SearchMediaRequestDTO": {
+            "name": "SearchMediaRequestDTO",
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "type": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "source": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "search": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "tags": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for media search and filtering requests."
+        },
+        "CreateMediaRequestDTO": {
+            "name": "CreateMediaRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": ""
+                },
+                "type": {
+                    "type": "string",
+                    "description": ""
+                },
+                "mimeType": {
+                    "type": "string",
+                    "description": ""
+                },
+                "size": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "url": {
+                    "type": "string",
+                    "description": ""
+                },
+                "thumbnailUrl": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "",
+                    "nullable": true
+                },
+                "duration": {
+                    "type": "number",
+                    "description": "",
+                    "nullable": true
+                },
+                "source": {
+                    "type": "string",
+                    "description": ""
+                },
+                "sourceId": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "metadata": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "tags": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "attribution": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "license": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPremium": {
+                    "type": "boolean",
+                    "description": ""
+                },
+                "isActive": {
+                    "type": "boolean",
+                    "description": ""
+                }
+            },
+            "required": [
+                "name",
+                "type",
+                "mimeType",
+                "size",
+                "url"
+            ],
+            "description": "Request DTO for creating a new media item in the library."
+        },
+        "BulkDeleteMediaRequestDTO": {
+            "name": "BulkDeleteMediaRequestDTO",
+            "type": "object",
+            "properties": {
+                "uuids": {
+                    "type": "array",
+                    "description": ""
+                }
+            },
+            "required": [
+                "uuids"
+            ],
+            "description": "Data Transfer Object for bulk media deletion requests."
+        },
+        "DuplicateMediaRequestDTO": {
+            "name": "DuplicateMediaRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for media file duplication requests."
+        },
+        "StockSearchRequestDTO": {
+            "name": "StockSearchRequestDTO",
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": ""
+                },
+                "page": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "type": {
+                    "type": "string",
+                    "description": ""
+                },
+                "source": {
+                    "type": "string",
+                    "description": ""
+                }
+            },
+            "required": [
+                "query"
+            ],
+            "description": "Data Transfer Object for stock media search requests."
+        },
+        "UpdateMediaRequestDTO": {
+            "name": "UpdateMediaRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "tags": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "metadata": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPremium": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "isActive": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPublic": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Request DTO for updating an existing media item."
+        },
+        "CreatePluginRequestDTO": {
+            "name": "CreatePluginRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": ""
+                },
+                "description": {
+                    "type": "string",
+                    "description": ""
+                },
+                "categories": {
+                    "type": "array",
+                    "description": ""
+                },
+                "version": {
+                    "type": "string",
+                    "description": ""
+                },
+                "permissions": {
+                    "type": "array",
+                    "description": ""
+                },
+                "manifest": {
+                    "type": "array",
+                    "description": ""
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "categories",
+                "version",
+                "permissions",
+                "manifest"
+            ],
+            "description": "Data Transfer Object for plugin creation requests."
+        },
+        "UpdatePluginRequestDTO": {
+            "name": "UpdatePluginRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "categories": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "version": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "permissions": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "manifest": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "status": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for plugin update requests."
+        },
+        "RejectPluginRequestDTO": {
+            "name": "RejectPluginRequestDTO",
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "description": ""
+                }
+            },
+            "required": [
+                "reason"
+            ]
+        },
+        "UploadPluginFileRequestDTO": {
+            "name": "UploadPluginFileRequestDTO",
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for plugin file upload requests."
+        },
+        "CreateProjectRequestDTO": {
+            "name": "CreateProjectRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": ""
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPublic": {
+                    "type": "boolean",
+                    "description": ""
+                },
+                "settings": {
+                    "type": "string",
+                    "description": ""
+                },
+                "tags": {
+                    "type": "array",
+                    "description": ""
+                },
+                "thumbnail": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "isPublic",
+                "settings"
+            ],
+            "description": "Request DTO for creating a new design project."
+        },
+        "SearchProjectsRequestDTO": {
+            "name": "SearchProjectsRequestDTO",
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "search": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "tags": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for project search requests."
+        },
+        "UpdateProjectRequestDTO": {
+            "name": "UpdateProjectRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPublic": {
+                    "type": "boolean",
+                    "description": "",
+                    "nullable": true
+                },
+                "settings": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "tags": {
+                    "type": "array",
+                    "description": "",
+                    "nullable": true
+                },
+                "thumbnail": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Request DTO for updating an existing design project."
+        },
+        "DuplicateProjectRequestDTO": {
+            "name": "DuplicateProjectRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for project duplication requests."
+        },
+        "CreateTemplateRequestDTO": {
+            "name": "CreateTemplateRequestDTO",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": ""
+                },
+                "description": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "category": {
+                    "type": "string",
+                    "description": ""
+                },
+                "tags": {
+                    "type": "array",
+                    "description": ""
+                },
+                "width": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "height": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "canvasSettings": {
+                    "type": "array",
+                    "description": ""
+                },
+                "layers": {
+                    "type": "array",
+                    "description": ""
+                },
+                "thumbnailUrl": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "previewUrl": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "isPremium": {
+                    "type": "boolean",
+                    "description": ""
+                },
+                "isActive": {
+                    "type": "boolean",
+                    "description": ""
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "category",
+                "tags",
+                "width",
+                "height"
+            ]
+        },
+        "SearchTemplateRequestDTO": {
+            "name": "SearchTemplateRequestDTO",
+            "type": "object",
+            "properties": {
+                "q": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "category": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                },
+                "page": {
+                    "type": "integer",
+                    "description": ""
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": ""
+                }
+            },
+            "required": []
+        },
+        "UploadAvatarRequestDTO": {
+            "name": "UploadAvatarRequestDTO",
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string",
+                    "description": "",
+                    "nullable": true
+                }
+            },
+            "required": [],
+            "description": "Data Transfer Object for avatar upload requests."
+        }
+    }
+}

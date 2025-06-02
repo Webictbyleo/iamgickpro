@@ -46,7 +46,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for changePassword /api/auth/change-password"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -93,7 +103,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for login /api/auth/login"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -234,7 +254,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProfileRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for updateProfile /api/auth/profile"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -281,7 +311,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for register /api/auth/register"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -373,7 +413,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateDesignRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/designs"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -530,7 +580,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDesignRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for update /api/designs/{id}"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -640,7 +700,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DuplicateDesignRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for duplicate /api/designs/{id}/duplicate"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -696,7 +766,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDesignThumbnailRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for updateThumbnail /api/designs/{id}/thumbnail"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -788,7 +868,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateExportJobRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/export-jobs"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1261,7 +1351,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateLayerRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/layers"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1308,7 +1408,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BulkUpdateLayersRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for bulkUpdate /api/layers/bulk-update"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1418,7 +1528,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateLayerRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for update /api/layers/{id}"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1528,7 +1648,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DuplicateLayerRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for duplicate /api/layers/{id}/duplicate"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1584,7 +1714,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MoveLayerRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for move /api/layers/{id}/move"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1631,7 +1771,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SearchMediaRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for list /api/media"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1676,7 +1826,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateMediaRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/media"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1723,7 +1883,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BulkDeleteMediaRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for bulkDelete /api/media/bulk/delete"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1779,7 +1949,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DuplicateMediaRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for duplicate /api/media/duplicate/{uuid}"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1826,7 +2006,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SearchMediaRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for search /api/media/search"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1873,7 +2063,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StockSearchRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for stockSearch /api/media/stock/search"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1983,7 +2183,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMediaRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for update /api/media/{uuid}"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2129,7 +2339,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreatePluginRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/plugins"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2333,7 +2553,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePluginRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for update /api/plugins/{id}"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2555,7 +2785,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RejectPluginRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for reject /api/plugins/{id}/reject"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2667,7 +2907,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadPluginFileRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for uploadFile /api/plugins/{id}/upload-file"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2759,7 +3009,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateProjectRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/projects"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2806,7 +3066,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SearchProjectsRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for publicProjects /api/projects/public"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2916,7 +3186,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProjectRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for update /api/projects/{id}"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3026,7 +3306,17 @@
                         }
                     }
                 ],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DuplicateProjectRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for duplicate /api/projects/{id}/duplicate"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3174,7 +3464,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTemplateRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for create /api/templates"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3268,7 +3568,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SearchTemplateRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for search /api/templates/search"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3427,7 +3737,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadAvatarRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for uploadAvatar /api/user/avatar"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3474,7 +3794,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for changePassword /api/user/password"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3566,7 +3896,17 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProfileRequestDTO"
+                            }
+                        }
+                    },
+                    "description": "Request body for updateProfile /api/user/profile"
+                },
                 "responses": {
                     "200": {
                         "description": "Success",
