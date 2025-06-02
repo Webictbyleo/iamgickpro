@@ -2998,8 +2998,14 @@ class EnhancedApiDocGenerator
     /**
      * Extract OpenAPI request body from route
      */
-    private function extractOpenApiRequestBody(array $route): ?array
+    private function extractOpenApiRequestBody(array $route, string $method): ?array
     {
+        // According to OpenAPI 3.0.3 specification, certain HTTP methods should not have requestBody
+        $methodsWithoutRequestBody = ['GET', 'DELETE', 'HEAD', 'OPTIONS'];
+        if (in_array(strtoupper($method), $methodsWithoutRequestBody)) {
+            return null;
+        }
+        
         // Use the existing method reflection from route data
         $reflectionMethod = $route['method_reflection'] ?? null;
         if (!$reflectionMethod) {
@@ -3051,19 +3057,61 @@ class EnhancedApiDocGenerator
     {
         $responses = [];
         
-        if (!empty($route['responses'])) {
-            foreach ($route['responses'] as $code => $response) {
-                $responses[$code] = [
-                    'description' => $response['description'] ?? 'Success',
+        // Use the same successful pattern as markdown format
+        $reflectionMethod = $route['method_reflection'] ?? null;
+        if ($reflectionMethod) {
+            $responseDto = $this->extractResponseDto($reflectionMethod);
+            if ($responseDto) {
+                // Ensure the DTO is processed for schema generation
+                $this->generateDtoDocumentation($responseDto);
+                
+                // Generate proper $ref response for success
+                $componentName = $this->getSchemaName($responseDto);
+                $responses['200'] = [
+                    'description' => 'Success',
                     'content' => [
                         'application/json' => [
-                            'schema' => $this->generateOpenApiSchema($response)
+                            'schema' => [
+                                '$ref' => "#/components/schemas/{$componentName}"
+                            ]
                         ]
                     ]
                 ];
             }
-        } else {
-            // Default success response
+        }
+        
+        // If no specific response DTO found, check if we have responses data
+        if (empty($responses) && !empty($route['responses'])) {
+            foreach ($route['responses'] as $code => $response) {
+                if ($code === '200' && isset($response['schema_class']) && class_exists($response['schema_class'])) {
+                    // Generate proper $ref for known response DTOs
+                    $this->generateDtoDocumentation($response['schema_class']);
+                    $componentName = $this->getSchemaName($response['schema_class']);
+                    $responses[$code] = [
+                        'description' => $response['description'] ?? 'Success',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    '$ref' => "#/components/schemas/{$componentName}"
+                                ]
+                            ]
+                        ]
+                    ];
+                } else {
+                    $responses[$code] = [
+                        'description' => $response['description'] ?? 'Success',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => $this->generateOpenApiSchema($response)
+                            ]
+                        ]
+                    ];
+                }
+            }
+        }
+        
+        // Default success response if none found
+        if (empty($responses)) {
             $responses['200'] = [
                 'description' => 'Success',
                 'content' => [
@@ -3074,7 +3122,7 @@ class EnhancedApiDocGenerator
             ];
         }
         
-        // Add common error responses
+        // Add standardized error responses following OpenAPI 3.0.3 best practices
         $responses['400'] = [
             'description' => 'Bad Request',
             'content' => [
@@ -3082,13 +3130,31 @@ class EnhancedApiDocGenerator
                     'schema' => [
                         'type' => 'object',
                         'properties' => [
-                            'error' => ['type' => 'string'],
-                            'message' => ['type' => 'string']
+                            'error' => ['type' => 'string', 'example' => 'Bad Request'],
+                            'message' => ['type' => 'string', 'example' => 'Invalid input data']
                         ]
                     ]
                 ]
             ]
         ];
+        
+        // Add 401 error for protected endpoints
+        if (!empty($route['security'])) {
+            $responses['401'] = [
+                'description' => 'Unauthorized',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'error' => ['type' => 'string', 'example' => 'Unauthorized'],
+                                'message' => ['type' => 'string', 'example' => 'Authentication required']
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+        }
         
         return $responses;
     }
@@ -3115,9 +3181,12 @@ class EnhancedApiDocGenerator
             return $schema;
         }
         
-        // Handle DTO types
+        // Handle DTO types - return proper $ref instead of inline schema
         if (str_contains($type, 'App\\DTO\\') && class_exists($type)) {
-            return $this->generateDtoOpenApiSchema($type);
+            // Ensure the DTO is processed for schema generation
+            $this->generateDtoDocumentation($type);
+            $componentName = $this->getSchemaName($type);
+            return ['$ref' => "#/components/schemas/{$componentName}"];
         }
         
         // Handle union types
@@ -3146,8 +3215,18 @@ class EnhancedApiDocGenerator
             $reflection = new \ReflectionClass($className);
             $schema = [
                 'type' => 'object',
-                'properties' => []
+                'properties' => [],
+                'required' => []
             ];
+            
+            // Add description from class docblock
+            $classDoc = $reflection->getDocComment();
+            if ($classDoc) {
+                $description = $this->extractDescriptionFromDocblock($classDoc);
+                if ($description) {
+                    $schema['description'] = $description;
+                }
+            }
             
             $constructor = $reflection->getConstructor();
             if (!$constructor) {
@@ -3155,7 +3234,9 @@ class EnhancedApiDocGenerator
             }
             
             foreach ($constructor->getParameters() as $param) {
+                $paramName = $param->getName();
                 $paramType = $param->getType();
+                
                 if (!$paramType) {
                     continue;
                 }
@@ -3165,17 +3246,72 @@ class EnhancedApiDocGenerator
                     'type' => $this->mapPhpTypeToOpenApi($typeName)
                 ];
                 
-                if (!$param->isOptional()) {
-                    $schema['required'][] = $param->getName();
+                // Add description from parameter docblock if available
+                $paramDoc = $this->extractParameterDocumentation($constructor, $paramName);
+                if ($paramDoc) {
+                    $property['description'] = $paramDoc;
                 }
                 
-                $schema['properties'][$param->getName()] = $property;
+                // Handle array types with potential item types
+                if ($property['type'] === 'array') {
+                    $property['items'] = ['type' => 'object']; // Default for arrays
+                }
+                
+                // Mark as required if not optional
+                if (!$param->isOptional()) {
+                    $schema['required'][] = $paramName;
+                }
+                
+                $schema['properties'][$paramName] = $property;
+            }
+            
+            // Remove empty required array
+            if (empty($schema['required'])) {
+                unset($schema['required']);
             }
             
             return $schema;
         } catch (\Exception $e) {
             return ['type' => 'object'];
         }
+    }
+    
+    /**
+     * Extract description from class docblock
+     */
+    private function extractDescriptionFromDocblock(string $docblock): ?string
+    {
+        // Remove /** and */ and clean up
+        $docblock = preg_replace('/^\/\*\*|\*\/$/', '', $docblock);
+        $lines = explode("\n", $docblock);
+        
+        $description = '';
+        foreach ($lines as $line) {
+            $line = trim($line, " \t*");
+            if (empty($line) || str_starts_with($line, '@')) {
+                break;
+            }
+            $description .= $line . ' ';
+        }
+        
+        return trim($description) ?: null;
+    }
+    
+    /**
+     * Extract parameter documentation from method docblock
+     */
+    private function extractParameterDocumentation(\ReflectionMethod $method, string $paramName): ?string
+    {
+        $docComment = $method->getDocComment();
+        if (!$docComment) {
+            return null;
+        }
+        
+        if (preg_match('/@param\s+\S+\s+\$' . preg_quote($paramName) . '\s+(.+)$/m', $docComment, $matches)) {
+            return trim($matches[1]);
+        }
+        
+        return null;
     }
 
     /**
@@ -3610,16 +3746,24 @@ class EnhancedApiDocGenerator
 
     private function generateOpenApiOperation(array $route, string $method): array
     {
-        return [
+        $operation = [
             'summary' => $route['description'] ?: ucfirst($method) . ' ' . $route['path'],
             'operationId' => $this->generateOperationId($route, $method),
             'tags' => $route['tags'] ?: [$this->getControllerDisplayName($route['controller'])],
             'deprecated' => $route['deprecated'],
             'security' => $this->formatSecurityForOpenApi($route['security']),
             'parameters' => $this->extractOpenApiParameters($route),
-            'requestBody' => $this->extractOpenApiRequestBody($route),
-            'responses' => $this->extractOpenApiResponses($route)
         ];
+        
+        // Only include requestBody if it's not null (OpenAPI 3.0.3 compliance)
+        $requestBody = $this->extractOpenApiRequestBody($route, $method);
+        if ($requestBody !== null) {
+            $operation['requestBody'] = $requestBody;
+        }
+        
+        $operation['responses'] = $this->extractOpenApiResponses($route);
+        
+        return $operation;
     }
 
     private function generateOpenApiSchemas(): array

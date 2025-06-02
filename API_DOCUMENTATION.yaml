@@ -63,7 +63,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -76,10 +76,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -120,7 +142,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/AuthResponseDTO"
                                 }
                             }
                         }
@@ -133,10 +155,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -160,14 +184,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -180,10 +203,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -207,14 +252,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/UserProfileResponseDTO"
                                 }
                             }
                         }
@@ -227,10 +271,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -271,7 +337,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/UserProfileResponseDTO"
                                 }
                             }
                         }
@@ -284,10 +350,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -328,7 +416,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/AuthResponseDTO"
                                 }
                             }
                         }
@@ -341,10 +429,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -368,14 +458,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -388,10 +477,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -430,7 +521,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/DesignResponseDTO"
                                 }
                             }
                         }
@@ -443,10 +534,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -470,14 +563,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -490,10 +582,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -526,14 +620,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/DesignResponseDTO"
                                 }
                             }
                         }
@@ -546,10 +639,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -597,7 +692,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/DesignResponseDTO"
                                 }
                             }
                         }
@@ -610,10 +705,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -644,14 +741,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -664,10 +760,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -717,7 +815,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/DesignResponseDTO"
                                 }
                             }
                         }
@@ -730,10 +828,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -783,7 +883,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/DesignResponseDTO"
                                 }
                             }
                         }
@@ -796,10 +896,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -823,14 +925,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ExportJobResponseDTO"
                                 }
                             }
                         }
@@ -843,10 +944,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -885,7 +1008,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ExportJobResponseDTO"
                                 }
                             }
                         }
@@ -898,10 +1021,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -925,14 +1070,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponseDTO"
                                 }
                             }
                         }
@@ -945,10 +1089,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -972,14 +1138,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponseDTO"
                                 }
                             }
                         }
@@ -992,10 +1157,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1028,14 +1215,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ExportJobResponseDTO"
                                 }
                             }
                         }
@@ -1048,10 +1234,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1082,14 +1290,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ErrorResponseDTO"
                                 }
                             }
                         }
@@ -1102,10 +1309,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1136,14 +1365,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -1156,10 +1384,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1192,14 +1442,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ExportJobResponseDTO"
                                 }
                             }
                         }
@@ -1212,10 +1461,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1248,7 +1519,6 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1268,10 +1538,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1304,14 +1596,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ExportJobResponseDTO"
                                 }
                             }
                         }
@@ -1324,10 +1615,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -1368,7 +1681,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/LayerResponseDTO"
                                 }
                             }
                         }
@@ -1381,10 +1694,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1425,7 +1740,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -1438,10 +1753,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1474,14 +1791,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/LayerResponseDTO"
                                 }
                             }
                         }
@@ -1494,10 +1810,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1545,7 +1863,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/LayerResponseDTO"
                                 }
                             }
                         }
@@ -1558,10 +1876,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1592,14 +1912,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -1612,10 +1931,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1665,7 +1986,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/LayerResponseDTO"
                                 }
                             }
                         }
@@ -1678,10 +1999,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1731,7 +2054,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/LayerResponseDTO"
                                 }
                             }
                         }
@@ -1744,10 +2067,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1771,24 +2096,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SearchMediaRequestDTO"
-                            }
-                        }
-                    },
-                    "description": "Request body for list /api/media"
-                },
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -1801,10 +2115,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1843,7 +2159,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/MediaResponseDTO"
                                 }
                             }
                         }
@@ -1856,10 +2172,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1883,24 +2201,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/BulkDeleteMediaRequestDTO"
-                            }
-                        }
-                    },
-                    "description": "Request body for bulkDelete /api/media/bulk/delete"
-                },
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -1913,10 +2220,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -1966,7 +2275,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/MediaResponseDTO"
                                 }
                             }
                         }
@@ -1979,10 +2288,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2006,24 +2317,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SearchMediaRequestDTO"
-                            }
-                        }
-                    },
-                    "description": "Request body for search /api/media/search"
-                },
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -2036,10 +2336,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2063,24 +2365,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StockSearchRequestDTO"
-                            }
-                        }
-                    },
-                    "description": "Request body for stockSearch /api/media/stock/search"
-                },
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -2093,10 +2384,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2129,14 +2422,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/MediaResponseDTO"
                                 }
                             }
                         }
@@ -2149,10 +2441,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2200,7 +2494,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/MediaResponseDTO"
                                 }
                             }
                         }
@@ -2213,10 +2507,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2247,14 +2543,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -2267,10 +2562,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2294,7 +2591,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2314,10 +2610,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2369,10 +2667,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2396,7 +2716,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2416,10 +2735,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2443,7 +2764,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2463,10 +2783,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2499,7 +2841,6 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2519,10 +2860,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -2583,10 +2926,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2617,7 +2982,6 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2637,10 +3001,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2673,7 +3059,6 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2693,10 +3078,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2729,7 +3136,6 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2749,10 +3155,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2815,10 +3243,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2851,7 +3301,6 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -2871,10 +3320,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2937,10 +3408,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -2964,14 +3457,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -2984,10 +3476,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3026,7 +3520,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ProjectResponseDTO"
                                 }
                             }
                         }
@@ -3039,10 +3533,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3066,24 +3562,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SearchProjectsRequestDTO"
-                            }
-                        }
-                    },
-                    "description": "Request body for publicProjects /api/projects/public"
-                },
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/PaginatedResponseDTO"
                                 }
                             }
                         }
@@ -3096,10 +3581,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3132,14 +3619,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ProjectResponseDTO"
                                 }
                             }
                         }
@@ -3152,10 +3638,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3203,7 +3691,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ProjectResponseDTO"
                                 }
                             }
                         }
@@ -3216,10 +3704,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3250,14 +3740,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -3270,10 +3759,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3323,7 +3814,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ProjectResponseDTO"
                                 }
                             }
                         }
@@ -3336,10 +3827,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3372,14 +3865,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ProjectResponseDTO"
                                 }
                             }
                         }
@@ -3392,10 +3884,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3419,14 +3913,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/TemplateResponseDTO"
                                 }
                             }
                         }
@@ -3439,10 +3932,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3481,7 +3976,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/TemplateResponseDTO"
                                 }
                             }
                         }
@@ -3494,10 +3989,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -3521,14 +4038,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDTO"
                                 }
                             }
                         }
@@ -3541,10 +4057,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3568,24 +4086,13 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SearchTemplateRequestDTO"
-                            }
-                        }
-                    },
-                    "description": "Request body for search /api/templates/search"
-                },
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/TemplateSearchResponseDTO"
                                 }
                             }
                         }
@@ -3598,10 +4105,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3634,14 +4143,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/TemplateResponseDTO"
                                 }
                             }
                         }
@@ -3654,10 +4162,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3690,14 +4200,13 @@
                         }
                     }
                 ],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/DesignResponseDTO"
                                 }
                             }
                         }
@@ -3710,10 +4219,32 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication required"
                                         }
                                     }
                                 }
@@ -3767,10 +4298,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3824,10 +4357,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3851,7 +4386,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3871,10 +4405,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3926,10 +4462,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -3953,7 +4491,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -3973,10 +4510,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -4000,7 +4539,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -4020,10 +4558,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -4047,7 +4587,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -4067,10 +4606,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -4094,7 +4635,6 @@
                     }
                 ],
                 "parameters": [],
-                "requestBody": null,
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -4114,10 +4654,12 @@
                                     "type": "object",
                                     "properties": {
                                         "error": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Bad Request"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Invalid input data"
                                         }
                                     }
                                 }
@@ -4129,7 +4671,1043 @@
         }
     },
     "components": {
-        "schemas": [],
+        "schemas": {
+            "ChangePasswordRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "currentPassword": {
+                        "type": "string"
+                    },
+                    "newPassword": {
+                        "type": "string"
+                    },
+                    "confirmPassword": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "currentPassword",
+                    "newPassword",
+                    "confirmPassword"
+                ]
+            },
+            "SuccessResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            },
+            "LoginRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "email",
+                    "password"
+                ]
+            },
+            "AuthResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "token": {
+                        "type": "string"
+                    },
+                    "user": {
+                        "type": "string"
+                    },
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "message",
+                    "token",
+                    "user"
+                ]
+            },
+            "UserProfileResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "user"
+                ]
+            },
+            "UpdateProfileRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "jobTitle": {
+                        "type": "string"
+                    },
+                    "company": {
+                        "type": "string"
+                    },
+                    "website": {
+                        "type": "string"
+                    },
+                    "portfolio": {
+                        "type": "string"
+                    },
+                    "bio": {
+                        "type": "string"
+                    },
+                    "socialLinks": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "timezone": {
+                        "type": "string"
+                    },
+                    "language": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RegisterRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "description": "User's email address"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "User's password"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "description": "User's first name"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "description": "User's last name"
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "User's optional username"
+                    }
+                },
+                "required": [
+                    "email",
+                    "password",
+                    "firstName",
+                    "lastName"
+                ]
+            },
+            "PaginatedResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "limit": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "totalPages": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "page",
+                    "limit",
+                    "total",
+                    "totalPages"
+                ]
+            },
+            "CreateDesignRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "projectId": {
+                        "type": "integer"
+                    },
+                    "width": {
+                        "type": "integer"
+                    },
+                    "height": {
+                        "type": "integer"
+                    },
+                    "isPublic": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "DesignResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "design": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "designs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "totalPages": {
+                        "type": "integer"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "success",
+                    "message"
+                ]
+            },
+            "UpdateDesignRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "projectId": {
+                        "type": "integer"
+                    },
+                    "width": {
+                        "type": "integer"
+                    },
+                    "height": {
+                        "type": "integer"
+                    },
+                    "isPublic": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "DuplicateDesignRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "projectId": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "UpdateDesignThumbnailRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "thumbnail": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "thumbnail"
+                ]
+            },
+            "ExportJobResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "job": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "jobs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "totalPages": {
+                        "type": "integer"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "success",
+                    "message"
+                ]
+            },
+            "CreateExportJobRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "designId": {
+                        "type": "integer"
+                    },
+                    "format": {
+                        "type": "string"
+                    },
+                    "quality": {
+                        "type": "string"
+                    },
+                    "width": {
+                        "type": "integer"
+                    },
+                    "height": {
+                        "type": "integer"
+                    },
+                    "scale": {
+                        "type": "number"
+                    },
+                    "transparent": {
+                        "type": "boolean"
+                    },
+                    "backgroundColor": {
+                        "type": "string"
+                    },
+                    "animationSettings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "required": [
+                    "designId"
+                ]
+            },
+            "ErrorResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            },
+            "CreateLayerRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "designId": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "properties": {
+                        "type": "string"
+                    },
+                    "transform": {
+                        "type": "string"
+                    },
+                    "zIndex": {
+                        "type": "integer"
+                    },
+                    "visible": {
+                        "type": "boolean"
+                    },
+                    "locked": {
+                        "type": "boolean"
+                    },
+                    "parentLayerId": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "designId",
+                    "type",
+                    "name",
+                    "properties",
+                    "transform"
+                ]
+            },
+            "LayerResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "layer": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "layers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "success",
+                    "message"
+                ]
+            },
+            "BulkUpdateLayersRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "layers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "required": [
+                    "layers"
+                ]
+            },
+            "UpdateLayerRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "properties": {
+                        "type": "string"
+                    },
+                    "transform": {
+                        "type": "string"
+                    },
+                    "zIndex": {
+                        "type": "integer"
+                    },
+                    "visible": {
+                        "type": "boolean"
+                    },
+                    "locked": {
+                        "type": "boolean"
+                    },
+                    "parentLayerId": {
+                        "type": "string"
+                    }
+                }
+            },
+            "DuplicateLayerRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "targetDesignId": {
+                        "type": "string"
+                    }
+                }
+            },
+            "MoveLayerRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "direction": {
+                        "type": "string"
+                    },
+                    "targetZIndex": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "CreateMediaRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "mimeType": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "integer"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "thumbnailUrl": {
+                        "type": "string"
+                    },
+                    "width": {
+                        "type": "integer"
+                    },
+                    "height": {
+                        "type": "integer"
+                    },
+                    "duration": {
+                        "type": "number"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "sourceId": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "attribution": {
+                        "type": "string"
+                    },
+                    "license": {
+                        "type": "string"
+                    },
+                    "isPremium": {
+                        "type": "boolean"
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "name",
+                    "type",
+                    "mimeType",
+                    "size",
+                    "url"
+                ]
+            },
+            "MediaResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "media": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "mediaList": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "totalPages": {
+                        "type": "integer"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "success",
+                    "message"
+                ]
+            },
+            "DuplicateMediaRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "UpdateMediaRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "metadata": {
+                        "type": "string"
+                    },
+                    "isPremium": {
+                        "type": "boolean"
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "isPublic": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "CreatePluginRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "version": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "manifest": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "description",
+                    "categories",
+                    "version",
+                    "permissions",
+                    "manifest"
+                ]
+            },
+            "UpdatePluginRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "version": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "manifest": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RejectPluginRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "UploadPluginFileRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateProjectRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "isPublic": {
+                        "type": "boolean"
+                    },
+                    "settings": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "thumbnail": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "description",
+                    "isPublic",
+                    "settings"
+                ]
+            },
+            "ProjectResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "project": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "projects": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "totalPages": {
+                        "type": "integer"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "success",
+                    "message"
+                ]
+            },
+            "UpdateProjectRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "isPublic": {
+                        "type": "boolean"
+                    },
+                    "settings": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "thumbnail": {
+                        "type": "string"
+                    }
+                }
+            },
+            "DuplicateProjectRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TemplateResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "templates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "totalPages": {
+                        "type": "integer"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "success",
+                    "message"
+                ]
+            },
+            "CreateTemplateRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "width": {
+                        "type": "integer"
+                    },
+                    "height": {
+                        "type": "integer"
+                    },
+                    "canvasSettings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "layers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "thumbnailUrl": {
+                        "type": "string"
+                    },
+                    "previewUrl": {
+                        "type": "string"
+                    },
+                    "isPremium": {
+                        "type": "boolean"
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "name",
+                    "description",
+                    "category",
+                    "tags",
+                    "width",
+                    "height"
+                ]
+            },
+            "TemplateSearchResponseDTO": {
+                "type": "object",
+                "properties": {
+                    "templates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Current page number"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Items per page"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "description": "Total number of templates found"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "description": "Total number of pages"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message"
+                    }
+                },
+                "required": [
+                    "templates",
+                    "page",
+                    "limit",
+                    "total",
+                    "totalPages"
+                ]
+            },
+            "UploadAvatarRequestDTO": {
+                "type": "object",
+                "properties": {
+                    "avatar": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "securitySchemes": {
             "bearerAuth": {
                 "type": "http",
