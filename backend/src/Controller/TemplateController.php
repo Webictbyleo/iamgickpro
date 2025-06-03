@@ -80,7 +80,7 @@ class TemplateController extends AbstractController
                 // If no category, find all public templates
                 $templates = $this->templateRepository->findBy(
                     ['isPublic' => true, 'deletedAt' => null],
-                    ['usageCount' => 'DESC'],
+                    ['usage_count' => 'DESC'],
                     $limit,
                     $offset
                 );
@@ -259,7 +259,7 @@ class TemplateController extends AbstractController
                    ->setParameter('category', $category);
             }
 
-            $templates = $qb->orderBy('t.usageCount', 'DESC')
+            $templates = $qb->orderBy('t.usage_count', 'DESC')
                             ->setMaxResults($dto->limit)
                             ->setFirstResult($offset)
                             ->getQuery()
@@ -298,7 +298,7 @@ class TemplateController extends AbstractController
                     'previewUrl' => $template->getPreviewUrl(),
                     'width' => $template->getWidth(),
                     'height' => $template->getHeight(),
-                    'isPremium' => $template->isIsPremium(),
+                    'isPremium' => $template->isPremium(),
                     'isActive' => $template->isIsActive(),
                     'rating' => (float) $template->getRating(),
                     'ratingCount' => $template->getRatingCount(),
@@ -354,7 +354,7 @@ class TemplateController extends AbstractController
             }
 
             // Check if user has access to premium templates (simplified check)
-            if ($template->isIsPremium() && method_exists($user, 'getPlan') && $user->getPlan() !== 'premium') {
+            if ($template->isPremium() && method_exists($user, 'getPlan') && $user->getPlan() !== 'premium') {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Premium template access required');
                 return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }

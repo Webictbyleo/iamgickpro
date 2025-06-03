@@ -59,7 +59,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->andWhere('t.isPublic = :public')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('public', true)
-            ->orderBy('t.usageCount', 'DESC')
+            ->orderBy('t.usage_count', 'DESC')
             ->addOrderBy('CAST(t.rating AS DECIMAL(3,2))', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
@@ -86,7 +86,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('category', $category)
             ->setParameter('public', true)
-            ->orderBy('t.usageCount', 'DESC')
+            ->orderBy('t.usage_count', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->getQuery()
@@ -115,7 +115,7 @@ class TemplateRepository extends ServiceEntityRepository
                ->setParameter("tag_{$index}", json_encode($tag));
         }
 
-        return $qb->orderBy('t.usageCount', 'DESC')
+        return $qb->orderBy('t.usage_count', 'DESC')
                   ->addOrderBy('t.rating', 'DESC')
                   ->setMaxResults($limit)
                   ->getQuery()
@@ -135,13 +135,13 @@ class TemplateRepository extends ServiceEntityRepository
     public function findPremiumTemplates(int $limit = 20, int $offset = 0): array
     {
         return $this->createQueryBuilder('t')
-            ->andWhere('t.isPremium = :premium')
+            ->andWhere('t.is_premium = :premium')
             ->andWhere('t.isPublic = :public')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('premium', true)
             ->setParameter('public', true)
             ->orderBy('t.rating', 'DESC')
-            ->addOrderBy('t.usageCount', 'DESC')
+            ->addOrderBy('t.usage_count', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->getQuery()
@@ -161,12 +161,12 @@ class TemplateRepository extends ServiceEntityRepository
     public function findFreeTemplates(int $limit = 20, int $offset = 0): array
     {
         return $this->createQueryBuilder('t')
-            ->andWhere('t.isPremium = :premium')
+            ->andWhere('t.is_premium = :premium')
             ->andWhere('t.isPublic = :public')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('premium', false)
             ->setParameter('public', true)
-            ->orderBy('t.usageCount', 'DESC')
+            ->orderBy('t.usage_count', 'DESC')
             ->addOrderBy('t.rating', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
@@ -192,7 +192,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('query', '%' . $query . '%')
             ->setParameter('public', true)
-            ->orderBy('t.usageCount', 'DESC')
+            ->orderBy('t.usage_count', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -213,7 +213,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->andWhere('t.isPublic = :public')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('public', true)
-            ->orderBy('t.usageCount', 'DESC')
+            ->orderBy('t.usage_count', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -238,7 +238,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->setParameter('public', true)
             ->setParameter('minRating', $minRating)
             ->orderBy('CAST(t.rating AS DECIMAL(3,2))', 'DESC')
-            ->addOrderBy('t.usageCount', 'DESC')
+            ->addOrderBy('t.usage_count', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -268,7 +268,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->setParameter('minHeight', $height - $tolerance)
             ->setParameter('maxHeight', $height + $tolerance)
             ->setParameter('public', true)
-            ->orderBy('t.usageCount', 'DESC')
+            ->orderBy('t.usage_count', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -318,7 +318,7 @@ class TemplateRepository extends ServiceEntityRepository
             ->setParameter('recommended', true)
             ->setParameter('public', true)
             ->orderBy('t.rating', 'DESC')
-            ->addOrderBy('t.usageCount', 'DESC')
+            ->addOrderBy('t.usage_count', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -398,7 +398,7 @@ class TemplateRepository extends ServiceEntityRepository
     public function findPopularCategories(int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
-            ->select('t.category', 'COUNT(t.id) as templateCount', 'SUM(t.usageCount) as totalUsage')
+            ->select('t.category', 'COUNT(t.id) as templateCount', 'SUM(t.usage_count) as totalUsage')
             ->andWhere('t.isPublic = :public')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('public', true)
@@ -421,7 +421,7 @@ class TemplateRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('t')
             ->update()
-            ->set('t.usageCount', 't.usageCount + 1')
+            ->set('t.usage_count', 't.usage_count + 1')
             ->where('t.id = :id')
             ->setParameter('id', $template->getId())
             ->getQuery()
@@ -477,7 +477,7 @@ class TemplateRepository extends ServiceEntityRepository
         }
 
         return $qb->orderBy('t.rating', 'DESC')
-                  ->addOrderBy('t.usageCount', 'DESC')
+                  ->addOrderBy('t.usage_count', 'DESC')
                   ->setMaxResults($limit)
                   ->getQuery()
                   ->getResult();

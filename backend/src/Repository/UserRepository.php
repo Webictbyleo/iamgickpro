@@ -95,7 +95,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     public function findActiveUsers(): array
     {
         return $this->createQueryBuilder('u')
-            ->andWhere('u.isVerified = :verified')
+            ->andWhere('u.emailVerified = :verified')
             ->andWhere('u.deletedAt IS NULL')
             ->setParameter('verified', true)
             ->orderBy('u.createdAt', 'DESC')
@@ -197,7 +197,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return (int) $this->createQueryBuilder('u')
             ->select('COUNT(u.id)')
-            ->andWhere('u.isVerified = :verified')
+            ->andWhere('u.emailVerified = :verified')
             ->andWhere('u.deletedAt IS NULL')
             ->setParameter('verified', true)
             ->getQuery()

@@ -60,11 +60,20 @@ class Project
     #[Groups(['project:read', 'project:write'])]
     private array $tags = [];
 
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
+    #[Groups(['project:read', 'project:write'])]
+    private string $name;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
+
     public function __construct()
     {
         $this->uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->designs = new ArrayCollection();
+        $this->name = ''; // Will be set by setName() or setTitle()
     }
 
     public function getId(): ?int
@@ -80,6 +89,7 @@ class Project
     public function setTitle(string $title): self
     {
         $this->title = $title;
+        $this->name = $title; // Keep name in sync with title
         $this->touch();
         return $this;
     }
@@ -187,14 +197,37 @@ class Project
 
     public function getName(): string
     {
-        return $this->title;
+        return $this->name;
     }
 
     public function setName(string $name): self
     {
-        $this->title = $name;
+        $this->name = $name;
+        $this->title = $name; // Keep title in sync with name
         $this->touch();
         return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function delete(): self
+    {
+        $this->deletedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function restore(): self
+    {
+        $this->deletedAt = null;
+        return $this;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 
     private function touch(): void

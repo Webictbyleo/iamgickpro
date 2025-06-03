@@ -136,6 +136,10 @@ class Plugin
     #[Groups(['plugin:admin'])]
     private ?\DateTimeImmutable $updated_at = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['plugin:admin'])]
+    private ?\DateTimeImmutable $deletedAt = null;
+
     public function __construct()
     {
         $this->uuid = Uuid::v4();
@@ -431,6 +435,34 @@ class Plugin
     {
         $this->updated_at = $updated_at;
         return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deletedAt): static
+    {
+        $this->deletedAt = $deletedAt;
+        return $this;
+    }
+
+    public function delete(): static
+    {
+        $this->deletedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function restore(): static
+    {
+        $this->deletedAt = null;
+        return $this;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 
     #[ORM\PreUpdate]

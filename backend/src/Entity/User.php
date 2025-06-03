@@ -59,6 +59,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read'])]
     private bool $emailVerified = false;
 
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['user:read'])]
+    private bool $isVerified = false;
+
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['user:read'])]
     private ?\DateTimeImmutable $lastLoginAt = null;
@@ -145,6 +149,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     #[Groups(['user:read', 'user:write'])]
     private array $socialLinks = [];
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['user:read'])]
+    private ?\DateTimeImmutable $deletedAt = null;
 
     public function __construct()
     {
@@ -657,5 +665,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->socialLinks = $socialLinks;
         $this->touch();
         return $this;
+    }
+
+    public function getIsVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setIsVerified(bool $isVerified): self
+    {
+        $this->isVerified = $isVerified;
+        $this->touch();
+        return $this;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->getIsVerified();
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deletedAt): self
+    {
+        $this->deletedAt = $deletedAt;
+        return $this;
+    }
+
+    public function delete(): self
+    {
+        $this->deletedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function restore(): self
+    {
+        $this->deletedAt = null;
+        $this->touch();
+        return $this;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 }

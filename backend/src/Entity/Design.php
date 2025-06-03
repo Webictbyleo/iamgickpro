@@ -25,6 +25,15 @@ class Design
     #[Groups(['design:read', 'design:write'])]
     private string $title;
 
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
+    #[Groups(['design:read', 'design:write'])]
+    private string $name;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['design:read', 'design:write'])]
+    private ?string $description = null;
+
     #[ORM\Column(type: 'json')]
     #[Groups(['design:read', 'design:write'])]
     private array $data = [];
@@ -54,6 +63,7 @@ class Design
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['design:read'])]
     private readonly \DateTimeImmutable $createdAt;
+    
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['design:read'])]
@@ -83,11 +93,21 @@ class Design
     #[Groups(['design:read', 'design:write'])]
     private ?string $thumbnail = null;
 
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['design:read', 'design:write'])]
+    private bool $isPublic = false;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['design:admin'])]
+    private ?\DateTimeImmutable $deletedAt = null;
+
     public function __construct()
     {
         $this->uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->layers = new ArrayCollection();
+        $this->title = 'Untitled Design';
+        $this->name = $this->title; // Keep name in sync with title
     }
 
     public function getId(): ?int
@@ -103,6 +123,32 @@ class Design
     public function setTitle(string $title): self
     {
         $this->title = $title;
+        $this->touch();
+        return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        // Keep title in sync with name for backward compatibility
+        $this->title = $name;
+        $this->touch();
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
         $this->touch();
         return $this;
     }
@@ -214,16 +260,6 @@ class Design
         return $this;
     }
 
-    public function getName(): string
-    {
-        return $this->title;
-    }
-
-    public function setName(string $name): self
-    {
-        return $this->setTitle($name);
-    }
-
     public function getUuid(): string
     {
         return $this->uuid;
@@ -333,6 +369,46 @@ class Design
         $this->thumbnail = $thumbnail;
         $this->touch();
         return $this;
+    }
+
+    public function getIsPublic(): bool
+    {
+        return $this->isPublic;
+    }
+
+    public function setIsPublic(bool $isPublic): self
+    {
+        $this->isPublic = $isPublic;
+        $this->touch();
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deletedAt): self
+    {
+        $this->deletedAt = $deletedAt;
+        return $this;
+    }
+
+    public function delete(): self
+    {
+        $this->deletedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function restore(): self
+    {
+        $this->deletedAt = null;
+        return $this;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 
     private function touch(): void

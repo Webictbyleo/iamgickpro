@@ -96,6 +96,14 @@ class Template
     #[Groups(['template:admin'])]
     private bool $is_active = true;
 
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['template:read', 'template:admin'])]
+    private bool $isPublic = false;
+
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['template:read', 'template:admin'])]
+    private bool $isRecommended = false;
+
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     #[Groups(['template:read', 'template:admin'])]
     private int $usage_count = 0;
@@ -120,6 +128,10 @@ class Template
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['template:admin'])]
     private ?\DateTimeImmutable $updated_at = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['template:admin'])]
+    private ?\DateTimeImmutable $deletedAt = null;
 
     public function __construct()
     {
@@ -254,7 +266,7 @@ class Template
         return $this;
     }
 
-    public function isIsPremium(): bool
+    public function isPremium(): bool
     {
         return $this->is_premium;
     }
@@ -265,7 +277,7 @@ class Template
         return $this;
     }
 
-    public function isIsActive(): bool
+    public function isActive(): bool
     {
         return $this->is_active;
     }
@@ -346,6 +358,66 @@ class Template
     {
         $this->updated_at = $updated_at;
         return $this;
+    }
+
+    public function getIsPublic(): bool
+    {
+        return $this->isPublic;
+    }
+
+    public function setIsPublic(bool $isPublic): static
+    {
+        $this->isPublic = $isPublic;
+        return $this;
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->getIsPublic();
+    }
+
+    public function getIsRecommended(): bool
+    {
+        return $this->isRecommended;
+    }
+
+    public function setIsRecommended(bool $isRecommended): static
+    {
+        $this->isRecommended = $isRecommended;
+        return $this;
+    }
+
+    public function isRecommended(): bool
+    {
+        return $this->getIsRecommended();
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deletedAt): static
+    {
+        $this->deletedAt = $deletedAt;
+        return $this;
+    }
+
+    public function delete(): static
+    {
+        $this->deletedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function restore(): static
+    {
+        $this->deletedAt = null;
+        return $this;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 
     #[ORM\PreUpdate]

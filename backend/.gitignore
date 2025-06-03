@@ -17,3 +17,13 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+###> doctrine/orm ###
+/.phpunit.result.cache
+/.phpunit.result.cache.json
+### Migration files ###
+/migrations/*.php
+### Debug files ###
+debug_**.php
+##  Testing files ##
+/test*.php
+/create_test*.php
