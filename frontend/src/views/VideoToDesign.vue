@@ -97,7 +97,8 @@
       <div v-if="videoInfo" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         <h2 class="text-xl font-semibold text-gray-900 mb-6">Thumbnail Generation Options</h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Single Column Layout -->
+        <div class="max-w-2xl mx-auto space-y-8">
           <!-- Thumbnail Style Selection with HeadlessUI Listbox -->
           <div>
             <Listbox v-model="selectedThumbnailStyle">
@@ -183,6 +184,19 @@
                 </transition>
               </div>
             </Listbox>
+            
+            <!-- Descriptive Text Below Style Selection -->
+            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-start space-x-3">
+                <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="text-sm text-blue-800">
+                  <p class="font-medium mb-1">Style Selection Tip</p>
+                  <p>Each style is optimized for different content types. The AI will analyze your video content and apply the selected style's characteristics including color schemes, typography, and layout patterns that perform best on YouTube.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Generation Settings -->
@@ -190,7 +204,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-3">
               Generation Settings
             </label>
-            <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-gray-600 mb-1">Number of Thumbnails</label>
                 <select
@@ -217,38 +231,41 @@
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Custom Thumbnail Prompt -->
-        <div class="mt-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Custom Instructions (Optional)
-          </label>
-          <textarea
-            v-model="customPrompt"
-            rows="3"
-            placeholder="e.g., 'Make it more dramatic', 'Use bright colors', 'Focus on the main subject', 'Add arrows pointing to key elements'..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
-          />
-        </div>
+          <!-- Custom Thumbnail Prompt -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Custom Instructions (Optional)
+            </label>
+            <textarea
+              v-model="customPrompt"
+              rows="3"
+              placeholder="e.g., 'Make it more dramatic', 'Use bright colors', 'Focus on the main subject', 'Add arrows pointing to key elements'..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+            />
+            <p class="mt-2 text-xs text-gray-500">
+              Provide specific instructions to customize your thumbnails. The AI will incorporate these preferences along with your selected style.
+            </p>
+          </div>
 
-        <!-- Generate Button -->
-        <div class="mt-8 text-center">
-          <button
-            @click="generateThumbnails"
-            :disabled="isProcessing"
-            class="px-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:from-red-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center mx-auto space-x-3 shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            <svg v-if="isProcessing" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span v-if="isProcessing">Generating Thumbnails...</span>
-            <span v-else>🎬 Generate YouTube Thumbnails</span>
-          </button>
+          <!-- Generate Button -->
+          <div class="text-center">
+            <button
+              @click="generateThumbnails"
+              :disabled="isProcessing"
+              class="px-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:from-red-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center mx-auto space-x-3 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <svg v-if="isProcessing" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span v-if="isProcessing">Generating Thumbnails...</span>
+              <span v-else">🎬 Generate YouTube Thumbnails</span>
+            </button>
+          </div>
         </div>
       </div>
 
