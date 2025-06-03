@@ -57,6 +57,13 @@
                   :type="showOpenAiKey ? 'text' : 'password'"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-20"
                   placeholder="sk-..."
+                  autocomplete="new-password"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  data-1p-ignore="true"
                 />
                 <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                   <button
@@ -147,6 +154,13 @@
                   :type="showRemoveBgKey ? 'text' : 'password'"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors pr-20"
                   placeholder="Enter your Remove.bg API key"
+                  autocomplete="new-password"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  data-1p-ignore="true"
                 />
                 <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                   <button
