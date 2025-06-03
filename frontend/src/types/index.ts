@@ -264,6 +264,8 @@ export interface DesignSearchParams extends SearchParams {
 export interface TemplateSearchParams extends SearchParams {
   category?: string
   is_premium?: boolean
+  q?: string // Add search query parameter
+  tags?: string
   sort_by?: 'created_at' | 'updated_at' | 'name' | 'popularity'
 }
 
@@ -843,6 +845,135 @@ export interface LayersApiResponse extends BaseApiResponse {
   data: {
     layers: Layer[]
   }
+}
+
+// ============================================================================
+// YOUTUBE VIDEO ANALYSIS TYPES
+// ============================================================================
+
+export interface YouTubeVideoInfo {
+  videoId: string
+  title: string
+  description: string
+  thumbnailUrl: string
+  duration: number
+  channelTitle: string
+  publishedAt: string
+  viewCount: number
+  tags: string[]
+}
+
+export interface VideoAnalysisResult {
+  videoInfo: YouTubeVideoInfo
+  extractedFrames: VideoFrame[]
+  transcript?: string
+  keyMoments: KeyMoment[]
+  suggestedDesigns: DesignSuggestion[]
+  colorPalette: ColorPalette
+  dominantThemes: string[]
+}
+
+export interface VideoFrame {
+  timestamp: number
+  imageUrl: string
+  description?: string
+  confidence: number
+}
+
+export interface KeyMoment {
+  timestamp: number
+  description: string
+  importance: number
+  frameUrl: string
+}
+
+export interface DesignSuggestion {
+  id: string
+  title: string
+  description: string
+  category: string
+  thumbnailUrl: string
+  designData: DesignData
+  width: number
+  height: number
+  confidence: number
+  sourceFrames: number[]
+  tags: string[]
+}
+
+export interface ColorPalette {
+  primary: string
+  secondary: string
+  accent: string
+  neutral: string
+  colors: string[]
+}
+
+export interface GenerateDesignFromVideoRequest {
+  videoUrl: string
+  designTypes?: DesignType[]
+  maxDesigns?: number
+  includeTranscript?: boolean
+  extractFrames?: boolean
+  customPrompt?: string
+}
+
+export interface GenerateDesignFromVideoResponse {
+  jobId: string
+  status: 'processing' | 'completed' | 'failed'
+  progress: number
+  result?: VideoAnalysisResult
+  errorMessage?: string
+  estimatedTime?: number
+}
+
+export enum DesignType {
+  SOCIAL_MEDIA = 'social_media',
+  PRESENTATION = 'presentation',
+  POSTER = 'poster',
+  THUMBNAIL = 'thumbnail',
+  BANNER = 'banner',
+  INFOGRAPHIC = 'infographic'
+}
+
+// ============================================================================
+// VIDEO ANALYSIS API RESPONSE TYPES
+// ============================================================================
+
+export interface VideoAnalysisApiResponse extends BaseApiResponse {
+  data: {
+    job: GenerateDesignFromVideoResponse
+  }
+}
+
+export interface VideoAnalysisJobApiResponse extends BaseApiResponse {
+  data: {
+    job: GenerateDesignFromVideoResponse
+  }
+}
+
+export interface VideoAnalysisJobsApiResponse extends BaseApiResponse {
+  data: {
+    jobs: GenerateDesignFromVideoResponse[]
+    pagination: {
+      total: number
+      page: number
+      totalPages: number
+    }
+  }
+}
+
+export interface ThumbnailGenerationRequest extends GenerateDesignFromVideoRequest {
+  thumbnailStyles?: string[]
+  thumbnailSize?: string
+  includeTitle?: boolean
+  includeChannelBranding?: boolean
+}
+
+export interface ThumbnailDesign extends DesignSuggestion {
+  style: string
+  clickThroughRate?: number
+  engagement?: number
 }
 
 

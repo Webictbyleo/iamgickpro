@@ -38,7 +38,7 @@
       <!-- Templates Grid -->
       <TemplateGrid
         title=""
-        :templates="filteredTemplates"
+        :templates="templates"
         :loading="isLoading"
         :loading-count="8"
         :show-view-all="false"
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -65,69 +65,116 @@ const searchQuery = ref('')
 const selectedCategory = ref('')
 const templates = ref<Template[]>([])
 const isLoading = ref(false)
+const currentPage = ref(1)
+const hasMorePages = ref(true)
 
-const filteredTemplates = computed(() => {
-  let filtered = templates.value
-  
-  if (searchQuery.value) {
-    filtered = filtered.filter(template =>
-      template.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      template.description?.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  }
-  
-  if (selectedCategory.value) {
-    filtered = filtered.filter(template => template.category === selectedCategory.value)
-  }
-  
-  return filtered
-})
+// Debounce timer for search
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-const loadTemplates = async () => {
+const loadTemplates = async (resetList = false) => {
   try {
     isLoading.value = true
-    const response = await templateAPI.getTemplates({
-      page: 1,
-      limit: 50
-    })
     
-    if (response.data) {
-      templates.value = response.data.data
+    // Reset page if this is a new search
+    if (resetList) {
+      currentPage.value = 1
+      templates.value = []
+    }
+
+    const params: any = {
+      page: currentPage.value,
+      limit: 20
+    }
+
+    // Use search API if there's a query or category filter
+    if (searchQuery.value || selectedCategory.value) {
+      if (searchQuery.value) params.q = searchQuery.value
+      if (selectedCategory.value) params.category = selectedCategory.value
+      
+      const response = await templateAPI.searchTemplates(params)
+      
+      if (response.data) {
+        const newTemplates = response.data.data.templates
+        templates.value = resetList ? newTemplates : [...templates.value, ...newTemplates]
+        hasMorePages.value = response.data.data.pagination.page < response.data.data.pagination.totalPages
+      }
+    } else {
+      // Use regular getTemplates for no filters
+      const response = await templateAPI.getTemplates(params)
+      
+      if (response.data) {
+        const newTemplates = response.data.data.templates
+        templates.value = resetList ? newTemplates : [...templates.value, ...newTemplates]
+        hasMorePages.value = response.data.data.pagination.page < response.data.data.pagination.totalPages
+      }
     }
   } catch (error) {
     console.error('Failed to load templates:', error)
-    templates.value = []
+    if (resetList) {
+      templates.value = []
+    }
   } finally {
     isLoading.value = false
   }
 }
 
+// Watch for search query changes with debounce
+watch(searchQuery, (newQuery) => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  searchTimeout = setTimeout(() => {
+    loadTemplates(true)
+  }, 300)
+})
+
+// Watch for category changes
+watch(selectedCategory, () => {
+  loadTemplates(true)
+})
+
 onMounted(() => {
-  loadTemplates()
+  loadTemplates(true)
 })
 
 const handleTemplateSelected = async (template: Template) => {
-  // Create new design from template
-  const newDesign = designStore.createNewDesign(
-    template.dimensions.width,
-    template.dimensions.height
-  )
-  
-  // Copy template data to design
-  if (template.designData) {
-    newDesign.designData = { ...template.designData }
-  }
-  
-  newDesign.name = `${template.name} Copy`
-  
-  // Save the design first
-  const result = await designStore.saveDesign(newDesign)
-  
-  if (result.success) {
-    // Navigate to editor
-    router.push(`/editor/${newDesign.id}`)
-  } else {
-    console.error('Failed to create design from template:', result.error)
+  try {
+    // Use the template API to create a design from template
+    const response = await templateAPI.useTemplate(template.uuid, {
+      name: `${template.name} Copy`
+    })
+    
+    if (response.data) {
+      // Navigate to editor with the new design
+      router.push(`/editor/${response.data.data.id}`)
+    }
+  } catch (error) {
+    console.error('Failed to create design from template:', error)
+    
+    // Fallback to manual creation if API fails
+    try {
+      const newDesign = designStore.createNewDesign(
+        template.width,
+        template.height
+      )
+      
+      if (template.designData) {
+        newDesign.designData = { ...template.designData }
+      }
+      
+      newDesign.name = `${template.name} Copy`
+      
+      const result = await designStore.saveDesign(newDesign)
+      
+      if (result.success) {
+        router.push(`/editor/${newDesign.id}`)
+      } else {
+        console.error('Failed to save design:', result.error)
+      }
+    } catch (fallbackError) {
+      console.error('Fallback creation also failed:', fallbackError)
+    }
   }
 }
 </script>

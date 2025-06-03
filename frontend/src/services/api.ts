@@ -56,7 +56,12 @@ import type {
   LayersApiResponse,
   PluginApiResponse,
   PluginsApiResponse,
-  PluginCategoriesApiResponse
+  PluginCategoriesApiResponse,
+  YouTubeVideoInfo,
+  GenerateDesignFromVideoRequest,
+  VideoAnalysisApiResponse,
+  VideoAnalysisJobApiResponse,
+  VideoAnalysisJobsApiResponse
 } from '@/types'
 
 // Authentication API - aligned with AuthController
@@ -467,15 +472,8 @@ export const templateAPI = {
   getCategories: () => api.get<ApiResponse<string[]>>('/templates/categories'),
 
   // GET /templates/search
-  searchTemplates: (params: {
-    q: string
-    category?: string
-    tags?: string
-    page?: number
-    limit?: number
-    sort?: string
-    order?: string
-  }) => api.get<TemplatesApiResponse>('/templates/search', { params }),
+  searchTemplates: (params: TemplateSearchParams) => 
+    api.get<TemplatesApiResponse>('/templates/search', { params }),
 
   // GET /templates/{uuid}
   getTemplate: (uuid: string) => api.get<ApiResponse<Template>>(`/templates/${uuid}`),
@@ -611,3 +609,35 @@ export const collaborationAPI = {
 }
 
 // ============================================================================
+// YOUTUBE VIDEO ANALYSIS API
+// ============================================================================
+
+// YouTube Video Analysis API - for generating designs from video content
+export const videoAnalysisAPI = {
+  // POST /video-analysis/generate - Generate designs from YouTube video
+  generateDesignsFromVideo: (data: GenerateDesignFromVideoRequest) =>
+    api.post<VideoAnalysisApiResponse>('/video-analysis/generate', data),
+
+  // GET /video-analysis/jobs/{jobId} - Get video analysis job status
+  getAnalysisJob: (jobId: string) =>
+    api.get<VideoAnalysisJobApiResponse>(`/video-analysis/jobs/${jobId}`),
+
+  // GET /video-analysis/jobs - Get user's video analysis jobs
+  getAnalysisJobs: (params?: {
+    page?: number
+    limit?: number
+    status?: 'processing' | 'completed' | 'failed'
+  }) => api.get<VideoAnalysisJobsApiResponse>('/video-analysis/jobs', { params }),
+
+  // DELETE /video-analysis/jobs/{jobId} - Delete analysis job
+  deleteAnalysisJob: (jobId: string) =>
+    api.delete<ApiResponse<{ message: string }>>(`/video-analysis/jobs/${jobId}`),
+
+  // POST /video-analysis/jobs/{jobId}/retry - Retry failed analysis
+  retryAnalysisJob: (jobId: string) =>
+    api.post<VideoAnalysisJobApiResponse>(`/video-analysis/jobs/${jobId}/retry`),
+
+  // GET /video-analysis/extract-info - Extract basic video info from URL
+  extractVideoInfo: (params: { videoUrl: string }) =>
+    api.get<ApiResponse<YouTubeVideoInfo>>('/video-analysis/extract-info', { params }),
+}

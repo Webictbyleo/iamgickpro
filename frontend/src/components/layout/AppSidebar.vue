@@ -69,6 +69,24 @@
             </div>
           </router-link>
 
+          <!-- AI Design Generator -->
+          <router-link
+            to="/video-to-design"
+            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors group"
+            :class="isActive('/video-to-design') ? 'bg-gradient-to-r from-purple-100 to-primary-100 text-purple-700' : 'text-gray-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-primary-50 hover:text-purple-700'"
+          >
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <div class="flex flex-col items-start">
+              <span>YouTube to Design</span>
+              <span class="text-xs opacity-75">AI Video Analysis</span>
+            </div>
+            <span class="ml-auto px-2 py-1 text-xs font-medium bg-gradient-to-r from-purple-500 to-primary-500 text-white rounded-full">
+              AI
+            </span>
+          </router-link>
+
           <!-- Stock Media -->
           <router-link
             to="/media"
@@ -151,7 +169,7 @@
                 <component :is="icons.document" class="w-4 h-4 text-gray-500 group-hover:text-violet-600" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="truncate font-medium">{{ project.title }}</p>
+                <p class="truncate font-medium">{{ project.name }}</p>
                 <p class="text-xs text-gray-400">{{ formatDate(project.updatedAt) }}</p>
               </div>
             </router-link>
@@ -258,6 +276,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useExportsStore } from '@/stores/exports'
 import { useIcons } from '@/composables/useIcons'
@@ -278,6 +297,7 @@ defineEmits<{
 const authStore = useAuthStore()
 const exportsStore = useExportsStore()
 const icons = useIcons()
+const route = useRoute()
 
 const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
 const appSubtitle = computed(() => import.meta.env.VITE_APP_SUBTITLE || 'Design Studio')
@@ -314,6 +334,10 @@ const formatDate = (date: string | Date) => {
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
   return d.toLocaleDateString()
+}
+
+const isActive = (path: string): boolean => {
+  return route.path.startsWith(path)
 }
 </script>
 
