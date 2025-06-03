@@ -29,6 +29,16 @@ import type {
   MediaSearchParams,
   ExportJobSearchParams,
   StockMediaSearchParams,
+  SearchResult,
+  ContentFilter,
+  UnifiedSearchParams,
+  SearchResponseData,
+  UnifiedSearchApiResponse,
+  GlobalSearchApiResponse,
+  ProjectSearchApiResponse,
+  TemplateSearchApiResponse,
+  MediaSearchApiResponse,
+  SearchSuggestionApiResponse,
   DesignsApiResponse,
   TemplatesApiResponse,
   MediaListApiResponse,
@@ -527,43 +537,77 @@ export const userAPI = {
   getSubscription: () => api.get<ApiResponse<UserSubscription>>('/user/subscription'),
 }
 
-// Search API - Additional endpoints for global search
+// ============================================================================
+// UNIFIED SEARCH API
+// ============================================================================
+
+// Unified Search API - provides global search across all content types
 export const searchAPI = {
-  // Global search across all entities
-  globalSearch: (params: {
-    q: string
-    type?: 'designs' | 'templates' | 'projects' | 'media'
+  // GET /search - Global search across designs, templates, media, and exports
+  unifiedSearch: (params: UnifiedSearchParams) => 
+    api.get<GlobalSearchApiResponse>('/search', { params }),
+
+  // GET /search/templates - Search specifically for templates
+  searchTemplates: (params: {
+    q?: string
+    category?: string
+    tags?: string
     page?: number
     limit?: number
-  }) => api.get<ApiResponse<{
-    designs: Design[]
-    templates: Template[]
-    projects: Project[]
-    media: MediaItem[]
-    totalResults: number
-  }>>('/search', { params }),
+  }) => api.get<TemplateSearchApiResponse>('/search/templates', { params }),
+
+  // GET /search/media - Search specifically for media files
+  searchMedia: (params: {
+    q?: string
+    type?: 'image' | 'video' | 'audio'
+    page?: number
+    limit?: number
+  }) => api.get<MediaSearchApiResponse>('/search/media', { params }),
+
+  // GET /search/projects - Search specifically for user projects
+  searchProjects: (params: {
+    q?: string
+    page?: number
+    limit?: number
+  }) => api.get<ProjectSearchApiResponse>('/search/projects', { params }),
+
+  // GET /search/suggestions - Get search suggestions
+  getSearchSuggestions: (params: {
+    q?: string
+    limit?: number
+  }) => api.get<SearchSuggestionApiResponse>('/search/suggestions', { params }),
 }
 
-// Analytics API (if exists)
+// ============================================================================
+// ANALYTICS API
+// ============================================================================
+
+// Analytics API - provides analytics and dashboard statistics
 export const analyticsAPI = {
-  // Get dashboard stats
+  // GET /analytics/dashboard - Get dashboard stats
   getDashboardStats: () => api.get<ApiResponse<DashboardStats>>('/analytics/dashboard'),
 
-  // Get design analytics
+  // GET /analytics/designs/{id} - Get design analytics
   getDesignAnalytics: (designId: string) => 
     api.get<ApiResponse<DesignAnalytics>>(`/analytics/designs/${designId}`),
 }
 
-// Collaboration API (for future features)
+// ============================================================================
+// COLLABORATION API
+// ============================================================================
+
+// Collaboration API - provides sharing and collaboration features
 export const collaborationAPI = {
-  // Share design
+  // POST /designs/{id}/share - Share design
   shareDesign: (designId: string, data: ShareDesignData) => 
     api.post<ApiResponse<ShareResponse>>(`/designs/${designId}/share`, data),
 
-  // Get shared designs
+  // GET /designs/shared - Get shared designs
   getSharedDesigns: () => api.get<DesignsApiResponse>('/designs/shared'),
 
-  // Get design collaborators
+  // GET /designs/{id}/collaborators - Get design collaborators
   getCollaborators: (designId: string) => 
     api.get<ApiResponse<Collaborator[]>>(`/designs/${designId}/collaborators`),
 }
+
+// ============================================================================

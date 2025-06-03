@@ -419,12 +419,14 @@ class EnhancedApiDocGenerator
         
         foreach ($allRoutes as $name => $route) {
             // Filter for API routes
-            if (str_starts_with($name, 'api_') && str_starts_with($route['path'], '/api/')) {
+            if (str_starts_with($route['path'], '/api/')) {
                 $controller = $route['defaults']['_controller'] ?? null;
                 
                 if (!$controller) {
                     continue;
                 }
+
+                $this->output->writeln(sprintf('<info>Processing route: %s (%s)</info>', $name, $route['path']));
                 
                 // Parse controller and action
                 [$controllerClass, $action] = $this->parseControllerAction($controller);

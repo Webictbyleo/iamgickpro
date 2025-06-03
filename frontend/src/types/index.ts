@@ -287,20 +287,214 @@ export interface StockMediaSearchParams extends PaginationParams {
 }
 
 // ============================================================================
+// UNIFIED SEARCH TYPES
+// ============================================================================
+
+export interface SearchResult {
+  id: string
+  type: 'design' | 'template' | 'media' | 'export'
+  title: string
+  description?: string
+  thumbnail?: string
+  url?: string
+  author?: string
+  created_at: string
+  isPremium?: boolean
+  exportStatus?: 'pending' | 'processing' | 'completed' | 'failed'
+  hasAnimation?: boolean
+  isVideo?: boolean
+  duration?: number // in seconds for videos/animations
+  width?: number
+  height?: number
+  stats?: {
+    likes: number
+    views: number
+    downloads?: number
+  }
+}
+
+export interface ContentFilter {
+  type: string
+  label: string
+  icon: string
+  count: number
+}
+
+export interface UnifiedSearchParams extends PaginationParams {
+  q?: string
+  type?: 'all' | 'design' | 'template' | 'media' | 'export'
+  sort?: 'relevance' | 'newest' | 'popular' | 'name'
+  filters?: string[]
+}
+
+// Specialized search response types to match backend DTOs
+// Types for search results matching backend DTOs
+export interface GlobalSearchItem {
+  id: number
+  name: string
+  description?: string | null
+  thumbnail?: string | null
+  thumbnail_url?: string | null
+  category?: string
+  tags?: string[] | null
+  is_premium?: boolean
+  mime_type?: string
+  size?: number
+  url?: string
+  created_at?: string | null
+  updatedAt?: string
+  type: string
+}
+
+export interface ProjectSearchItem {
+  id: number
+  name: string
+  description: string | null
+  thumbnail: string | null
+  updatedAt: string
+  type: string
+}
+
+export interface TemplateSearchItem {
+  id: number
+  uuid: string
+  name: string
+  description: string
+  category: string
+  tags: string[]
+  thumbnailUrl: string
+  previewUrl: string
+  width: number
+  height: number
+  isPremium: boolean
+  isActive: boolean
+  rating: number
+  ratingCount: number
+  usageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MediaSearchItem {
+  id: number
+  name: string
+  type: string
+  mime_type: string
+  size: number
+  url: string
+  thumbnail_url: string | null
+  tags: string[] | null
+  created_at: string | null
+}
+
+export interface GlobalSearchResponseData {
+  results: GlobalSearchItem[]
+  query: string
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  message: string
+}
+
+export interface ProjectSearchResponseData {
+  projects: ProjectSearchItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
+}
+
+export interface TemplateSearchResponseData {
+  templates: TemplateSearchItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
+}
+
+export interface MediaSearchResponseData {
+  media: MediaSearchItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
+}
+
+export interface SearchSuggestionResponseData {
+  suggestions: Array<{
+    text: string
+    type: string
+  }>
+  query: string
+  message: string
+}
+
+// Unified search response types for different search endpoints
+export interface GlobalSearchApiResponse extends BaseApiResponse {
+  data: GlobalSearchResponseData
+}
+
+export interface ProjectSearchApiResponse extends BaseApiResponse {
+  data: ProjectSearchResponseData
+}
+
+export interface TemplateSearchApiResponse extends BaseApiResponse {
+  data: TemplateSearchResponseData
+}
+
+export interface MediaSearchApiResponse extends BaseApiResponse {
+  data: MediaSearchResponseData
+}
+
+export interface SearchSuggestionApiResponse extends BaseApiResponse {
+  data: SearchSuggestionResponseData
+}
+
+// Legacy unified response for backward compatibility
+export interface SearchResponseData {
+  results: SearchResult[]
+  total: number
+  pagination?: {
+    page: number
+    limit: number
+    pages: number
+    total: number
+  }
+}
+
+export interface UnifiedSearchApiResponse extends BaseApiResponse {
+  data: SearchResponseData
+}
+
+// ============================================================================
 // ANALYTICS AND DASHBOARD TYPES
 // ============================================================================
 
 export interface DashboardStats {
-  total_designs: number
-  total_templates_used: number
-  active_projects: number
-  storage_used: number
-  export_count: number
-  monthly_growth: {
-    designs: number
-    exports: number
-    templates: number
+  overview: {
+    totalDesigns: number
+    totalProjects: number
+    totalExports: number
+    completedExports: number
+    storageUsed: number
+    successRate: number
   }
+  recentActivity: Array<{
+    date: string
+    designs_created: number
+    exports_completed: number
+    projects_created: number
+  }>
 }
 
 export interface DesignAnalytics {

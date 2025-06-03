@@ -9,7 +9,7 @@
           </svg>
         </div>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-        <p class="text-gray-600">Join IamGickPro and start designing</p>
+        <p class="text-gray-600">Join {{ appTitle }} and start designing</p>
       </div>
 
       <!-- Register Form -->
@@ -239,6 +239,9 @@ const lastNameError = ref('')
 const emailError = ref('')
 const passwordError = ref('')
 const confirmPasswordError = ref('')
+
+// Computed properties
+const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
 
 // Password strength calculation
 const passwordStrength = computed(() => {

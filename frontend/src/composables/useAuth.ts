@@ -46,7 +46,8 @@ export const useAuth = () => {
       const result = await authStore.register(data)
       
       if (result.success) {
-        success('Account Created!', `Welcome to IamGickPro, ${result.user?.firstName}!`)
+        const appTitle = import.meta.env.VITE_APP_TITLE || 'Design Studio'
+        success('Account Created!', `Welcome to ${appTitle}, ${result.user?.firstName}!`)
         router.push('/dashboard')
       } else {
         error('Registration Failed', result.error || 'Registration failed')

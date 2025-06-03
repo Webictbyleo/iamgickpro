@@ -8,12 +8,16 @@ use App\DTO\Response\AuthResponseDTO;
 use App\DTO\Response\DesignResponseDTO;
 use App\DTO\Response\ErrorResponseDTO;
 use App\DTO\Response\ExportJobResponseDTO;
+use App\DTO\Response\GlobalSearchResponseDTO;
 use App\DTO\Response\LayerResponseDTO;
 use App\DTO\Response\MediaResponseDTO;
+use App\DTO\Response\MediaSearchResponseDTO;
 use App\DTO\Response\PaginatedResponseDTO;
 use App\DTO\Response\PluginResponseDTO;
 use App\DTO\Response\ProjectResponseDTO;
+use App\DTO\Response\ProjectSearchResponseDTO;
 use App\DTO\Response\SearchResponseDTO;
+use App\DTO\Response\SearchSuggestionResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\Response\TemplateResponseDTO;
 use App\DTO\Response\TemplateSearchResponseDTO;
@@ -559,6 +563,124 @@ class ResponseDTOFactory
     {
         return TemplateSearchResponseDTO::create(
             templates: $templates,
+            page: $page,
+            limit: $limit,
+            total: $total,
+            message: $message
+        );
+    }
+
+    /**
+     * Create project search response with project data array
+     *
+     * @param array<int, array{
+     *     id: int,
+     *     name: string,
+     *     description: string|null,
+     *     thumbnail: string|null,
+     *     updatedAt: string,
+     *     type: string
+     * }> $projects Array of project data with specific structure
+     * @param int $page Current page number
+     * @param int $limit Items per page
+     * @param int $total Total number of projects found
+     * @param string $message Response message
+     * @return ProjectSearchResponseDTO
+     */
+    public function createProjectSearchResponse(array $projects, int $page, int $limit, int $total, string $message = 'Project search completed successfully'): ProjectSearchResponseDTO
+    {
+        return ProjectSearchResponseDTO::create(
+            projects: $projects,
+            page: $page,
+            limit: $limit,
+            total: $total,
+            message: $message
+        );
+    }
+
+    /**
+     * Create media search response with media data array
+     *
+     * @param array<int, array{
+     *     id: int,
+     *     name: string,
+     *     type: string,
+     *     mime_type: string,
+     *     size: int,
+     *     url: string,
+     *     thumbnail_url: string|null,
+     *     tags: array|null,
+     *     created_at: string|null,
+     *     type: string
+     * }> $media Array of media data with specific structure
+     * @param int $page Current page number
+     * @param int $limit Items per page
+     * @param int $total Total number of media items found
+     * @param string $message Response message
+     * @return MediaSearchResponseDTO
+     */
+    public function createMediaSearchResponse(array $media, int $page, int $limit, int $total, string $message = 'Media search completed successfully'): MediaSearchResponseDTO
+    {
+        return MediaSearchResponseDTO::create(
+            media: $media,
+            page: $page,
+            limit: $limit,
+            total: $total,
+            message: $message
+        );
+    }
+
+    /**
+     * Create search suggestion response with suggestion data array
+     *
+     * @param array<int, array{
+     *     text: string,
+     *     type: string
+     * }> $suggestions Array of suggestion data with specific structure
+     * @param string $query The original search query that generated these suggestions
+     * @param string $message Response message
+     * @return SearchSuggestionResponseDTO
+     */
+    public function createSearchSuggestionResponse(array $suggestions, string $query = '', string $message = 'Search suggestions retrieved successfully'): SearchSuggestionResponseDTO
+    {
+        return SearchSuggestionResponseDTO::create(
+            suggestions: $suggestions,
+            query: $query,
+            message: $message
+        );
+    }
+
+    /**
+     * Create global search response with mixed content type results
+     *
+     * @param array<int, array{
+     *     id: int,
+     *     name: string,
+     *     description?: string|null,
+     *     thumbnail?: string|null,
+     *     thumbnail_url?: string|null,
+     *     category?: string,
+     *     tags?: array|null,
+     *     is_premium?: bool,
+     *     mime_type?: string,
+     *     size?: int,
+     *     url?: string,
+     *     created_at?: string|null,
+     *     updatedAt?: string,
+     *     type: string
+     * }> $results Array of mixed search results with specific structure
+     * @param string $query The search query that generated these results
+     * @param int $page Current page number
+     * @param int $limit Items per page
+     * @param int $total Total number of results found across all types
+     * @param string $message Response message
+     * @return GlobalSearchResponseDTO
+     */
+    public function createGlobalSearchResponse(array $results, string $query, int $page, int $limit, int $total, string $message = 'Global search completed successfully'): GlobalSearchResponseDTO
+    {
+        return GlobalSearchResponseDTO::create(
+            results: $results,
+            query: $query,
             page: $page,
             limit: $limit,
             total: $total,

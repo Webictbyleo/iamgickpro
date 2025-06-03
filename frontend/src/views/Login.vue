@@ -9,7 +9,7 @@
           </svg>
         </div>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-        <p class="text-gray-600">Sign in to continue to IamGickPro</p>
+        <p class="text-gray-600">Sign in to continue to {{ appTitle }}</p>
       </div>
 
       <!-- Login Form -->
@@ -197,6 +197,8 @@ const emailError = ref('')
 const passwordError = ref('')
 
 // Computed properties
+const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
+
 const isFormValid = computed(() => {
   return loginForm.value.email.length > 0 && 
          loginForm.value.password.length > 0 &&

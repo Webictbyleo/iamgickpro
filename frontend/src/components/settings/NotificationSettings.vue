@@ -518,7 +518,7 @@ const testNotification = () => {
   // If push notifications are enabled, send a test push notification
   if (pushPermission.value) {
     new Notification('Test Notification', {
-      body: 'This is a test notification from ImgGick Pro',
+      body: `This is a test notification from ${import.meta.env.VITE_APP_TITLE || 'Design Studio'}`,
       icon: '/favicon.ico'
     })
   }

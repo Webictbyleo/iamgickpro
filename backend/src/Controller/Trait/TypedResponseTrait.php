@@ -8,12 +8,16 @@ use App\DTO\Response\AuthResponseDTO;
 use App\DTO\Response\DesignResponseDTO;
 use App\DTO\Response\ErrorResponseDTO;
 use App\DTO\Response\ExportJobResponseDTO;
+use App\DTO\Response\GlobalSearchResponseDTO;
 use App\DTO\Response\LayerResponseDTO;
 use App\DTO\Response\MediaResponseDTO;
+use App\DTO\Response\MediaSearchResponseDTO;
 use App\DTO\Response\PaginatedResponseDTO;
 use App\DTO\Response\PluginResponseDTO;
 use App\DTO\Response\ProjectResponseDTO;
+use App\DTO\Response\ProjectSearchResponseDTO;
 use App\DTO\Response\SearchResponseDTO;
+use App\DTO\Response\SearchSuggestionResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\Response\TemplateResponseDTO;
 use App\DTO\Response\TemplateSearchResponseDTO;
@@ -143,6 +147,38 @@ trait TypedResponseTrait
      * Create a typed JSON response with TemplateSearchResponseDTO
      */
     protected function templateSearchResponse(TemplateSearchResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return $this->json($dto->toArray(), $status);
+    }
+
+    /**
+     * Create a typed JSON response with ProjectSearchResponseDTO
+     */
+    protected function projectSearchResponse(ProjectSearchResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return $this->json($dto->toArray(), $status);
+    }
+
+    /**
+     * Create a typed JSON response with MediaSearchResponseDTO
+     */
+    protected function mediaSearchResponse(MediaSearchResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return $this->json($dto->toArray(), $status);
+    }
+
+    /**
+     * Create a typed JSON response with SearchSuggestionResponseDTO
+     */
+    protected function searchSuggestionResponse(SearchSuggestionResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return $this->json($dto->toArray(), $status);
+    }
+
+    /**
+     * Create a typed JSON response with GlobalSearchResponseDTO
+     */
+    protected function globalSearchResponse(GlobalSearchResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
     {
         return $this->json($dto->toArray(), $status);
     }

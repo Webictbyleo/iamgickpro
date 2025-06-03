@@ -46,37 +46,33 @@
                 <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
                   <div class="flex items-center justify-between mb-2">
                     <component :is="icons.design" class="w-6 h-6 text-blue-300" />
-                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+12%</div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.total_designs || 0 }}</div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.overview?.totalDesigns || 0 }}</div>
                   <div class="text-sm text-white/80">Total Designs</div>
                 </div>
                 
                 <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
                   <div class="flex items-center justify-between mb-2">
-                    <component :is="icons.template" class="w-6 h-6 text-purple-300" />
-                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+8%</div>
-                  </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.total_templates_used || 0 }}</div>
-                  <div class="text-sm text-white/80">Templates Used</div>
-                </div>
-                
-                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
-                  <div class="flex items-center justify-between mb-2">
                     <component :is="icons.folder" class="w-6 h-6 text-green-300" />
-                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+5%</div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.active_projects || 0 }}</div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.overview?.totalProjects || 0 }}</div>
                   <div class="text-sm text-white/80">Active Projects</div>
                 </div>
                 
                 <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
                   <div class="flex items-center justify-between mb-2">
                     <component :is="icons.download" class="w-6 h-6 text-orange-300" />
-                    <div class="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">+15%</div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.export_count || 0 }}</div>
+                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.overview?.totalExports || 0 }}</div>
                   <div class="text-sm text-white/80">Total Exports</div>
+                </div>
+                
+                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-2">
+                    <component :is="icons.template" class="w-6 h-6 text-purple-300" />
+                  </div>
+                  <div class="text-2xl font-bold text-white">{{ Math.round(dashboardStats?.overview?.successRate || 0) }}%</div>
+                  <div class="text-sm text-white/80">Success Rate</div>
                 </div>
               </div>
             </div>
@@ -251,7 +247,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDesignStore } from '@/stores/design'
 import { useIcons } from '@/composables/useIcons'
 import { analyticsAPI, templateAPI } from '@/services/api'
-import type { Design, Template } from '@/types'
+import type { Design, Template, DashboardStats } from '@/types'
 
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -269,13 +265,7 @@ const templatesLoading = ref(false)
 const statsLoading = ref(false)
 const recentDesigns = ref<Design[]>([])
 const featuredTemplates = ref<Template[]>([])
-const dashboardStats = ref<{
-  total_designs: number
-  total_templates_used: number
-  active_projects: number
-  storage_used: number
-  export_count: number
-} | null>(null)
+const dashboardStats = ref<DashboardStats | null>(null)
 
 // Computed
 const user = computed(() => authStore.user)
@@ -373,14 +363,8 @@ const loadDashboardStats = async () => {
     }
   } catch (error) {
     console.error('Failed to load dashboard stats:', error)
-    // Fallback to mock data for development
-    dashboardStats.value = {
-      total_designs: designStore.designs.length,
-      total_templates_used: 24,
-      active_projects: 6,
-      storage_used: 1024,
-      export_count: 48
-    }
+    // Don't use fallback data - let the component show empty state
+    dashboardStats.value = null
   } finally {
     statsLoading.value = false
   }
@@ -406,128 +390,13 @@ const loadFeaturedTemplates = async () => {
       limit: 6
     })
     
-    if (response.data?.data) {
-      featuredTemplates.value = response.data.data
+    if (response.data?.data?.templates) {
+      featuredTemplates.value = response.data.data.templates
     }
   } catch (error) {
     console.error('Failed to load featured templates:', error)
-    // Fallback to mock data for development
-    featuredTemplates.value = [
-      {
-        id: '1',
-        uuid: 'template-1',
-        name: 'Social Media Post',
-        category: 'Social Media',
-        thumbnail: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=300&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=300&fit=crop',
-        previewUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=600&h=600&fit=crop',
-        width: 1080,
-        height: 1080,
-        isPremium: false,
-        isActive: true,
-        rating: 4.5,
-        ratingCount: 150,
-        usageCount: 1200,
-        tags: ['social', 'instagram'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '2',
-        uuid: 'template-2',
-        name: 'Business Card',
-        category: 'Business',
-        thumbnail: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=200&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=200&fit=crop',
-        previewUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=600&h=400&fit=crop',
-        width: 1050,
-        height: 600,
-        isPremium: true,
-        isActive: true,
-        rating: 4.8,
-        ratingCount: 89,
-        usageCount: 650,
-        tags: ['business', 'professional'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '3',
-        uuid: 'template-3',
-        name: 'Logo Design',
-        category: 'Branding',
-        thumbnail: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&h=300&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&h=300&fit=crop',
-        previewUrl: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=600&h=600&fit=crop',
-        width: 500,
-        height: 500,
-        isPremium: false,
-        isActive: true,
-        rating: 4.3,
-        ratingCount: 205,
-        usageCount: 980,
-        tags: ['logo', 'branding'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '4',
-        uuid: 'template-4',
-        name: 'YouTube Thumbnail',
-        category: 'Social Media',
-        thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300&h=200&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300&h=200&fit=crop',
-        previewUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=400&fit=crop',
-        width: 1280,
-        height: 720,
-        isPremium: false,
-        isActive: true,
-        rating: 4.6,
-        ratingCount: 320,
-        usageCount: 1500,
-        tags: ['youtube', 'thumbnail'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '5',
-        uuid: 'template-5',
-        name: 'Presentation Slide',
-        category: 'Presentation',
-        thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=200&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=200&fit=crop',
-        previewUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop',
-        width: 1920,
-        height: 1080,
-        isPremium: true,
-        isActive: true,
-        rating: 4.7,
-        ratingCount: 156,
-        usageCount: 890,
-        tags: ['presentation', 'slide'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '6',
-        uuid: 'template-6',
-        name: 'Instagram Story',
-        category: 'Social Media',
-        thumbnail: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=200&h=350&fit=crop',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=200&h=350&fit=crop',
-        previewUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=700&fit=crop',
-        width: 1080,
-        height: 1920,
-        isPremium: false,
-        isActive: true,
-        rating: 4.4,
-        ratingCount: 278,
-        usageCount: 1350,
-        tags: ['instagram', 'story'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ]
+    // Don't use fallback data - let the component show empty state
+    featuredTemplates.value = []
   } finally {
     templatesLoading.value = false
   }

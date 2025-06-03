@@ -411,9 +411,11 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 import MediaPreviewModal from '@/components/modals/MediaPreviewModal.vue'
 import ExportDetailsModal from '@/components/modals/ExportDetailsModal.vue'
+import { searchAPI } from '@/services/api'
+import type { SearchResult, ContentFilter, MediaItem, MediaSearchItem } from '@/types'
 
-// Types
-interface MediaItem {
+// Define interface for MediaPreviewModal compatibility
+interface MediaPreviewItem {
   id: string
   title: string
   url: string
@@ -428,34 +430,6 @@ interface MediaItem {
   }
   metadata?: Record<string, any>
   tags?: string[]
-}
-
-interface SearchResult {
-  id: string
-  type: 'design' | 'template' | 'media' | 'export'
-  title: string
-  description?: string
-  thumbnail?: string
-  url?: string
-  author?: string
-  created_at: string
-  isPremium?: boolean
-  exportStatus?: 'pending' | 'processing' | 'completed' | 'failed'
-  hasAnimation?: boolean
-  isVideo?: boolean
-  duration?: number // in seconds for videos/animations
-  stats?: {
-    likes: number
-    views: number
-    downloads?: number
-  }
-}
-
-interface ContentFilter {
-  type: string
-  label: string
-  icon: string
-  count: number
 }
 
 // Router and Route
@@ -484,7 +458,7 @@ const exportToView = ref<SearchResult | null>(null)
 
 // Media preview modal state
 const showMediaPreview = ref(false)
-const mediaToPreview = ref<MediaItem | null>(null)
+const mediaToPreview = ref<MediaPreviewItem | null>(null)
 
 // Content filters
 const contentFilters = ref<ContentFilter[]>([
@@ -592,77 +566,95 @@ const performSearch = async () => {
     
     await router.push({ query })
     
-    // Prepare API parameters
-    const params = new URLSearchParams({
+    // Prepare API parameters for search
+    const searchParams = {
       q: searchQuery.value || '',
-      page: currentPage.value.toString(),
-      limit: '12'
-    })
-    
-    if (sortBy.value !== 'relevance') {
-      params.append('sort', sortBy.value)
+      page: currentPage.value,
+      limit: 12,
+      sort: sortBy.value !== 'relevance' ? (sortBy.value as 'newest' | 'popular' | 'name') : undefined,
     }
     
-    // Determine search type based on active filters
-    let searchType = 'all'
+    let response: any
+    
+    // Determine search type and call appropriate endpoint based on active filters
     if (activeFilters.value.length === 1) {
-      if (activeFilters.value.includes('design')) searchType = 'projects'
-      else if (activeFilters.value.includes('template')) searchType = 'templates'
-      else if (activeFilters.value.includes('media')) searchType = 'media'
-    }
-    
-    if (searchType !== 'all') {
-      params.append('type', searchType)
-    }
-    
-    // Call the search API
-    const response = await fetch(`/api/search?${params.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        'Content-Type': 'application/json'
+      if (activeFilters.value.includes('template')) {
+        response = await searchAPI.searchTemplates(searchParams)
+        if (response.data.success) {
+          searchResults.value = response.data.data.templates.map((template: any) => ({
+            ...template,
+            type: 'template',
+            title: template.name,
+            created_at: template.created_at || template.updatedAt
+          }))
+          totalResults.value = response.data.data.total
+          totalPages.value = response.data.data.totalPages
+        }
+      } else if (activeFilters.value.includes('media')) {
+        response = await searchAPI.searchMedia(searchParams)
+        if (response.data.success) {
+          searchResults.value = response.data.data.media.map((media: MediaSearchItem) => ({
+            id: String(media.id), // Convert to string to match SearchResult type
+            type: 'media',
+            title: media.name,
+            url: media.url,
+            thumbnail: media.thumbnail_url || undefined,
+            created_at: media.created_at || new Date().toISOString(),
+            description: media.tags?.join(', '),
+            isVideo: media.mime_type.startsWith('video/'),
+            size: media.size
+          }))
+          totalResults.value = response.data.data.pagination.total
+          totalPages.value = response.data.data.pagination.totalPages
+        }
+      } else if (activeFilters.value.includes('design')) {
+        // Map to projects search since designs are stored as projects
+        response = await searchAPI.searchProjects(searchParams)
+        if (response.data.success) {
+          searchResults.value = response.data.data.projects.map((project: any) => ({
+            ...project,
+            type: 'design',
+            title: project.name,
+            created_at: project.created_at || project.updatedAt
+          }))
+          totalResults.value = response.data.data.total
+          totalPages.value = response.data.data.totalPages
+        }
+      } else {
+        // For other filters (like export), fall back to global search
+        response = await searchAPI.unifiedSearch({
+          ...searchParams,
+          type: 'all',
+          filters: activeFilters.value
+        })
+        if (response.data.success) {
+          searchResults.value = response.data.data.results
+          totalResults.value = response.data.data.total
+          totalPages.value = response.data.data.totalPages
+        }
       }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Search failed: ${response.statusText}`)
-    }
-    
-    const data = await response.json()
-    
-    if (data.success) {
-      // Transform API results to match our interface
-      searchResults.value = data.results.map((item: any) => ({
-        id: item.id,
-        type: item.result_type || item.type,
-        title: item.name || item.title,
-        description: item.description,
-        thumbnail: item.thumbnail,
-        url: item.url,
-        author: item.author,
-        created_at: item.createdAt || item.created_at,
-        isPremium: item.isPremium || false,
-        hasAnimation: item.hasAnimation || false,
-        isVideo: item.type === 'video' || item.mimeType?.startsWith('video/'),
-        duration: item.duration,
-        stats: {
-          likes: item.likes || 0,
-          views: item.views || 0,
-          downloads: item.downloads || 0
-        },
-        exportStatus: item.exportStatus
-      }))
-      
-      totalResults.value = data.pagination?.total || data.results.length
-      totalPages.value = data.pagination?.pages || Math.ceil(totalResults.value / 12)
-      
-      // Update filter counts based on search results
-      contentFilters.value.forEach(filter => {
-        filter.count = searchResults.value.filter(result => result.type === filter.type).length
-      })
     } else {
-      throw new Error(data.error || 'Search failed')
+      // Use global search for multiple filters or no filters
+      response = await searchAPI.unifiedSearch({
+        ...searchParams,
+        type: 'all',
+        filters: activeFilters.value.length > 0 ? activeFilters.value : undefined
+      })
+      if (response.data.success) {
+        searchResults.value = response.data.data.results
+        totalResults.value = response.data.data.total
+        totalPages.value = response.data.data.totalPages
+      }
     }
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Search failed')
+    }
+    
+    // Update filter counts based on search results
+    contentFilters.value.forEach(filter => {
+      filter.count = searchResults.value.filter(result => result.type === filter.type).length
+    })
     
     searchTime.value = Date.now() - startTime
   } catch (error) {
@@ -735,60 +727,32 @@ const openResult = (result: SearchResult) => {
 }
 
 // Media preview handlers
-const convertToMediaItem = (result: SearchResult): MediaItem => {
+const convertToMediaItem = (result: SearchResult): MediaPreviewItem => {
   // Determine proper MIME type based on result properties
   let mimeType = 'image/jpeg' // Default to image
   let mediaUrl = result.thumbnail || `https://picsum.photos/800/600?random=${result.id}`
   
-  if (result.isVideo) {
-    mimeType = 'video/mp4'
-    // For video, use a sample video URL
-    mediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-  } else if (result.type === 'media') {
-    // For media type, assign different media types for variety
-    const random = Math.random()
-    if (random < 0.6) {
-      mimeType = Math.random() > 0.5 ? 'image/jpeg' : 'image/png'
-      mediaUrl = `https://picsum.photos/800/600?random=${result.id}`
-    } else if (random < 0.8) {
-      mimeType = 'video/mp4'
-      mediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-    } else if (random < 0.95) {
-      mimeType = 'audio/mp3'
-      mediaUrl = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'
-    } else {
-      mimeType = 'application/pdf'
-      mediaUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-    }
-  }
-  
-  console.log('Converting SearchResult to MediaItem:', { 
+  console.log('Converting SearchResult to MediaPreviewItem:', { 
     resultType: result.type, 
     isVideo: result.isVideo, 
     mimeType, 
     mediaUrl 
   })
   
-  // Convert SearchResult to MediaItem format
+  // Convert SearchResult to MediaPreviewItem format
   return {
     id: result.id,
     title: result.title,
     url: mediaUrl,
-    type: mimeType, // Use proper MIME type instead of content type
+    type: mimeType,
     size: Math.floor(Math.random() * 5000000) + 1000000, // Mock file size (1-6MB)
-    author: result.author,
-    created_at: result.created_at,
     thumbnail: result.thumbnail,
     dimensions: {
       width: 800 + Math.floor(Math.random() * 400),
       height: 600 + Math.floor(Math.random() * 400)
     },
-    metadata: {
-      format: result.isVideo ? 'mp4' : 'jpeg',
-      duration: result.duration,
-      hasAnimation: result.hasAnimation
-    },
-    tags: ['design', 'stock', 'media']
+    tags: ['design', 'stock', 'media'],
+    created_at: result.created_at
   }
 }
 
@@ -802,13 +766,13 @@ const closeMediaPreview = () => {
   mediaToPreview.value = null
 }
 
-const handleAddToDesign = (media: MediaItem) => {
+const handleAddToDesign = (media: MediaPreviewItem) => {
   // Add media to current design or create new design
   router.push(`/editor?media=${media.id}`)
   closeMediaPreview()
 }
 
-const handleDownloadMedia = (media: MediaItem) => {
+const handleDownloadMedia = (media: MediaPreviewItem) => {
   // Download the media file
   console.log('Downloading media:', media.title)
   

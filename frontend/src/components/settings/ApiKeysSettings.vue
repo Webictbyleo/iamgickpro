@@ -9,7 +9,7 @@
         <div class="flex-1">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">API Keys</h2>
           <p class="text-gray-600 mb-4">
-            Manage your API keys to integrate ImgGick Pro with your applications and services.
+            Manage your API keys to integrate {{ appTitle }} with your applications and services.
           </p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-white rounded-lg p-4">
@@ -131,7 +131,7 @@
       <div v-if="apiKeys.length === 0" class="p-8 text-center">
         <KeyIcon class="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h4 class="text-lg font-medium text-gray-900 mb-2">No API Keys</h4>
-        <p class="text-gray-600">Create your first API key to get started with the ImgGick Pro API.</p>
+        <p class="text-gray-600">Create your first API key to get started with the {{ appTitle }} API.</p>
       </div>
 
       <div v-else class="divide-y divide-gray-200">
@@ -253,7 +253,7 @@
     <div class="bg-gray-50 rounded-xl p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">API Documentation</h3>
       <p class="text-gray-600 mb-4">
-        Learn how to integrate ImgGick Pro into your applications with our comprehensive API documentation.
+        Learn how to integrate {{ appTitle }} into your applications with our comprehensive API documentation.
       </p>
       <div class="flex flex-wrap gap-3">
         <a
@@ -286,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import {
   KeyIcon,
   EyeIcon,
@@ -298,6 +298,9 @@ import {
   RocketLaunchIcon,
   CodeBracketIcon
 } from '@heroicons/vue/24/outline'
+
+// Computed properties
+const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
 
 // Types
 interface ApiKey {

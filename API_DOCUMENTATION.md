@@ -4,7 +4,7 @@ Comprehensive API for the modern web-based design platform
 
 **Version:** 1.0.0
 
-**Generated on:** 2025-06-02 16:18:08
+**Generated on:** 2025-06-03 14:53:03
 **Generator:** Enhanced API Documentation Generator v2.0
 **Symfony Version:** 7.0.10
 **PHP Version:** 8.4.7
@@ -34,6 +34,7 @@ Comprehensive API for the modern web-based design platform
 
 ## Table of Contents
 
+- [AnalyticsController](#analyticscontroller) *(9 routes)*
 - [AuthController](#authcontroller) *(6 routes)*
 - [DesignController](#designcontroller) *(8 routes)*
 - [ExportJobController](#exportjobcontroller) *(10 routes)*
@@ -41,8 +42,317 @@ Comprehensive API for the modern web-based design platform
 - [MediaController](#mediacontroller) *(9 routes)*
 - [PluginController](#plugincontroller) *(12 routes)*
 - [ProjectController](#projectcontroller) *(8 routes)*
+- [SearchController](#searchcontroller) *(5 routes)*
 - [TemplateController](#templatecontroller) *(6 routes)*
 - [UserController](#usercontroller) *(8 routes)*
+
+---
+
+## AnalyticsController
+
+*9 routes*
+
+Analytics Controller
+
+Provides comprehensive analytics endpoints for the design platform.
+Handles dashboard statistics, design performance metrics, user behavior analysis,
+template usage analytics, and system-wide performance monitoring.
+
+All endpoints require authentication, with some restricted to admin users.
+Returns detailed analytics data for dashboards, reports, and insights.
+
+Endpoints:
+- Dashboard analytics (user-specific)
+- Design performance analytics
+- Template usage analytics
+- User behavior analytics
+- System analytics (admin only)
+- Export analytics
+- Platform statistics
+
+<!-- Route 1 -->
+### GET /api/analytics/dashboard
+
+Get dashboard analytics for authenticated user
+
+Returns comprehensive dashboard statistics including:
+- User overview metrics (designs, projects, exports)
+- Activity charts and timeline data
+- Performance indicators
+- Top performing content and insights
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "overview": {
+        "totalDesigns": 42,
+        "totalProjects": 42,
+        "totalExports": 42,
+        "completedExports": 42,
+        "storageUsed": 25,
+        "successRate": 3.14
+    },
+    "recentActivity": [
+        "example_item"
+    ]
+}
+```
+
+---
+
+<!-- Route 2 -->
+### GET /api/analytics/designs/{designId}
+
+Get analytics for a specific design
+
+Returns detailed performance metrics for an individual design including:
+- Engagement metrics (views, shares, exports)
+- Timeline and usage patterns
+- Export format breakdown and success rates
+- Performance comparison and recommendations
+
+#### Parameters
+
+- **designId** (string)
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "designId": "example_id_123",
+    "metrics": [
+        "example_item"
+    ],
+    "timeline": [
+        "example_item"
+    ],
+    "exports": [
+        "example_item"
+    ],
+    "engagement": [
+        "example_item"
+    ]
+}
+```
+
+---
+
+<!-- Route 3 -->
+### GET /api/analytics/engagement
+
+**Security:** IsGranted
+
+Get user engagement metrics (Admin only)
+
+Returns detailed user engagement analytics including:
+- User activity and session metrics
+- Feature adoption and usage patterns
+- Retention and churn analysis
+- Engagement scoring and segmentation
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "details": [
+        "example_item"
+    ],
+    "code": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
+
+---
+
+<!-- Route 4 -->
+### GET /api/analytics/exports
+
+Get export analytics for authenticated user
+
+Returns comprehensive export job analytics including:
+- Export volume and success rates
+- Format breakdown and preferences
+- Processing time statistics
+- Failure analysis and insights
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "details": [
+        "example_item"
+    ],
+    "code": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
+
+---
+
+<!-- Route 5 -->
+### GET /api/analytics/performance
+
+**Security:** IsGranted
+
+Get performance monitoring data (Admin only)
+
+Returns system performance monitoring data including:
+- Response time metrics
+- Error rates and failure analysis
+- Resource utilization statistics
+- Queue health and processing metrics
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "details": [
+        "example_item"
+    ],
+    "code": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
+
+---
+
+<!-- Route 6 -->
+### GET /api/analytics/system
+
+**Security:** IsGranted
+
+Get system-wide analytics (Admin only)
+
+Returns comprehensive system analytics including:
+- Platform growth and user acquisition metrics
+- System performance and health indicators
+- Resource usage and optimization opportunities
+- Administrative insights and recommendations
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "platformStats": [
+        "example_item"
+    ],
+    "userMetrics": [
+        "example_item"
+    ],
+    "performanceData": [
+        "example_item"
+    ],
+    "systemHealth": [
+        "example_item"
+    ]
+}
+```
+
+---
+
+<!-- Route 7 -->
+### GET /api/analytics/templates
+
+Get template usage analytics
+
+Returns comprehensive template performance and usage statistics including:
+- Most popular templates by usage count
+- Category performance analysis
+- Template conversion rates and effectiveness
+- Usage trends and recommendations
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "details": [
+        "example_item"
+    ],
+    "code": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
+
+---
+
+<!-- Route 8 -->
+### GET /api/analytics/trends
+
+Get platform usage trends
+
+Returns platform-wide usage trends and statistics including:
+- Content creation trends over time
+- User activity patterns
+- Popular features and tools
+- Growth metrics and insights
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "details": [
+        "example_item"
+    ],
+    "code": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
+
+---
+
+<!-- Route 9 -->
+### GET /api/analytics/user-behavior
+
+Get user behavior analytics
+
+Returns detailed user behavior analysis including:
+- Login patterns and session analytics
+- Feature usage and adoption rates
+- Content creation patterns and preferences
+- Engagement trends and behavioral insights
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "details": [
+        "example_item"
+    ],
+    "code": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
 
 ---
 
@@ -2442,13 +2752,6 @@ interface CreateMediaRequestDTO {
   name: string;
 
   /**
-   * Type of media content. Categorizes the media into broad types for filtering and appropriate handl...
-   * @validation NotBlank=message: 'Media type is required'
-   * @validation Choice=choices: ['image'  'video'  'audio']  message: 'Type must be one of: image  video  audio'
-   */
-  type: string;
-
-  /**
    * MIME type of the media file. Specifies the exact format of the media file for proper handling by ...
    * @validation NotBlank=message: 'MIME type is required'
    */
@@ -2466,6 +2769,13 @@ interface CreateMediaRequestDTO {
    * @validation Url=message: 'URL must be a valid URL'
    */
   url: string;
+
+  /**
+   * Type of media content. Categorizes the media into broad types for filtering and appropriate handl...
+   * @validation NotBlank=message: 'Media type is required'
+   * @validation Choice=choices: ['image'  'video'  'audio']  message: 'Type must be one of: image  video  audio'
+   */
+  type?: string;
 
   /**
    * Optional URL to a thumbnail or preview image. Used for quick previews in the media library and la...
@@ -2561,10 +2871,10 @@ async function examplePostRequest() {
   const url = 'https://example.com/api/media';
   const requestData = {
         "name": "Example Name",
-        "type": "example_type",
         "mimeType": "example_type",
         "size": 100,
         "url": "https:\/\/example.com",
+        "type": "example_type",
         "thumbnailUrl": null,
         "width": null,
         "height": null,
@@ -4268,6 +4578,166 @@ Updates the project's visibility and sharing settings.
     "message": "example_string",
     "success": true,
     "timestamp": "example_string"
+}
+```
+
+---
+
+## SearchController
+
+*5 routes*
+
+Search Controller
+
+Provides comprehensive search functionality across all platform content types.
+Handles global search, content-specific searches, and intelligent search suggestions.
+Supports full-text search with filtering, pagination, and relevance scoring.
+All searches respect user permissions and visibility settings for security.
+
+Features:
+- Global search across multiple content types (templates, media, projects)
+- Targeted searches for specific content types with advanced filtering
+- Intelligent search suggestions for autocomplete functionality
+- Pagination and result limiting for performance
+- User permission-aware search results
+- Search relevance scoring and result ranking
+
+All endpoints require user authentication and implement proper error handling.
+Search results are returned in a consistent, paginated format with metadata.
+
+<!-- Route 1 -->
+### GET /api/search
+
+Perform a global search across multiple content types
+
+Searches across templates, media, projects based on the query and type filter.
+Supports pagination and returns results in a structured format with relevance scoring.
+Respects user permissions and only returns content the user has access to.
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "results": [
+        "example_item"
+    ],
+    "query": "example_string",
+    "page": 25,
+    "limit": 20,
+    "total": 42,
+    "totalPages": 25,
+    "message": "example_string"
+}
+```
+
+---
+
+<!-- Route 2 -->
+### GET /api/search/media
+
+Search specifically for media files
+
+Performs targeted media search with support for media type filtering (image, video, audio).
+Returns structured media results with pagination and includes file metadata.
+Only returns media files that the user has access to view or use.
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "media": [
+        "example_item"
+    ],
+    "page": 25,
+    "limit": 20,
+    "total": 42,
+    "totalPages": 25,
+    "message": "example_string"
+}
+```
+
+---
+
+<!-- Route 3 -->
+### GET /api/search/projects
+
+Search specifically for user projects
+
+Performs targeted project search within the user's own projects.
+Returns structured project results with pagination and includes project metadata.
+Only searches through projects owned by the authenticated user for privacy.
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "projects": [
+        "example_item"
+    ],
+    "page": 25,
+    "limit": 20,
+    "total": 42,
+    "totalPages": 25,
+    "message": "example_string"
+}
+```
+
+---
+
+<!-- Route 4 -->
+### GET /api/search/suggestions
+
+Get search suggestions based on user query
+
+Returns search suggestions to help users find relevant content.
+Used for autocomplete and search assistance features in the UI.
+Suggestions are personalized based on user's content and search history.
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "suggestions": [
+        "example_item"
+    ],
+    "query": "example_string",
+    "message": "example_string"
+}
+```
+
+---
+
+<!-- Route 5 -->
+### GET /api/search/templates
+
+Search specifically for templates
+
+Performs targeted template search with support for category and tag filtering.
+Returns structured template results with pagination and relevance scoring.
+Includes both public templates and user-created templates based on permissions.
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "templates": [
+        "example_item"
+    ],
+    "page": 25,
+    "limit": 20,
+    "total": 42,
+    "totalPages": 25,
+    "message": "example_string"
 }
 ```
 

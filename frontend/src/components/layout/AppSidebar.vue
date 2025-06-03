@@ -12,8 +12,8 @@
             <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
           </div>
           <div class="ml-3">
-            <span class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">IAMGick Pro</span>
-            <div class="text-xs text-gray-500 font-medium">Design Studio</div>
+            <span class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{{ appTitle }}</span>
+            <div class="text-xs text-gray-500 font-medium">{{ appSubtitle }}</div>
           </div>
         </router-link>
       </div>
@@ -278,6 +278,9 @@ defineEmits<{
 const authStore = useAuthStore()
 const exportsStore = useExportsStore()
 const icons = useIcons()
+
+const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
+const appSubtitle = computed(() => import.meta.env.VITE_APP_SUBTITLE || 'Design Studio')
 
 const userName = computed(() => {
   const user = authStore.user
