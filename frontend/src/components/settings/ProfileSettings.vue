@@ -332,10 +332,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { CameraIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 import { userAPI } from '@/services/api'
 import { useNotifications } from '@/composables/useNotifications'
+import { useAuthStore } from '@/stores/auth'
+import type { User } from '@/types'
 
 // Types
 interface UserProfile {
@@ -365,35 +367,86 @@ interface PasswordForm {
 
 // Composables
 const { success, error } = useNotifications()
+const authStore = useAuthStore()
 
 // State
 const isSaving = ref(false)
 const showPasswordChange = ref(false)
 const passwordChanging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const isLoadingProfile = ref(false)
 
-const userProfile = ref<UserProfile>({
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@example.com',
-  jobTitle: 'Senior Graphic Designer',
-  company: 'Creative Agency Inc.',
-  website: 'https://johndoe.com',
-  portfolio: 'https://portfolio.johndoe.com',
-  bio: 'Passionate graphic designer with 5+ years of experience in creating stunning visual designs for web and print media.',
-  createdAt: '2024-01-15T10:30:00Z',
-  socialLinks: {
-    twitter: 'johndoe',
-    linkedin: 'https://linkedin.com/in/johndoe',
-    dribbble: 'https://dribbble.com/johndoe',
-    behance: 'https://behance.net/johndoe'
+// Initialize user profile from auth store
+const initializeUserProfile = (user: User | null): UserProfile => {
+  if (!user) {
+    return {
+      firstName: '',
+      lastName: '',
+      email: '',
+      jobTitle: '',
+      company: '',
+      website: '',
+      portfolio: '',
+      bio: '',
+      avatar: '',
+      createdAt: new Date().toISOString(),
+      socialLinks: {
+        twitter: '',
+        linkedin: '',
+        dribbble: '',
+        behance: ''
+      }
+    }
   }
-})
+
+  return {
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.email || '',
+    jobTitle: user.jobTitle || '',
+    company: user.company || '',
+    website: user.website || '',
+    portfolio: user.portfolio || '',
+    bio: user.bio || '',
+    avatar: user.avatar || '',
+    createdAt: user.createdAt || new Date().toISOString(),
+    socialLinks: {
+      twitter: user.socialLinks?.twitter || '',
+      linkedin: user.socialLinks?.linkedin || '',
+      dribbble: user.socialLinks?.dribbble || '',
+      behance: user.socialLinks?.behance || ''
+    }
+  }
+}
+
+const userProfile = ref<UserProfile>(initializeUserProfile(authStore.user))
 
 const passwordForm = ref<PasswordForm>({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
+})
+
+// Watch for auth store user changes
+watch(() => authStore.user, (newUser) => {
+  if (newUser) {
+    userProfile.value = initializeUserProfile(newUser)
+  }
+}, { immediate: true })
+
+// Lifecycle hooks
+onMounted(async () => {
+  // If user is not loaded, try to fetch it
+  if (!authStore.user && authStore.isAuthenticated) {
+    isLoadingProfile.value = true
+    try {
+      await authStore.fetchUser()
+    } catch (err) {
+      console.error('Failed to fetch user profile:', err)
+    } finally {
+      isLoadingProfile.value = false
+    }
+  }
 })
 
 // Computed
@@ -445,7 +498,12 @@ const handleAvatarUpload = async (event: Event) => {
     const response = await userAPI.uploadAvatar(file)
     
     // Update avatar with the server response
-    userProfile.value.avatar = response.data.data.avatar
+    const newAvatarUrl = response.data.data.avatar
+    userProfile.value.avatar = newAvatarUrl
+    
+    // Update the auth store with the new avatar
+    await authStore.updateProfile({ avatar: newAvatarUrl })
+    
     success('Avatar Updated', 'Your profile picture has been uploaded successfully')
     
     // Clean up the preview URL
@@ -497,14 +555,40 @@ const changePassword = async () => {
 }
 
 const saveProfile = async () => {
+  if (!authStore.user) {
+    error('Authentication Error', 'You must be logged in to update your profile')
+    return
+  }
+
   isSaving.value = true
   try {
-    // Create a clean profile object excluding readonly fields
-    const { createdAt, ...profileData } = userProfile.value
-    const response = await userAPI.updateProfile(profileData)
+    // Create a clean profile object excluding readonly fields and mapping to User type
+    const profileData: Partial<User> = {
+      firstName: userProfile.value.firstName,
+      lastName: userProfile.value.lastName,
+      email: userProfile.value.email,
+      jobTitle: userProfile.value.jobTitle,
+      company: userProfile.value.company,
+      website: userProfile.value.website,
+      portfolio: userProfile.value.portfolio,
+      bio: userProfile.value.bio,
+      avatar: userProfile.value.avatar,
+      socialLinks: {
+        twitter: userProfile.value.socialLinks.twitter,
+        linkedin: userProfile.value.socialLinks.linkedin,
+        dribbble: userProfile.value.socialLinks.dribbble,
+        behance: userProfile.value.socialLinks.behance
+      }
+    }
+
+    const result = await authStore.updateProfile(profileData)
     
-    success('Profile Updated', 'Your profile has been saved successfully')
-    console.log('Profile saved successfully:', response.data.data)
+    if (result.success) {
+      // Success notification is already handled by the auth store
+      console.log('Profile saved successfully')
+    } else {
+      error('Save Failed', result.error || 'Failed to save profile. Please try again.')
+    }
     
   } catch (saveError) {
     console.error('Error saving profile:', saveError)

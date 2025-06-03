@@ -161,16 +161,18 @@
             <p class="text-xs text-gray-500 mt-1">1080×1080</p>
           </button>
 
-          <button
-            @click="createNewDesign(1920, 1080)"
-            class="group p-6 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-2xl hover:from-cyan-100 hover:to-teal-100 transition-all transform hover:scale-105 border border-cyan-100"
+          <router-link
+            to="/video-to-design"
+            class="group p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl hover:from-red-100 hover:to-pink-100 transition-all transform hover:scale-105 border border-red-100"
           >
-            <div class="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-cyan-600 transition-colors">
-              <component :is="icons.video" class="w-6 h-6 text-white" />
+            <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:from-red-600 group-hover:to-pink-600 transition-all">
+              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
             </div>
-            <h3 class="font-semibold text-gray-900 text-sm">Video</h3>
-            <p class="text-xs text-gray-500 mt-1">1920×1080</p>
-          </button>
+            <h3 class="font-semibold text-gray-900 text-sm">YouTube Thumbnail</h3>
+            <p class="text-xs text-gray-500 mt-1">AI Generator</p>
+          </router-link>
         </div>
       </div>
 

@@ -69,22 +69,27 @@
             </div>
           </router-link>
 
-          <!-- AI Design Generator -->
+          <!-- YouTube Thumbnails -->
           <router-link
             to="/video-to-design"
-            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors group"
-            :class="isActive('/video-to-design') ? 'bg-gradient-to-r from-purple-100 to-primary-100 text-purple-700' : 'text-gray-600 hover:bg-gradient-to-r hover:from-purple-50 hover:to-primary-50 hover:text-purple-700'"
+            class="sidebar-nav-item group"
+            :class="{ 'sidebar-nav-item-active': $route.name === 'VideoToDesign' || isActive('/video-to-design') }"
           >
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <div class="flex flex-col items-start">
-              <span>YouTube to Design</span>
-              <span class="text-xs opacity-75">AI Video Analysis</span>
+            <div class="relative mr-3">
+              <svg class="w-5 h-5 text-red-600 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <div class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
             </div>
-            <span class="ml-auto px-2 py-1 text-xs font-medium bg-gradient-to-r from-purple-500 to-primary-500 text-white rounded-full">
-              AI
-            </span>
+            <span>YouTube Thumbnails</span>
+            <div class="ml-auto flex items-center space-x-2">
+              <span class="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                NEW
+              </span>
+              <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                <component :is="icons.arrowRight" class="w-4 h-4" />
+              </div>
+            </div>
           </router-link>
 
           <!-- Stock Media -->
