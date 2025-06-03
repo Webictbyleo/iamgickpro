@@ -232,21 +232,42 @@ class ExportJobRepository extends ServiceEntityRepository
      */
     public function getUserExportStats(User $user): array
     {
-        $qb = $this->createQueryBuilder('ej')
-            ->select([
-                'COUNT(ej.id) as total_exports',
-                'COUNT(CASE WHEN ej.status = \'completed\' THEN 1 END) as completed_exports',
-                'COUNT(CASE WHEN ej.status = \'failed\' THEN 1 END) as failed_exports',
-                'COUNT(CASE WHEN ej.status = \'processing\' THEN 1 END) as processing_exports',
-                'COUNT(CASE WHEN ej.status = \'queued\' THEN 1 END) as queued_exports',
-                'ej.format',
-                'COUNT(ej.format) as format_count'
-            ])
-            ->andWhere('ej.user = :user')
-            ->setParameter('user', $user)
-            ->groupBy('ej.format');
+        $conn = $this->getEntityManager()->getConnection();
+        $userId = $user->getId();
 
-        return $qb->getQuery()->getResult();
+        // Get overall statistics
+        $overallStats = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as total_exports,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_exports,
+                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_exports,
+                COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing_exports,
+                COUNT(CASE WHEN status = 'queued' THEN 1 END) as queued_exports
+            FROM export_jobs 
+            WHERE user_id = ?",
+            [$userId]
+        )->fetchAssociative();
+
+        // Get format breakdown
+        $formatStats = $conn->executeQuery(
+            "SELECT 
+                format,
+                COUNT(*) as format_count
+            FROM export_jobs 
+            WHERE user_id = ?
+            GROUP BY format
+            ORDER BY format_count DESC",
+            [$userId]
+        )->fetchAllAssociative();
+
+        return [
+            'total_exports' => (int) $overallStats['total_exports'],
+            'completed_exports' => (int) $overallStats['completed_exports'],
+            'failed_exports' => (int) $overallStats['failed_exports'],
+            'processing_exports' => (int) $overallStats['processing_exports'],
+            'queued_exports' => (int) $overallStats['queued_exports'],
+            'format_breakdown' => $formatStats
+        ];
     }
 
     /**
@@ -262,22 +283,42 @@ class ExportJobRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $sql = '
-            SELECT 
+        // Get overall system statistics
+        $overallStats = $conn->executeQuery(
+            "SELECT 
                 COUNT(*) as total_exports,
-                COUNT(CASE WHEN status = "completed" THEN 1 END) as completed_exports,
-                COUNT(CASE WHEN status = "failed" THEN 1 END) as failed_exports,
-                COUNT(CASE WHEN status = "processing" THEN 1 END) as processing_exports,
-                COUNT(CASE WHEN status = "queued" THEN 1 END) as queued_exports,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_exports,
+                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_exports,
+                COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing_exports,
+                COUNT(CASE WHEN status = 'queued' THEN 1 END) as queued_exports,
                 AVG(CASE WHEN completed_at IS NOT NULL AND started_at IS NOT NULL 
-                    THEN TIMESTAMPDIFF(SECOND, started_at, completed_at) END) as avg_processing_time,
-                format,
-                COUNT(format) as format_count
-            FROM export_job 
-            GROUP BY format
-        ';
+                    THEN TIMESTAMPDIFF(SECOND, started_at, completed_at) END) as avg_processing_time
+            FROM export_jobs"
+        )->fetchAssociative();
 
-        return $conn->executeQuery($sql)->fetchAllAssociative();
+        // Get format breakdown separately
+        $formatStats = $conn->executeQuery(
+            "SELECT 
+                format,
+                COUNT(*) as format_count
+            FROM export_jobs 
+            GROUP BY format
+            ORDER BY format_count DESC"
+        )->fetchAllAssociative();
+
+        return [
+            'overall' => [
+                'total_exports' => (int) $overallStats['total_exports'],
+                'completed_exports' => (int) $overallStats['completed_exports'],
+                'failed_exports' => (int) $overallStats['failed_exports'],
+                'processing_exports' => (int) $overallStats['processing_exports'],
+                'queued_exports' => (int) $overallStats['queued_exports'],
+                'avg_processing_time' => $overallStats['avg_processing_time'] 
+                    ? round((float) $overallStats['avg_processing_time'], 2) 
+                    : null
+            ],
+            'format_breakdown' => $formatStats
+        ];
     }
 
     /**
@@ -626,35 +667,46 @@ class ExportJobRepository extends ServiceEntityRepository
      */
     public function getUserStats($user): array
     {
-        $sql = "
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing,
-                JSON_OBJECTAGG(format, format_count) as by_format
-            FROM (
-                SELECT 
-                    status,
-                    format,
-                    COUNT(*) as format_count
-                FROM export_jobs 
-                WHERE user_id = :user_id
-                GROUP BY format
-            ) as format_stats
-        ";
-
         $conn = $this->getEntityManager()->getConnection();
-        $result = $conn->executeQuery($sql, ['user_id' => $user->getId()])->fetchAssociative();
+        $userId = $user->getId();
+
+        // Get overall statistics
+        $overallStats = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing
+            FROM export_jobs 
+            WHERE user_id = ?",
+            [$userId]
+        )->fetchAssociative();
+
+        // Get format breakdown
+        $formatStats = $conn->executeQuery(
+            "SELECT 
+                format,
+                COUNT(*) as count
+            FROM export_jobs 
+            WHERE user_id = ?
+            GROUP BY format",
+            [$userId]
+        )->fetchAllAssociative();
+
+        // Convert format stats to associative array
+        $byFormat = [];
+        foreach ($formatStats as $stat) {
+            $byFormat[$stat['format']] = (int) $stat['count'];
+        }
 
         return [
-            'total' => (int) $result['total'],
-            'completed' => (int) $result['completed'],
-            'failed' => (int) $result['failed'],
-            'pending' => (int) $result['pending'],
-            'processing' => (int) $result['processing'],
-            'by_format' => json_decode($result['by_format'] ?? '{}', true),
+            'total' => (int) $overallStats['total'],
+            'completed' => (int) $overallStats['completed'],
+            'failed' => (int) $overallStats['failed'],
+            'pending' => (int) $overallStats['pending'],
+            'processing' => (int) $overallStats['processing'],
+            'by_format' => $byFormat,
         ];
     }
 

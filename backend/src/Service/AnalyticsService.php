@@ -50,7 +50,6 @@ class AnalyticsService
      * Compiles dashboard statistics from multiple sources including:
      * - User's content statistics (designs, projects, exports)
      * - Performance metrics and success rates
-     * - Growth trends and activity patterns
      * - Storage usage and quota information
      * - Recent activity summary
      *
@@ -62,38 +61,9 @@ class AnalyticsService
         // Get base dashboard stats from analytics repository
         $baseStats = $this->analyticsRepository->getDashboardStats($user);
 
-        // Get additional export job statistics
-        $exportStats = $this->exportJobRepository->getUserExportStats($user);
-
-        // Calculate storage information
-        $storageInfo = $this->calculateStorageMetrics($user);
-
-        // Get recent activity insights
-        $activityInsights = $this->getActivityInsights($user);
-
-        // Get user performance ranking (percentile among all users)
-        $performanceRanking = $this->calculateUserPerformanceRanking($user);
-
         return [
-            'overview' => array_merge($baseStats['overview'], [
-                'storage_info' => $storageInfo,
-                'performance_ranking' => $performanceRanking
-            ]),
-            'charts' => [
-                'activity_timeline' => $baseStats['recent_activity'],
-                'export_breakdown' => $exportStats,
-                'monthly_trends' => $this->calculateMonthlyTrends($user)
-            ],
-            'trends' => [
-                'designs_growth' => $this->calculateGrowthRate($user, 'designs'),
-                'exports_growth' => $this->calculateGrowthRate($user, 'exports'),
-                'activity_trend' => $activityInsights['trend']
-            ],
-            'top_performers' => [
-                'most_exported_designs' => $this->getMostExportedDesigns($user),
-                'popular_formats' => $this->getPopularExportFormats($user),
-                'active_projects' => $this->getMostActiveProjects($user)
-            ]
+            'overview' => $baseStats['overview'],
+            'recent_activity' => $baseStats['recent_activity']
         ];
     }
 

@@ -91,7 +91,8 @@ class TemplateController extends AbstractController
                 $templates,
                 $total,
                 $page,
-                $limit
+                $limit,
+                'Template list retrieved successfully'
             );
             return $this->templateResponse($templateResponse);
 

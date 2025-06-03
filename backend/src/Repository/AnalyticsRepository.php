@@ -41,7 +41,6 @@ class AnalyticsRepository extends ServiceEntityRepository
      * Provides key metrics for the user dashboard including:
      * - Total designs, projects, templates used
      * - Storage usage and export statistics
-     * - Monthly growth trends
      * - Recent activity summary
      *
      * @param User $user The user to generate dashboard stats for
@@ -52,101 +51,71 @@ class AnalyticsRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
         $userId = $user->getId();
 
-        // Main dashboard statistics
-        $mainStatsSQL = "
-            SELECT 
-                (SELECT COUNT(*) FROM designs d 
-                 INNER JOIN projects p ON d.project_id = p.id 
-                 WHERE p.user_id = :user_id AND d.deleted_at IS NULL) as total_designs,
-                
-                (SELECT COUNT(*) FROM projects p 
-                 WHERE p.user_id = :user_id AND p.deleted_at IS NULL) as total_projects,
-                 
-                (SELECT COUNT(*) FROM export_jobs ej 
-                 WHERE ej.user_id = :user_id) as total_exports,
-                 
-                (SELECT COUNT(*) FROM export_jobs ej 
-                 WHERE ej.user_id = :user_id AND ej.status = 'completed') as completed_exports,
-                 
-                (SELECT SUM(COALESCE(m.size, 0)) FROM media m 
-                 WHERE m.user_id = :user_id AND m.deleted_at IS NULL) as storage_used,
-                 
-                (SELECT COUNT(*) FROM designs d 
-                 INNER JOIN projects p ON d.project_id = p.id 
-                 WHERE p.user_id = :user_id AND d.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                 AND d.deleted_at IS NULL) as designs_this_month,
-                 
-                (SELECT COUNT(*) FROM export_jobs ej 
-                 WHERE ej.user_id = :user_id AND ej.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as exports_this_month
-        ";
+        // Get total designs count
+        $totalDesigns = $conn->executeQuery(
+            "SELECT COUNT(*) FROM designs d 
+             INNER JOIN projects p ON d.project_id = p.id 
+             WHERE p.user_id = ? AND d.deleted_at IS NULL",
+            [$userId]
+        )->fetchOne();
 
-        $result = $conn->executeQuery($mainStatsSQL, ['user_id' => $userId])->fetchAssociative();
+        // Get total projects count
+        $totalProjects = $conn->executeQuery(
+            "SELECT COUNT(*) FROM projects WHERE user_id = ? AND deleted_at IS NULL",
+            [$userId]
+        )->fetchOne();
 
-        // Recent activity (last 7 days)
-        $activitySQL = "
-            SELECT 
-                DATE(activity_date) as date,
-                designs_created,
-                exports_completed,
-                projects_created
-            FROM (
-                SELECT 
-                    d.created_at as activity_date,
-                    COUNT(d.id) as designs_created,
-                    0 as exports_completed,
-                    0 as projects_created
-                FROM designs d
-                INNER JOIN projects p ON d.project_id = p.id
-                WHERE p.user_id = :user_id 
-                AND d.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                AND d.deleted_at IS NULL
-                GROUP BY DATE(d.created_at)
-                
-                UNION ALL
-                
-                SELECT 
-                    ej.completed_at as activity_date,
-                    0 as designs_created,
-                    COUNT(ej.id) as exports_completed,
-                    0 as projects_created
-                FROM export_jobs ej
-                WHERE ej.user_id = :user_id 
-                AND ej.completed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                AND ej.status = 'completed'
-                GROUP BY DATE(ej.completed_at)
-                
-                UNION ALL
-                
-                SELECT 
-                    p.created_at as activity_date,
-                    0 as designs_created,
-                    0 as exports_completed,
-                    COUNT(p.id) as projects_created
-                FROM projects p
-                WHERE p.user_id = :user_id 
-                AND p.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                AND p.deleted_at IS NULL
-                GROUP BY DATE(p.created_at)
-            ) activity
-            ORDER BY date DESC
-        ";
+        // Get total exports count
+        $totalExports = $conn->executeQuery(
+            "SELECT COUNT(*) FROM export_jobs WHERE user_id = ?",
+            [$userId]
+        )->fetchOne();
 
-        $activityData = $conn->executeQuery($activitySQL, ['user_id' => $userId])->fetchAllAssociative();
+        // Get completed exports count
+        $completedExports = $conn->executeQuery(
+            "SELECT COUNT(*) FROM export_jobs WHERE user_id = ? AND status = 'completed'",
+            [$userId]
+        )->fetchOne();
+
+        // Get storage used
+        $storageUsed = $conn->executeQuery(
+            "SELECT COALESCE(SUM(size), 0) FROM media WHERE user_id = ? AND deleted_at IS NULL",
+            [$userId]
+        )->fetchOne();
+
+        // Get recent activity (simplified - just designs in last 7 days)
+        $recentDesigns = $conn->executeQuery(
+            "SELECT DATE(d.created_at) as date, COUNT(*) as designs_created
+             FROM designs d 
+             INNER JOIN projects p ON d.project_id = p.id 
+             WHERE p.user_id = ? AND d.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+             AND d.deleted_at IS NULL
+             GROUP BY DATE(d.created_at)
+             ORDER BY date DESC",
+            [$userId]
+        )->fetchAllAssociative();
+
+        // Convert activity data to expected format
+        $activityData = [];
+        foreach ($recentDesigns as $activity) {
+            $activityData[] = [
+                'date' => $activity['date'],
+                'designs_created' => (int) $activity['designs_created'],
+                'exports_completed' => 0,
+                'projects_created' => 0
+            ];
+        }
 
         return [
             'overview' => [
-                'total_designs' => (int) $result['total_designs'],
-                'total_projects' => (int) $result['total_projects'],
-                'total_exports' => (int) $result['total_exports'],
-                'completed_exports' => (int) $result['completed_exports'],
-                'storage_used' => (int) ($result['storage_used'] ?? 0),
-                'success_rate' => $result['total_exports'] > 0 
-                    ? round(($result['completed_exports'] / $result['total_exports']) * 100, 1)
+                'total_designs' => (int) $totalDesigns,
+                'total_projects' => (int) $totalProjects,
+                'total_exports' => (int) $totalExports,
+                'completed_exports' => (int) $completedExports,
+                'storage_used' => (int) $storageUsed,
+                'success_rate' => $totalExports > 0 
+                    ? round(($completedExports / $totalExports) * 100, 1)
                     : 0
-            ],
-            'monthly_growth' => [
-                'designs' => (int) $result['designs_this_month'],
-                'exports' => (int) $result['exports_this_month']
             ],
             'recent_activity' => $activityData
         ];
@@ -201,8 +170,8 @@ class AnalyticsRepository extends ServiceEntityRepository
             SELECT 
                 format,
                 COUNT(*) as count,
-                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed
+                COUNT(CASE WHEN status = 'completed' THEN 1 ELSE NULL END) as completed,
+                COUNT(CASE WHEN status = 'failed' THEN 1 ELSE NULL END) as failed
             FROM export_jobs 
             WHERE design_id = :design_id
             GROUP BY format
@@ -258,98 +227,113 @@ class AnalyticsRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        // Platform overview statistics
-        $overviewSQL = "
-            SELECT 
-                (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) as total_users,
-                (SELECT COUNT(*) FROM users WHERE is_verified = 1 AND deleted_at IS NULL) as verified_users,
-                (SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND deleted_at IS NULL) as new_users_month,
-                (SELECT COUNT(*) FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND deleted_at IS NULL) as active_users_week,
-                (SELECT COUNT(*) FROM designs d INNER JOIN projects p ON d.project_id = p.id WHERE d.deleted_at IS NULL) as total_designs,
-                (SELECT COUNT(*) FROM projects WHERE deleted_at IS NULL) as total_projects,
-                (SELECT COUNT(*) FROM templates WHERE deleted_at IS NULL) as total_templates,
-                (SELECT COUNT(*) FROM export_jobs) as total_exports,
-                (SELECT COUNT(*) FROM export_jobs WHERE status = 'completed') as completed_exports,
-                (SELECT SUM(COALESCE(size, 0)) FROM media WHERE deleted_at IS NULL) as total_storage_used
-        ";
+        // Get basic platform statistics
+        $totalUsers = $conn->executeQuery(
+            "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
+        )->fetchOne();
 
-        $overview = $conn->executeQuery($overviewSQL)->fetchAssociative();
+        $verifiedUsers = $conn->executeQuery(
+            "SELECT COUNT(*) FROM users WHERE is_verified = 1 AND deleted_at IS NULL"
+        )->fetchOne();
+
+        $newUsersMonth = $conn->executeQuery(
+            "SELECT COUNT(*) FROM users 
+             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND deleted_at IS NULL"
+        )->fetchOne();
+
+        $activeUsersWeek = $conn->executeQuery(
+            "SELECT COUNT(*) FROM users 
+             WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND deleted_at IS NULL"
+        )->fetchOne();
+
+        $totalDesigns = $conn->executeQuery(
+            "SELECT COUNT(*) FROM designs d 
+             INNER JOIN projects p ON d.project_id = p.id 
+             WHERE d.deleted_at IS NULL"
+        )->fetchOne();
+
+        $totalProjects = $conn->executeQuery(
+            "SELECT COUNT(*) FROM projects WHERE deleted_at IS NULL"
+        )->fetchOne();
+
+        $totalTemplates = $conn->executeQuery(
+            "SELECT COUNT(*) FROM templates WHERE deleted_at IS NULL"
+        )->fetchOne();
+
+        $totalExports = $conn->executeQuery(
+            "SELECT COUNT(*) FROM export_jobs"
+        )->fetchOne();
+
+        $completedExports = $conn->executeQuery(
+            "SELECT COUNT(*) FROM export_jobs WHERE status = 'completed'"
+        )->fetchOne();
+
+        $totalStorageUsed = $conn->executeQuery(
+            "SELECT COALESCE(SUM(size), 0) FROM media WHERE deleted_at IS NULL"
+        )->fetchOne();
 
         // User growth over last 12 months
-        $growthSQL = "
-            SELECT 
+        $userGrowth = $conn->executeQuery(
+            "SELECT 
                 DATE_FORMAT(created_at, '%Y-%m') as month,
                 COUNT(*) as new_users
             FROM users 
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
             AND deleted_at IS NULL
             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-            ORDER BY month ASC
-        ";
+            ORDER BY month ASC"
+        )->fetchAllAssociative();
 
-        $userGrowth = $conn->executeQuery($growthSQL)->fetchAllAssociative();
-
-        // Content creation trends
-        $contentSQL = "
-            SELECT 
-                DATE(created_at) as date,
-                COUNT(*) as count,
-                'designs' as type
+        // Recent design creation trends (last 30 days)
+        $designTrends = $conn->executeQuery(
+            "SELECT 
+                DATE(d.created_at) as date,
+                COUNT(*) as count
             FROM designs d
             INNER JOIN projects p ON d.project_id = p.id
             WHERE d.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
             AND d.deleted_at IS NULL
             GROUP BY DATE(d.created_at)
-            
-            UNION ALL
-            
-            SELECT 
-                DATE(created_at) as date,
-                COUNT(*) as count,
-                'projects' as type
-            FROM projects
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            AND deleted_at IS NULL
-            GROUP BY DATE(created_at)
-            
-            ORDER BY date DESC
-        ";
-
-        $contentTrends = $conn->executeQuery($contentSQL)->fetchAllAssociative();
+            ORDER BY date DESC"
+        )->fetchAllAssociative();
 
         // Popular template categories
-        $categoriesSQL = "
-            SELECT 
+        $popularCategories = $conn->executeQuery(
+            "SELECT 
                 category,
                 COUNT(*) as template_count,
-                SUM(COALESCE(usage_count, 0)) as total_usage
+                COALESCE(SUM(usage_count), 0) as total_usage
             FROM templates 
             WHERE deleted_at IS NULL
             GROUP BY category
             ORDER BY total_usage DESC
-            LIMIT 10
-        ";
-
-        $popularCategories = $conn->executeQuery($categoriesSQL)->fetchAllAssociative();
+            LIMIT 10"
+        )->fetchAllAssociative();
 
         return [
             'platform_stats' => [
-                'total_users' => (int) $overview['total_users'],
-                'verified_users' => (int) $overview['verified_users'],
-                'new_users_month' => (int) $overview['new_users_month'],
-                'active_users_week' => (int) $overview['active_users_week'],
-                'total_designs' => (int) $overview['total_designs'],
-                'total_projects' => (int) $overview['total_projects'],
-                'total_templates' => (int) $overview['total_templates'],
-                'total_exports' => (int) $overview['total_exports'],
-                'completed_exports' => (int) $overview['completed_exports'],
-                'total_storage_used' => (int) $overview['total_storage_used'],
-                'export_success_rate' => $overview['total_exports'] > 0 
-                    ? round(($overview['completed_exports'] / $overview['total_exports']) * 100, 1)
+                'total_users' => (int) $totalUsers,
+                'verified_users' => (int) $verifiedUsers,
+                'new_users_month' => (int) $newUsersMonth,
+                'active_users_week' => (int) $activeUsersWeek,
+                'total_designs' => (int) $totalDesigns,
+                'total_projects' => (int) $totalProjects,
+                'total_templates' => (int) $totalTemplates,
+                'total_exports' => (int) $totalExports,
+                'completed_exports' => (int) $completedExports,
+                'total_storage_used' => (int) $totalStorageUsed,
+                'export_success_rate' => $totalExports > 0 
+                    ? round(($completedExports / $totalExports) * 100, 1)
                     : 0
             ],
             'user_growth' => $userGrowth,
-            'content_trends' => $contentTrends,
+            'content_trends' => array_map(function($item) {
+                return [
+                    'date' => $item['date'],
+                    'count' => (int) $item['count'],
+                    'type' => 'designs'
+                ];
+            }, $designTrends),
             'popular_categories' => $popularCategories
         ];
     }
@@ -425,50 +409,67 @@ class AnalyticsRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
         $userId = $user->getId();
 
-        // User activity patterns
-        $activitySQL = "
-            SELECT 
+        // User activity patterns (simplified)
+        $activityPatterns = $conn->executeQuery(
+            "SELECT 
                 DAYNAME(last_login_at) as day_of_week,
                 HOUR(last_login_at) as hour_of_day,
                 COUNT(*) as login_count
             FROM users 
-            WHERE id = :user_id AND last_login_at IS NOT NULL
+            WHERE id = ? AND last_login_at IS NOT NULL
             GROUP BY DAYNAME(last_login_at), HOUR(last_login_at)
-            ORDER BY login_count DESC
-        ";
+            ORDER BY login_count DESC",
+            [$userId]
+        )->fetchAllAssociative();
 
-        $activityPatterns = $conn->executeQuery($activitySQL, ['user_id' => $userId])->fetchAllAssociative();
-
-        // Feature usage statistics
-        $featureUsageSQL = "
-            SELECT 
-                'designs' as feature,
+        // Feature usage - designs
+        $designUsage = $conn->executeQuery(
+            "SELECT 
                 COUNT(*) as usage_count,
-                MAX(d.created_at) as last_used
+                COALESCE(MAX(d.created_at), '1970-01-01') as last_used
             FROM designs d
             INNER JOIN projects p ON d.project_id = p.id
-            WHERE p.user_id = :user_id AND d.deleted_at IS NULL
-            
-            UNION ALL
-            
-            SELECT 
-                'exports' as feature,
-                COUNT(*) as usage_count,
-                MAX(created_at) as last_used
-            FROM export_jobs
-            WHERE user_id = :user_id
-            
-            UNION ALL
-            
-            SELECT 
-                'projects' as feature,
-                COUNT(*) as usage_count,
-                MAX(created_at) as last_used
-            FROM projects
-            WHERE user_id = :user_id AND deleted_at IS NULL
-        ";
+            WHERE p.user_id = ? AND d.deleted_at IS NULL",
+            [$userId]
+        )->fetchAssociative();
 
-        $featureUsage = $conn->executeQuery($featureUsageSQL, ['user_id' => $userId])->fetchAllAssociative();
+        // Feature usage - exports
+        $exportUsage = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as usage_count,
+                COALESCE(MAX(created_at), '1970-01-01') as last_used
+            FROM export_jobs
+            WHERE user_id = ?",
+            [$userId]
+        )->fetchAssociative();
+
+        // Feature usage - projects
+        $projectUsage = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as usage_count,
+                COALESCE(MAX(created_at), '1970-01-01') as last_used
+            FROM projects
+            WHERE user_id = ? AND deleted_at IS NULL",
+            [$userId]
+        )->fetchAssociative();
+
+        $featureUsage = [
+            [
+                'feature' => 'designs',
+                'usage_count' => (int) $designUsage['usage_count'],
+                'last_used' => $designUsage['last_used']
+            ],
+            [
+                'feature' => 'exports',
+                'usage_count' => (int) $exportUsage['usage_count'],
+                'last_used' => $exportUsage['last_used']
+            ],
+            [
+                'feature' => 'projects',
+                'usage_count' => (int) $projectUsage['usage_count'],
+                'last_used' => $projectUsage['last_used']
+            ]
+        ];
 
         return [
             'activity_patterns' => $activityPatterns,

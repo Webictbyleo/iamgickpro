@@ -59,7 +59,7 @@ class AnalyticsController extends AbstractController
      * Returns comprehensive dashboard statistics including:
      * - User overview metrics (designs, projects, exports)
      * - Activity charts and timeline data
-     * - Growth trends and performance indicators
+     * - Performance indicators
      * - Top performing content and insights
      * 
      * @return JsonResponse<DashboardAnalyticsResponseDTO|ErrorResponseDTO> Dashboard analytics or error response
@@ -67,11 +67,14 @@ class AnalyticsController extends AbstractController
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
     public function dashboard(): JsonResponse
     {
+        
+        
         try {
             /** @var User $user */
             $user = $this->getUser();
 
             $analyticsData = $this->analyticsService->getDashboardAnalytics($user);
+            
 
             $response = DashboardAnalyticsResponseDTO::fromData($analyticsData);
 
@@ -84,7 +87,7 @@ class AnalyticsController extends AbstractController
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse(
                     'Failed to retrieve dashboard analytics',
-                    [$e->getMessage()]
+                    [(string)$e]
                 ),
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );

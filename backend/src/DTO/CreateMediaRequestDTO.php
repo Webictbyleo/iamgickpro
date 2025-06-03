@@ -35,22 +35,6 @@ readonly class CreateMediaRequestDTO
         public string $name,
 
         /**
-         * Type of media content.
-         * 
-         * Categorizes the media into broad types for filtering and
-         * appropriate handling in the editor. Supported types:
-         * - image: Static images (JPEG, PNG, SVG, etc.)
-         * - video: Video files (MP4, WebM, etc.)
-         * - audio: Audio files (MP3, WAV, etc.)
-         */
-        #[Assert\NotBlank(message: 'Media type is required')]
-        #[Assert\Choice(
-            choices: ['image', 'video', 'audio'],
-            message: 'Type must be one of: image, video, audio'
-        )]
-        public string $type = 'image',
-
-        /**
          * MIME type of the media file.
          * 
          * Specifies the exact format of the media file for proper
@@ -82,6 +66,22 @@ readonly class CreateMediaRequestDTO
         #[Assert\NotBlank(message: 'URL is required')]
         #[Assert\Url(message: 'URL must be a valid URL')]
         public string $url,
+
+        /**
+         * Type of media content.
+         * 
+         * Categorizes the media into broad types for filtering and
+         * appropriate handling in the editor. Supported types:
+         * - image: Static images (JPEG, PNG, SVG, etc.)
+         * - video: Video files (MP4, WebM, etc.)
+         * - audio: Audio files (MP3, WAV, etc.)
+         */
+        #[Assert\NotBlank(message: 'Media type is required')]
+        #[Assert\Choice(
+            choices: ['image', 'video', 'audio'],
+            message: 'Type must be one of: image, video, audio'
+        )]
+        public string $type = 'image',
 
         /**
          * Optional URL to a thumbnail or preview image.
