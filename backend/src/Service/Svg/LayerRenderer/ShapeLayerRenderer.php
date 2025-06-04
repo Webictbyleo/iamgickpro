@@ -7,6 +7,7 @@ namespace App\Service\Svg\LayerRenderer;
 use App\Entity\Layer;
 use App\Service\Svg\SvgDocumentBuilder;
 use DOMElement;
+use DOMXPath;
 
 /**
  * Renderer for shape layers (rectangle, circle, ellipse, polygon, star, etc.)
@@ -28,6 +29,30 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return 10;
     }
 
+    private function getFillValue(array $properties, SvgDocumentBuilder $builder, ?DOMElement $svgElement = null, ?Layer $layer = null): string
+    {
+        // Get the unified fill configuration
+        $fill = $properties['fill'] ?? ['type' => 'solid', 'color' => '#cccccc', 'opacity' => 1.0];
+        
+        if (!is_array($fill) || !isset($fill['type'])) {
+            return $this->validateColor('#cccccc');
+        }
+        
+        return match ($fill['type']) {
+            'linear', 'radial' => $this->generatePlaceholderGradientUrl($fill, $layer),
+            'pattern' => $this->handlePatternFill($fill, $builder, $svgElement),
+            'solid' => $this->handleSolidFill($fill),
+            default => $this->validateColor('#cccccc'),
+        };
+    }
+    
+    private function generatePlaceholderGradientUrl(array $fill, ?Layer $layer = null): string
+    {
+        // Generate placeholder URL that will be resolved later
+        $gradientId = 'gradient-' . ($layer ? $layer->getId() : uniqid()) . '-' . md5(json_encode($fill));
+        return "url(#{$gradientId})";
+    }
+
     protected function renderLayerContent(Layer $layer, SvgDocumentBuilder $builder): DOMElement
     {
         $properties = $layer->getProperties() ?? [];
@@ -44,16 +69,14 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         $width = $layer->getWidth() ?? 100;
         $height = $layer->getHeight() ?? 100;
         
-        // Create shape element based on type
+        // Create shape element
         $shapeElement = $this->createShapeElement($builder, $shapeType, $width, $height, $properties);
         
-        // Now get fill value with proper document context from the created element
-        $fill = $this->getFillValue($properties, $builder, $shapeElement->ownerDocument->documentElement);
-        
-        // Apply common styling
+        // Get fill value (placeholder for gradients, actual for solid/patterns)
+        $fill = $this->getFillValue($properties, $builder, null, $layer);
         $shapeElement->setAttribute('fill', $fill);
         
-        // Apply fill opacity if specified in the unified fill structure
+        // Apply fill opacity if specified
         $fillConfig = $properties['fill'] ?? ['type' => 'solid', 'color' => '#cccccc', 'opacity' => 1.0];
         if (is_array($fillConfig) && isset($fillConfig['opacity']) && $fillConfig['opacity'] < 1.0) {
             $shapeElement->setAttribute('fill-opacity', (string)$fillConfig['opacity']);
@@ -88,23 +111,6 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return in_array($shapeType, $validTypes, true) ? $shapeType : 'rectangle';
     }
 
-    private function getFillValue(array $properties, SvgDocumentBuilder $builder, ?DOMElement $svgElement = null): string
-    {
-        // Get the unified fill configuration
-        $fill = $properties['fill'] ?? ['type' => 'solid', 'color' => '#cccccc', 'opacity' => 1.0];
-        
-        if (!is_array($fill) || !isset($fill['type'])) {
-            return $this->validateColor('#cccccc'); // fallback to default solid color
-        }
-        
-        return match ($fill['type']) {
-            'linear', 'radial' => $this->handleGradientFill($fill, $builder, $svgElement),
-            'pattern' => $this->handlePatternFill($fill, $builder, $svgElement),
-            'solid' => $this->handleSolidFill($fill),
-            default => $this->validateColor('#cccccc'), // fallback to default solid color
-        };
-    }
-    
     private function handleSolidFill(array $fill): string
     {
         $color = $this->validateColor($fill['color'] ?? '#cccccc');
@@ -117,61 +123,6 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         }
         
         return $color;
-    }
-    
-    private function handleGradientFill(array $fill, SvgDocumentBuilder $builder, ?DOMElement $svgElement = null): string
-    {
-        // If no SVG element provided, we need one for proper document context
-        if (!$svgElement) {
-            error_log("ShapeLayerRenderer: No SVG element provided for gradient");
-            return $this->validateColor('#cccccc'); // Cannot create gradient without document context
-        }
-        
-        // Convert unified fill structure to parent's expected gradient format
-        $parentGradientData = [
-            'type' => $fill['type'],
-            'stops' => []
-        ];
-        
-        // Convert colors to stops format expected by parent (offset, color, opacity)
-        $colors = $fill['colors'] ?? [];
-        foreach ($colors as $colorData) {
-            $stop = [
-                'offset' => (($colorData['stop'] ?? 0.0) * 100) . '%', // Convert 0.0-1.0 to percentage
-                'color' => $colorData['color'] ?? '#000000'
-            ];
-            
-            // Only add opacity if it's specified and not 1.0
-            if (isset($colorData['opacity']) && $colorData['opacity'] < 1.0) {
-                $stop['opacity'] = $colorData['opacity'];
-            }
-            
-            $parentGradientData['stops'][] = $stop;
-        }
-        
-        // Add type-specific parameters for parent method
-        if ($fill['type'] === 'linear') {
-            $angle = $fill['angle'] ?? 0;
-            $angleRad = deg2rad($angle);
-            
-            $parentGradientData['x1'] = (0.5 - 0.5 * cos($angleRad)) * 100 . '%';
-            $parentGradientData['y1'] = (0.5 - 0.5 * sin($angleRad)) * 100 . '%';
-            $parentGradientData['x2'] = (0.5 + 0.5 * cos($angleRad)) * 100 . '%';
-            $parentGradientData['y2'] = (0.5 + 0.5 * sin($angleRad)) * 100 . '%';
-        } elseif ($fill['type'] === 'radial') {
-            $parentGradientData['cx'] = ($fill['centerX'] ?? 0.5) * 100 . '%';
-            $parentGradientData['cy'] = ($fill['centerY'] ?? 0.5) * 100 . '%';
-            $parentGradientData['r'] = ($fill['radius'] ?? 0.5) * 100 . '%';
-        }
-        
-        error_log("ShapeLayerRenderer: About to call parent::createGradient with data: " . json_encode($parentGradientData));
-        
-        // Use parent's createGradient method
-        $gradientUrl = parent::createGradient($parentGradientData, $builder, $svgElement);
-        
-        error_log("ShapeLayerRenderer: parent::createGradient returned: " . ($gradientUrl ?: 'null'));
-        
-        return $gradientUrl ?: $this->validateColor('#cccccc');
     }
     
     private function handlePatternFill(array $fill, SvgDocumentBuilder $builder, ?DOMElement $svgElement = null): string
@@ -195,24 +146,24 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $patternUrl ?: $this->validateColor('#cccccc');
     }
 
-    private function createShapeElement(SvgDocumentBuilder $builder, string $shapeType, float $width, float $height, array $properties): DOMElement
+    private function createShapeElement(SvgDocumentBuilder $builder, string $shapeType, float $width, float $height, array $properties, ?\DOMDocument $document = null): DOMElement
     {
         return match ($shapeType) {
-            'rectangle' => $this->createRectangle($builder, $width, $height, $properties),
-            'circle' => $this->createCircle($builder, $width, $height),
-            'ellipse' => $this->createEllipse($builder, $width, $height),
-            'triangle' => $this->createTriangle($builder, $width, $height),
-            'polygon' => $this->createPolygon($builder, $width, $height, $properties),
-            'star' => $this->createStar($builder, $width, $height, $properties),
-            'line' => $this->createLine($builder, $width, $height, $properties),
-            'arrow' => $this->createArrow($builder, $width, $height, $properties),
-            default => $this->createRectangle($builder, $width, $height, $properties),
+            'rectangle' => $this->createRectangle($builder, $width, $height, $properties, $document),
+            'circle' => $this->createCircle($builder, $width, $height, $document),
+            'ellipse' => $this->createEllipse($builder, $width, $height, $document),
+            'triangle' => $this->createTriangle($builder, $width, $height, $document),
+            'polygon' => $this->createPolygon($builder, $width, $height, $properties, $document),
+            'star' => $this->createStar($builder, $width, $height, $properties, $document),
+            'line' => $this->createLine($builder, $width, $height, $properties, $document),
+            'arrow' => $this->createArrow($builder, $width, $height, $properties, $document),
+            default => $this->createRectangle($builder, $width, $height, $properties, $document),
         };
     }
 
-    private function createRectangle(SvgDocumentBuilder $builder, float $width, float $height, array $properties): DOMElement
+    private function createRectangle(SvgDocumentBuilder $builder, float $width, float $height, array $properties, ?\DOMDocument $document = null): DOMElement
     {
-        $rect = $builder->createElement('rect');
+        $rect = $builder->createElement('rect', $document);
         $rect->setAttribute('x', '0');
         $rect->setAttribute('y', '0');
         $rect->setAttribute('width', (string)$width);
@@ -228,9 +179,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $rect;
     }
 
-    private function createCircle(SvgDocumentBuilder $builder, float $width, float $height): DOMElement
+    private function createCircle(SvgDocumentBuilder $builder, float $width, float $height, ?\DOMDocument $document = null): DOMElement
     {
-        $circle = $builder->createElement('circle');
+        $circle = $builder->createElement('circle', $document);
         $radius = min($width, $height) / 2;
         $circle->setAttribute('cx', (string)($width / 2));
         $circle->setAttribute('cy', (string)($height / 2));
@@ -239,9 +190,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $circle;
     }
 
-    private function createEllipse(SvgDocumentBuilder $builder, float $width, float $height): DOMElement
+    private function createEllipse(SvgDocumentBuilder $builder, float $width, float $height, ?\DOMDocument $document = null): DOMElement
     {
-        $ellipse = $builder->createElement('ellipse');
+        $ellipse = $builder->createElement('ellipse', $document);
         $ellipse->setAttribute('cx', (string)($width / 2));
         $ellipse->setAttribute('cy', (string)($height / 2));
         $ellipse->setAttribute('rx', (string)($width / 2));
@@ -250,9 +201,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $ellipse;
     }
 
-    private function createTriangle(SvgDocumentBuilder $builder, float $width, float $height): DOMElement
+    private function createTriangle(SvgDocumentBuilder $builder, float $width, float $height, ?\DOMDocument $document = null): DOMElement
     {
-        $polygon = $builder->createElement('polygon');
+        $polygon = $builder->createElement('polygon', $document);
         
         // Equilateral triangle pointing up
         $points = [
@@ -266,9 +217,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $polygon;
     }
 
-    private function createPolygon(SvgDocumentBuilder $builder, float $width, float $height, array $properties): DOMElement
+    private function createPolygon(SvgDocumentBuilder $builder, float $width, float $height, array $properties, ?\DOMDocument $document = null): DOMElement
     {
-        $polygon = $builder->createElement('polygon');
+        $polygon = $builder->createElement('polygon', $document);
         
         $sides = $this->validateNumber($properties['sides'] ?? 6, 6, 3, 20);
         $points = $this->calculatePolygonPoints($width, $height, (int)$sides);
@@ -278,9 +229,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $polygon;
     }
 
-    private function createStar(SvgDocumentBuilder $builder, float $width, float $height, array $properties): DOMElement
+    private function createStar(SvgDocumentBuilder $builder, float $width, float $height, array $properties, ?\DOMDocument $document = null): DOMElement
     {
-        $polygon = $builder->createElement('polygon');
+        $polygon = $builder->createElement('polygon', $document);
         
         $points = $this->validateNumber($properties['points'] ?? 5, 5, 3, 20);
         $innerRadius = $this->validateNumber($properties['innerRadius'] ?? 0.4, 0.4, 0.1, 0.9);
@@ -292,9 +243,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $polygon;
     }
 
-    private function createLine(SvgDocumentBuilder $builder, float $width, float $height, array $properties): DOMElement
+    private function createLine(SvgDocumentBuilder $builder, float $width, float $height, array $properties, ?\DOMDocument $document = null): DOMElement
     {
-        $line = $builder->createElement('line');
+        $line = $builder->createElement('line', $document);
         
         // Default to horizontal line across the shape bounds
         $x1 = $this->validateNumber($properties['x1'] ?? 0, 0);
@@ -310,9 +261,9 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         return $line;
     }
 
-    private function createArrow(SvgDocumentBuilder $builder, float $width, float $height, array $properties): DOMElement
+    private function createArrow(SvgDocumentBuilder $builder, float $width, float $height, array $properties, ?\DOMDocument $document = null): DOMElement
     {
-        $path = $builder->createElement('path');
+        $path = $builder->createElement('path', $document);
         
         // Create arrow shape
         $arrowHeadSize = min($width, $height) * 0.2;

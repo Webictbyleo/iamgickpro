@@ -8,6 +8,7 @@ use App\Entity\Layer;
 use App\Service\Svg\SvgDocumentBuilder;
 use App\Service\Svg\SvgTransformBuilder;
 use DOMElement;
+use DOMXPath;
 
 /**
  * Abstract base class for layer renderers with common functionality
@@ -28,8 +29,9 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
             return null;
         }
 
-        // Create group for the layer
-        $group = $builder->createGroup("layer-{$layer->getId()}");
+        // Create group element using the builder (ensures proper document context)
+        $group = $builder->createElement('g');
+        $group->setAttribute('id', "layer-{$layer->getId()}");
         
         // Apply transform
         $transform = $this->transformBuilder->buildTransformAttribute($layer);
@@ -43,15 +45,133 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
             $group->setAttribute('opacity', $opacity);
         }
 
+        // Store layer data for gradient resolution (only if layer has gradients)
+        $properties = $layer->getProperties() ?? [];
+        $fillConfig = $properties['fill'] ?? null;
+        if ($fillConfig && is_array($fillConfig) && in_array($fillConfig['type'] ?? '', ['linear', 'radial'], true)) {
+            $group->setAttribute('data-layer-id', (string)$layer->getId());
+            $group->setAttribute('data-layer-properties', json_encode($properties));
+        }
+
         // Render layer-specific content
         $content = $this->renderLayerContent($layer, $builder);
         if ($content) {
-            // Import content to the same document as the group
-            $importedContent = $group->ownerDocument->importNode($content, true);
-            $group->appendChild($importedContent);
+            $group->appendChild($content);
         }
 
         return $group;
+    }
+
+    /**
+     * Resolves all gradients in the SVG after all layers have been added
+     */
+    public function resolveAllGradients(DOMElement $svgRoot, SvgDocumentBuilder $builder): void
+    {
+        $xpath = new DOMXPath($svgRoot->ownerDocument);
+        $layerGroups = $xpath->query('.//g[@data-layer-properties]', $svgRoot);
+        
+        if ($layerGroups === false) {
+            return;
+        }
+        
+        foreach ($layerGroups as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+            
+            $layerProperties = json_decode($node->getAttribute('data-layer-properties'), true);
+            if (!$layerProperties || !is_array($layerProperties)) {
+                continue;
+            }
+            
+            // Resolve gradients for this layer
+            $this->resolveLayerGradients($node, $layerProperties, $builder, $svgRoot);
+            
+            // Clean up temporary attributes
+            $node->removeAttribute('data-layer-properties');
+        }
+    }
+    
+    private function resolveLayerGradients(DOMElement $layerGroup, array $layerProperties, SvgDocumentBuilder $builder, DOMElement $svgRoot): void
+    {
+        $fillConfig = $layerProperties['fill'] ?? null;
+        if (!$fillConfig || !is_array($fillConfig)) {
+            return;
+        }
+        
+        // Create the gradient in the final SVG context
+        $gradientUrl = $this->createFinalGradient($fillConfig, $builder, $svgRoot, $layerGroup->getAttribute('data-layer-id'));
+        
+        if ($gradientUrl) {
+            // Find all shape elements in this layer group and update their fill
+            $xpath = new DOMXPath($svgRoot->ownerDocument);
+            $shapeElements = $xpath->query('.//rect|.//circle|.//ellipse|.//polygon|.//path|.//line', $layerGroup);
+            
+            if ($shapeElements !== false) {
+                foreach ($shapeElements as $shapeNode) {
+                    if ($shapeNode instanceof DOMElement) {
+                        $currentFill = $shapeNode->getAttribute('fill');
+                        // Only update if it looks like a placeholder gradient URL
+                        if (str_starts_with($currentFill, 'url(#gradient-')) {
+                            $shapeNode->setAttribute('fill', $gradientUrl);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private function createFinalGradient(array $fillConfig, SvgDocumentBuilder $builder, DOMElement $svgRoot, string $layerId): ?string
+    {
+        // Generate consistent gradient ID
+        $gradientId = 'gradient-' . $layerId . '-' . md5(json_encode($fillConfig));
+        
+        // Check if gradient already exists
+        $xpath = new DOMXPath($svgRoot->ownerDocument);
+        $existingGradient = $xpath->query(".//linearGradient[@id='{$gradientId}']|.//radialGradient[@id='{$gradientId}']", $svgRoot);
+        
+        if ($existingGradient !== false && $existingGradient->length > 0) {
+            return "url(#{$gradientId})";
+        }
+        
+        // Create gradient data in expected format
+        $gradientData = [
+            'type' => $fillConfig['type'],
+            'stops' => [],
+            'id' => $gradientId
+        ];
+        
+        // Convert colors to stops
+        $colors = $fillConfig['colors'] ?? [];
+        foreach ($colors as $colorData) {
+            $stop = [
+                'offset' => (($colorData['stop'] ?? 0.0) * 100) . '%',
+                'color' => $colorData['color'] ?? '#000000'
+            ];
+            
+            if (isset($colorData['opacity']) && $colorData['opacity'] < 1.0) {
+                $stop['opacity'] = $colorData['opacity'];
+            }
+            
+            $gradientData['stops'][] = $stop;
+        }
+        
+        // Add type-specific parameters
+        if ($fillConfig['type'] === 'linear') {
+            $angle = $fillConfig['angle'] ?? 0;
+            $angleRad = deg2rad($angle);
+            
+            $gradientData['x1'] = (0.5 - 0.5 * cos($angleRad)) * 100 . '%';
+            $gradientData['y1'] = (0.5 - 0.5 * sin($angleRad)) * 100 . '%';
+            $gradientData['x2'] = (0.5 + 0.5 * cos($angleRad)) * 100 . '%';
+            $gradientData['y2'] = (0.5 + 0.5 * sin($angleRad)) * 100 . '%';
+        } elseif ($fillConfig['type'] === 'radial') {
+            $gradientData['cx'] = ($fillConfig['centerX'] ?? 0.5) * 100 . '%';
+            $gradientData['cy'] = ($fillConfig['centerY'] ?? 0.5) * 100 . '%';
+            $gradientData['r'] = ($fillConfig['radius'] ?? 0.5) * 100 . '%';
+        }
+        
+        return $this->createGradient($gradientData, $builder, $svgRoot);
     }
 
     public function getPriority(): int
@@ -171,14 +291,30 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
     protected function createGradient(array $gradientData, SvgDocumentBuilder $builder, DOMElement $svgElement): ?string
     {
         if (empty($gradientData) || !isset($gradientData['type'])) {
+            error_log("AbstractLayerRenderer: Invalid gradient data - " . json_encode($gradientData));
             return null;
         }
 
-        $gradientId = 'gradient-' . uniqid();
+        // Use provided ID or generate one
+        $gradientId = $gradientData['id'] ?? 'gradient-' . uniqid();
         $stops = $gradientData['stops'] ?? [];
         
         if (empty($stops)) {
+            error_log("AbstractLayerRenderer: No gradient stops provided");
             return null;
+        }
+
+        error_log("AbstractLayerRenderer: Creating gradient with ID: {$gradientId}");
+        error_log("AbstractLayerRenderer: Gradient data: " . json_encode($gradientData));
+
+        // Check if gradient already exists to avoid duplicates
+        $existingGradients = $svgElement->getElementsByTagName($gradientData['type'] === 'linear' ? 'linearGradient' : 'radialGradient');
+        for ($i = 0; $i < $existingGradients->length; $i++) {
+            $existingGradient = $existingGradients->item($i);
+            if ($existingGradient && $existingGradient->getAttribute('id') === $gradientId) {
+                error_log("AbstractLayerRenderer: Gradient {$gradientId} already exists, reusing");
+                return "url(#{$gradientId})";
+            }
         }
 
         $defs = $builder->addDefinitions($svgElement);
@@ -199,6 +335,8 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
         }
         
         $defs->appendChild($gradient);
+        
+        error_log("AbstractLayerRenderer: Gradient created successfully, returning: url(#{$gradientId})");
         
         return "url(#{$gradientId})";
     }

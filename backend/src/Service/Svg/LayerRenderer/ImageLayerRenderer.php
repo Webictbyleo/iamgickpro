@@ -40,16 +40,13 @@ class ImageLayerRenderer extends AbstractLayerRenderer
         $width = $layer->getWidth() ?? 100;
         $height = $layer->getHeight() ?? 100;
         
-        // Use consistent document context
-        $document = new \DOMDocument();
-        
         if (empty($src)) {
             // Render placeholder for missing image
-            return $this->createImagePlaceholder($builder, $width, $height, $document);
+            return $this->createImagePlaceholder($builder, $width, $height);
         }
         
-        // Create image element
-        $imageElement = $builder->createElement('image', $document);
+        // Create image element using builder's document context
+        $imageElement = $builder->createElement('image');
         $imageElement->setAttribute('x', '0');
         $imageElement->setAttribute('y', '0');
         $imageElement->setAttribute('width', (string)$width);
@@ -115,17 +112,19 @@ class ImageLayerRenderer extends AbstractLayerRenderer
 
     private function createImagePlaceholder(SvgDocumentBuilder $builder, float $width, float $height, ?\DOMDocument $document = null): DOMElement
     {
+        // Use the builder's current document context instead of creating a temporary one
+        $document = $document ?? $builder->getCurrentDocument();
         if (!$document) {
-            // Create a temporary document for placeholder creation
+            // Only create a new document if absolutely necessary
             $tempSvg = $builder->createDocument(100, 100);
             $document = $tempSvg->ownerDocument;
         }
         
         // Create a group for the placeholder
-        $group = $builder->createElement('g', $document);
+        $group = $builder->createElement('g');
         
         // Background rectangle
-        $rect = $builder->createElement('rect', $document);
+        $rect = $builder->createElement('rect');
         $rect->setAttribute('x', '0');
         $rect->setAttribute('y', '0');
         $rect->setAttribute('width', (string)$width);
@@ -136,11 +135,11 @@ class ImageLayerRenderer extends AbstractLayerRenderer
         $group->appendChild($rect);
         
         // Create a simple image icon
-        $this->createImageIcon($builder, $group, $width, $height, $document);
+        $this->createImageIcon($builder, $group, $width, $height);
         
         // Add "Image" text
         if ($width > 60 && $height > 30) {
-            $text = $builder->createElement('text', $document);
+            $text = $builder->createElement('text');
             $text->setAttribute('x', (string)($width / 2));
             $text->setAttribute('y', (string)($height / 2 + 20));
             $text->setAttribute('text-anchor', 'middle');
@@ -148,17 +147,15 @@ class ImageLayerRenderer extends AbstractLayerRenderer
             $text->setAttribute('font-family', 'Arial, sans-serif');
             $text->setAttribute('font-size', '12');
             $text->setAttribute('fill', '#888888');
-            $text->appendChild($builder->createText('Image', $document));
+            $text->appendChild($builder->createText('Image', $group->ownerDocument));
             $group->appendChild($text);
         }
         
         return $group;
     }
 
-    private function createImageIcon(SvgDocumentBuilder $builder, DOMElement $group, float $width, float $height, ?\DOMDocument $document = null): void
+    private function createImageIcon(SvgDocumentBuilder $builder, DOMElement $group, float $width, float $height): void
     {
-        $document = $document ?? $group->ownerDocument;
-        
         // Simple image icon (mountain with sun)
         $iconSize = min($width, $height) * 0.3;
         $centerX = $width / 2;
@@ -169,7 +166,7 @@ class ImageLayerRenderer extends AbstractLayerRenderer
         }
         
         // Sun (circle)
-        $sun = $builder->createElement('circle', $document);
+        $sun = $builder->createElement('circle');
         $sun->setAttribute('cx', (string)($centerX - $iconSize / 4));
         $sun->setAttribute('cy', (string)($centerY - $iconSize / 4));
         $sun->setAttribute('r', (string)($iconSize / 8));
@@ -177,7 +174,7 @@ class ImageLayerRenderer extends AbstractLayerRenderer
         $group->appendChild($sun);
         
         // Mountain (triangle)
-        $mountain = $builder->createElement('polygon', $document);
+        $mountain = $builder->createElement('polygon');
         $points = [
             ($centerX - $iconSize / 2) . ',' . ($centerY + $iconSize / 4),
             $centerX . ',' . ($centerY - $iconSize / 4),

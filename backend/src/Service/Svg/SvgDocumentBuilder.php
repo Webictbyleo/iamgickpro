@@ -17,8 +17,15 @@ class SvgDocumentBuilder
         'xlink' => 'http://www.w3.org/1999/xlink',
     ];
 
+    private ?DOMDocument $currentDocument = null;
+
     public function __construct(private readonly bool $validateSvg = true)
     {
+    }
+
+    public function setDocument(DOMDocument $document): void
+    {
+        $this->currentDocument = $document;
     }
 
     /**
@@ -28,6 +35,9 @@ class SvgDocumentBuilder
     {
         $document = new DOMDocument('1.0', 'UTF-8');
         $document->formatOutput = true;
+        
+        // Set this as the current document context
+        $this->currentDocument = $document;
         
         $svgElement = $document->createElementNS($this->namespaces['svg'], 'svg');
         $svgElement->setAttribute('width', (string)$width);
@@ -59,7 +69,12 @@ class SvgDocumentBuilder
 
     public function createGroup(?string $id = null): DOMElement
     {
-        $document = new DOMDocument();
+        $document = $this->currentDocument;
+        if (!$document) {
+            $document = new DOMDocument('1.0', 'UTF-8');
+            $this->currentDocument = $document;
+        }
+        
         $group = $document->createElement('g');
         if ($id) {
             $group->setAttribute('id', $id);
@@ -67,15 +82,24 @@ class SvgDocumentBuilder
         return $group;
     }
 
-    public function createElement(string $tagName, ?DOMDocument $context = null): DOMElement
+    public function createElement(string $tagName, ?DOMDocument $document = null): DOMElement
     {
-        $document = $context ?: new DOMDocument();
-        return $document->createElement($tagName);
+        $doc = $document ?? $this->currentDocument;
+        if (!$doc) {
+            $doc = new DOMDocument('1.0', 'UTF-8');
+            $this->currentDocument = $doc;
+        }
+        
+        return $doc->createElement($tagName);
     }
 
     public function createText(string $content, ?DOMDocument $context = null): \DOMText
     {
-        $document = $context ?: new DOMDocument();
+        $document = $context ?? $this->currentDocument;
+        if (!$document) {
+            $document = new DOMDocument('1.0', 'UTF-8');
+            $this->currentDocument = $document;
+        }
         return $document->createTextNode($content);
     }
 
@@ -181,5 +205,10 @@ class SvgDocumentBuilder
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    public function getCurrentDocument(): ?DOMDocument
+    {
+        return $this->currentDocument;
     }
 }

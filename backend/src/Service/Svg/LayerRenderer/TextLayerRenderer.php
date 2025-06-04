@@ -72,9 +72,8 @@ class TextLayerRenderer extends AbstractLayerRenderer
         float $width,
         float $height
     ): DOMElement {
-        // Create a temporary document for consistent DOM operations
-        $document = new \DOMDocument();
-        $textElement = $builder->createElement('text', $document);
+        // Use the builder's document context instead of creating a new one
+        $textElement = $builder->createElement('text');
         
         // Position based on alignment
         $x = $this->calculateTextX($textAlign, $width);
@@ -98,7 +97,7 @@ class TextLayerRenderer extends AbstractLayerRenderer
             $textElement->setAttribute('text-decoration', $textDecoration);
         }
         
-        $textElement->appendChild($builder->createText($text, $document));
+        $textElement->appendChild($builder->createText($text, $textElement->ownerDocument));
         
         return $textElement;
     }
@@ -119,9 +118,8 @@ class TextLayerRenderer extends AbstractLayerRenderer
         float $height,
         bool $wordWrap
     ): DOMElement {
-        // Create a temporary document for consistent DOM operations
-        $document = new \DOMDocument();
-        $textElement = $builder->createElement('text', $document);
+        // Use the builder's document context instead of creating a new one
+        $textElement = $builder->createElement('text');
         
         // Calculate position
         $x = $this->calculateTextX($textAlign, $width);
@@ -157,10 +155,10 @@ class TextLayerRenderer extends AbstractLayerRenderer
                 continue; // Skip empty lines
             }
             
-            $tspan = $builder->createElement('tspan', $document);
+            $tspan = $builder->createElement('tspan');
             $tspan->setAttribute('x', (string)$x);
             $tspan->setAttribute('dy', $index === 0 ? '0' : (string)$lineHeightPx);
-            $tspan->appendChild($builder->createText(trim($line), $document));
+            $tspan->appendChild($builder->createText(trim($line), $textElement->ownerDocument));
             $textElement->appendChild($tspan);
         }
         
