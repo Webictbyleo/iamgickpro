@@ -10,6 +10,7 @@ use App\Entity\Project;
 use App\Entity\User;
 use App\Repository\DesignRepository;
 use App\Repository\LayerRepository;
+use App\Service\Svg\SvgRendererService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 use Psr\Log\LoggerInterface;
@@ -23,6 +24,7 @@ class DesignService
         private readonly EntityManagerInterface $entityManager,
         private readonly DesignRepository $designRepository,
         private readonly LayerRepository $layerRepository,
+        private readonly SvgRendererService $svgRendererService,
         private readonly LoggerInterface $logger,
         private readonly string $thumbnailDirectory,
     ) {
@@ -232,129 +234,32 @@ class DesignService
     }
 
     /**
-     * Generate SVG content from design data
+     * Generate SVG content from design data using the comprehensive SVG renderer
      */
     private function generateSvgFromDesign(Design $design): string
     {
-        $canvasSettings = $design->getCanvasSettings();
-        $width = $canvasSettings['width'] ?? 800;
-        $height = $canvasSettings['height'] ?? 600;
-        $backgroundColor = $canvasSettings['backgroundColor'] ?? '#ffffff';
-        
-        $layers = $this->layerRepository->findByDesignOrderedByZIndex($design);
-        
-        $svg = sprintf(
-            '<svg width="%d" height="%d" viewBox="0 0 %d %d" xmlns="http://www.w3.org/2000/svg">',
-            $width, $height, $width, $height
-        );
-        
-        // Add background
-        $svg .= sprintf(
-            '<rect width="100%%" height="100%%" fill="%s"/>',
-            htmlspecialchars($backgroundColor)
-        );
-        
-        // Add layers
-        foreach ($layers as $layer) {
-            if (!$layer->getVisible()) {
-                continue;
-            }
+        try {
+            return $this->svgRendererService->renderDesignToSvg($design);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to generate SVG from design', [
+                'design_id' => $design->getId(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
-            $svg .= $this->renderLayerToSvg($layer);
-        }
-        
-        $svg .= '</svg>';
-        
-        return $svg;
-    }
-
-    /**
-     * Render a single layer to SVG
-     */
-    private function renderLayerToSvg(Layer $layer): string
-    {
-        $type = $layer->getType();
-        $properties = $layer->getProperties();
-        $transform = sprintf(
-            'translate(%d,%d) rotate(%f) scale(%f,%f)',
-            $layer->getX() ?? 0,
-            $layer->getY() ?? 0,
-            $layer->getRotation() ?? 0,
-            $layer->getScaleX() ?? 1,
-            $layer->getScaleY() ?? 1
-        );
-        
-        switch ($type) {
-            case 'text':
-                return $this->renderTextLayerToSvg($layer, $properties, $transform);
-            case 'image':
-                return $this->renderImageLayerToSvg($layer, $properties, $transform);
-            case 'shape':
-                return $this->renderShapeLayerToSvg($layer, $properties, $transform);
-            default:
-                return '';
-        }
-    }
-
-    private function renderTextLayerToSvg(Layer $layer, array $properties, string $transform): string
-    {
-        $text = $properties['text'] ?? '';
-        $fontSize = $properties['fontSize'] ?? 16;
-        $fontFamily = $properties['fontFamily'] ?? 'Arial';
-        $color = $properties['color'] ?? '#000000';
-        
-        return sprintf(
-            '<text x="0" y="0" font-family="%s" font-size="%d" fill="%s" transform="%s">%s</text>',
-            htmlspecialchars($fontFamily),
-            $fontSize,
-            htmlspecialchars($color),
-            $transform,
-            htmlspecialchars($text)
-        );
-    }
-
-    private function renderImageLayerToSvg(Layer $layer, array $properties, string $transform): string
-    {
-        $src = $properties['src'] ?? '';
-        $width = $layer->getWidth() ?? 100;
-        $height = $layer->getHeight() ?? 100;
-        
-        if (empty($src)) {
-            return '';
-        }
-        
-        return sprintf(
-            '<image x="0" y="0" width="%d" height="%d" href="%s" transform="%s"/>',
-            $width,
-            $height,
-            htmlspecialchars($src),
-            $transform
-        );
-    }
-
-    private function renderShapeLayerToSvg(Layer $layer, array $properties, string $transform): string
-    {
-        $shapeType = $properties['shapeType'] ?? 'rectangle';
-        $fill = $properties['fill'] ?? '#cccccc';
-        $stroke = $properties['stroke'] ?? '#000000';
-        $strokeWidth = $properties['strokeWidth'] ?? 1;
-        $width = $layer->getWidth() ?? 100;
-        $height = $layer->getHeight() ?? 100;
-        
-        switch ($shapeType) {
-            case 'rectangle':
-                return sprintf(
-                    '<rect x="0" y="0" width="%d" height="%d" fill="%s" stroke="%s" stroke-width="%d" transform="%s"/>',
-                    $width, $height, htmlspecialchars($fill), htmlspecialchars($stroke), $strokeWidth, $transform
-                );
-            case 'circle':
-                $radius = min($width, $height) / 2;
-                return sprintf(
-                    '<circle cx="%d" cy="%d" r="%d" fill="%s" stroke="%s" stroke-width="%d" transform="%s"/>',
-                    $width/2, $height/2, $radius, htmlspecialchars($fill), htmlspecialchars($stroke), $strokeWidth, $transform
-                );
-            default:
-                return '';
+            // Return a simple error placeholder SVG
+            $width = $design->getWidth() ?? 800;
+            $height = $design->getHeight() ?? 600;
+            
+            return sprintf(
+                '<svg width="%d" height="%d" viewBox="0 0 %d %d" xmlns="http://www.w3.org/2000/svg">' .
+                '<rect width="100%%" height="100%%" fill="#f3f4f6"/>' .
+                '<text x="50%%" y="50%%" text-anchor="middle" dominant-baseline="middle" ' .
+                'font-family="Arial, sans-serif" font-size="16" fill="#ef4444">' .
+                'Error rendering design</text>' .
+                '</svg>',
+                $width, $height, $width, $height
+            );
         }
     }
 

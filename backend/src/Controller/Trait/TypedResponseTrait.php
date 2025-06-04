@@ -23,6 +23,7 @@ use App\DTO\Response\TemplateResponseDTO;
 use App\DTO\Response\TemplateSearchResponseDTO;
 use App\DTO\Response\UserProfileResponseDTO;
 use App\DTO\Response\UserResponseDTO;
+use App\DTO\Response\VideoAnalysisResponseDTO;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -179,6 +180,14 @@ trait TypedResponseTrait
      * Create a typed JSON response with GlobalSearchResponseDTO
      */
     protected function globalSearchResponse(GlobalSearchResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return $this->json($dto->toArray(), $status);
+    }
+
+    /**
+     * Create a typed JSON response with VideoAnalysisResponseDTO
+     */
+    protected function videoAnalysisResponse(VideoAnalysisResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
     {
         return $this->json($dto->toArray(), $status);
     }

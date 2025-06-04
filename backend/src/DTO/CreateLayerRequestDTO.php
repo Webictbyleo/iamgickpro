@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\DTO;
 
 use App\DTO\ValueObject\Transform;
-use App\DTO\ValueObject\LayerProperties;
 use App\DTO\ValueObject\TextLayerProperties;
 use App\DTO\ValueObject\ImageLayerProperties;
 use App\DTO\ValueObject\ShapeLayerProperties;

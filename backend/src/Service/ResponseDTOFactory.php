@@ -23,6 +23,7 @@ use App\DTO\Response\TemplateResponseDTO;
 use App\DTO\Response\TemplateSearchResponseDTO;
 use App\DTO\Response\UserProfileResponseDTO;
 use App\DTO\Response\UserResponseDTO;
+use App\DTO\Response\VideoAnalysisResponseDTO;
 use App\Entity\User;
 use App\Entity\Design;
 use App\Entity\Project;
@@ -31,6 +32,7 @@ use App\Entity\Template;
 use App\Entity\Layer;
 use App\Entity\ExportJob;
 use App\Entity\Plugin;
+use App\Entity\VideoAnalysis;
 
 /**
  * Factory service for creating response DTOs
@@ -685,6 +687,137 @@ class ResponseDTOFactory
             limit: $limit,
             total: $total,
             message: $message
+        );
+    }
+
+    /**
+     * Create video analysis response from VideoAnalysis entity
+     */
+    public function createVideoAnalysisResponse(VideoAnalysis $videoAnalysis, string $message = 'Video analysis retrieved successfully'): VideoAnalysisResponseDTO
+    {
+        $videoAnalysisData = [
+            'id' => $videoAnalysis->getId(),
+            'jobId' => $videoAnalysis->getJobId(),
+            'status' => $videoAnalysis->getStatus(),
+            'progress' => $videoAnalysis->getProgress(),
+            'videoUrl' => $videoAnalysis->getVideoUrl(),
+            'videoId' => $videoAnalysis->getVideoId(),
+            'style' => $videoAnalysis->getStyle(),
+            'size' => $videoAnalysis->getSize(),
+            'maxThumbnails' => $videoAnalysis->getMaxThumbnails(),
+            'customPrompt' => $videoAnalysis->getCustomPrompt(),
+            'designTypes' => $videoAnalysis->getDesignTypes(),
+            'videoInfo' => $videoAnalysis->getVideoInfo(),
+            'transcript' => $videoAnalysis->getTranscript(),
+            'keyMoments' => $videoAnalysis->getKeyMoments(),
+            'suggestedDesigns' => $videoAnalysis->getSuggestedDesigns(),
+            'colorPalette' => $videoAnalysis->getColorPalette(),
+            'dominantThemes' => $videoAnalysis->getDominantThemes(),
+            'extractedFrames' => $videoAnalysis->getExtractedFrames(),
+            'errorMessage' => $videoAnalysis->getErrorMessage(),
+            'errorDetails' => $videoAnalysis->getErrorDetails(),
+            'estimatedTime' => $videoAnalysis->getEstimatedTime(),
+            'processingTimeMs' => $videoAnalysis->getProcessingTimeMs(),
+            'metadata' => $videoAnalysis->getMetadata(),
+            'createdAt' => $videoAnalysis->getCreatedAt()->format('c'),
+            'startedAt' => $videoAnalysis->getStartedAt()?->format('c'),
+            'completedAt' => $videoAnalysis->getCompletedAt()?->format('c'),
+            'expiresAt' => $videoAnalysis->getExpiresAt()?->format('c'),
+            'isExpired' => $videoAnalysis->isExpired(),
+            'isCompleted' => $videoAnalysis->isCompleted(),
+            'isFailed' => $videoAnalysis->isFailed(),
+            'isProcessing' => $videoAnalysis->isProcessing(),
+        ];
+
+        return new VideoAnalysisResponseDTO(
+            message: $message,
+            success: true,
+            job: $videoAnalysisData
+        );
+    }
+
+    /**
+     * Create video analysis job response from VideoAnalysis entity
+     */
+    public function createVideoAnalysisJobResponse(VideoAnalysis $analysis, string $message = 'Video analysis job retrieved successfully'): VideoAnalysisResponseDTO
+    {
+        $jobData = [
+            'jobId' => $analysis->getJobId(),
+            'status' => $analysis->getStatus(),
+            'progress' => $analysis->getProgress(),
+            'videoUrl' => $analysis->getVideoUrl(),
+            'videoId' => $analysis->getVideoId(),
+            'style' => $analysis->getStyle(),
+            'size' => $analysis->getSize(),
+            'maxThumbnails' => $analysis->getMaxThumbnails(),
+            'customPrompt' => $analysis->getCustomPrompt(),
+            'designTypes' => $analysis->getDesignTypes(),
+            'errorMessage' => $analysis->getErrorMessage(),
+            'estimatedTime' => $analysis->getEstimatedTime(),
+            'processingTimeMs' => $analysis->getProcessingTimeMs(),
+            'createdAt' => $analysis->getCreatedAt()->format('c'),
+            'startedAt' => $analysis->getStartedAt()?->format('c'),
+            'completedAt' => $analysis->getCompletedAt()?->format('c'),
+            'expiresAt' => $analysis->getExpiresAt()?->format('c'),
+            'result' => $analysis->getAnalysisResult()
+        ];
+
+        return new VideoAnalysisResponseDTO(
+            message: $message,
+            success: true,
+            job: $jobData
+        );
+    }
+
+    /**
+     * Create video analysis list response
+     */
+    public function createVideoAnalysisListResponse(
+        array $jobs, 
+        int $total, 
+        int $page, 
+        int $totalPages,
+        string $message = 'Video analysis jobs retrieved successfully'
+    ): VideoAnalysisResponseDTO {
+        $jobsData = array_map(fn(VideoAnalysis $analysis) => [
+            'jobId' => $analysis->getJobId(),
+            'status' => $analysis->getStatus(),
+            'progress' => $analysis->getProgress(),
+            'videoUrl' => $analysis->getVideoUrl(),
+            'videoId' => $analysis->getVideoId(),
+            'style' => $analysis->getStyle(),
+            'size' => $analysis->getSize(),
+            'maxThumbnails' => $analysis->getMaxThumbnails(),
+            'customPrompt' => $analysis->getCustomPrompt(),
+            'errorMessage' => $analysis->getErrorMessage(),
+            'estimatedTime' => $analysis->getEstimatedTime(),
+            'processingTimeMs' => $analysis->getProcessingTimeMs(),
+            'createdAt' => $analysis->getCreatedAt()->format('c'),
+            'startedAt' => $analysis->getStartedAt()?->format('c'),
+            'completedAt' => $analysis->getCompletedAt()?->format('c'),
+            'expiresAt' => $analysis->getExpiresAt()?->format('c'),
+            'result' => $analysis->isCompleted() ? $analysis->getAnalysisResult() : null
+        ], $jobs);
+
+        return new VideoAnalysisResponseDTO(
+            message: $message,
+            success: true,
+            jobs: $jobsData,
+            total: $total,
+            page: $page,
+            totalPages: $totalPages
+        );
+    }
+
+    /**
+     * Create video info response
+     */
+    public function createVideoInfoResponse(array $videoInfo, string $message = 'Video information extracted successfully'): VideoAnalysisResponseDTO
+    {
+        return new VideoAnalysisResponseDTO(
+            message: $message,
+            success: true,
+            videoInfo: $videoInfo
         );
     }
 }

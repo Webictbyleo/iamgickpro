@@ -294,14 +294,15 @@
                 <div class="border-t border-gray-100 my-1"></div>
                 <MenuItem v-slot="{ active }">
                   <button
-                    @click="$emit('logout')"
+                    @click="handleLogout"
+                    :disabled="isLoggingOut"
                     :class="[
                       active ? 'bg-red-50 text-red-700' : 'text-red-600',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium disabled:opacity-50'
                     ]"
                   >
-                    <component :is="icons.logout" class="w-4 h-4 mr-3" />
-                    Sign out
+                    <component :is="isLoggingOut ? icons.refresh : icons.logout" class="w-4 h-4 mr-3" :class="{ 'animate-spin': isLoggingOut }" />
+                    {{ isLoggingOut ? 'Signing out...' : 'Sign out' }}
                   </button>
                 </MenuItem>
               </div>
@@ -338,6 +339,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const icons = useIcons()
 const searchQuery = ref('')
+const isLoggingOut = ref(false)
 
 const userName = computed(() => {
   const user = authStore.user
@@ -361,6 +363,24 @@ const navigateToSearch = () => {
     })
   } else {
     router.push({ name: 'SearchResults' })
+  }
+}
+
+// Logout functionality
+const handleLogout = async () => {
+  if (isLoggingOut.value) return
+  
+  isLoggingOut.value = true
+  try {
+    await authStore.logout()
+    // Navigate to login page after successful logout
+    router.push({ name: 'Login' })
+  } catch (error) {
+    console.error('Logout failed:', error)
+    // Even if logout API fails, clear local storage and redirect
+    router.push({ name: 'Login' })
+  } finally {
+    isLoggingOut.value = false
   }
 }
 </script>

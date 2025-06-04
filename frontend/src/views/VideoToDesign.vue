@@ -421,7 +421,8 @@ import type {
   YouTubeVideoInfo, 
   DesignSuggestion, 
   GenerateDesignFromVideoResponse,
-  GenerateDesignFromVideoRequest
+  GenerateDesignFromVideoRequest,
+  ThumbnailGenerationOptions
 } from '@/types'
 
 const router = useRouter()
@@ -789,10 +790,12 @@ const generateThumbnails = async (): Promise<void> => {
     const requestData: GenerateDesignFromVideoRequest = {
       videoUrl: videoUrl.value,
       designTypes: [DesignType.THUMBNAIL],
-      maxDesigns: maxThumbnails.value,
-      includeTranscript: false,
-      extractFrames: true,
-      customPrompt: `Generate YouTube thumbnail in ${selectedThumbnailStyle.value} style. Size: ${width}x${height}. ${customPrompt.value}`
+      options: {
+        style: selectedThumbnailStyle.value,
+        maxThumbnails: maxThumbnails.value,
+        size: thumbnailSize.value,
+        customPrompt: customPrompt.value
+      }
     }
     
     const response = await videoAnalysisAPI.generateDesignsFromVideo(requestData)

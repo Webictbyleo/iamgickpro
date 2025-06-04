@@ -24,6 +24,14 @@
 /migrations/*.php
 ### Debug files ###
 debug_**.php
+debug_*.php
+debug*.php
+debug**.txt
 ##  Testing files ##
 /test*.php
+### Test files ###
+/*test**.php
+/*test**.txt
+/*test**.svg
+
 /create_test*.php

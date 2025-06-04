@@ -909,13 +909,18 @@ export interface ColorPalette {
   colors: string[]
 }
 
+export interface ThumbnailGenerationOptions {
+  style: string
+  maxThumbnails: number
+  size: string
+  customPrompt?: string
+}
+
 export interface GenerateDesignFromVideoRequest {
   videoUrl: string
   designTypes?: DesignType[]
-  maxDesigns?: number
-  includeTranscript?: boolean
-  extractFrames?: boolean
   customPrompt?: string
+  options?: ThumbnailGenerationOptions
 }
 
 export interface GenerateDesignFromVideoResponse {
@@ -964,10 +969,10 @@ export interface VideoAnalysisJobsApiResponse extends BaseApiResponse {
 }
 
 export interface ThumbnailGenerationRequest extends GenerateDesignFromVideoRequest {
-  thumbnailStyles?: string[]
-  thumbnailSize?: string
-  includeTitle?: boolean
-  includeChannelBranding?: boolean
+  options: ThumbnailGenerationOptions & {
+    includeTitle?: boolean
+    includeChannelBranding?: boolean
+  }
 }
 
 export interface ThumbnailDesign extends DesignSuggestion {

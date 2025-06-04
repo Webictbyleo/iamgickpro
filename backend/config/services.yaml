@@ -1,3 +1,7 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each environment
 parameters:
     # Directory paths (relative to project root)
     app.upload_directory: '%kernel.project_dir%/public/uploads'
@@ -7,6 +11,9 @@ parameters:
     app.plugin_directory: '%app.upload_directory%/plugins'
     app.plugin_extract_directory: '%kernel.project_dir%/var/plugins'
     app.export_directory: '%kernel.project_dir%/var/exports'
+
+imports:
+    - { resource: services/svg.yaml }
 
 services:
     _defaults:
@@ -81,6 +88,11 @@ services:
     App\ArgumentResolver\RequestDTOResolver:
         tags:
             - { name: controller.argument_value_resolver }
+
+    # Video Analysis Service Configuration
+    App\Service\VideoAnalysisService:
+        arguments:
+            $youtubeApiKey: '%env(YOUTUBE_API_KEY)%'
 
     # Response DTO Factory service
     App\Service\ResponseDTOFactory: ~

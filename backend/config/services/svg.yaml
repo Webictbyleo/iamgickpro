@@ -1,0 +1,43 @@
+services:
+    # SVG Core Services
+    App\Service\Svg\SvgDocumentBuilder:
+        arguments:
+            $validateSvg: '%env(bool:SVG_VALIDATION_ENABLED)%'
+
+    App\Service\Svg\SvgTransformBuilder: ~
+
+    App\Service\Svg\SvgValidationService:
+        arguments:
+            $logger: '@logger'
+
+    App\Service\Svg\SvgErrorRecoveryService:
+        arguments:
+            $logger: '@logger'
+
+    # Layer Renderers
+    App\Service\Svg\LayerRenderer\TextLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
+    App\Service\Svg\LayerRenderer\ImageLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
+    App\Service\Svg\LayerRenderer\ShapeLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
+    App\Service\Svg\LayerRenderer\GroupLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
+    App\Service\Svg\LayerRenderer\VideoLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
+    App\Service\Svg\LayerRenderer\AudioLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
+    # Main SVG Renderer Service
+    App\Service\Svg\SvgRendererService:
+        arguments:
+            $layerRenderers: !tagged_iterator 'app.svg_layer_renderer'
+            $documentBuilder: '@App\Service\Svg\SvgDocumentBuilder'
+            $validationService: '@App\Service\Svg\SvgValidationService'
+            $errorRecoveryService: '@App\Service\Svg\SvgErrorRecoveryService'
+            $logger: '@logger'
