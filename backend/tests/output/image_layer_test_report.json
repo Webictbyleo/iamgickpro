@@ -1,0 +1,370 @@
+{
+    "summary": {
+        "total_tests": 51,
+        "passed_tests": 47,
+        "pass_rate": 92.15686274509804,
+        "duration": 0.011053085327148438
+    },
+    "test_results": [
+        {
+            "name": "Basic: Simple PNG Image",
+            "status": "PASS",
+            "duration": 0.0018990039825439453,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Basic: SVG Image",
+            "status": "PASS",
+            "duration": 5.4836273193359375e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Basic: JPEG Image",
+            "status": "PASS",
+            "duration": 3.600120544433594e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Source: Data URL PNG",
+            "status": "PASS",
+            "duration": 3.409385681152344e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Source: Data URL SVG",
+            "status": "PASS",
+            "duration": 3.0994415283203125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Source: Data URL JPEG",
+            "status": "PASS",
+            "duration": 3.0040740966796875e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Source: HTTPS URL",
+            "status": "FAIL",
+            "duration": 0.00012493133544921875,
+            "message": "Valid sources should contain image element"
+        },
+        {
+            "name": "Source: HTTP URL",
+            "status": "FAIL",
+            "duration": 4.315376281738281e-5,
+            "message": "Valid sources should contain image element"
+        },
+        {
+            "name": "Source: Relative Path",
+            "status": "FAIL",
+            "duration": 5.412101745605469e-5,
+            "message": "Valid sources should contain image element"
+        },
+        {
+            "name": "Source: Invalid URL",
+            "status": "PASS",
+            "duration": 3.600120544433594e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Source: Empty Source",
+            "status": "PASS",
+            "duration": 3.409385681152344e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Source: Malformed Data URL",
+            "status": "PASS",
+            "duration": 4.410743713378906e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Fit: Contain (default)",
+            "status": "PASS",
+            "duration": 3.4809112548828125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Fit: Cover",
+            "status": "PASS",
+            "duration": 4.601478576660156e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Fit: Fill",
+            "status": "PASS",
+            "duration": 3.0994415283203125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Fit: Scale Down",
+            "status": "PASS",
+            "duration": 3.0994415283203125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Fit: None",
+            "status": "PASS",
+            "duration": 3.886222839355469e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Fit: Invalid Fit",
+            "status": "PASS",
+            "duration": 4.8160552978515625e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Aspect: Preserve Aspect Ratio True",
+            "status": "PASS",
+            "duration": 3.314018249511719e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Aspect: Preserve Aspect Ratio False",
+            "status": "PASS",
+            "duration": 4.100799560546875e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Brightness Filter",
+            "status": "PASS",
+            "duration": 4.601478576660156e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Contrast Filter",
+            "status": "PASS",
+            "duration": 3.814697265625e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Saturation Filter",
+            "status": "PASS",
+            "duration": 4.482269287109375e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Hue Rotation",
+            "status": "PASS",
+            "duration": 5.602836608886719e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Blur Filter",
+            "status": "PASS",
+            "duration": 4.506111145019531e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Sepia Filter",
+            "status": "PASS",
+            "duration": 5.316734313964844e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Grayscale Filter",
+            "status": "PASS",
+            "duration": 5.2928924560546875e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Invert Filter",
+            "status": "PASS",
+            "duration": 3.790855407714844e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "CSS Filter: Multiple Filters",
+            "status": "PASS",
+            "duration": 5.0067901611328125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "SVG Filter: Drop Shadow",
+            "status": "PASS",
+            "duration": 0.00019407272338867188,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "SVG Filter: Complex Shadow",
+            "status": "PASS",
+            "duration": 0.00011110305786132812,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "SVG Filter: No Shadow (Disabled)",
+            "status": "PASS",
+            "duration": 0.00010204315185546875,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Combined: CSS + SVG Filters",
+            "status": "PASS",
+            "duration": 8.0108642578125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Placeholder: Empty Source",
+            "status": "PASS",
+            "duration": 5.984306335449219e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Placeholder: Invalid URL",
+            "status": "PASS",
+            "duration": 6.29425048828125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Placeholder: Malformed Data URL",
+            "status": "PASS",
+            "duration": 5.602836608886719e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Placeholder: Large Placeholder",
+            "status": "PASS",
+            "duration": 5.888938903808594e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Placeholder: Small Placeholder",
+            "status": "PASS",
+            "duration": 4.291534423828125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Placeholder: Tiny Placeholder",
+            "status": "PASS",
+            "duration": 4.1961669921875e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Error: Null Properties",
+            "status": "PASS",
+            "duration": 6.794929504394531e-5,
+            "message": "Expected error handled: App\\Entity\\Layer::setProperties(): Argument #1 ($properties) must be of type array, null given, called in \/var\/www\/html\/iamgickpro\/backend\/tests\/image_layer_test.php on line 560"
+        },
+        {
+            "name": "Error: Invalid Filter Values",
+            "status": "PASS",
+            "duration": 4.792213439941406e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Error: Extreme Filter Values",
+            "status": "PASS",
+            "duration": 5.316734313964844e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Error: Malformed Shadow Config",
+            "status": "PASS",
+            "duration": 6.508827209472656e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Edge Case: Zero Dimensions",
+            "status": "PASS",
+            "duration": 4.100799560546875e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Edge Case: Negative Dimensions",
+            "status": "PASS",
+            "duration": 3.1948089599609375e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Edge Case: Very Large Dimensions",
+            "status": "PASS",
+            "duration": 3.0994415283203125e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Edge Case: Extreme Aspect Ratio",
+            "status": "PASS",
+            "duration": 3.0040740966796875e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Edge Case: Fractional Dimensions",
+            "status": "PASS",
+            "duration": 8.20159912109375e-5,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Performance: Multiple Images",
+            "status": "PASS",
+            "duration": 0.0019690990447998047,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Validation: Complete Image Document",
+            "status": "PASS",
+            "duration": 0.0006380081176757812,
+            "message": "Test completed successfully"
+        },
+        {
+            "name": "Complex: Image Gallery Document with Real URLs",
+            "status": "FAIL",
+            "duration": 0.0010001659393310547,
+            "message": "Generated SVG does not contain expected HTTP\/HTTPS URLs"
+        }
+    ],
+    "categories": {
+        "Basic": {
+            "passed": 3,
+            "total": 3
+        },
+        "Source": {
+            "passed": 6,
+            "total": 9
+        },
+        "Fit": {
+            "passed": 6,
+            "total": 6
+        },
+        "Aspect": {
+            "passed": 2,
+            "total": 2
+        },
+        "CSS Filter": {
+            "passed": 9,
+            "total": 9
+        },
+        "SVG Filter": {
+            "passed": 3,
+            "total": 3
+        },
+        "Combined": {
+            "passed": 1,
+            "total": 1
+        },
+        "Placeholder": {
+            "passed": 6,
+            "total": 6
+        },
+        "Error": {
+            "passed": 4,
+            "total": 4
+        },
+        "Edge Case": {
+            "passed": 5,
+            "total": 5
+        },
+        "Performance": {
+            "passed": 1,
+            "total": 1
+        },
+        "Validation": {
+            "passed": 1,
+            "total": 1
+        },
+        "Complex": {
+            "passed": 0,
+            "total": 1
+        }
+    }
+}

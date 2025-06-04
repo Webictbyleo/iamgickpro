@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="400" viewBox="0 0 600 400">
+  <defs>
+    <filter id="image-filter-6840b81b6ecd3" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur"/>
+      <feOffset in="blur" dx="5" dy="5" result="offsetBlur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.5" result="shadowColor"/>
+      <feComposite in="shadowColor" in2="offsetBlur" operator="in" result="shadow"/>
+      <feComposite in="SourceGraphic" in2="shadow" operator="over"/>
+    </filter>
+  </defs>
+  <g id="layer-99" transform="translate(50, 50) rotate(0, 50, 50) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="100" height="100" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" preserveAspectRatio="xMidYMid meet" style="filter: brightness(1.2);" data-layer-id="99" data-layer-type="image"/>
+  </g>
+  <g id="layer-100" transform="translate(50, 50) rotate(0, 50, 50) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="100" height="100" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" style="filter: blur(3px);" data-layer-id="100" data-layer-type="image"/>
+  </g>
+  <g id="layer-101" transform="translate(50, 50) rotate(0, 50, 50) scale(1, 1)">
+    <g>
+      <rect x="0" y="0" width="100" height="100" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+      <circle cx="42.5" cy="32.5" r="3.75" fill="#ffdd44"/>
+      <polygon points="35,47.5 50,32.5 65,47.5" fill="#888888"/>
+      <text x="50" y="70" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="12" fill="#888888">Image</text>
+    </g>
+  </g>
+  <g id="layer-102" transform="translate(50, 50) rotate(0, 50, 50) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="100" height="100" xlink:href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q==" preserveAspectRatio="xMidYMid meet" filter="url(#image-filter-6840b81b6ecd3)" data-layer-id="102" data-layer-type="image"/>
+  </g>
+</svg>

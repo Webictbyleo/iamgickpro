@@ -1,453 +1,453 @@
 {
     "summary": {
         "total_tests": 73,
-        "passed_tests": 69,
-        "pass_rate": 94.52054794520548,
-        "duration": 0.08609199523925781
+        "passed_tests": 73,
+        "pass_rate": 100,
+        "duration": 0.07109999656677246
     },
     "performance_metrics": {
-        "Single Layer Rendering": 0.002028942108154297,
-        "Complex Document Generation": 0.0020971298217773438,
+        "Single Layer Rendering": 0.0015158653259277344,
+        "Complex Document Generation": 0.0015599727630615234,
         "Memory Usage Test": 0
     },
     "test_results": [
         {
             "name": "Basic text rendering",
             "status": "PASS",
-            "duration": 0.0020499229431152344,
+            "duration": 0.001569986343383789,
             "message": "Test completed successfully"
         },
         {
             "name": "Basic image rendering",
             "status": "PASS",
-            "duration": 8.702278137207031e-5,
+            "duration": 9.298324584960938e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Basic shape rendering",
             "status": "PASS",
-            "duration": 0.00011992454528808594,
+            "duration": 0.000102996826171875,
             "message": "Test completed successfully"
         },
         {
             "name": "Basic group rendering",
             "status": "PASS",
-            "duration": 3.600120544433594e-5,
+            "duration": 3.886222839355469e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Basic video rendering",
             "status": "PASS",
-            "duration": 6.198883056640625e-5,
+            "duration": 3.814697265625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Basic audio rendering",
             "status": "PASS",
-            "duration": 0.00010395050048828125,
+            "duration": 5.4836273193359375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Text: Rich Text Formatting",
             "status": "PASS",
-            "duration": 4.410743713378906e-5,
+            "duration": 6.699562072753906e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Text: Multi-language Text",
             "status": "PASS",
-            "duration": 3.886222839355469e-5,
+            "duration": 7.319450378417969e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Text: Text with Shadow and Outline",
             "status": "PASS",
-            "duration": 3.790855407714844e-5,
+            "duration": 4.100799560546875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Text: Text on Path",
             "status": "PASS",
-            "duration": 2.4080276489257812e-5,
+            "duration": 4.100799560546875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Text: Vertical Text",
             "status": "PASS",
-            "duration": 2.193450927734375e-5,
+            "duration": 7.319450378417969e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Image: Image with All Filters",
             "status": "PASS",
-            "duration": 8.487701416015625e-5,
+            "duration": 0.0002589225769042969,
             "message": "Test completed successfully"
         },
         {
             "name": "Image: Image with Crop and Fit",
             "status": "PASS",
-            "duration": 3.409385681152344e-5,
+            "duration": 0.00026106834411621094,
             "message": "Test completed successfully"
         },
         {
             "name": "Image: Image with Mask and Blend Mode",
             "status": "PASS",
-            "duration": 2.4080276489257812e-5,
+            "duration": 0.00010204315185546875,
             "message": "Test completed successfully"
         },
         {
             "name": "Image: Responsive Image with Srcset",
             "status": "PASS",
-            "duration": 3.504753112792969e-5,
+            "duration": 0.0001690387725830078,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: rectangle - basic",
             "status": "PASS",
-            "duration": 5.698204040527344e-5,
+            "duration": 4.100799560546875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: rectangle - rounded",
             "status": "PASS",
-            "duration": 4.100799560546875e-5,
+            "duration": 7.104873657226562e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: rectangle - mixed_corners",
             "status": "PASS",
-            "duration": 2.5987625122070312e-5,
+            "duration": 7.104873657226562e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: circle - basic",
             "status": "PASS",
-            "duration": 3.910064697265625e-5,
+            "duration": 4.9114227294921875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: circle - with_pattern",
             "status": "PASS",
-            "duration": 2.47955322265625e-5,
+            "duration": 2.09808349609375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: ellipse - basic",
             "status": "PASS",
-            "duration": 2.5987625122070312e-5,
+            "duration": 2.09808349609375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: ellipse - stretched",
             "status": "PASS",
-            "duration": 3.886222839355469e-5,
+            "duration": 3.314018249511719e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: triangle - equilateral",
             "status": "PASS",
-            "duration": 2.7894973754882812e-5,
+            "duration": 8.988380432128906e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: triangle - right_angle",
             "status": "PASS",
-            "duration": 2.288818359375e-5,
+            "duration": 7.319450378417969e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: polygon - hexagon",
             "status": "PASS",
-            "duration": 6.103515625e-5,
+            "duration": 0.00023102760314941406,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: polygon - octagon",
             "status": "PASS",
-            "duration": 4.1961669921875e-5,
+            "duration": 5.412101745605469e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: polygon - custom",
             "status": "PASS",
-            "duration": 4.1961669921875e-5,
+            "duration": 4.887580871582031e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: star - five_pointed",
             "status": "PASS",
-            "duration": 3.504753112792969e-5,
+            "duration": 7.200241088867188e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: star - eight_pointed",
             "status": "PASS",
-            "duration": 5.1021575927734375e-5,
+            "duration": 7.796287536621094e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: line - straight",
             "status": "PASS",
-            "duration": 4.00543212890625e-5,
+            "duration": 3.600120544433594e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: line - diagonal",
             "status": "PASS",
-            "duration": 2.5033950805664062e-5,
+            "duration": 6.914138793945312e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: line - dashed",
             "status": "PASS",
-            "duration": 2.4080276489257812e-5,
+            "duration": 5.412101745605469e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: arrow - simple",
             "status": "PASS",
-            "duration": 4.1961669921875e-5,
+            "duration": 3.719329833984375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Shape: arrow - double_headed",
             "status": "PASS",
-            "duration": 4.220008850097656e-5,
+            "duration": 4.696846008300781e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Group: Basic Group",
             "status": "PASS",
-            "duration": 8.606910705566406e-5,
+            "duration": 1.8835067749023438e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Group: Group with Clipping",
             "status": "PASS",
-            "duration": 3.790855407714844e-5,
+            "duration": 1.5974044799804688e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Group: Group with Masking",
             "status": "PASS",
-            "duration": 3.2901763916015625e-5,
+            "duration": 2.384185791015625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Group: Group with Filters",
             "status": "PASS",
-            "duration": 3.0994415283203125e-5,
+            "duration": 2.9087066650390625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Media: Video with Poster",
             "status": "PASS",
-            "duration": 3.695487976074219e-5,
+            "duration": 4.696846008300781e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Media: Audio with Visualization",
             "status": "PASS",
-            "duration": 0.00012087821960449219,
+            "duration": 4.38690185546875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Transform: Simple Rotation",
             "status": "PASS",
-            "duration": 4.506111145019531e-5,
+            "duration": 3.0994415283203125e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Transform: Scale Transform",
             "status": "PASS",
-            "duration": 3.886222839355469e-5,
+            "duration": 2.8133392333984375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Transform: Skew Transform",
             "status": "PASS",
-            "duration": 3.886222839355469e-5,
+            "duration": 6.198883056640625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Transform: Complex Transform",
             "status": "PASS",
-            "duration": 3.790855407714844e-5,
+            "duration": 1.6927719116210938e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Transform: Matrix Transform",
             "status": "PASS",
-            "duration": 3.790855407714844e-5,
+            "duration": 2.7894973754882812e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Transform: Transform Origin",
             "status": "PASS",
-            "duration": 3.910064697265625e-5,
+            "duration": 6.29425048828125e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Effect: Drop Shadow",
             "status": "PASS",
-            "duration": 6.413459777832031e-5,
+            "duration": 2.384185791015625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Effect: Glow Effect",
             "status": "PASS",
-            "duration": 6.008148193359375e-5,
+            "duration": 3.218650817871094e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Effect: Multiple Filters",
             "status": "PASS",
-            "duration": 3.910064697265625e-5,
+            "duration": 6.103515625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Gradient: Linear Gradient - Horizontal",
-            "status": "FAIL",
-            "duration": 0.0002009868621826172,
-            "message": "Linear gradient not found in SVG output for Linear Gradient - Horizontal"
+            "status": "PASS",
+            "duration": 0.0004010200500488281,
+            "message": "Test completed successfully"
         },
         {
             "name": "Gradient: Radial Gradient",
-            "status": "FAIL",
-            "duration": 0.0001361370086669922,
-            "message": "Radial gradient not found in SVG output for Radial Gradient"
+            "status": "PASS",
+            "duration": 0.00023698806762695312,
+            "message": "Test completed successfully"
         },
         {
             "name": "Gradient: Complex Linear Gradient",
-            "status": "FAIL",
-            "duration": 0.00012612342834472656,
-            "message": "Linear gradient not found in SVG output for Complex Linear Gradient"
+            "status": "PASS",
+            "duration": 0.0003490447998046875,
+            "message": "Test completed successfully"
         },
         {
             "name": "Pattern: Dot Pattern",
             "status": "PASS",
-            "duration": 6.604194641113281e-5,
+            "duration": 6.890296936035156e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Pattern: Stripe Pattern",
             "status": "PASS",
-            "duration": 5.412101745605469e-5,
+            "duration": 3.1948089599609375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Pattern: Grid Pattern",
             "status": "PASS",
-            "duration": 5.698204040527344e-5,
+            "duration": 3.886222839355469e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Animation: Basic Animation Support",
             "status": "PASS",
-            "duration": 4.792213439941406e-5,
+            "duration": 2.002716064453125e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "A11y: Text with ARIA",
             "status": "PASS",
-            "duration": 6.699562072753906e-5,
+            "duration": 4.100799560546875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "A11y: Image with Alt Text",
             "status": "PASS",
-            "duration": 4.696846008300781e-5,
+            "duration": 4.8160552978515625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Edge Case: Zero Dimensions",
             "status": "PASS",
-            "duration": 6.985664367675781e-5,
+            "duration": 2.193450927734375e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Edge Case: Negative Dimensions",
             "status": "PASS",
-            "duration": 4.315376281738281e-5,
+            "duration": 1.9073486328125e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Edge Case: Very Large Dimensions",
             "status": "PASS",
-            "duration": 4.1961669921875e-5,
+            "duration": 3.0040740966796875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Edge Case: Empty Text Layer",
             "status": "PASS",
-            "duration": 4.601478576660156e-5,
+            "duration": 2.384185791015625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Edge Case: Invalid Image URL",
             "status": "PASS",
-            "duration": 0.00012803077697753906,
+            "duration": 4.00543212890625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Edge Case: Malformed Gradient",
             "status": "PASS",
-            "duration": 0.00032210350036621094,
+            "duration": 3.0040740966796875e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Error Recovery: Invalid Properties",
             "status": "PASS",
-            "duration": 7.605552673339844e-5,
+            "duration": 2.8848648071289062e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Malformed: Malformed JSON Properties",
             "status": "PASS",
-            "duration": 0.00011897087097167969,
+            "duration": 3.910064697265625e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Malformed: Missing Required Properties",
             "status": "PASS",
-            "duration": 0.00023102760314941406,
+            "duration": 2.5033950805664062e-5,
             "message": "Test completed successfully"
         },
         {
             "name": "Large Dataset: 1000 Layers",
             "status": "PASS",
-            "duration": 0.03348708152770996,
+            "duration": 0.027638912200927734,
             "message": "Test completed successfully"
         },
         {
             "name": "SVG Validation: Structure Check",
             "status": "PASS",
-            "duration": 0.0003631114959716797,
+            "duration": 0.00026798248291015625,
             "message": "Test completed successfully"
         },
         {
             "name": "Complex: Multi-layer Document with All Types",
             "status": "PASS",
-            "duration": 0.0003619194030761719,
+            "duration": 0.00030493736267089844,
             "message": "Test completed successfully"
         },
         {
             "name": "Complex: Nested Groups Document",
             "status": "PASS",
-            "duration": 0.0009200572967529297,
+            "duration": 0.0004410743713378906,
             "message": "Test completed successfully"
         },
         {
             "name": "Integration: Complete Design Workflow",
             "status": "PASS",
-            "duration": 0.0017049312591552734,
+            "duration": 0.0010790824890136719,
             "message": "Test completed successfully"
         },
         {
             "name": "Integration: Gradient Workflow",
-            "status": "FAIL",
-            "duration": 0.00045609474182128906,
-            "message": "Should have at least 2 linear gradients, found: 0"
+            "status": "PASS",
+            "duration": 0.0002639293670654297,
+            "message": "Test completed successfully"
         }
     ],
     "categories": {
@@ -504,7 +504,7 @@
             "total": 3
         },
         "Gradient": {
-            "passed": 0,
+            "passed": 3,
             "total": 3
         },
         "Pattern": {
@@ -544,7 +544,7 @@
             "total": 2
         },
         "Integration": {
-            "passed": 1,
+            "passed": 2,
             "total": 2
         }
     }

@@ -72,25 +72,24 @@ class ImageLayerRenderer extends AbstractLayerRenderer
     {
         $src = trim($src);
         
-        // Allow data URLs for images
-        if (preg_match('/^data:image\/(jpeg|jpg|png|gif|svg\+xml|webp);base64,/', $src)) {
+        if (empty($src)) {
+            return '';
+        }
+        
+        // Allow data URLs for images (base64 encoded)
+        if (preg_match('/^data:image\/[^;]+;base64,/', $src)) {
             return $src;
         }
         
-        // Allow HTTP/HTTPS URLs
-        if (preg_match('/^https?:\/\//', $src)) {
-            // Basic URL validation
-            if (filter_var($src, FILTER_VALIDATE_URL)) {
+        // Only allow relative paths that actually exist on the filesystem
+        if (preg_match('/^[a-zA-Z0-9\/\-_.]+\.(jpg|jpeg|png|gif|svg|webp)$/i', $src)) {
+            // Simple check: if the file exists as a relative path, allow it
+            if (file_exists($src) && is_file($src)) {
                 return $src;
             }
         }
         
-        // Allow relative paths (simple validation)
-        if (preg_match('/^[a-zA-Z0-9\/\-_.]+\.(jpg|jpeg|png|gif|svg|webp)$/i', $src)) {
-            return $src;
-        }
-        
-        return ''; // Invalid source
+        return ''; // Invalid source or file doesn't exist
     }
 
     private function sanitizeFit(string $fit): string
@@ -189,71 +188,74 @@ class ImageLayerRenderer extends AbstractLayerRenderer
     {
         $filters = [];
         
-        // Brightness
-        if (isset($properties['brightness']) && $properties['brightness'] !== 1) {
-            $brightness = $this->validateNumber($properties['brightness'], 1, 0, 3);
-            if ($brightness !== 1) {
-                $filters[] = "brightness({$brightness})";
-            }
-        }
+        // FILTER ORDER FOLLOWS INDUSTRY STANDARDS (Photoshop/CSS Filter best practices)
+        // Order matters! Each filter is applied to the result of the previous filter
         
-        // Contrast
-        if (isset($properties['contrast']) && $properties['contrast'] !== 1) {
-            $contrast = $this->validateNumber($properties['contrast'], 1, 0, 3);
-            if ($contrast !== 1) {
-                $filters[] = "contrast({$contrast})";
-            }
-        }
-        
-        // Saturation
-        if (isset($properties['saturation']) && $properties['saturation'] !== 1) {
-            $saturation = $this->validateNumber($properties['saturation'], 1, 0, 3);
-            if ($saturation !== 1) {
-                $filters[] = "saturate({$saturation})";
-            }
-        }
-        
-        // Hue rotation
-        if (isset($properties['hue']) && $properties['hue'] !== 0) {
-            $hue = $this->validateNumber($properties['hue'], 0, -360, 360);
-            if ($hue !== 0) {
-                $filters[] = "hue-rotate({$hue}deg)";
-            }
-        }
-        
-        // Blur
-        if (isset($properties['blur']) && $properties['blur'] > 0) {
+        // 1. Blur - Apply first as it affects the foundation of the image
+        if (isset($properties['blur'])) {
             $blur = $this->validateNumber($properties['blur'], 0, 0, 50);
-            if ($blur > 0) {
+            if ($blur > 0.0) {
                 $filters[] = "blur({$blur}px)";
             }
         }
         
-        // Sepia
-        if (isset($properties['sepia']) && $properties['sepia'] > 0) {
+        // 2. Brightness - Basic exposure adjustment
+        if (isset($properties['brightness'])) {
+            $brightness = $this->validateNumber($properties['brightness'], 1, 0, 3);
+            if ($brightness !== 1.0) {
+                $filters[] = "brightness({$brightness})";
+            }
+        }
+        
+        // 3. Contrast - Enhance/reduce contrast after brightness
+        if (isset($properties['contrast'])) {
+            $contrast = $this->validateNumber($properties['contrast'], 1, 0, 3);
+            if ($contrast !== 1.0) {
+                $filters[] = "contrast({$contrast})";
+            }
+        }
+        
+        // 4. Saturation - Color intensity adjustment
+        if (isset($properties['saturation'])) {
+            $saturation = $this->validateNumber($properties['saturation'], 1, 0, 3);
+            if ($saturation !== 1.0) {
+                $filters[] = "saturate({$saturation})";
+            }
+        }
+        
+        // 5. Hue rotation - Color shift (works on existing colors)
+        if (isset($properties['hue'])) {
+            $hue = $this->validateNumber($properties['hue'], 0, -360, 360);
+            if ($hue !== 0.0) {
+                $filters[] = "hue-rotate({$hue}deg)";
+            }
+        }
+        
+        // 6. Sepia - Color tone effect (needs color data to work with)
+        if (isset($properties['sepia'])) {
             $sepia = $this->validateNumber($properties['sepia'], 0, 0, 1);
-            if ($sepia > 0) {
+            if ($sepia > 0.0) {
                 $filters[] = "sepia({$sepia})";
             }
         }
         
-        // Grayscale
-        if (isset($properties['grayscale']) && $properties['grayscale'] > 0) {
+        // 7. Grayscale - Color removal (should be near end, before invert)
+        if (isset($properties['grayscale'])) {
             $grayscale = $this->validateNumber($properties['grayscale'], 0, 0, 1);
-            if ($grayscale > 0) {
+            if ($grayscale > 0.0) {
                 $filters[] = "grayscale({$grayscale})";
             }
         }
         
-        // Invert
-        if (isset($properties['invert']) && $properties['invert'] > 0) {
+        // 8. Invert - Complete color reversal (should be last)
+        if (isset($properties['invert'])) {
             $invert = $this->validateNumber($properties['invert'], 0, 0, 1);
-            if ($invert > 0) {
+            if ($invert > 0.0) {
                 $filters[] = "invert({$invert})";
             }
         }
         
-        // Apply CSS filter if any filters are defined
+        // Apply CSS filter only if we have non-default filters
         if (!empty($filters)) {
             $imageElement->setAttribute('style', 'filter: ' . implode(' ', $filters) . ';');
         }
@@ -276,18 +278,11 @@ class ImageLayerRenderer extends AbstractLayerRenderer
             return;
         }
         
-        // Get the SVG root element from the image element
-        $svgElement = $imageElement;
-        while ($svgElement->parentNode && $svgElement->parentNode->nodeName !== 'svg') {
-            $svgElement = $svgElement->parentNode;
-        }
-        if ($svgElement->parentNode) {
-            $svgElement = $svgElement->parentNode;
-        }
+        // Get the SVG document from the builder for proper filter definition placement
+        $document = $imageElement->ownerDocument;
         
-        // Create filter element
-        $defs = $builder->addDefinitions($svgElement);
-        $filter = $builder->createFilter($filterId, $svgElement->ownerDocument);
+        // Create filter element and add to definition collection (not immediately to defs)
+        $filter = $builder->createFilter($filterId, $document);
         $filter->setAttribute('x', '-50%');
         $filter->setAttribute('y', '-50%');
         $filter->setAttribute('width', '200%');
@@ -295,22 +290,21 @@ class ImageLayerRenderer extends AbstractLayerRenderer
         
         // Add shadow effect if enabled
         if (isset($properties['shadow']) && $properties['shadow']['enabled'] ?? false) {
-            $this->addShadowFilter($builder, $filter, $properties['shadow']);
+            $this->addShadowFilter($builder, $filter, $properties['shadow'], $document);
         }
         
-        $defs->appendChild($filter);
+        // Add filter to collection instead of immediately to defs
+        $builder->addDefinitionToCollection($filter);
         $imageElement->setAttribute('filter', "url(#{$filterId})");
     }
 
-    private function addShadowFilter(SvgDocumentBuilder $builder, DOMElement $filter, array $shadowProps): void
+    private function addShadowFilter(SvgDocumentBuilder $builder, DOMElement $filter, array $shadowProps, \DOMDocument $document): void
     {
         $offsetX = $this->validateNumber($shadowProps['offsetX'] ?? 5, 5, -100, 100);
         $offsetY = $this->validateNumber($shadowProps['offsetY'] ?? 5, 5, -100, 100);
         $blur = $this->validateNumber($shadowProps['blur'] ?? 5, 5, 0, 50);
         $color = $this->validateColor($shadowProps['color'] ?? '#000000');
         $opacity = $this->validateNumber($shadowProps['opacity'] ?? 0.5, 0.5, 0, 1);
-        
-        $document = $filter->ownerDocument;
         
         // Gaussian blur for shadow
         $feGaussianBlur = $builder->createElement('feGaussianBlur', $document);

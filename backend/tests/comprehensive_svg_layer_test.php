@@ -385,8 +385,8 @@ class ComprehensiveSvgLayerTest
                     $importedElement = $svgRoot->ownerDocument->importNode($element, true);
                     $svgRoot->appendChild($importedElement);
                     
-                    // CRUCIAL: Resolve all gradients after adding all layers
-                    $this->renderers['shape']->resolveAllGradients($svgRoot, $this->documentBuilder);
+                    // CRUCIAL: Process all definitions after adding all layers
+                    $this->documentBuilder->processDefinitions($svgRoot);
                     
                     // Validate gradient in final output
                     $svgContent = $this->documentBuilder->saveDocument($svgRoot);
@@ -591,8 +591,8 @@ class ComprehensiveSvgLayerTest
                     }
                 }
                 
-                // IMPORTANT: Resolve all gradients after adding all layers
-                $this->renderers['shape']->resolveAllGradients($svgRoot, $this->documentBuilder);
+                // IMPORTANT: Process all definitions after adding all layers
+                $this->documentBuilder->processDefinitions($svgRoot);
                 
                 $svgContent = $this->documentBuilder->saveDocument($svgRoot);
                 file_put_contents(__DIR__ . '/output/complex_document.svg', $svgContent);
@@ -1093,8 +1093,8 @@ class ComprehensiveSvgLayerTest
                     }
                 }
                 
-                // IMPORTANT: Resolve all gradients after adding all layers
-                $this->renderers['shape']->resolveAllGradients($svgRoot, $this->documentBuilder);
+                // IMPORTANT: Process all definitions after adding all layers
+                $this->documentBuilder->processDefinitions($svgRoot);
                 
                 $designs[] = $this->documentBuilder->saveDocument($svgRoot);
             }
@@ -1161,8 +1161,8 @@ class ComprehensiveSvgLayerTest
                 }
             }
             
-            // CRUCIAL: Resolve all gradients
-            $this->renderers['shape']->resolveAllGradients($svgRoot, $this->documentBuilder);
+            // CRUCIAL: Process all definitions
+            $this->documentBuilder->processDefinitions($svgRoot);
             
             // Get final SVG content
             $svgContent = $this->documentBuilder->saveDocument($svgRoot);
