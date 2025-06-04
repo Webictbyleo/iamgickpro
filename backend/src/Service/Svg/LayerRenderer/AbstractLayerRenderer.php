@@ -50,7 +50,7 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
         $fillConfig = $properties['fill'] ?? null;
         if ($fillConfig && is_array($fillConfig) && in_array($fillConfig['type'] ?? '', ['linear', 'radial'], true)) {
             $group->setAttribute('data-layer-id', (string)$layer->getId());
-            $group->setAttribute('data-layer-properties', json_encode($properties));
+            
         }
 
         // Render layer-specific content
@@ -64,9 +64,11 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
 
     /**
      * Resolves all gradients in the SVG after all layers have been added
+     * @deprecated This method is now called after all layers are rendered
      */
     public function resolveAllGradients(DOMElement $svgRoot, SvgDocumentBuilder $builder): void
     {
+        return; // Deprecated, use resolveLayerGradients instead
         $xpath = new DOMXPath($svgRoot->ownerDocument);
         $layerGroups = $xpath->query('.//g[@data-layer-properties]', $svgRoot);
         
@@ -291,7 +293,6 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
     protected function createGradient(array $gradientData, SvgDocumentBuilder $builder, DOMElement $svgElement): ?string
     {
         if (empty($gradientData) || !isset($gradientData['type'])) {
-            error_log("AbstractLayerRenderer: Invalid gradient data - " . json_encode($gradientData));
             return null;
         }
 
@@ -300,25 +301,18 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
         $stops = $gradientData['stops'] ?? [];
         
         if (empty($stops)) {
-            error_log("AbstractLayerRenderer: No gradient stops provided");
             return null;
         }
 
-        error_log("AbstractLayerRenderer: Creating gradient with ID: {$gradientId}");
-        error_log("AbstractLayerRenderer: Gradient data: " . json_encode($gradientData));
-
-        // Check if gradient already exists to avoid duplicates
-        $existingGradients = $svgElement->getElementsByTagName($gradientData['type'] === 'linear' ? 'linearGradient' : 'radialGradient');
-        for ($i = 0; $i < $existingGradients->length; $i++) {
-            $existingGradient = $existingGradients->item($i);
-            if ($existingGradient && $existingGradient->getAttribute('id') === $gradientId) {
-                error_log("AbstractLayerRenderer: Gradient {$gradientId} already exists, reusing");
+        // Check if gradient already exists in the definition collection to avoid duplicates
+        $existingGradients = $builder->getDefinitionCollection();
+        foreach ($existingGradients as $existingGradient) {
+            if ($existingGradient->getAttribute('id') === $gradientId) {
                 return "url(#{$gradientId})";
             }
         }
 
-        $defs = $builder->addDefinitions($svgElement);
-        
+        // Create gradient element
         if ($gradientData['type'] === 'linear') {
             $gradient = $builder->createLinearGradient($gradientId, $stops, [
                 'x1' => (string)($gradientData['x1'] ?? '0%'),
@@ -334,9 +328,8 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
             ], $svgElement->ownerDocument);
         }
         
-        $defs->appendChild($gradient);
-        
-        error_log("AbstractLayerRenderer: Gradient created successfully, returning: url(#{$gradientId})");
+        // Add gradient to the definition collection instead of directly to defs
+        $builder->addDefinitionToCollection($gradient);
         
         return "url(#{$gradientId})";
     }

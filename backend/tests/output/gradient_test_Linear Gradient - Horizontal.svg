@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g id="layer-" transform="translate(77, 62) rotate(0, 72, 17.5) scale(1, 1)" data-layer-id="" data-layer-properties="{&quot;shapeType&quot;:&quot;rectangle&quot;,&quot;fill&quot;:{&quot;type&quot;:&quot;linear&quot;,&quot;colors&quot;:[{&quot;color&quot;:&quot;#ff6b6b&quot;,&quot;stop&quot;:0},{&quot;color&quot;:&quot;#4ecdc4&quot;,&quot;stop&quot;:0.5},{&quot;color&quot;:&quot;#45b7d1&quot;,&quot;stop&quot;:1}],&quot;angle&quot;:0}}">
+    <rect x="0" y="0" width="144" height="35" fill="url(#gradient-684079386abfd-ef7c5657a74d109e112499698c112b7b)" data-layer-type="shape">
+      <defs>
+        <linearGradient id="gradient-684079386abfd-ef7c5657a74d109e112499698c112b7b" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ff6b6b"/>
+          <stop offset="50%" stop-color="#4ecdc4"/>
+          <stop offset="100%" stop-color="#45b7d1"/>
+        </linearGradient>
+      </defs>
+    </rect>
+  </g>
+</svg>

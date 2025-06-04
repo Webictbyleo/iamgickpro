@@ -39,7 +39,8 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         }
         
         return match ($fill['type']) {
-            'linear', 'radial' => $this->generatePlaceholderGradientUrl($fill, $layer),
+            'linear', 'radial' => $this->handleGradientFill($fill, $builder, $svgElement),
+            'gradient' => $this->handleGradientFill($fill, $builder, $svgElement),
             'pattern' => $this->handlePatternFill($fill, $builder, $svgElement),
             'solid' => $this->handleSolidFill($fill),
             default => $this->validateColor('#cccccc'),
@@ -73,7 +74,7 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         $shapeElement = $this->createShapeElement($builder, $shapeType, $width, $height, $properties);
         
         // Get fill value (placeholder for gradients, actual for solid/patterns)
-        $fill = $this->getFillValue($properties, $builder, null, $layer);
+        $fill = $this->getFillValue($properties, $builder, $shapeElement, $layer);
         $shapeElement->setAttribute('fill', $fill);
         
         // Apply fill opacity if specified
@@ -123,6 +124,23 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         }
         
         return $color;
+    }
+
+    private function handleGradientFill(array $fill, SvgDocumentBuilder $builder, ?DOMElement $svgElement = null): string
+    {
+        // If no SVG element provided, we need one for proper document context
+        if (!$svgElement) {
+            return $this->generatePlaceholderGradientUrl($fill); // Cannot create gradient without document context
+        }
+        
+        // Convert ShapeLayerProperties fill format to internal gradient format
+        $gradientData = $this->processGradientFillConfig($fill);
+        if (!$gradientData) {
+            return $this->generatePlaceholderGradientUrl($fill);
+        }
+        
+        $gradientUrl = $this->createGradient($gradientData, $builder, $svgElement);
+        return $gradientUrl ?: $this->generatePlaceholderGradientUrl($fill);
     }
     
     private function handlePatternFill(array $fill, SvgDocumentBuilder $builder, ?DOMElement $svgElement = null): string
@@ -565,5 +583,72 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         $filter->appendChild($feComposite2);
         
         $defs->appendChild($filter);
+    }
+    
+    /**
+     * Convert ShapeLayerProperties fill format to internal gradient format
+     * 
+     * Input format (from ShapeLayerProperties):
+     * Linear: ['type' => 'linear', 'colors' => [['color' => '#hex', 'stop' => 0.0-1.0]], 'angle' => 0-360]
+     * Radial: ['type' => 'radial', 'colors' => [['color' => '#hex', 'stop' => 0.0-1.0]], 'centerX' => 0.0-1.0, 'centerY' => 0.0-1.0, 'radius' => 0.0-1.0]
+     * 
+     * Output format (for createGradient):
+     * ['type' => 'linear|radial', 'stops' => [['offset' => '50%', 'color' => '#hex', 'opacity' => 1.0]], 'id' => 'gradient-id', 'x1' => '0%', ...]
+     */
+    private function processGradientFillConfig(array $fill): ?array
+    {
+        if (!isset($fill['type']) || !in_array($fill['type'], ['linear', 'radial'])) {
+            return null;
+        }
+
+        // Generate consistent gradient ID
+        $gradientId = 'gradient-' . uniqid() . '-' . md5(json_encode($fill));
+
+        // Create gradient data in expected format
+        $gradientData = [
+            'type' => $fill['type'],
+            'stops' => [],
+            'id' => $gradientId
+        ];
+
+        // Convert colors to stops
+        $colors = $fill['colors'] ?? [];
+        if (empty($colors)) {
+            // Provide default gradient if no colors specified
+            $colors = [
+                ['color' => '#ffffff', 'stop' => 0.0],
+                ['color' => '#000000', 'stop' => 1.0]
+            ];
+        }
+
+        foreach ($colors as $colorData) {
+            $stop = [
+                'offset' => (($colorData['stop'] ?? 0.0) * 100) . '%',
+                'color' => $this->validateColor($colorData['color'] ?? '#000000')
+            ];
+
+            if (isset($colorData['opacity']) && $colorData['opacity'] < 1.0) {
+                $stop['opacity'] = (float)$colorData['opacity'];
+            }
+
+            $gradientData['stops'][] = $stop;
+        }
+
+        // Add type-specific parameters
+       /*  if ($fill['type'] === 'linear') {
+            $angle = $fill['angle'] ?? 0;
+            $angleRad = deg2rad($angle);
+
+            $gradientData['x1'] = (0.5 - 0.5 * cos($angleRad)) * 100 . '%';
+            $gradientData['y1'] = (0.5 - 0.5 * sin($angleRad)) * 100 . '%';
+            $gradientData['x2'] = (0.5 + 0.5 * cos($angleRad)) * 100 . '%';
+            $gradientData['y2'] = (0.5 + 0.5 * sin($angleRad)) * 100 . '%';
+        } elseif ($fill['type'] === 'radial') {
+            $gradientData['cx'] = (($fill['centerX'] ?? 0.5) * 100) . '%';
+            $gradientData['cy'] = (($fill['centerY'] ?? 0.5) * 100) . '%';
+            $gradientData['r'] = (($fill['radius'] ?? 0.5) * 100) . '%';
+        } */
+
+        return $gradientData;
     }
 }

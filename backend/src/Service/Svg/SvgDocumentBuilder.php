@@ -18,6 +18,9 @@ class SvgDocumentBuilder
     ];
 
     private ?DOMDocument $currentDocument = null;
+    
+    /** @var DOMElement[] Collection of definitions (gradients, patterns, filters, etc.) to be added to final SVG */
+    private array $definitionCollection = [];
 
     public function __construct(private readonly bool $validateSvg = true)
     {
@@ -210,5 +213,88 @@ class SvgDocumentBuilder
     public function getCurrentDocument(): ?DOMDocument
     {
         return $this->currentDocument;
+    }
+
+    /**
+     * Add a definition (gradient, pattern, filter, etc.) to the collection
+     * These will be added to the final SVG root <defs> element
+     */
+    public function addDefinitionToCollection(DOMElement $definition): void
+    {
+        $this->definitionCollection[] = $definition;
+    }
+
+    /**
+     * Get all collected definitions
+     * @return DOMElement[]
+     */
+    public function getDefinitionCollection(): array
+    {
+        return $this->definitionCollection;
+    }
+
+    /**
+     * Clear the definition collection
+     */
+    public function clearDefinitionCollection(): void
+    {
+        $this->definitionCollection = [];
+    }
+
+    /**
+     * Process all collected definitions and add them to the SVG root <defs> element
+     */
+    public function processDefinitions(DOMElement $svgRootElement): void
+    {
+        if (empty($this->definitionCollection)) {
+            return;
+        }
+
+        // Find or create defs element in the root SVG
+        $defs = null;
+        $children = $svgRootElement->childNodes;
+        
+        // Look for existing defs element
+        for ($i = 0; $i < $children->length; $i++) {
+            $child = $children->item($i);
+            if ($child instanceof DOMElement && $child->nodeName === 'defs') {
+                $defs = $child;
+                break;
+            }
+        }
+        
+        // Create defs if it doesn't exist
+        if (!$defs) {
+            $defs = $svgRootElement->ownerDocument->createElement('defs');
+            // Insert defs as the first child element after any style elements
+            $insertPosition = null;
+            for ($i = 0; $i < $children->length; $i++) {
+                $child = $children->item($i);
+                if ($child instanceof DOMElement && $child->nodeName !== 'style') {
+                    $insertPosition = $child;
+                    break;
+                }
+            }
+            
+            if ($insertPosition) {
+                $svgRootElement->insertBefore($defs, $insertPosition);
+            } else {
+                $svgRootElement->appendChild($defs);
+            }
+        }
+
+        // Add all collected definitions to the root defs
+        foreach ($this->definitionCollection as $definition) {
+            // Import the definition node to the target document if needed
+            if ($definition->ownerDocument !== $svgRootElement->ownerDocument) {
+                $importedDef = $svgRootElement->ownerDocument->importNode($definition, true);
+                $defs->appendChild($importedDef);
+            } else {
+                $defs->appendChild($definition);
+            }
+        }
+
+        // Clear the collection after processing
+        $this->clearDefinitionCollection();
     }
 }

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g id="layer-" transform="translate(164, 168) rotate(0, 67.5, 28.5) scale(1, 1)">
+    <text x="0" y="28.5" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Sample Text</text>
+  </g>
+  <g id="layer-" transform="translate(54, 34) rotate(0, 75, 39) scale(1, 1)">
+    <text x="0" y="39" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Sample Text</text>
+  </g>
+  <g id="layer-" transform="translate(79, 59) rotate(0, 28.5, 41.5) scale(1, 1)">
+    <text x="0" y="41.5" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Sample Text</text>
+  </g>
+  <g id="layer-" transform="translate(113, 120) rotate(0, 31, 43) scale(1, 1)">
+    <text x="0" y="43" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Sample Text</text>
+  </g>
+  <g id="layer-" transform="translate(62, 118) rotate(0, 42, 25) scale(1, 1)">
+    <text x="0" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Sample Text</text>
+  </g>
+  <g id="layer-" transform="translate(174, 16) rotate(0, 67, 45.5) scale(1, 1)">
+    <rect x="0" y="0" width="134" height="91" fill="#cccccc" data-layer-type="shape"/>
+  </g>
+  <g id="layer-" transform="translate(171, 195) rotate(0, 65.5, 29) scale(1, 1)">
+    <rect x="0" y="0" width="131" height="58" fill="#cccccc" data-layer-type="shape"/>
+  </g>
+  <g id="layer-" transform="translate(68, 194) rotate(0, 32, 42) scale(1, 1)">
+    <rect x="0" y="0" width="64" height="84" fill="#cccccc" data-layer-type="shape"/>
+  </g>
+  <g id="layer-" transform="translate(127, 123) rotate(0, 59.5, 36) scale(1, 1)">
+    <rect x="0" y="0" width="119" height="72" fill="#cccccc" data-layer-type="shape"/>
+  </g>
+  <g id="layer-" transform="translate(198, 168) rotate(0, 65, 45.5) scale(1, 1)">
+    <rect x="0" y="0" width="130" height="91" fill="#cccccc" data-layer-type="shape"/>
+  </g>
+  <g id="layer-" transform="translate(11, 105) rotate(0, 65.5, 42.5) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="131" height="85" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
+  </g>
+  <g id="layer-" transform="translate(100, 143) rotate(0, 64.5, 26.5) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="129" height="53" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
+  </g>
+  <g id="layer-" transform="translate(196, 138) rotate(0, 75, 48.5) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="150" height="97" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
+  </g>
+  <g id="layer-" transform="translate(191, 178) rotate(0, 50.5, 33) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="101" height="66" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
+  </g>
+  <g id="layer-" transform="translate(195, 197) rotate(0, 32, 19.5) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="64" height="39" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
+  </g>
+</svg>

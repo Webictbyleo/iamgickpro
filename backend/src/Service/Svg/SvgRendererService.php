@@ -119,6 +119,9 @@ class SvgRendererService
             'rendered_layers' => $renderedCount
         ]);
         
+        // Process all collected definitions (gradients, patterns, filters, etc.) and add them to the SVG root defs
+        $this->documentBuilder->processDefinitions($svgElement);
+        
         // Generate and validate SVG
         $svgContent = $this->documentBuilder->saveDocument($svgElement);
         $validation = $this->validationService->validateSvgString($svgContent);
@@ -376,4 +379,6 @@ class SvgRendererService
             'warnings' => $warnings
         ];
     }
+
+    
 }
