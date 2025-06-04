@@ -27,11 +27,13 @@ debug_**.php
 debug_*.php
 debug*.php
 debug**.txt
+debug**.log
 ##  Testing files ##
 /test*.php
 ### Test files ###
 /*test**.php
 /*test**.txt
 /*test**.svg
+/*test**.log
 
 /create_test*.php
