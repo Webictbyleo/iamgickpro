@@ -188,10 +188,15 @@ abstract class AbstractLayerRenderer implements LayerRendererInterface
         return trim($text);
     }
 
-    protected function validateColor(string $color): string
+    protected function validateColor(mixed $color): string
     {
-        // Basic color validation and sanitization
-        $color = trim($color);
+        // Convert to string and basic validation/sanitization
+        $color = trim((string)$color);
+        
+        // If empty or invalid, return default
+        if (empty($color) || $color === '0') {
+            return 'none';
+        }
         
         // Check for hex colors
         if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color)) {

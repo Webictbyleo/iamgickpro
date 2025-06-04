@@ -380,7 +380,6 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
             return null; // Cannot create pattern without document context
         }
         
-        $defs = $builder->addDefinitions($svgElement);
         $pattern = $builder->createPattern($patternId, $patternSize, $patternSize, [], $svgElement->ownerDocument);
         
         switch ($patternData['type']) {
@@ -397,7 +396,8 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
                 return null;
         }
         
-        $defs->appendChild($pattern);
+        // Add pattern to centralized definition collection instead of direct append
+        $builder->addDefinitionToCollection($pattern);
         return "url(#{$patternId})";
     }
 
@@ -489,8 +489,7 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
             return; // Cannot create filter without document context
         }
         
-        $defs = $builder->addDefinitions($svgElement);
-        $filter = $builder->createFilter($filterId);
+        $filter = $builder->createFilter($filterId, $svgElement->ownerDocument);
         $filter->setAttribute('x', '-50%');
         $filter->setAttribute('y', '-50%');
         $filter->setAttribute('width', '200%');
@@ -535,7 +534,8 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         $feComposite2->setAttribute('operator', 'over');
         $filter->appendChild($feComposite2);
         
-        $defs->appendChild($filter);
+        // Add filter to centralized definition collection instead of direct append
+        $builder->addDefinitionToCollection($filter);
     }
 
     private function createGlowFilter(SvgDocumentBuilder $builder, string $filterId, array $glowProps, ?DOMElement $svgElement = null): void
@@ -545,8 +545,7 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
             return; // Cannot create filter without document context
         }
         
-        $defs = $builder->addDefinitions($svgElement);
-        $filter = $builder->createFilter($filterId);
+        $filter = $builder->createFilter($filterId, $svgElement->ownerDocument);
         $filter->setAttribute('x', '-50%');
         $filter->setAttribute('y', '-50%');
         $filter->setAttribute('width', '200%');
@@ -582,7 +581,8 @@ class ShapeLayerRenderer extends AbstractLayerRenderer
         $feComposite2->setAttribute('operator', 'over');
         $filter->appendChild($feComposite2);
         
-        $defs->appendChild($filter);
+        // Add filter to centralized definition collection instead of direct append
+        $builder->addDefinitionToCollection($filter);
     }
     
     /**
