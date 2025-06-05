@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <linearGradient id="gradient-6840c09ed4d9f-8302836de896b0666daaab29ab5730ec" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9a9e"/>
+      <stop offset="50%" stop-color="#fecfef"/>
+      <stop offset="100%" stop-color="#fecfef"/>
+    </linearGradient>
+    <radialGradient id="gradient-6840c09ed4dc8-e8fe2466891cc3d5c3b96793137a8026" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffecd2"/>
+      <stop offset="100%" stop-color="#fcb69f"/>
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg-gradient)"/>
+  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" stroke="rgba(0,0,0,0.3)" stroke-width="1">Fixed Comprehensive Shape Gallery</text>
+  <g id="layer-1" transform="translate(50, 50) rotate(0, 60, 60) scale(1, 1)">
+    <rect x="0" y="0" width="120" height="120" fill="#ff6b6b" data-layer-id="1" data-layer-type="shape"/>
+  </g>
+  <g id="layer-2" transform="translate(200, 50) rotate(0, 60, 60) scale(1, 1)">
+    <circle cx="60" cy="60" r="60" fill="#4ecdc4" data-layer-id="2" data-layer-type="shape"/>
+  </g>
+  <g id="layer-3" transform="translate(350, 50) rotate(0, 60, 60) scale(1, 1)">
+    <ellipse cx="60" cy="60" rx="60" ry="60" fill="#45b7d1" data-layer-id="3" data-layer-type="shape"/>
+  </g>
+  <g id="layer-4" transform="translate(500, 50) rotate(0, 60, 60) scale(1, 1)">
+    <polygon points="60,0 0,120 120,120" fill="#f9ca24" data-layer-id="4" data-layer-type="shape"/>
+  </g>
+  <g id="layer-5" transform="translate(650, 50) rotate(0, 60, 60) scale(1, 1)">
+    <polygon points="60,0 111.96152422707,30 111.96152422707,90 60,120 8.0384757729337,90 8.0384757729337,30" fill="#f0932b" data-layer-id="5" data-layer-type="shape"/>
+  </g>
+  <g id="layer-6" transform="translate(50, 200) rotate(0, 60, 60) scale(1, 1)">
+    <polygon points="60,0 91.740403623794,16.313082303753 117.06339097771,41.458980337503 111.35705187994,76.686917696247 95.267115137548,108.5410196625 60,114 24.732884862452,108.5410196625 8.6429481200617,76.686917696247 2.9366090222908,41.458980337503 28.259596376206,16.313082303753" fill="#eb4d4b" data-layer-id="6" data-layer-type="shape"/>
+  </g>
+  <g id="layer-7" transform="translate(200, 200) rotate(0, 60, 60) scale(1, 1)">
+    <line x1="0" y1="60" x2="120" y2="60" fill="transparent" stroke="#6c5ce7" stroke-width="8" stroke-linecap="butt" stroke-linejoin="miter" data-layer-id="7" data-layer-type="shape"/>
+  </g>
+  <g id="layer-8" transform="translate(350, 200) rotate(0, 60, 60) scale(1, 1)">
+    <path d="M 0,36 L 96,36 L 96,0 L 120,60 L 96,120 L 96,84 L 0,84 Z" fill="#a29bfe" data-layer-id="8" data-layer-type="shape"/>
+  </g>
+  <g id="layer-9" transform="translate(50, 350) rotate(0, 60, 60) scale(1, 1)" data-layer-id="9">
+    <rect x="0" y="0" width="120" height="120" rx="20" ry="20" fill="url(#gradient-6840c09ed4d9f-8302836de896b0666daaab29ab5730ec)" data-layer-id="9" data-layer-type="shape"/>
+  </g>
+  <g id="layer-10" transform="translate(200, 350) rotate(0, 60, 60) scale(1, 1)" data-layer-id="10">
+    <circle cx="60" cy="60" r="60" fill="url(#gradient-6840c09ed4dc8-e8fe2466891cc3d5c3b96793137a8026)" data-layer-id="10" data-layer-type="shape"/>
+  </g>
+  <defs>
+    <filter id="shape-shadow-6840c09ed4df0" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur"/>
+      <feOffset in="blur" dx="5" dy="5" result="offsetBlur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.5" result="shadowColor"/>
+      <feComposite in="shadowColor" in2="offsetBlur" operator="in" result="shadow"/>
+      <feComposite in="SourceGraphic" in2="shadow" operator="over"/>
+    </filter>
+  </defs>
+  <g id="layer-11" transform="translate(350, 350) rotate(0, 60, 60) scale(1, 1)">
+    <polygon points="60,0 91.740403623794,16.313082303753 117.06339097771,41.458980337503 111.35705187994,76.686917696247 95.267115137548,108.5410196625 60,114 24.732884862452,108.5410196625 8.6429481200617,76.686917696247 2.9366090222908,41.458980337503 28.259596376206,16.313082303753" fill="#feca57" stroke="#ff6348" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter" filter="url(#shape-shadow-6840c09ed4df0)" data-layer-id="11" data-layer-type="shape"/>
+  </g>
+  <defs>
+    <filter id="shape-glow-6840c09ed4e18" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur"/>
+      <feFlood flood-color="#0abde3" flood-opacity="0.8" result="glowColor"/>
+      <feComposite in="glowColor" in2="blur" operator="in" result="glow"/>
+      <feComposite in="SourceGraphic" in2="glow" operator="over"/>
+    </filter>
+  </defs>
+  <g id="layer-12" transform="translate(500, 350) rotate(0, 60, 60) scale(1, 1)">
+    <polygon points="60,0 102.42640687119,17.573593128807 120,60 102.42640687119,102.42640687119 60,120 17.573593128807,102.42640687119 0,60 17.573593128807,17.573593128807" fill="#48dbfb" filter="url(#shape-glow-6840c09ed4e18)" data-layer-id="12" data-layer-type="shape"/>
+  </g>
+  <g id="layer-13" transform="translate(50, 500) rotate(0, 60, 60) scale(1, 1)">
+    <rect x="0" y="0" width="120" height="120" rx="10" ry="10" fill="transparent" stroke="#2ed573" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" data-layer-id="13" data-layer-type="shape"/>
+  </g>
+  <g id="layer-14" transform="translate(200, 500) rotate(0, 60, 60) scale(1, 1)">
+    <circle cx="60" cy="60" r="60" fill="#ff4757" stroke="#ffffff" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter" data-layer-id="14" data-layer-type="shape"/>
+  </g>
+</svg>
