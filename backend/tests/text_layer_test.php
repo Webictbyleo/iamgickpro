@@ -7,6 +7,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use App\Entity\Layer;
 use App\Service\Svg\LayerRenderer\TextLayerRenderer;
 use App\Service\Svg\SvgDocumentBuilder;
+use App\Service\Svg\SvgTransformBuilder;
 
 // =============================================================================
 // TEXT LAYER RENDERER TEST SUITE
@@ -16,7 +17,8 @@ echo "🎨 TEXT LAYER RENDERER TEST SUITE\n";
 echo "==================================\n\n";
 
 // Initialize test components
-$renderer = new TextLayerRenderer();
+$transformBuilder = new SvgTransformBuilder();
+$renderer = new TextLayerRenderer($transformBuilder);
 $builder = new SvgDocumentBuilder();
 
 // Test counters
@@ -508,8 +510,7 @@ try {
     if (!is_dir($outputDir)) {
         mkdir($outputDir, 0755, true);
     }
-    
-    $xmlString = $galleryBuilder->getDocument()->saveXML($gallerySvg);
+    $xmlString = $gallerySvg->ownerDocument->saveXML($gallerySvg);
     $outputFile = $outputDir . '/comprehensive_text_gallery.svg';
     file_put_contents($outputFile, $xmlString);
     

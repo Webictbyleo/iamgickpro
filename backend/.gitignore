@@ -1,4 +1,9 @@
 
+# =============================================================================
+# Backend-Specific .gitignore (Symfony 7)
+# Note: Root .gitignore handles most patterns
+# =============================================================================
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
@@ -17,23 +22,42 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
 ###> doctrine/orm ###
 /.phpunit.result.cache
 /.phpunit.result.cache.json
-### Migration files ###
-/migrations/*.php
-### Debug files ###
-debug_**.php
-debug_*.php
-debug*.php
-debug**.txt
-debug**.log
-##  Testing files ##
-/test*.php
-### Test files ###
-/*test**.php
-/*test**.txt
-/*test**.svg
-/*test**.log
+###< doctrine/orm ###
 
-/create_test*.php
+# Backend-specific patterns (supplement to root .gitignore)
+/migrations/*.php
+/migrations/Version*.php
+
+# Debug files
+debug_*.php
+debug_*.txt
+debug_*.log
+debug_*.svg
+debug_*.json
+
+# Test files
+test_*.php
+test_*.txt
+test_*.log
+test_*.svg
+test_*.json
+test_*.sh
+*_test_*.php
+create_test*.php
+verify_*.php
+verify_*.sh
+
+# Generated files
+api-documentation.json
+api-spec*.json
+api-spec*.yaml
+openapi.json
+routes.json
+jwt_token.txt
+comprehensive_output.txt
+final_*_results.txt
+shape_test_output.txt

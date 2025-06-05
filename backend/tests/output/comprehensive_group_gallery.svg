@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="800" viewBox="0 0 1200 800" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+  <rect width="100%" height="100%" fill="url(#bg-gradient)"/>
+  <defs>
+    <linearGradient id="bg-gradient">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <linearGradient id="gradient-6840dc719645d" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g id="layer-" transform="translate(50, 100) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="110" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Normal Group</text>
+  <g id="layer-" transform="translate(300, 100) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: multiply;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="360" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Multiply Blend</text>
+  <g id="layer-" transform="translate(550, 100) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: screen;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="610" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Screen Blend</text>
+  <g id="layer-" transform="translate(800, 100) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: overlay;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="860" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Overlay Blend</text>
+  <g id="layer-" transform="translate(50, 250) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="isolation: isolate;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="110" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Isolated Group</text>
+  <g id="layer-" transform="translate(300, 250) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: difference; isolation: isolate;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="360" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Isolated Difference</text>
+  <g id="layer-" transform="translate(550, 250) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: exclusion;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="610" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Exclusion Blend</text>
+  <g id="layer-" transform="translate(800, 250) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: color-dodge;" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="860" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Color Dodge</text>
+  <defs>
+    <clipPath id="group-clip-">
+      <rect x="0" y="0" width="120" height="80" rx="20" ry="20"/>
+    </clipPath>
+  </defs>
+  <g id="layer-" transform="translate(50, 400) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" clip-path="url(#group-clip-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="110" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Rounded Clip</text>
+  <defs>
+    <clipPath id="group-clip-">
+      <circle cx="60" cy="40" r="40"/>
+    </clipPath>
+  </defs>
+  <g id="layer-" transform="translate(300, 400) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" clip-path="url(#group-clip-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="360" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Circle Clip</text>
+  <defs>
+    <clipPath id="group-clip-">
+      <ellipse cx="60" cy="40" rx="60" ry="40"/>
+    </clipPath>
+  </defs>
+  <g id="layer-" transform="translate(550, 400) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" clip-path="url(#group-clip-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="610" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Ellipse Clip</text>
+  <defs>
+    <mask id="group-mask-">
+      <circle cx="60" cy="40" r="40" fill="white"/>
+    </mask>
+  </defs>
+  <g id="layer-" transform="translate(800, 400) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" mask="url(#group-mask-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="860" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Circle Mask</text>
+  <defs>
+    <clipPath id="group-clip-">
+      <rect x="0" y="0" width="120" height="80" rx="15" ry="15"/>
+    </clipPath>
+  </defs>
+  <g id="layer-" transform="translate(175, 550) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: multiply; isolation: isolate;" clip-path="url(#group-clip-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="235" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Complex Group 1</text>
+  <defs>
+    <mask id="group-mask-">
+      <rect x="0" y="0" width="120" height="80" fill="url(#gradient-6840dc719645d)"/>
+    </mask>
+  </defs>
+  <g id="layer-" transform="translate(425, 550) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: overlay;" mask="url(#group-mask-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="485" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Complex Group 2</text>
+  <defs>
+    <clipPath id="group-clip-">
+      <circle cx="60" cy="40" r="40"/>
+    </clipPath>
+  </defs>
+  <g id="layer-" transform="translate(675, 550) rotate(0, 60, 40) scale(1, 1)">
+    <g id="group-content-" style="mix-blend-mode: screen; isolation: isolate;" clip-path="url(#group-clip-)" data-layer-type="group"/>
+    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+  </g>
+  <text x="735" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Complex Group 3</text>
+  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" stroke="rgba(0,0,0,0.3)" stroke-width="1">Comprehensive Group Gallery</text>
+</svg>

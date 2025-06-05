@@ -50,7 +50,7 @@ abstract class TestBase
         }
     }
 
-    protected function validateNumber(float $value, float $default, float $min = null, float $max = null): float
+    protected function validateNumber(float $value, float $default, ?float $min = null, ?float $max = null): float
     {
         if ($min !== null && $value < $min) {
             return $default;

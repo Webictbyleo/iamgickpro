@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="1000" viewBox="0 0 1200 1000" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+  <rect width="100%" height="100%" fill="url(#bg-gradient)"/>
+  <defs>
+    <linearGradient id="bg-gradient">
+      <stop offset="0%" stop-color="#f093fb"/>
+      <stop offset="100%" stop-color="#f5576c"/>
+    </linearGradient>
+  </defs>
+  <g id="layer-" transform="translate(50, 80) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Regular Text</text>
+  </g>
+  <g id="layer-" transform="translate(300, 80) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="bold" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Bold Text</text>
+  </g>
+  <g id="layer-" transform="translate(550, 80) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="normal" font-style="italic" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Italic Text</text>
+  </g>
+  <g id="layer-" transform="translate(800, 80) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0" text-decoration="underline">Underlined</text>
+  </g>
+  <g id="layer-" transform="translate(50, 180) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Left Aligned</text>
+  </g>
+  <g id="layer-" transform="translate(300, 180) rotate(0, 100, 40) scale(1, 1)">
+    <text x="100" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Center Aligned</text>
+  </g>
+  <g id="layer-" transform="translate(550, 180) rotate(0, 100, 40) scale(1, 1)">
+    <text x="200" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="end" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Right Aligned</text>
+  </g>
+  <g id="layer-" transform="translate(50, 280) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Small</text>
+  </g>
+  <g id="layer-" transform="translate(200, 280) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Medium</text>
+  </g>
+  <g id="layer-" transform="translate(350, 280) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Large</text>
+  </g>
+  <g id="layer-" transform="translate(550, 280) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="32" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Extra Large</text>
+  </g>
+  <g id="layer-" transform="translate(50, 380) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ff6b6b" letter-spacing="0">Red Text</text>
+  </g>
+  <g id="layer-" transform="translate(200, 380) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#4dabf7" letter-spacing="0">Blue Text</text>
+  </g>
+  <g id="layer-" transform="translate(350, 380) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#51cf66" letter-spacing="0">Green Text</text>
+  </g>
+  <g id="layer-" transform="translate(500, 380) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffd43b" letter-spacing="0">Yellow Text</text>
+  </g>
+  <g id="layer-" transform="translate(50, 480) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="24.6" font-family="Arial, sans-serif" font-size="14" font-weight="normal" font-style="normal" text-anchor="start" fill="#ffffff" letter-spacing="0">
+      <tspan x="0" dy="0">Multi-line</tspan>
+      <tspan x="0" dy="19.6">Text Example</tspan>
+      <tspan x="0" dy="19.6">With Line Breaks</tspan>
+    </text>
+  </g>
+  <g id="layer-" transform="translate(300, 480) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="30.4" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" fill="#ffffff" letter-spacing="3">
+      <tspan x="0" dy="0">Spaced Out</tspan>
+      <tspan x="0" dy="25.6">Text Example</tspan>
+    </text>
+  </g>
+  <g id="layer-" transform="translate(50, 680) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Sans Serif</text>
+  </g>
+  <g id="layer-" transform="translate(200, 680) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Times, serif" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Serif Text</text>
+  </g>
+  <g id="layer-" transform="translate(350, 680) rotate(0, 100, 40) scale(1, 1)">
+    <text x="0" y="40" font-family="Courier, monospace" font-size="16" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#ffffff" letter-spacing="0">Monospace</text>
+  </g>
+  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" stroke="rgba(0,0,0,0.3)" stroke-width="1">Comprehensive Text Gallery</text>
+</svg>

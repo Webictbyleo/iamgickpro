@@ -7,6 +7,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use App\Entity\Layer;
 use App\Service\Svg\LayerRenderer\GroupLayerRenderer;
 use App\Service\Svg\SvgDocumentBuilder;
+use App\Service\Svg\SvgTransformBuilder;
 
 // =============================================================================
 // GROUP LAYER RENDERER TEST SUITE
@@ -16,7 +17,8 @@ echo "👥 GROUP LAYER RENDERER TEST SUITE\n";
 echo "===================================\n\n";
 
 // Initialize test components
-$renderer = new GroupLayerRenderer();
+$transformBuilder = new SvgTransformBuilder();
+$renderer = new GroupLayerRenderer($transformBuilder);
 $builder = new SvgDocumentBuilder();
 
 // Test counters
@@ -758,7 +760,7 @@ try {
         mkdir($outputDir, 0755, true);
     }
     
-    $xmlString = $galleryBuilder->getDocument()->saveXML($gallerySvg);
+    $xmlString = $gallerySvg->ownerDocument->saveXML($gallerySvg);
     $outputFile = $outputDir . '/comprehensive_group_gallery.svg';
     file_put_contents($outputFile, $xmlString);
     
