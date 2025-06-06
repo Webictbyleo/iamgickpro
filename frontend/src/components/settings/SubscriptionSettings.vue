@@ -205,36 +205,37 @@ const planConfigs: Record<string, Omit<Plan, 'id'>> = {
 const fetchSubscriptionData = async () => {
   try {
     const response = await userAPI.getSubscription()
+    const subscription = response.data
     
     // Update current plan
-    const planConfig = planConfigs[response.plan] || planConfigs.free
+    const planConfig = planConfigs[subscription.plan] || planConfigs.free
     currentPlan.value = {
-      id: response.plan,
+      id: subscription.plan,
       ...planConfig
     }
     
     // Calculate usage stats
-    const storageUsed = Math.round(response.usage.mediaFiles * 2.5) // Approximate MB per media file
-    const storageLimit = response.limits.storage / (1024 * 1024) // Convert bytes to MB
+    const storageUsed = Math.round(subscription.usage.mediaFiles * 2.5) // Approximate MB per media file
+    const storageLimit = subscription.limits.storage / (1024 * 1024) // Convert bytes to MB
     
     usageStats.value = [
       {
         label: 'Designs Created',
-        used: response.usage.projects,
-        limit: response.limits.projects === -1 ? 'unlimited' : response.limits.projects,
-        percentage: response.limits.projects === -1 ? undefined : Math.round((response.usage.projects / response.limits.projects) * 100)
+        used: subscription.usage.projects,
+        limit: subscription.limits.projects === -1 ? 'unlimited' : subscription.limits.projects,
+        percentage: subscription.limits.projects === -1 ? undefined : Math.round((subscription.usage.projects / subscription.limits.projects) * 100)
       },
       {
         label: 'Storage Used (MB)',
         used: storageUsed,
-        limit: response.limits.storage === -1 ? 'unlimited' : storageLimit,
-        percentage: response.limits.storage === -1 ? undefined : Math.round((storageUsed / storageLimit) * 100)
+        limit: subscription.limits.storage === -1 ? 'unlimited' : storageLimit,
+        percentage: subscription.limits.storage === -1 ? undefined : Math.round((storageUsed / storageLimit) * 100)
       },
       {
         label: 'Exports This Month',
-        used: response.usage.exportJobs,
-        limit: response.limits.exports === -1 ? 'unlimited' : response.limits.exports,
-        percentage: response.limits.exports === -1 ? undefined : Math.round((response.usage.exportJobs / response.limits.exports) * 100)
+        used: subscription.usage.exportJobs,
+        limit: subscription.limits.exports === -1 ? 'unlimited' : subscription.limits.exports,
+        percentage: subscription.limits.exports === -1 ? undefined : Math.round((subscription.usage.exportJobs / subscription.limits.exports) * 100)
       }
     ]
   } catch (error) {

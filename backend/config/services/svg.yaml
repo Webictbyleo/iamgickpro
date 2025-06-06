@@ -25,6 +25,8 @@ services:
         tags: ['app.svg_layer_renderer']
 
     App\Service\Svg\LayerRenderer\GroupLayerRenderer:
+        arguments:
+            $renderers: !tagged_iterator 'app.svg_layer_renderer'
         tags: ['app.svg_layer_renderer']
 
     App\Service\Svg\LayerRenderer\VideoLayerRenderer:

@@ -183,16 +183,19 @@ class SvgRendererService
 
     private function getSortedLayers(Design $design): array
     {
-        $layers = $design->getLayers()->toArray();
+        // Only get root-level layers (layers without parents)
+        // Child layers will be rendered by their parent group renderers
+        $allLayers = $design->getLayers()->toArray();
+        $rootLayers = array_filter($allLayers, fn(Layer $layer) => $layer->getParent() === null);
         
         // Sort by z-index (lower values first, so they appear behind)
-        usort($layers, function (Layer $a, Layer $b) {
+        usort($rootLayers, function (Layer $a, Layer $b) {
             $zIndexA = $a->getZIndex() ?? 0;
             $zIndexB = $b->getZIndex() ?? 0;
             return $zIndexA <=> $zIndexB;
         });
         
-        return $layers;
+        return $rootLayers;
     }
 
     private function applyCanvasSettings(DOMElement $svgElement, Design $design): void

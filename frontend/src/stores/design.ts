@@ -55,8 +55,13 @@ export const useDesignStore = defineStore('design', () => {
     const newDesign: Design = {
       id: `design_${Date.now()}`,
       name: 'Untitled Design',
+      title: 'Untitled Design', // Add missing title property
       width,
       height,
+      dimensions: { // Add missing dimensions property
+        width,
+        height
+      },
       userId: authStore.user?.id || '1',
       isPublic: false,
       createdAt: new Date().toISOString(),
@@ -304,6 +309,69 @@ export const useDesignStore = defineStore('design', () => {
     }
   }
 
+  // Enhanced layer management methods
+  const getLayerById = (layerId: string): Layer | null => {
+    if (!currentDesign.value) return null
+    return currentDesign.value.designData.layers.find(l => l.id === layerId) || null
+  }
+
+  const updateLayerProperty = (layerId: string, property: string, value: any) => {
+    if (currentDesign.value) {
+      const layer = currentDesign.value.designData.layers.find(l => l.id === layerId)
+      if (layer) {
+        if (property.startsWith('properties.')) {
+          const propPath = property.replace('properties.', '')
+          layer.properties[propPath] = value
+        } else {
+          (layer as any)[property] = value
+        }
+        currentDesign.value.updatedAt = new Date().toISOString()
+      }
+    }
+  }
+
+  const reorderLayers = (layerIds: string[]) => {
+    if (currentDesign.value) {
+      const reorderedLayers = layerIds.map(id => 
+        currentDesign.value!.designData.layers.find(l => l.id === id)
+      ).filter(Boolean) as Layer[]
+      
+      currentDesign.value.designData.layers = reorderedLayers
+      currentDesign.value.updatedAt = new Date().toISOString()
+    }
+  }
+
+  const duplicateLayer = (layerId: string): Layer | null => {
+    if (!currentDesign.value) return null
+    
+    const originalLayer = getLayerById(layerId)
+    if (!originalLayer) return null
+    
+    const duplicatedLayer: Layer = {
+      ...originalLayer,
+      id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: `${originalLayer.name} Copy`,
+      x: originalLayer.x + 10,
+      y: originalLayer.y + 10,
+      zIndex: originalLayer.zIndex + 1
+    }
+    
+    currentDesign.value.designData.layers.push(duplicatedLayer)
+    currentDesign.value.updatedAt = new Date().toISOString()
+    
+    return duplicatedLayer
+  }
+
+  const clearSelection = () => {
+    // This will be handled by the SDK, but we track it in the store
+    selectedLayerIds.value = []
+  }
+
+  const selectedLayerIds = ref<string[]>([])
+  const selectedLayers = computed(() => 
+    selectedLayerIds.value.map(id => getLayerById(id)).filter(Boolean) as Layer[]
+  )
+
   return {
     // State
     currentDesign,
@@ -313,6 +381,8 @@ export const useDesignStore = defineStore('design', () => {
     
     // Getters
     hasCurrentDesign,
+    selectedLayerIds,
+    selectedLayers,
     
     // Actions
     createNewDesign,
@@ -327,5 +397,10 @@ export const useDesignStore = defineStore('design', () => {
     deleteDesign,
     exportDesign,
     duplicateDesign,
+    getLayerById,
+    updateLayerProperty,
+    reorderLayers,
+    duplicateLayer,
+    clearSelection,
   }
 })

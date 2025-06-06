@@ -61,6 +61,24 @@ function createTestLayer(string $type, array $properties = [], ?int $width = nul
     return $layer;
 }
 
+function renderLayerWithDefinitions(Layer $layer, GroupLayerRenderer $renderer, SvgDocumentBuilder $builder, int $width = 400, int $height = 400): string {
+    // Clear any previous definitions
+    $builder->clearDefinitionCollection();
+    
+    $svg = $builder->createDocument($width, $height);
+    $svgElement = $renderer->render($layer, $builder);
+    
+    // Add the rendered element to the SVG document
+    if ($svgElement) {
+        $importedElement = $svg->ownerDocument->importNode($svgElement, true);
+        $svg->appendChild($importedElement);
+    }
+    
+    // Process definitions to add clipPath and mask elements
+    $builder->processDefinitions($svg);
+    return $builder->saveDocument($svg);
+}
+
 // =============================================================================
 // BASIC GROUP RENDERING TESTS
 // =============================================================================
@@ -233,8 +251,6 @@ runTest("ClipPath: Enabled boolean (default rectangle)", function() use ($render
 });
 
 runTest("ClipPath: Rectangle", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'clipPath' => [
             'enabled' => true,
@@ -247,8 +263,7 @@ runTest("ClipPath: Rectangle", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'clip-path="url(#group-clip-') !== false &&
            strpos($xmlString, '<clipPath') !== false &&
@@ -257,8 +272,6 @@ runTest("ClipPath: Rectangle", function() use ($renderer, $builder) {
 });
 
 runTest("ClipPath: Circle", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'clipPath' => [
             'enabled' => true,
@@ -269,8 +282,7 @@ runTest("ClipPath: Circle", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'clip-path="url(#group-clip-') !== false &&
            strpos($xmlString, '<clipPath') !== false &&
@@ -281,8 +293,6 @@ runTest("ClipPath: Circle", function() use ($renderer, $builder) {
 });
 
 runTest("ClipPath: Ellipse", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'clipPath' => [
             'enabled' => true,
@@ -294,8 +304,7 @@ runTest("ClipPath: Ellipse", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'clip-path="url(#group-clip-') !== false &&
            strpos($xmlString, '<clipPath') !== false &&
@@ -305,8 +314,6 @@ runTest("ClipPath: Ellipse", function() use ($renderer, $builder) {
 });
 
 runTest("ClipPath: Polygon", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'clipPath' => [
             'enabled' => true,
@@ -320,8 +327,7 @@ runTest("ClipPath: Polygon", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'clip-path="url(#group-clip-') !== false &&
            strpos($xmlString, '<clipPath') !== false &&
@@ -330,8 +336,6 @@ runTest("ClipPath: Polygon", function() use ($renderer, $builder) {
 });
 
 runTest("ClipPath: Path", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'clipPath' => [
             'enabled' => true,
@@ -340,8 +344,7 @@ runTest("ClipPath: Path", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'clip-path="url(#group-clip-') !== false &&
            strpos($xmlString, '<clipPath') !== false &&
@@ -398,8 +401,6 @@ runTest("Mask: Enabled boolean (default gradient)", function() use ($renderer, $
 });
 
 runTest("Mask: Gradient mask", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'mask' => [
             'enabled' => true,
@@ -414,16 +415,13 @@ runTest("Mask: Gradient mask", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'mask="url(#group-mask-') !== false &&
            strpos($xmlString, '<mask') !== false;
 });
 
 runTest("Mask: Shape mask - rectangle", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'mask' => [
             'enabled' => true,
@@ -432,8 +430,7 @@ runTest("Mask: Shape mask - rectangle", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'mask="url(#group-mask-') !== false &&
            strpos($xmlString, '<mask') !== false &&
@@ -442,8 +439,6 @@ runTest("Mask: Shape mask - rectangle", function() use ($renderer, $builder) {
 });
 
 runTest("Mask: Shape mask - circle", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'mask' => [
             'enabled' => true,
@@ -452,8 +447,7 @@ runTest("Mask: Shape mask - circle", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'mask="url(#group-mask-') !== false &&
            strpos($xmlString, '<mask') !== false &&
@@ -462,8 +456,6 @@ runTest("Mask: Shape mask - circle", function() use ($renderer, $builder) {
 });
 
 runTest("Mask: Image mask", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'mask' => [
             'enabled' => true,
@@ -472,8 +464,7 @@ runTest("Mask: Image mask", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     return strpos($xmlString, 'mask="url(#group-mask-') !== false &&
            strpos($xmlString, '<mask') !== false &&
@@ -555,8 +546,6 @@ runTest("Edge: Invalid path data", function() use ($renderer, $builder) {
 });
 
 runTest("Edge: Empty polygon points", function() use ($renderer, $builder) {
-    $svg = $builder->createDocument(400, 400);
-    
     $layer = createTestLayer('group', [
         'clipPath' => [
             'enabled' => true,
@@ -565,8 +554,7 @@ runTest("Edge: Empty polygon points", function() use ($renderer, $builder) {
         ]
     ], 200, 200);
     
-    $svgElement = $renderer->render($layer, $builder);
-    $xmlString = $builder->saveDocument($svgElement);
+    $xmlString = renderLayerWithDefinitions($layer, $renderer, $builder);
     
     // Should create default triangle when no points provided
     return strpos($xmlString, 'clip-path="url(#group-clip-') !== false &&
@@ -711,7 +699,17 @@ try {
         
         $groupElement = $renderer->render($layer, $galleryBuilder);
         
-        // Add a colored rectangle inside the group to show the effect
+        // Find the inner group element that has the effects applied
+        $innerGroup = null;
+        foreach ($groupElement->childNodes as $child) {
+            if ($child instanceof DOMElement && $child->tagName === 'g' && 
+                str_starts_with($child->getAttribute('id'), 'group-content-')) {
+                $innerGroup = $child;
+                break;
+            }
+        }
+        
+        // Add a colored rectangle inside the inner group to show the effect
         $rect = $galleryBuilder->createElement('rect');
         $rect->setAttribute('x', '10');
         $rect->setAttribute('y', '10');
@@ -719,7 +717,13 @@ try {
         $rect->setAttribute('height', '60');
         $rect->setAttribute('fill', '#ff6b6b');
         $rect->setAttribute('opacity', '0.8');
-        $groupElement->appendChild($rect);
+        
+        // Add rectangle to the inner group (where effects are applied) or outer group as fallback
+        if ($innerGroup) {
+            $innerGroup->appendChild($rect);
+        } else {
+            $groupElement->appendChild($rect);
+        }
         
         $gallerySvg->appendChild($groupElement);
         

@@ -6,13 +6,34 @@ namespace App\Service\Svg\LayerRenderer;
 
 use App\Entity\Layer;
 use App\Service\Svg\SvgDocumentBuilder;
+use App\Service\Svg\SvgTransformBuilder;
 use DOMElement;
 
 /**
  * Renderer for group layers that contain other layers
+ * Automatically renders child layers based on the layer hierarchy
  */
 class GroupLayerRenderer extends AbstractLayerRenderer
 {
+    /** @var LayerRendererInterface[] */
+    private array $renderers = [];
+
+    public function __construct(
+        SvgTransformBuilder $transformBuilder,
+        iterable $renderers = []
+    ) {
+        parent::__construct($transformBuilder);
+        
+        // Convert iterable to array and sort by priority
+        $renderersArray = is_array($renderers) ? $renderers : iterator_to_array($renderers);
+        usort($renderersArray, fn($a, $b) => $b->getPriority() <=> $a->getPriority());
+        
+        foreach ($renderersArray as $renderer) {
+            if ($renderer instanceof LayerRendererInterface && !($renderer instanceof self)) {
+                $this->renderers[] = $renderer;
+            }
+        }
+    }
     public function canRender(Layer $layer): bool
     {
         return $layer->getType() === 'group';
@@ -31,7 +52,7 @@ class GroupLayerRenderer extends AbstractLayerRenderer
     protected function renderLayerContent(Layer $layer, SvgDocumentBuilder $builder): DOMElement
     {
         // Create a group element for the container
-        $group = $builder->createGroup("group-content-{$layer->getId()}");
+        $group = $builder->createGroup("group-content-{$this->getLayerIdentifier($layer)}");
         
         $properties = $layer->getProperties() ?? [];
         
@@ -50,12 +71,139 @@ class GroupLayerRenderer extends AbstractLayerRenderer
             $group->setAttribute('mask', $mask);
         }
         
-        // Note: Child layers will be added by the main SVG renderer service
-        // This renderer only handles the group container itself
+        // Automatically render child layers from the layer hierarchy
+        $this->renderChildLayers($layer, $group, $builder);
+        
+        // Also render children from properties if they exist (for backward compatibility)
+        $this->renderChildrenFromProperties($layer, $group, $builder, $properties);
         
         $this->applyCommonAttributes($group, $layer);
         
         return $group;
+    }
+
+    /**
+     * Render child layers from the layer entity hierarchy
+     */
+    private function renderChildLayers(Layer $parentLayer, DOMElement $group, SvgDocumentBuilder $builder): void
+    {
+        $children = $parentLayer->getChildren();
+        
+        if ($children->isEmpty()) {
+            return;
+        }
+        
+        // Sort children by z-index
+        $childArray = $children->toArray();
+        usort($childArray, function (Layer $a, Layer $b) {
+            return $a->getZIndex() <=> $b->getZIndex();
+        });
+        
+        foreach ($childArray as $childLayer) {
+            if (!$childLayer->isVisible()) {
+                continue;
+            }
+            
+            $renderer = $this->findRendererForLayer($childLayer);
+            if ($renderer) {
+                try {
+                    $childElement = $renderer->render($childLayer, $builder);
+                    if ($childElement) {
+                        $group->appendChild($childElement);
+                    }
+                } catch (\Exception $e) {
+                    // Log error but continue with other children
+                    error_log("Failed to render child layer {$childLayer->getId()}: " . $e->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Render children from properties array (for backward compatibility)
+     */
+    private function renderChildrenFromProperties(Layer $parentLayer, DOMElement $group, SvgDocumentBuilder $builder, array $properties): void
+    {
+        $children = $properties['children'] ?? [];
+        
+        if (empty($children) || !is_array($children)) {
+            return;
+        }
+        
+        foreach ($children as $childData) {
+            if (!is_array($childData)) {
+                continue;
+            }
+            
+            // Create a temporary layer entity from the property data
+            $childLayer = $this->createLayerFromPropertyData($childData, $parentLayer);
+            if (!$childLayer) {
+                continue;
+            }
+            
+            $renderer = $this->findRendererForLayer($childLayer);
+            if ($renderer) {
+                try {
+                    $childElement = $renderer->render($childLayer, $builder);
+                    if ($childElement) {
+                        $group->appendChild($childElement);
+                    }
+                } catch (\Exception $e) {
+                    // Log error but continue with other children
+                    error_log("Failed to render child from properties: " . $e->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Find the appropriate renderer for a layer
+     */
+    private function findRendererForLayer(Layer $layer): ?LayerRendererInterface
+    {
+        foreach ($this->renderers as $renderer) {
+            if ($renderer->canRender($layer)) {
+                return $renderer;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Create a temporary layer entity from property data
+     */
+    private function createLayerFromPropertyData(array $data, Layer $parentLayer): ?Layer
+    {
+        if (!isset($data['type'])) {
+            return null;
+        }
+        
+        $layer = new Layer();
+        $layer->setType($data['type'])
+              ->setName($data['name'] ?? 'Child Layer')
+              ->setProperties($data['properties'] ?? [])
+              ->setZIndex($data['zIndex'] ?? 0)
+              ->setVisible($data['visible'] ?? true)
+              ->setOpacity($data['opacity'] ?? 1.0)
+              ->setParent($parentLayer);
+        
+        // Set transform properties
+        $transform = $data['transform'] ?? [];
+        if (!empty($transform)) {
+            $layer->setTransform($transform);
+        } else {
+            // Set individual transform properties if provided
+            if (isset($data['x'])) $layer->setX($data['x']);
+            if (isset($data['y'])) $layer->setY($data['y']);
+            if (isset($data['width'])) $layer->setWidth($data['width']);
+            if (isset($data['height'])) $layer->setHeight($data['height']);
+            if (isset($data['rotation'])) $layer->setRotation($data['rotation']);
+            if (isset($data['scaleX'])) $layer->setScaleX($data['scaleX']);
+            if (isset($data['scaleY'])) $layer->setScaleY($data['scaleY']);
+        }
+        
+        return $layer;
     }
 
     private function applyGroupProperties(DOMElement $group, array $properties): void
@@ -100,14 +248,13 @@ class GroupLayerRenderer extends AbstractLayerRenderer
             return null;
         }
         $clipPathData = $clipPathValue;
-        $clipId = "group-clip-{$layer->getId()}";
+        $clipId = "group-clip-{$this->getLayerIdentifier($layer)}";
         
         // If no SVG element provided, we need one for proper document context
         if (!$svgElement) {
             return null; // Cannot create clip path without document context
         }
         
-        $defs = $builder->addDefinitions($svgElement);
         $clipPath = $builder->createClipPath($clipId, $svgElement->ownerDocument);
         
         $clipType = $clipPathData['type'] ?? 'rectangle';
@@ -132,7 +279,8 @@ class GroupLayerRenderer extends AbstractLayerRenderer
                 return null;
         }
         
-        $defs->appendChild($clipPath);
+        // Add the clipPath to the definition collection instead of directly to defs
+        $builder->addDefinitionToCollection($clipPath);
         return "url(#{$clipId})";
     }
 
@@ -161,14 +309,13 @@ class GroupLayerRenderer extends AbstractLayerRenderer
         }
         
         $maskData = $maskValue;
-        $maskId = "group-mask-{$layer->getId()}";
+        $maskId = "group-mask-{$this->getLayerIdentifier($layer)}";
         
         // If no SVG element provided, we need one for proper document context
         if (!$svgElement) {
             return null; // Cannot create mask without document context
         }
         
-        $defs = $builder->addDefinitions($svgElement);
         $mask = $builder->createElement('mask');
         $mask->setAttribute('id', $maskId);
         
@@ -188,7 +335,8 @@ class GroupLayerRenderer extends AbstractLayerRenderer
                 return null;
         }
         
-        $defs->appendChild($mask);
+        // Add the mask to the definition collection instead of directly to defs
+        $builder->addDefinitionToCollection($mask);
         return "url(#{$maskId})";
     }
 
@@ -401,5 +549,24 @@ class GroupLayerRenderer extends AbstractLayerRenderer
         ];
         
         return in_array($blendMode, $validBlendModes, true) ? $blendMode : 'normal';
+    }
+
+    /**
+     * Get a unique identifier for the layer, using UUID for tests or ID for persisted entities
+     */
+    private function getLayerIdentifier(Layer $layer): string
+    {
+        $id = $layer->getId();
+        if ($id !== null) {
+            return (string) $id;
+        }
+        
+        // For test entities without ID, use UUID or generate a unique identifier
+        try {
+            return $layer->getUuid();
+        } catch (\Exception $e) {
+            // Fallback for cases where UUID might not be available
+            return uniqid('test-');
+        }
     }
 }

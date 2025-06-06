@@ -5,119 +5,120 @@
       <stop offset="0%" stop-color="#667eea"/>
       <stop offset="100%" stop-color="#764ba2"/>
     </linearGradient>
-    <linearGradient id="gradient-6840dc719645d" x1="0%" y1="0%" x2="100%" y2="0%">
+    <clipPath id="group-clip-c3744c76-fe9e-4aae-88f7-4241285b7a5c">
+      <rect x="0" y="0" width="120" height="80" rx="20" ry="20"/>
+    </clipPath>
+    <clipPath id="group-clip-e53d0e3a-ea7c-40f6-969d-185d59a60ac8">
+      <circle cx="60" cy="40" r="40"/>
+    </clipPath>
+    <clipPath id="group-clip-dddf17ff-eda4-4028-bfb2-6ee5d1bb3277">
+      <ellipse cx="60" cy="40" rx="60" ry="40"/>
+    </clipPath>
+    <mask id="group-mask-8c5d27e8-cf19-4207-8e1c-9dfe62b607be">
+      <circle cx="60" cy="40" r="40" fill="white"/>
+    </mask>
+    <clipPath id="group-clip-64b87f05-41fc-45b1-83b2-f3d187f5dd6b">
+      <rect x="0" y="0" width="120" height="80" rx="15" ry="15"/>
+    </clipPath>
+    <linearGradient id="gradient-68414e049bb44" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
     </linearGradient>
+    <mask id="group-mask-565167ff-ca9e-41d1-9482-d0b04b2ff5c5">
+      <rect x="0" y="0" width="120" height="80" fill="url(#gradient-68414e049bb44)"/>
+    </mask>
+    <clipPath id="group-clip-10b07f49-153f-4010-a9f6-4fc01c7859e4">
+      <circle cx="60" cy="40" r="40"/>
+    </clipPath>
   </defs>
   <g id="layer-" transform="translate(50, 100) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-9de09e74-a8aa-4141-9d2d-93ac8aad072e" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="110" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Normal Group</text>
   <g id="layer-" transform="translate(300, 100) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: multiply;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-d518fa9d-20d6-4004-9647-4c0f8580cfea" style="mix-blend-mode: multiply;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="360" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Multiply Blend</text>
   <g id="layer-" transform="translate(550, 100) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: screen;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-2a120eeb-4e4e-46ea-8e76-5a21185f475e" style="mix-blend-mode: screen;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="610" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Screen Blend</text>
   <g id="layer-" transform="translate(800, 100) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: overlay;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-77bbf933-3d09-40bd-ba27-1946710543f5" style="mix-blend-mode: overlay;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="860" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Overlay Blend</text>
   <g id="layer-" transform="translate(50, 250) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="isolation: isolate;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-f8034483-ab69-4eba-a080-5b2d7035c8bf" style="isolation: isolate;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="110" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Isolated Group</text>
   <g id="layer-" transform="translate(300, 250) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: difference; isolation: isolate;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-a2c5e854-fb28-40ac-bd10-b24eda1f55ac" style="mix-blend-mode: difference; isolation: isolate;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="360" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Isolated Difference</text>
   <g id="layer-" transform="translate(550, 250) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: exclusion;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-9161323b-4cc9-412c-8367-807561ed058d" style="mix-blend-mode: exclusion;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="610" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Exclusion Blend</text>
   <g id="layer-" transform="translate(800, 250) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: color-dodge;" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-9f83cdda-164c-4664-abfb-e05ea40be3d0" style="mix-blend-mode: color-dodge;" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="860" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Color Dodge</text>
-  <defs>
-    <clipPath id="group-clip-">
-      <rect x="0" y="0" width="120" height="80" rx="20" ry="20"/>
-    </clipPath>
-  </defs>
   <g id="layer-" transform="translate(50, 400) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" clip-path="url(#group-clip-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-c3744c76-fe9e-4aae-88f7-4241285b7a5c" clip-path="url(#group-clip-c3744c76-fe9e-4aae-88f7-4241285b7a5c)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="110" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Rounded Clip</text>
-  <defs>
-    <clipPath id="group-clip-">
-      <circle cx="60" cy="40" r="40"/>
-    </clipPath>
-  </defs>
   <g id="layer-" transform="translate(300, 400) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" clip-path="url(#group-clip-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-e53d0e3a-ea7c-40f6-969d-185d59a60ac8" clip-path="url(#group-clip-e53d0e3a-ea7c-40f6-969d-185d59a60ac8)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="360" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Circle Clip</text>
-  <defs>
-    <clipPath id="group-clip-">
-      <ellipse cx="60" cy="40" rx="60" ry="40"/>
-    </clipPath>
-  </defs>
   <g id="layer-" transform="translate(550, 400) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" clip-path="url(#group-clip-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-dddf17ff-eda4-4028-bfb2-6ee5d1bb3277" clip-path="url(#group-clip-dddf17ff-eda4-4028-bfb2-6ee5d1bb3277)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="610" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Ellipse Clip</text>
-  <defs>
-    <mask id="group-mask-">
-      <circle cx="60" cy="40" r="40" fill="white"/>
-    </mask>
-  </defs>
   <g id="layer-" transform="translate(800, 400) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" mask="url(#group-mask-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-8c5d27e8-cf19-4207-8e1c-9dfe62b607be" mask="url(#group-mask-8c5d27e8-cf19-4207-8e1c-9dfe62b607be)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="860" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Circle Mask</text>
-  <defs>
-    <clipPath id="group-clip-">
-      <rect x="0" y="0" width="120" height="80" rx="15" ry="15"/>
-    </clipPath>
-  </defs>
   <g id="layer-" transform="translate(175, 550) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: multiply; isolation: isolate;" clip-path="url(#group-clip-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-64b87f05-41fc-45b1-83b2-f3d187f5dd6b" style="mix-blend-mode: multiply; isolation: isolate;" clip-path="url(#group-clip-64b87f05-41fc-45b1-83b2-f3d187f5dd6b)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="235" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Complex Group 1</text>
-  <defs>
-    <mask id="group-mask-">
-      <rect x="0" y="0" width="120" height="80" fill="url(#gradient-6840dc719645d)"/>
-    </mask>
-  </defs>
   <g id="layer-" transform="translate(425, 550) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: overlay;" mask="url(#group-mask-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-565167ff-ca9e-41d1-9482-d0b04b2ff5c5" style="mix-blend-mode: overlay;" mask="url(#group-mask-565167ff-ca9e-41d1-9482-d0b04b2ff5c5)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="485" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Complex Group 2</text>
-  <defs>
-    <clipPath id="group-clip-">
-      <circle cx="60" cy="40" r="40"/>
-    </clipPath>
-  </defs>
   <g id="layer-" transform="translate(675, 550) rotate(0, 60, 40) scale(1, 1)">
-    <g id="group-content-" style="mix-blend-mode: screen; isolation: isolate;" clip-path="url(#group-clip-)" data-layer-type="group"/>
-    <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    <g id="group-content-10b07f49-153f-4010-a9f6-4fc01c7859e4" style="mix-blend-mode: screen; isolation: isolate;" clip-path="url(#group-clip-10b07f49-153f-4010-a9f6-4fc01c7859e4)" data-layer-type="group">
+      <rect x="10" y="10" width="100" height="60" fill="#ff6b6b" opacity="0.8"/>
+    </g>
   </g>
   <text x="735" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Complex Group 3</text>
   <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" stroke="rgba(0,0,0,0.3)" stroke-width="1">Comprehensive Group Gallery</text>

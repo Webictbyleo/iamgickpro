@@ -1,0 +1,350 @@
+import Konva from 'konva'
+import { EventEmitter } from './EventEmitter'
+import type { 
+  EditorConfig, 
+  EditorState, 
+  LayerAPI, 
+  CanvasAPI, 
+  AnimationAPI, 
+  PluginAPI,
+  LayerNode,
+  EditorEvents
+} from './types'
+import { LayerManager } from './LayerManager'
+import { CanvasManager } from './CanvasManager'
+import { AnimationManager } from './AnimationManager'
+import { PluginManager } from './PluginManager'
+import type { Layer, Design, LayerType } from '../../types'
+
+/**
+ * Main Editor SDK class - provides unified interface for all editor operations
+ */
+export class EditorSDK extends EventEmitter {
+  private stage: Konva.Stage
+  private layerManager: LayerManager
+  private canvasManager: CanvasManager
+  private animationManager: AnimationManager
+  private pluginManager: PluginManager
+  
+  private state: EditorState = {
+    selectedLayers: [],
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 10
+  }
+
+  constructor(private config: EditorConfig) {
+    super()
+    
+    // Resolve container element
+    const container = typeof config.container === 'string' 
+      ? document.querySelector(config.container) as HTMLDivElement
+      : config.container as HTMLDivElement
+    
+    if (!container) {
+      throw new Error('Container element not found')
+    }
+    
+    // Clear any existing content in the container
+    container.innerHTML = ''
+    
+    // Create Konva Stage
+    this.stage = new Konva.Stage({
+      container,
+      width: config.width || 800,
+      height: config.height || 600
+    })
+    
+    // Initialize managers
+    this.layerManager = new LayerManager(this.stage, this.state, this)
+    this.canvasManager = new CanvasManager(this.stage, this.state, this)
+    this.animationManager = new AnimationManager(this.state, this)
+    this.pluginManager = new PluginManager(this.state, this)
+    
+    // Connect managers
+    this.connectManagers()
+    
+    this.setupEventHandlers()
+    this.initializeCanvas()
+  }
+
+  // ============================================================================
+  // MANAGER CONNECTIONS
+  // ============================================================================
+
+  private connectManagers(): void {
+    // Connect AnimationManager with LayerManager for layer lookup
+    this.animationManager.setLayerFinder((layerId: string) => this.layerManager.getLayer(layerId))
+  }
+
+  // ============================================================================
+  // PUBLIC API
+  // ============================================================================
+
+  /**
+   * Layer management API
+   */
+  get layers(): LayerAPI {
+    return this.layerManager
+  }
+
+  /**
+   * Canvas management API
+   */
+  get canvas(): CanvasAPI {
+    return this.canvasManager
+  }
+
+  /**
+   * Animation management API
+   */
+  get animation(): AnimationAPI {
+    return this.animationManager
+  }
+
+  /**
+   * Plugin management API
+   */
+  get plugins(): PluginAPI {
+    return this.pluginManager as PluginAPI
+  }
+
+  /**
+   * Get current editor state
+   */
+  getState(): EditorState {
+    return { ...this.state }
+  }
+
+  /**
+   * Load design data into the editor
+   */
+  async loadDesign(design: Design): Promise<void> {
+    try {
+      // Clear existing layers
+      await this.layerManager.clear()
+      
+      // Set canvas size
+      this.canvasManager.setSize(design.width, design.height)
+      
+      // Set background color
+      if (design.designData.canvas.backgroundColor) {
+        this.canvasManager.setBackgroundColor(design.designData.canvas.backgroundColor)
+      }
+      
+      // Load layers
+      for (const layerData of design.designData.layers) {
+        await this.layerManager.createLayer(layerData.type, layerData)
+      }
+      
+      // Center view
+      this.canvasManager.centerView()
+      
+      this.emit('design:loaded', design)
+    } catch (error) {
+      console.error('Failed to load design:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export current design data
+   */
+  exportDesign(): Design['designData'] {
+    const layers = this.layerManager.getAllLayers()
+    const canvasSize = this.canvasManager.getSize()
+    const backgroundColor = this.canvasManager.getBackgroundColor()
+    
+    return {
+      version: '1.0',
+      layers: layers.map((layer: LayerNode) => ({
+        id: layer.id,
+        type: layer.type as LayerType,
+        name: layer.name,
+        visible: layer.visible,
+        locked: layer.locked,
+        opacity: layer.opacity,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        rotation: layer.rotation,
+        scaleX: layer.scaleX,
+        scaleY: layer.scaleY,
+        zIndex: layer.zIndex,
+        properties: layer.properties
+      })),
+      canvas: {
+        width: canvasSize.width,
+        height: canvasSize.height,
+        backgroundColor
+      }
+    }
+  }
+
+  /**
+   * Destroy the editor and clean up resources
+   */
+  destroy(): void {
+    this.layerManager.destroy()
+    this.canvasManager.destroy()
+    this.animationManager.destroy()
+    this.pluginManager.destroy()
+    this.stage.destroy()
+    this.removeAllListeners()
+  }
+
+  // ============================================================================
+  // PRIVATE METHODS
+  // ============================================================================
+
+  private setupEventHandlers(): void {
+    // Stage click handler for selection
+    this.stage.on('click tap', (e) => {
+      const clickedLayer = e.target.getParent()
+      
+      if (clickedLayer && clickedLayer !== this.stage) {
+        const layerId = clickedLayer.id()
+        if (layerId) {
+          this.layerManager.selectLayer(layerId)
+        }
+      } else {
+        this.layerManager.deselectAll()
+      }
+    })
+
+    // Stage drag handlers for panning
+    this.stage.on('dragstart', () => {
+      this.stage.container().style.cursor = 'grabbing'
+    })
+
+    this.stage.on('dragend', () => {
+      this.stage.container().style.cursor = 'default'
+      this.updateViewport()
+    })
+
+    // Wheel handler for zooming
+    this.stage.on('wheel', (e) => {
+      e.evt.preventDefault()
+      
+      const oldScale = this.stage.scaleX()
+      const pointer = this.stage.getPointerPosition()!
+      
+      const scaleBy = 1.1
+      const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy
+      
+      this.stage.scale({ x: newScale, y: newScale })
+      
+      // Adjust position to zoom around pointer
+      const newPos = {
+        x: pointer.x - (pointer.x - this.stage.x()) * (newScale / oldScale),
+        y: pointer.y - (pointer.y - this.stage.y()) * (newScale / oldScale)
+      }
+      
+      this.stage.position(newPos)
+      this.updateViewport()
+    })
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', this.handleKeyboard.bind(this))
+  }
+
+  private handleKeyboard(e: KeyboardEvent): void {
+    // Only handle shortcuts when editor is focused
+    const container = typeof this.config.container === 'string'
+      ? document.querySelector(this.config.container) as HTMLElement
+      : this.config.container as HTMLElement
+      
+    if (!container || !container.contains(document.activeElement)) {
+      return
+    }
+
+    switch (e.key) {
+      case 'Delete':
+      case 'Backspace':
+        e.preventDefault()
+        this.deleteSelectedLayers()
+        break
+      
+      case 'Escape':
+        e.preventDefault()
+        this.layerManager.deselectAll()
+        break
+        
+      case 'a':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          this.selectAllLayers()
+        }
+        break
+        
+      case 'z':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          if (e.shiftKey) {
+            // Redo
+            this.redo()
+          } else {
+            // Undo
+            this.undo()
+          }
+        }
+        break
+        
+      case '0':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          this.canvasManager.zoomToFit()
+        }
+        break
+    }
+  }
+
+  private initializeCanvas(): void {
+    // Set initial background
+    if (this.config.backgroundColor) {
+      this.canvasManager.setBackgroundColor(this.config.backgroundColor)
+    }
+  }
+
+  private updateViewport(): void {
+    const pos = this.stage.position()
+    const scale = this.stage.scaleX()
+    
+    this.state.zoom = scale
+    this.state.panX = pos.x
+    this.state.panY = pos.y
+    
+    this.emit('viewport:changed', { 
+      zoom: scale, 
+      panX: pos.x, 
+      panY: pos.y 
+    })
+  }
+
+  private async deleteSelectedLayers(): Promise<void> {
+    const selectedIds = [...this.state.selectedLayers]
+    for (const layerId of selectedIds) {
+      await this.layerManager.deleteLayer(layerId)
+    }
+  }
+
+  private selectAllLayers(): void {
+    const allLayers = this.layerManager.getAllLayers()
+    const layerIds = allLayers.map((layer: LayerNode) => layer.id)
+    this.layerManager.selectLayers(layerIds)
+  }
+
+  private undo(): void {
+    // TODO: Implement undo functionality
+    console.log('Undo - to be implemented')
+  }
+
+  private redo(): void {
+    // TODO: Implement redo functionality
+    console.log('Redo - to be implemented')
+  }
+}

@@ -81,11 +81,16 @@ export interface User {
 export interface Design {
   id: string
   name: string
+  title: string // Display title for the design (usually same as name)
   description?: string
   designData: DesignData
   thumbnail?: string
   width: number
   height: number
+  dimensions: {
+    width: number
+    height: number
+  }
   userId: string
   projectId?: string
   isPublic: boolean
@@ -124,33 +129,148 @@ export interface Layer {
   properties: LayerProperties
 }
 
-export type LayerType = 'text' | 'image' | 'shape' | 'group'
+export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio'
 
-export interface LayerProperties {
-  // Text layer properties
-  text?: string
-  fontSize?: number
-  fontFamily?: string
-  fontWeight?: string | number
-  fontStyle?: string
-  textAlign?: string
-  color?: string
-  lineHeight?: number
-  letterSpacing?: number
-  
-  // Image layer properties
-  src?: string
-  filters?: ImageFilter[]
-  
-  // Shape layer properties
-  fill?: string
-  stroke?: string
-  strokeWidth?: number
-  cornerRadius?: number
-  
-  // Group layer properties
-  children?: Layer[]
+// Base interface for all layer properties
+export interface BaseLayerProperties {
+  [key: string]: any
 }
+
+// Text layer properties matching backend TextLayerProperties
+export interface TextLayerProperties extends BaseLayerProperties {
+  text: string
+  fontFamily: string
+  fontSize: number
+  fontWeight: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900'
+  fontStyle: 'normal' | 'italic' | 'oblique'
+  textAlign: 'left' | 'center' | 'right' | 'justify'
+  color: string
+  lineHeight: number
+  letterSpacing: number
+  textDecoration: 'none' | 'underline' | 'overline' | 'line-through'
+}
+
+// Image layer properties matching backend ImageLayerProperties
+export interface ImageLayerProperties extends BaseLayerProperties {
+  src: string
+  alt: string
+  objectFit: 'fill' | 'contain' | 'cover' | 'none' | 'scale-down'
+  objectPosition: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top left' | 'top right' | 'bottom left' | 'bottom right'
+  quality: number
+  brightness: number
+  contrast: number
+  saturation: number
+  blur: number
+}
+
+// Shape fill configuration matching backend structure
+export interface ShapeFillConfig {
+  type: 'solid' | 'linear' | 'radial' | 'pattern'
+  color?: string
+  opacity?: number
+  colors?: Array<{ color: string; stop: number; opacity?: number }>
+  angle?: number
+  centerX?: number
+  centerY?: number
+  radius?: number
+  patternType?: 'dots' | 'stripes' | 'grid'
+  size?: number
+  backgroundColor?: string
+  spacing?: number
+}
+
+// Shape effect configuration
+export interface ShapeEffectConfig {
+  enabled: boolean
+  offsetX?: number
+  offsetY?: number
+  blur?: number
+  color?: string
+  opacity?: number
+}
+
+// Shape layer properties matching backend ShapeLayerProperties
+export interface ShapeLayerProperties extends BaseLayerProperties {
+  shapeType: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow'
+  fill: ShapeFillConfig
+  stroke: string
+  strokeWidth: number
+  strokeOpacity: number
+  strokeDashArray?: string
+  strokeLineCap: 'butt' | 'round' | 'square'
+  strokeLineJoin: 'miter' | 'round' | 'bevel'
+  cornerRadius: number
+  sides: number
+  points: number
+  innerRadius: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  shadow?: ShapeEffectConfig
+  glow?: ShapeEffectConfig
+}
+
+// Group layer properties matching backend GroupLayerRenderer
+export interface GroupLayerProperties extends BaseLayerProperties {
+  children?: Array<any>
+  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity'
+  isolation?: boolean
+  clipPath?: {
+    enabled: boolean
+    type: 'rectangle' | 'circle' | 'ellipse' | 'polygon' | 'path'
+    x?: number
+    y?: number
+    width?: number
+    height?: number
+    cx?: number
+    cy?: number
+    r?: number
+    rx?: number
+    ry?: number
+    cornerRadius?: number
+    points?: Array<{ x: number; y: number }>
+    d?: string
+  }
+  mask?: {
+    enabled: boolean
+    type: 'gradient' | 'image' | 'shape'
+    shapeType?: 'rectangle' | 'circle' | 'ellipse'
+    src?: string
+    gradient?: {
+      type: 'linear' | 'radial'
+      stops: Array<{ offset: string; color: string; opacity: number }>
+    }
+  }
+}
+
+// Video layer properties
+export interface VideoLayerProperties extends BaseLayerProperties {
+  src: string
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  controls?: boolean
+}
+
+// Audio layer properties
+export interface AudioLayerProperties extends BaseLayerProperties {
+  src: string
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  controls?: boolean
+}
+
+// Union type for all layer properties
+export type LayerProperties = 
+  | TextLayerProperties
+  | ImageLayerProperties 
+  | ShapeLayerProperties
+  | GroupLayerProperties
+  | VideoLayerProperties
+  | AudioLayerProperties
+  | BaseLayerProperties
 
 export interface ImageFilter {
   type: 'blur' | 'brightness' | 'contrast' | 'saturate' | 'grayscale' | 'sepia'
@@ -161,6 +281,7 @@ export interface Template {
   id: string
   uuid: string
   name: string
+  title: string // Display title for the template (usually same as name)
   category: string
   description?: string
   tags: string[]
