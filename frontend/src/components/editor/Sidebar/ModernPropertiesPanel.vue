@@ -1,0 +1,789 @@
+<template>
+  <div class="bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 w-80 h-full overflow-y-auto">
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Properties
+        </h2>
+        <ModernButton
+          variant="ghost"
+          size="sm"
+          @click="$emit('close')"
+          class="lg:hidden"
+        >
+       const updateLayerName = (value: string) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'name', value);
+  }
+};
+
+const updateLayerX = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'x', value);
+  }
+};on class="w-5 h-5" />
+        </ModernButton>
+      </div>
+    </div>
+
+    <!-- Dynamic Content Based on Selection -->
+    <div class="p-4 space-y-6">
+      <!-- No Selection State -->
+      <div v-if="!selectedLayer && !showDesignProperties" class="text-center py-12">
+        <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+          <CursorArrowRaysIcon class="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          No Selection
+        </h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Select an element to edit its properties
+        </p>
+      </div>
+
+      <!-- Design Properties -->
+      <div v-else-if="showDesignProperties" class="space-y-6">
+        <div>
+          <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+            Design Settings
+          </h3>
+          
+          <!-- Design Name -->
+          <div class="mb-4">
+            <PropertyInput
+              label="Design Name"
+              :value="design?.name || ''"
+              @update:value="updateDesignName"
+              placeholder="Enter design name"
+            />
+          </div>
+
+          <!-- Canvas Size -->
+          <div class="mb-4">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Canvas Size
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <PropertyInput
+                label="Width"
+                type="number"
+                :value="design?.dimensions?.width || 800"
+                @update:value="updateCanvasWidth"
+                suffix="px"
+              />
+              <PropertyInput
+                label="Height"
+                type="number"
+                :value="design?.dimensions?.height || 800"
+                @update:value="updateCanvasHeight"
+                suffix="px"
+              />
+            </div>
+          </div>
+
+          <!-- Background -->
+          <div class="mb-4">
+            <PropertyColorPicker
+              label="Background Color"
+              :value="design?.backgroundColor || '#ffffff'"
+              @update:value="updateBackgroundColor"
+              show-gradients
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer Properties -->
+      <div v-else-if="selectedLayer" class="space-y-6">
+        <!-- Layer Header -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+              <component :is="getLayerIcon(selectedLayer.type)" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                {{ getLayerTypeName(selectedLayer.type) }}
+              </h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ selectedLayer.name || 'Unnamed Layer' }}
+              </p>
+            </div>
+          </div>
+          
+          <ModernButton
+            variant="ghost"
+            size="sm"
+            @click="deleteLayer"
+            class="text-red-600 hover:text-red-700"
+          >
+            <TrashIcon class="w-4 h-4" />
+          </ModernButton>
+        </div>
+
+        <!-- Layer Name -->
+        <div>
+          <PropertyInput
+            label="Layer Name"
+            :value="selectedLayer.name || ''"
+            @update:value="updateLayerName"
+            placeholder="Enter layer name"
+          />
+        </div>
+
+        <!-- Position & Size -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+            Position & Size
+          </h4>
+          
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <PropertyInput
+              label="X"
+              type="number"
+              :value="selectedLayer.x || 0"
+              @update:value="updateLayerX"
+              suffix="px"
+            />
+            <PropertyInput
+              label="Y"
+              type="number"
+              :value="selectedLayer.y || 0"
+              @update:value="updateLayerY"
+              suffix="px"
+            />
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <PropertyInput
+              label="Width"
+              type="number"
+              :value="selectedLayer.width || 0"
+              @update:value="updateLayerWidth"
+              suffix="px"
+            />
+            <PropertyInput
+              label="Height"
+              type="number"
+              :value="selectedLayer.height || 0"
+              @update:value="updateLayerHeight"
+              suffix="px"
+            />
+          </div>
+
+          <PropertyInput
+            label="Rotation"
+            type="number"
+            :value="selectedLayer.rotation || 0"
+            @update:value="updateLayerRotation"
+            suffix="°"
+            :min="-180"
+            :max="180"
+          />
+        </div>
+
+        <!-- Opacity -->
+        <div>
+          <PropertyInput
+            label="Opacity"
+            type="range"
+            :value="(selectedLayer.opacity || 1) * 100"
+            @update:value="updateLayerOpacity"
+            suffix="%"
+            :min="0"
+            :max="100"
+          />
+        </div>
+
+        <!-- Text Properties -->
+        <div v-if="selectedLayer.type === 'text'" class="space-y-4">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+            Text Properties
+          </h4>
+          
+          <PropertyInput
+            label="Text Content"
+            :value="selectedLayer.properties?.text || ''"
+            @update:value="updateTextContent"
+            placeholder="Enter text"
+          />
+
+          <PropertyDropdown
+            label="Font Family"
+            :value="selectedLayer.properties?.fontFamily || 'Arial'"
+            :options="fontFamilyOptions"
+            @update:value="updateFontFamily"
+          />
+
+          <PropertyInput
+            label="Font Size"
+            type="number"
+            :value="selectedLayer.properties?.fontSize || 16"
+            @update:value="updateFontSize"
+            suffix="px"
+            :min="8"
+            :max="200"
+          />
+
+          <PropertyColorPicker
+            label="Text Color"
+            :value="selectedLayer.properties?.fill || '#000000'"
+            @update:value="updateTextColor"
+            show-gradients
+          />
+
+          <div class="grid grid-cols-3 gap-2">
+            <PropertyToggle
+              label="Bold"
+              :value="selectedLayer.properties?.fontWeight === 'bold'"
+              @update:value="updateFontWeight"
+            />
+            <PropertyToggle
+              label="Italic" 
+              :value="selectedLayer.properties?.fontStyle === 'italic'"
+              @update:value="updateFontStyle"
+            />
+            <PropertyToggle
+              label="Underline"
+              :value="selectedLayer.properties?.textDecoration === 'underline'"
+              @update:value="updateTextDecoration"
+            />
+          </div>
+
+          <PropertyDropdown
+            label="Text Align"
+            :value="selectedLayer.properties?.textAlign || 'left'"
+            :options="textAlignOptions"
+            @update:value="updateTextAlign"
+          />
+        </div>
+
+        <!-- Shape Properties -->
+        <div v-else-if="selectedLayer.type === 'shape'" class="space-y-4">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+            Shape Properties
+          </h4>
+          
+          <PropertyColorPicker
+            label="Fill Color"
+            :value="selectedLayer.properties?.fill || '#000000'"
+            @update:value="updateShapeFill"
+            show-gradients
+          />
+
+          <PropertyColorPicker
+            label="Stroke Color"
+            :value="selectedLayer.properties?.stroke || '#000000'"
+            @update:value="updateShapeStroke"
+          />
+
+          <PropertyInput
+            label="Stroke Width"
+            type="number"
+            :value="selectedLayer.properties?.strokeWidth || 0"
+            @update:value="updateStrokeWidth"
+            suffix="px"
+            :min="0"
+            :max="20"
+          />
+
+          <PropertyInput
+            label="Corner Radius"
+            type="number"
+            :value="selectedLayer.properties?.cornerRadius || 0"
+            @update:value="updateCornerRadius"
+            suffix="px"
+            :min="0"
+            :max="100"
+          />
+        </div>
+
+        <!-- Image Properties -->
+        <div v-else-if="selectedLayer.type === 'image'" class="space-y-4">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+            Image Properties
+          </h4>
+          
+          <PropertyDropdown
+            label="Object Fit"
+            :value="selectedLayer.properties?.objectFit || 'contain'"
+            :options="objectFitOptions"
+            @update:value="updateObjectFit"
+          />
+
+          <!-- Image Filters -->
+          <div class="space-y-3">
+            <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300">Filters</h5>
+            
+            <PropertyInput
+              label="Brightness"
+              type="range"
+              :value="selectedLayer.properties?.brightness || 100"
+              @update:value="updateBrightness"
+              suffix="%"
+              :min="0"
+              :max="200"
+            />
+            
+            <PropertyInput
+              label="Contrast"
+              type="range"
+              :value="selectedLayer.properties?.contrast || 100"
+              @update:value="updateContrast"
+              suffix="%"
+              :min="0"
+              :max="200"
+            />
+            
+            <PropertyInput
+              label="Saturation"
+              type="range"
+              :value="selectedLayer.properties?.saturation || 100"
+              @update:value="updateSaturation"
+              suffix="%"
+              :min="0"
+              :max="200"
+            />
+          </div>
+        </div>
+
+        <!-- Effects -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+            Effects
+          </h4>
+          
+          <!-- Shadow -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                Drop Shadow
+              </label>
+              <PropertyToggle
+                :value="selectedLayer.properties?.shadow?.enabled || false"
+                @update:value="updateShadowEnabled"
+              />
+            </div>
+            
+            <div v-if="selectedLayer.properties?.shadow?.enabled" class="space-y-3 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+              <PropertyColorPicker
+                label="Shadow Color"
+                :value="selectedLayer.properties?.shadow?.color || '#000000'"
+                @update:value="updateShadowColor"
+              />
+              
+              <div class="grid grid-cols-2 gap-2">
+                <PropertyInput
+                  label="Offset X"
+                  type="number"
+                  :value="selectedLayer.properties?.shadow?.offsetX || 0"
+                  @update:value="updateShadowOffsetX"
+                  suffix="px"
+                />
+                <PropertyInput
+                  label="Offset Y"
+                  type="number"
+                  :value="selectedLayer.properties?.shadow?.offsetY || 0"
+                  @update:value="updateShadowOffsetY"
+                  suffix="px"
+                />
+              </div>
+              
+              <PropertyInput
+                label="Blur"
+                type="number"
+                :value="selectedLayer.properties?.shadow?.blur || 0"
+                @update:value="updateShadowBlur"
+                suffix="px"
+                :min="0"
+                :max="50"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer Actions -->
+        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div class="grid grid-cols-2 gap-2">
+            <ModernButton
+              variant="outline"
+              size="sm"
+              @click="duplicateLayer"
+              class="justify-center"
+            >
+              <DocumentDuplicateIcon class="w-4 h-4 mr-1" />
+              Duplicate
+            </ModernButton>
+            <ModernButton
+              variant="outline"
+              size="sm"
+              @click="lockLayer"
+              class="justify-center"
+              :class="{ 'bg-amber-50 text-amber-700 border-amber-200': selectedLayer.locked }"
+            >
+              <component :is="selectedLayer.locked ? LockClosedIcon : LockOpenIcon" class="w-4 h-4 mr-1" />
+              {{ selectedLayer.locked ? 'Unlock' : 'Lock' }}
+            </ModernButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useDesignStore } from '@/stores/design';
+import ModernButton from '@/components/common/ModernButton.vue';
+import PropertyInput from '@/components/editor/Properties/PropertyInput.vue';
+import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue';
+import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue';
+import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue';
+import {
+  XMarkIcon,
+  CursorArrowRaysIcon,
+  TrashIcon,
+  DocumentDuplicateIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  PhotoIcon,
+  DocumentTextIcon,
+  Square3Stack3DIcon
+} from '@heroicons/vue/24/outline';
+import type { Layer } from '@/types';
+
+interface Props {
+  showDesignProperties?: boolean;
+}
+
+defineProps<Props>();
+
+const emit = defineEmits<{
+  close: [];
+}>();
+
+const designStore = useDesignStore();
+
+const selectedLayer = computed(() => designStore.selectedLayers[0]);
+const design = computed(() => designStore.currentDesign);
+
+// Font options
+const fontFamilyOptions = [
+  { label: 'Arial', value: 'Arial' },
+  { label: 'Helvetica', value: 'Helvetica' },
+  { label: 'Times New Roman', value: 'Times New Roman' },
+  { label: 'Georgia', value: 'Georgia' },
+  { label: 'Verdana', value: 'Verdana' },
+  { label: 'Inter', value: 'Inter' },
+  { label: 'Roboto', value: 'Roboto' },
+  { label: 'Open Sans', value: 'Open Sans' },
+];
+
+const textAlignOptions = [
+  { label: 'Left', value: 'left' },
+  { label: 'Center', value: 'center' },
+  { label: 'Right', value: 'right' },
+  { label: 'Justify', value: 'justify' },
+];
+
+const objectFitOptions = [
+  { label: 'Contain', value: 'contain' },
+  { label: 'Cover', value: 'cover' },
+  { label: 'Fill', value: 'fill' },
+  { label: 'Scale Down', value: 'scale-down' },
+];
+
+// Helper functions
+const getLayerIcon = (type: string) => {
+  switch (type) {
+    case 'text': return DocumentTextIcon;
+    case 'image': return PhotoIcon;
+    case 'shape': return Square3Stack3DIcon;
+    default: return Square3Stack3DIcon;
+  }
+};
+
+const getLayerTypeName = (type: string) => {
+  switch (type) {
+    case 'text': return 'Text Layer';
+    case 'image': return 'Image Layer';
+    case 'shape': return 'Shape Layer';
+    default: return 'Layer';
+  }
+};
+
+// Design update methods
+const updateDesignName = (value: string) => {
+  if (designStore.currentDesign) {
+    designStore.updateDesignName(value);
+  }
+};
+
+const updateCanvasWidth = (value: number) => {
+  if (designStore.currentDesign) {
+    designStore.updateCanvasSize(value, designStore.currentDesign.height);
+  }
+};
+
+const updateCanvasHeight = (value: number) => {
+  if (designStore.currentDesign) {
+    designStore.updateCanvasSize(designStore.currentDesign.width, value);
+  }
+};
+
+const updateBackgroundColor = (value: string) => {
+  if (designStore.currentDesign) {
+    designStore.currentDesign.designData.canvas.backgroundColor = value;
+    designStore.currentDesign.updatedAt = new Date().toISOString();
+  }
+};
+
+// Layer update methods
+const updateLayerName = (value: string) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperties(selectedLayer.value.id, { name: value });
+  }
+};
+
+const updateLayerX = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperties(selectedLayer.value.id, { x: value });
+  }
+};
+
+const updateLayerY = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'y', value);
+  }
+};
+
+const updateLayerWidth = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'width', value);
+  }
+};
+
+const updateLayerHeight = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'height', value);
+  }
+};
+
+const updateLayerRotation = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'rotation', value);
+  }
+};
+
+const updateLayerOpacity = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'opacity', value / 100);
+  }
+};
+
+// Text properties
+const updateTextContent = (value: string) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'text', value, 'properties');
+  }
+};
+
+const updateFontFamily = (value: string) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'fontFamily', value, 'properties');
+  }
+};
+
+const updateFontSize = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'fontSize', value, 'properties');
+  }
+};
+
+const updateTextColor = (value: string) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fill', value);
+  }
+};
+
+const updateFontWeight = (value: boolean) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, fontWeight: value ? 'bold' : 'normal' }
+    });
+  }
+};
+
+const updateFontStyle = (value: boolean) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, fontStyle: value ? 'italic' : 'normal' }
+    });
+  }
+};
+
+const updateTextDecoration = (value: boolean) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, textDecoration: value ? 'underline' : 'none' }
+    });
+  }
+};
+
+const updateTextAlign = (value: string) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, textAlign: value }
+    });
+  }
+};
+
+// Shape properties
+const updateShapeFill = (value: string) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, fill: value }
+    });
+  }
+};
+
+const updateShapeStroke = (value: string) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, stroke: value }
+    });
+  }
+};
+
+const updateStrokeWidth = (value: number) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, strokeWidth: value }
+    });
+  }
+};
+
+const updateCornerRadius = (value: number) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, cornerRadius: value }
+    });
+  }
+};
+
+// Image properties
+const updateObjectFit = (value: string) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, objectFit: value }
+    });
+  }
+};
+
+const updateBrightness = (value: number) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, brightness: value }
+    });
+  }
+};
+
+const updateContrast = (value: number) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, contrast: value }
+    });
+  }
+};
+
+const updateSaturation = (value: number) => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { ...selectedLayer.value.properties, saturation: value }
+    });
+  }
+};
+
+// Effects
+const updateShadowEnabled = (value: boolean) => {
+  if (selectedLayer.value) {
+    const shadow = selectedLayer.value.properties?.shadow || {};
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { 
+        ...selectedLayer.value.properties, 
+        shadow: { ...shadow, enabled: value }
+      }
+    });
+  }
+};
+
+const updateShadowColor = (value: string) => {
+  if (selectedLayer.value) {
+    const shadow = selectedLayer.value.properties?.shadow || {};
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { 
+        ...selectedLayer.value.properties, 
+        shadow: { ...shadow, color: value }
+      }
+    });
+  }
+};
+
+const updateShadowOffsetX = (value: number) => {
+  if (selectedLayer.value) {
+    const shadow = selectedLayer.value.properties?.shadow || {};
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { 
+        ...selectedLayer.value.properties, 
+        shadow: { ...shadow, offsetX: value }
+      }
+    });
+  }
+};
+
+const updateShadowOffsetY = (value: number) => {
+  if (selectedLayer.value) {
+    const shadow = selectedLayer.value.properties?.shadow || {};
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { 
+        ...selectedLayer.value.properties, 
+        shadow: { ...shadow, offsetY: value }
+      }
+    });
+  }
+};
+
+const updateShadowBlur = (value: number) => {
+  if (selectedLayer.value) {
+    const shadow = selectedLayer.value.properties?.shadow || {};
+    editorStore.updateLayer(selectedLayer.value.id, {
+      properties: { 
+        ...selectedLayer.value.properties, 
+        shadow: { ...shadow, blur: value }
+      }
+    });
+  }
+};
+
+// Layer actions
+const deleteLayer = () => {
+  if (selectedLayer.value) {
+    editorStore.deleteLayer(selectedLayer.value.id);
+  }
+};
+
+const duplicateLayer = () => {
+  if (selectedLayer.value) {
+    editorStore.duplicateLayer(selectedLayer.value.id);
+  }
+};
+
+const lockLayer = () => {
+  if (selectedLayer.value) {
+    editorStore.updateLayer(selectedLayer.value.id, { 
+      locked: !selectedLayer.value.locked 
+    });
+  }
+};
+</script>

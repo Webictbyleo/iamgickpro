@@ -129,10 +129,10 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination.last_page > 1" class="mt-8">
+        <div v-if="pagination.totalPages > 1" class="mt-8">
           <ExportJobsPagination
             :current-page="pagination.page"
-            :last-page="pagination.last_page"
+            :last-page="pagination.totalPages"
             :total="pagination.total"
             @page-changed="handlePageChange"
           />
@@ -195,7 +195,7 @@ const {
 const fetchJobs = () => {
   const params: any = {
     page: pagination.page,
-    limit: pagination.limit
+    limit: 20 // Use default limit since pagination doesn't have limit property
   }
   
   if (filters.value.status) params.status = filters.value.status

@@ -1,117 +1,154 @@
 <template>
-  <div class="min-h-screen bg-gray-900 flex flex-col">
-    <!-- Top Toolbar -->
-    <MainToolbar 
-      v-model:design-name="designName"
-      :save-status="saveStatus"
-      :can-undo="canUndo"
-      :can-redo="canRedo"
-      @save="handleSave"
-      @export="handleExport"
-      @preview="handlePreview"
-      @share="handleShare"
-      @undo="handleUndo"
-      @redo="handleRedo"
+  <div class="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
+    <!-- Modern Left Sidebar -->
+    <ModernSidebar 
+      :active-tool="activeTool"
+      :active-panel="activePanel"
+      @tool-change="handleToolChange"
+      @panel-change="handlePanelChange"
+      @action="handleSidebarAction"
     />
 
-    <!-- Main Editor Layout -->
-    <div class="flex-1 flex min-h-0">
-      <!-- Left Sidebar -->
-      <div class="w-80 bg-white border-r flex flex-col">
-        <!-- Sidebar Tabs -->
-        <div class="flex border-b">
-          <button
-            v-for="tab in leftTabs"
-            :key="tab.id"
-            @click="activeLeftTab = tab.id as 'elements' | 'layers' | 'media' | 'animation'"
-            :class="[
-              'flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors',
-              activeLeftTab === tab.id
-                ? 'border-blue-500 text-blue-600 bg-blue-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            ]"
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-h-0">
+      <!-- Modern Toolbar -->
+      <ModernToolbar 
+        v-model:design-name="designName"
+        :save-status="saveStatus"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :active-tool="activeTool || undefined"
+        @save="handleSave"
+        @export="handleExport"
+        @undo="handleUndo"
+        @redo="handleRedo"
+        @tool-change="handleToolChange"
+      />
+
+      <!-- Canvas Container -->
+      <div class="flex-1 flex min-h-0">
+        <!-- Left Panel (Elements, Templates, Media) -->
+        <div 
+          v-if="activePanel && leftPanels.includes(activePanel)"
+          class="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col"
+        >
+          <!-- Panel Header -->
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ getPanelTitle(activePanel) }}
+            </h2>
+            <ModernButton
+              variant="ghost"
+              size="sm"
+              @click="activePanel = null"
+            >
+              <XMarkIcon class="w-5 h-5" />
+            </ModernButton>
+          </div>
+
+          <!-- Panel Content -->
+          <div class="flex-1 overflow-y-auto">
+            <ElementsPanel 
+              v-if="activePanel === 'elements'" 
+              @add-element="handleAddElement" 
+              @add-template="handleAddTemplate"
+            />
+            
+            <MediaPanel 
+              v-if="activePanel === 'media'" 
+              @add-media="handleAddMedia" 
+            />
+
+            <!-- Templates Panel (placeholder) -->
+            <div v-if="activePanel === 'templates'" class="p-4">
+              <p class="text-gray-500 dark:text-gray-400">Templates panel coming soon...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 bg-gray-100 dark:bg-gray-800 relative flex flex-col min-w-0">
+          <!-- Tool-specific Toolbar -->
+          <div 
+            v-if="activeTool && activeTool !== 'select'"
+            class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2"
           >
-            {{ tab.label }}
-          </button>
+            <TextToolbar 
+              v-if="activeTool === 'text'"
+              :selected-layer="selectedLayer"
+              @update-property="handleUpdateProperty"
+            />
+            
+            <ShapeToolbar 
+              v-if="activeTool === 'shape'"
+              :selected-layer="selectedLayer"
+              @update-property="handleUpdateProperty"
+            />
+          </div>
+
+          <!-- Canvas -->
+          <div class="flex-1 relative">
+            <DesignCanvas 
+              :width="canvasWidth"
+              :height="canvasHeight"
+              :zoom-level="zoomLevel"
+              :background-color="backgroundColor"
+              @canvas-ready="handleCanvasReady"
+              @zoom-changed="handleZoomChanged"
+            />
+
+            <!-- Zoom Controls -->
+            <ZoomControls
+              :zoom="zoomLevel"
+              :canvas-width="canvasWidth"
+              :canvas-height="canvasHeight"
+              :container-width="canvasContainerWidth"
+              :container-height="canvasContainerHeight"
+              @update:zoom="handleZoomChanged"
+              @pan-to-center="handlePanToCenter"
+            />
+          </div>
         </div>
-        
-        <!-- Sidebar Content -->
-        <div class="flex-1 overflow-y-auto">
-          <!-- Elements Panel -->
-          <ElementsPanel v-if="activeLeftTab === 'elements'" @add-element="handleAddElement" />
-          
-          <!-- Layers Panel -->
-          <LayerPanel 
-            v-if="activeLeftTab === 'layers'" 
-            :layers="layers"
-            :selected-layers="selectedLayers"
-            @select-layer="handleSelectLayer"
-            @duplicate-layer="handleDuplicateLayer"
-            @delete-layer="handleDeleteLayer"
-            @toggle-visibility="handleToggleVisibility"
-            @toggle-lock="handleToggleLock"
-            @reorder-layers="handleReorderLayers"
-          />
 
-          <!-- Media Panel -->
-          <MediaPanel v-if="activeLeftTab === 'media'" @add-media="handleAddMedia" />
-
-          <!-- Animation Panel -->
-          <AnimationPanel 
-            v-if="activeLeftTab === 'animation'" 
-            :selected-layers="selectedLayers"
-            @update-animation="handleUpdateAnimation"
-            @preview-animation="handlePreviewAnimation"
-            @stop-animation="handleStopAnimation"
-          />
-        </div>
-      </div>
-
-      <!-- Canvas Area -->
-      <div class="flex-1 bg-gray-100 relative flex flex-col min-w-0">
-        <DesignCanvas 
-          :width="canvasWidth"
-          :height="canvasHeight"
-          :zoom-level="zoomLevel"
-          :background-color="backgroundColor"
-          @canvas-ready="handleCanvasReady"
-          @zoom-changed="handleZoomChanged"
+        <!-- Right Properties Panel -->
+        <ModernPropertiesPanel
+          v-if="showPropertiesPanel"
+          :show-design-properties="!selectedLayer"
+          @close="showPropertiesPanel = false"
         />
-      </div>
 
-      <!-- Right Sidebar -->
-      <div class="w-80 bg-white border-l flex flex-col">
-        <!-- Sidebar Tabs -->
-        <div class="flex border-b">
-          <button
-            v-for="tab in rightTabs"
-            :key="tab.id"
-            @click="activeRightTab = tab.id as 'design' | 'properties'"
-            :class="[
-              'flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors',
-              activeRightTab === tab.id
-                ? 'border-blue-500 text-blue-600 bg-blue-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            ]"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-        
-        <!-- Properties Panel -->
-        <div class="flex-1 overflow-y-auto">
-          <DesignPropertiesPanel 
-            v-if="activeRightTab === 'design'"
-            v-model:canvas-width="canvasWidth"
-            v-model:canvas-height="canvasHeight"
-            v-model:background-color="backgroundColor"
-          />
-          
-          <LayerPropertiesPanel 
-            v-if="activeRightTab === 'properties'"
-            :selected-layers="selectedLayers"
-            @update-properties="handleUpdateProperties"
-          />
+        <!-- Layers Panel (Bottom) -->
+        <div 
+          v-if="activePanel === 'layers'"
+          class="absolute bottom-0 left-20 right-0 h-64 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-20"
+        >
+          <!-- Panel Header -->
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Layers
+            </h2>
+            <ModernButton
+              variant="ghost"
+              size="sm"
+              @click="activePanel = null"
+            >
+              <XMarkIcon class="w-5 h-5" />
+            </ModernButton>
+          </div>
+
+          <!-- Layers Content -->
+          <div class="flex-1 overflow-y-auto p-4">
+            <LayerPanel 
+              :layers="layers"
+              :selected-layers="selectedLayers"
+              @select-layer="handleSelectLayer"
+              @duplicate-layer="handleDuplicateLayer"
+              @delete-layer="handleDeleteLayer"
+              @toggle-visibility="handleToggleVisibility"
+              @toggle-lock="handleToggleLock"
+              @reorder-layers="handleReorderLayers"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -123,15 +160,23 @@ import { ref, computed, provide } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { Layer, LayerType } from '@/types'
 
-// Component imports
-import MainToolbar from './Toolbar/MainToolbar.vue'
+// Modern Component imports
+import ModernSidebar from './Sidebar/ModernSidebar.vue'
+import ModernToolbar from './Toolbar/ModernToolbar.vue'
+import ModernPropertiesPanel from './Sidebar/ModernPropertiesPanel.vue'
+import TextToolbar from './Toolbar/TextToolbar.vue'
+import ShapeToolbar from './Toolbar/ShapeToolbar.vue'
+import ZoomControls from './Canvas/ZoomControls.vue'
+import ModernButton from '@/components/common/ModernButton.vue'
+
+// Legacy component imports (still used)
 import ElementsPanel from './Panels/ElementsPanel.vue'
 import LayerPanel from './Panels/LayerPanel.vue'
 import MediaPanel from './Panels/MediaPanel.vue'
-import AnimationPanel from './Panels/AnimationPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
-import DesignPropertiesPanel from './Panels/DesignPropertiesPanel.vue'
-import LayerPropertiesPanel from './Panels/LayerPropertiesPanel.vue'
+
+// Icons
+import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 // Composables
 import { useDesignEditor } from '@/composables/useDesignEditor'
@@ -139,6 +184,20 @@ import { useLayerManagement } from '@/composables/useLayerManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const designStore = useDesignStore()
+
+// Create helper methods for design updates
+const updateDesignBackground = (backgroundColor: string) => {
+  if (designStore.currentDesign) {
+    designStore.currentDesign.designData.canvas.backgroundColor = backgroundColor
+    designStore.currentDesign.updatedAt = new Date().toISOString()
+  }
+}
+
+const updateDesignSize = (width: number, height: number) => {
+  if (designStore.currentDesign) {
+    designStore.updateCanvasSize(width, height)
+  }
+}
 
 // Use composables
 const {
@@ -177,23 +236,16 @@ useKeyboardShortcuts({
   }
 })
 
-// UI State
-const activeLeftTab = ref<'elements' | 'layers' | 'media' | 'animation'>('elements')
-const activeRightTab = ref<'design' | 'properties'>('design')
+// Modern UI State
+const activeTool = ref<'select' | 'text' | 'shape' | 'image' | null>('select')
+const activePanel = ref<'elements' | 'templates' | 'media' | 'layers' | null>(null)
+const showPropertiesPanel = ref(true)
 const zoomLevel = ref(1)
+const canvasContainerWidth = ref(1000)
+const canvasContainerHeight = ref(700)
 
-// Sidebar tabs configuration
-const leftTabs = [
-  { id: 'elements' as const, label: 'Elements' },
-  { id: 'layers' as const, label: 'Layers' },
-  { id: 'media' as const, label: 'Media' },
-  { id: 'animation' as const, label: 'Animation' }
-]
-
-const rightTabs = [
-  { id: 'design' as const, label: 'Design' },
-  { id: 'properties' as const, label: 'Properties' }
-]
+// Panel configuration
+const leftPanels = ['elements', 'templates', 'media']
 
 // Computed properties
 const designName = computed({
@@ -214,42 +266,86 @@ const saveStatus = computed(() => {
 const canvasWidth = computed({
   get: () => designStore.currentDesign?.width || 800,
   set: (value: number) => {
-    if (designStore.currentDesign) {
-      designStore.updateCanvasSize(value, canvasHeight.value)
-      editorSDK.value?.canvas.setSize(value, canvasHeight.value)
-    }
+    updateDesignSize(value, canvasHeight.value)
+    editorSDK.value?.canvas.setSize(value, canvasHeight.value)
   }
 })
 
 const canvasHeight = computed({
   get: () => designStore.currentDesign?.height || 600,
   set: (value: number) => {
-    if (designStore.currentDesign) {
-      designStore.updateCanvasSize(canvasWidth.value, value)
-      editorSDK.value?.canvas.setSize(canvasWidth.value, value)
-    }
+    updateDesignSize(canvasWidth.value, value)
+    editorSDK.value?.canvas.setSize(canvasWidth.value, value)
   }
 })
 
 const backgroundColor = computed({
-  get: () => designStore.currentDesign?.designData.canvas.backgroundColor || '#ffffff',
+  get: () => designStore.currentDesign?.designData?.canvas?.backgroundColor || '#ffffff',
   set: (value: string) => {
-    if (designStore.currentDesign) {
-      designStore.currentDesign.designData.canvas.backgroundColor = value
-      editorSDK.value?.canvas.setBackgroundColor(value)
-    }
+    updateDesignBackground(value)
+    editorSDK.value?.canvas.setBackgroundColor(value)
   }
 })
 
-const layers = computed(() => designStore.currentDesign?.designData.layers || [])
+const layers = computed(() => designStore.currentDesign?.designData?.layers || [])
+const selectedLayer = computed(() => selectedLayers.value[0] || null)
+
+// Helper functions
+const getPanelTitle = (panel: string) => {
+  switch (panel) {
+    case 'elements': return 'Elements'
+    case 'templates': return 'Templates'
+    case 'media': return 'Media'
+    case 'layers': return 'Layers'
+    default: return 'Panel'
+  }
+}
 
 // Event handlers
+const handleToolChange = (tool: string) => {
+  activeTool.value = tool as any
+  // Close panels when switching to select tool
+  if (tool === 'select') {
+    // Keep properties panel open for select tool
+  }
+}
+
+const handlePanelChange = (panel: string) => {
+  activePanel.value = activePanel.value === panel ? null : panel as any
+}
+
+const handleSidebarAction = (action: string) => {
+  switch (action) {
+    case 'properties':
+      showPropertiesPanel.value = !showPropertiesPanel.value
+      break
+    case 'save':
+      handleSave()
+      break
+    case 'export':
+      handleExport('png')
+      break
+    case 'undo':
+      handleUndo()
+      break
+    case 'redo':
+      handleRedo()
+      break
+  }
+}
+
 const handleCanvasReady = (container: HTMLElement) => {
   initializeEditor(container)
 }
 
 const handleAddElement = (type: LayerType, properties: any) => {
   addElement(type, properties)
+  activeTool.value = 'select' // Switch to select tool after adding element
+}
+
+const handleAddTemplate = (template: any) => {
+  console.log('Adding template:', template)
+  // TODO: Implement template handling logic
 }
 
 const handleSelectLayer = (layerId: string, event: MouseEvent) => {
@@ -276,12 +372,20 @@ const handleReorderLayers = (layerIds: string[]) => {
   reorderLayers(layerIds)
 }
 
-const handleUpdateProperties = (layerId: string, properties: Partial<Layer>) => {
-  updateLayerProperties(layerId, properties)
+const handleUpdateProperty = (property: string, value: any) => {
+  if (selectedLayer.value) {
+    const updates = { [property]: value }
+    updateLayerProperties(selectedLayer.value.id, updates)
+  }
 }
 
 const handleZoomChanged = (zoom: number) => {
   zoomLevel.value = zoom
+}
+
+const handlePanToCenter = () => {
+  // Use centerView instead of panToCenter
+  editorSDK.value?.canvas.centerView()
 }
 
 const handleSave = () => {
@@ -290,16 +394,6 @@ const handleSave = () => {
 
 const handleExport = (format: string) => {
   exportDesign(format)
-}
-
-const handlePreview = () => {
-  // Preview logic
-  console.log('Preview design')
-}
-
-const handleShare = () => {
-  // Share logic
-  console.log('Share design')
 }
 
 const handleUndo = () => {
@@ -311,26 +405,7 @@ const handleRedo = () => {
 }
 
 const handleAddMedia = (mediaData: any) => {
-  // Add media to canvas
   addElement('image', mediaData)
-}
-
-const handleUpdateAnimation = (layerId: string, animation: any) => {
-  // Update layer animation
-  console.log('Update animation for layer:', layerId, animation)
-  // TODO: Implement animation update logic
-}
-
-const handlePreviewAnimation = (layerId: string) => {
-  // Preview layer animation
-  console.log('Preview animation for layer:', layerId)
-  // TODO: Implement animation preview logic
-}
-
-const handleStopAnimation = (layerId: string) => {
-  // Stop layer animation
-  console.log('Stop animation for layer:', layerId)
-  // TODO: Implement animation stop logic
 }
 
 // Provide editor context to child components

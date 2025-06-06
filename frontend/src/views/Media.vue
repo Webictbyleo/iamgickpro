@@ -436,8 +436,8 @@ const loadStockMedia = async () => {
     })
     
     if (response.data) {
-      mediaItems.value = response.data.data
-      totalPages.value = response.data.meta.last_page
+      mediaItems.value = response.data.data.media
+      totalPages.value = response.data.data.pagination.totalPages
     }
   } catch (error) {
     console.error('Failed to load stock media:', error)
@@ -458,8 +458,8 @@ const loadUserUploads = async () => {
     })
     
     if (response.data) {
-      mediaItems.value = response.data.data
-      totalPages.value = response.data.meta.last_page
+      mediaItems.value = response.data.data.media
+      totalPages.value = response.data.data.pagination.totalPages
     }
   } catch (error) {
     console.error('Failed to load user uploads:', error)

@@ -36,6 +36,11 @@ function validateResponseStructure() {
     data: {
       id: "uuid-string",
       name: "My Design",
+      title: "My Design", // Add missing title
+      dimensions: { // Add missing dimensions
+        width: 800,
+        height: 600
+      },
       designData: {
         version: "1.0.0",
         layers: [],
@@ -96,7 +101,12 @@ function validateEntityProperties() {
   // Ensure Design entity has all required properties from backend
   const design: Design = {
     id: "required",
-    name: "required", 
+    name: "required",
+    title: "required", // Add missing title
+    dimensions: { // Add missing dimensions
+      width: 0,
+      height: 0
+    },
     designData: {
       version: "required",
       layers: [],
@@ -120,6 +130,7 @@ function validateEntityProperties() {
     id: "required",
     uuid: "required",
     name: "required",
+    title: "required", // Add missing title
     category: "required",
     tags: [],
     thumbnail: "required",

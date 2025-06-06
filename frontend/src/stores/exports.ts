@@ -58,8 +58,8 @@ export const useExportsStore = defineStore('exports', () => {
       const response = await exportAPI.getExportJobs(params)
       
       if (response.data) {
-        exportJobs.value = response.data.data
-        pagination.value = response.data.meta
+        exportJobs.value = response.data.data.jobs
+        pagination.value = response.data.data.pagination
         return { success: true }
       }
       
@@ -77,7 +77,7 @@ export const useExportsStore = defineStore('exports', () => {
   const createExportJob = async (data: {
     designId: string
     designName: string
-    format: 'png' | 'jpg' | 'jpeg' | 'pdf' | 'svg' | 'mp4' | 'gif'
+    format: 'png' | 'jpeg' | 'svg' | 'pdf' | 'mp4' | 'gif'
     options?: ExportOptions
   }) => {
     isLoading.value = true
@@ -85,9 +85,14 @@ export const useExportsStore = defineStore('exports', () => {
     
     try {
       const response = await exportAPI.createExportJob({
-        designId: data.designId,
-        format: data.format,
-        options: data.options
+        designId: parseInt(data.designId, 10), // Convert string to number
+        format: data.format as 'png' | 'jpeg' | 'svg' | 'pdf' | 'mp4' | 'gif', // Cast to expected type
+        // Map ExportOptions to API parameters
+        quality: data.options?.quality ? (data.options.quality > 80 ? 'ultra' : data.options.quality > 60 ? 'high' : data.options.quality > 40 ? 'medium' : 'low') : undefined,
+        width: data.options?.width,
+        height: data.options?.height,
+        scale: data.options?.scale,
+        transparent: data.options?.transparent
       })
       
       if (response.data) {

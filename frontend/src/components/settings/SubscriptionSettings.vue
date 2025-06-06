@@ -205,7 +205,7 @@ const planConfigs: Record<string, Omit<Plan, 'id'>> = {
 const fetchSubscriptionData = async () => {
   try {
     const response = await userAPI.getSubscription()
-    const subscription = response.data
+    const subscription = response.data.data
     
     // Update current plan
     const planConfig = planConfigs[subscription.plan] || planConfigs.free
@@ -214,28 +214,26 @@ const fetchSubscriptionData = async () => {
       ...planConfig
     }
     
-    // Calculate usage stats
-    const storageUsed = Math.round(subscription.usage.mediaFiles * 2.5) // Approximate MB per media file
-    const storageLimit = subscription.limits.storage / (1024 * 1024) // Convert bytes to MB
-    
+    // Since usage/limits aren't available in the API, we'll show features instead
+    // You could also remove this section entirely or fetch usage from a different endpoint
     usageStats.value = [
       {
-        label: 'Designs Created',
-        used: subscription.usage.projects,
-        limit: subscription.limits.projects === -1 ? 'unlimited' : subscription.limits.projects,
-        percentage: subscription.limits.projects === -1 ? undefined : Math.round((subscription.usage.projects / subscription.limits.projects) * 100)
+        label: 'Plan Status',
+        used: subscription.status,
+        limit: 'Active',
+        percentage: subscription.status === 'active' ? 100 : 0
       },
       {
-        label: 'Storage Used (MB)',
-        used: storageUsed,
-        limit: subscription.limits.storage === -1 ? 'unlimited' : storageLimit,
-        percentage: subscription.limits.storage === -1 ? undefined : Math.round((storageUsed / storageLimit) * 100)
+        label: 'Features Available',
+        used: subscription.features.length,
+        limit: 'unlimited',
+        percentage: undefined
       },
       {
-        label: 'Exports This Month',
-        used: subscription.usage.exportJobs,
-        limit: subscription.limits.exports === -1 ? 'unlimited' : subscription.limits.exports,
-        percentage: subscription.limits.exports === -1 ? undefined : Math.round((subscription.usage.exportJobs / subscription.limits.exports) * 100)
+        label: 'Plan Level',
+        used: subscription.plan,
+        limit: subscription.plan,
+        percentage: undefined
       }
     ]
   } catch (error) {
