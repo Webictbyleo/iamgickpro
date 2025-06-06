@@ -56,6 +56,11 @@
               @add-element="handleAddElement" 
               @add-template="handleAddTemplate"
             />
+
+            <TemplatesPanel 
+              v-if="activePanel === 'templates'" 
+              @use-template="handleUseTemplate"
+            />
             
             <MediaPanel 
               v-if="activePanel === 'media'" 
@@ -164,6 +169,7 @@ import ModernButton from '@/components/common/ModernButton.vue'
 
 // Legacy component imports (still used)
 import ElementsPanel from './Panels/ElementsPanel.vue'
+import TemplatesPanel from './Panels/TemplatesPanel.vue'
 import LayerPanel from './Panels/LayerPanel.vue'
 import MediaPanel from './Panels/MediaPanel.vue'
 import AnimationPanel from './Panels/AnimationPanel.vue'
@@ -234,14 +240,14 @@ useKeyboardShortcuts({
 
 // Modern UI State
 const activeTool = ref<'select' | 'text' | 'shape' | 'image' | null>('select')
-const activePanel = ref<'elements' | 'layers' | 'media' | 'animation' | 'colors' | null>('elements') // Set default panel
+const activePanel = ref<'elements' | 'templates' | 'layers' | 'media' | 'animation' | 'colors' | null>('elements') // Set default panel
 const showPropertiesPanel = ref(true)
 const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
 
 // Panel configuration - include all panels that should show in left sidebar
-const leftPanels = ['elements', 'media', 'layers', 'animation', 'colors']
+const leftPanels = ['elements', 'templates', 'media', 'layers', 'animation', 'colors']
 
 // Computed properties
 const designName = computed({
@@ -290,6 +296,7 @@ const selectedLayer = computed(() => selectedLayers.value[0] || null)
 const getPanelTitle = (panel: string) => {
   switch (panel) {
     case 'elements': return 'Elements'
+    case 'templates': return 'Templates'
     case 'media': return 'Media'
     case 'layers': return 'Layers'
     case 'animation': return 'Animation'
@@ -343,6 +350,11 @@ const handleAddElement = (type: LayerType, properties: any) => {
 const handleAddTemplate = (template: any) => {
   console.log('Adding template:', template)
   // TODO: Implement template handling logic
+}
+
+const handleUseTemplate = (template: any) => {
+  console.log('Using template:', template)
+  // TODO: Implement template usage logic - replace current design with template
 }
 
 const handleSelectLayer = (layerId: string, event: MouseEvent) => {

@@ -99,7 +99,8 @@ import {
   Squares2X2Icon,
   Square3Stack3DIcon as LayersIcon,
   PlayIcon,
-  SwatchIcon
+  SwatchIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/vue/24/outline'
 
 interface Tool {
@@ -137,8 +138,9 @@ const tools: Tool[] = [
 // Panel configuration
 const panels: Panel[] = [
   { id: 'elements', icon: Squares2X2Icon, label: 'Elements' },
-  { id: 'layers', icon: LayersIcon, label: 'Layers' },
+  { id: 'templates', icon: DocumentDuplicateIcon, label: 'Templates' },
   { id: 'media', icon: PhotoIcon, label: 'Media' },
+  { id: 'layers', icon: LayersIcon, label: 'Layers' },
   { id: 'animation', icon: PlayIcon, label: 'Animation' },
   { id: 'colors', icon: SwatchIcon, label: 'Colors' }
 ]
