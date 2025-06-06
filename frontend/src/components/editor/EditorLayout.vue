@@ -24,7 +24,6 @@
         @undo="handleUndo"
         @redo="handleRedo"
         @tool-change="handleToolChange"
-        @tool-update="handleToolUpdate"
       />
 
       <!-- Canvas Debug Test (temporary) - DISABLED -->
@@ -110,8 +109,15 @@
               :height="canvasHeight"
               :zoom-level="zoomLevel"
               :background-color="backgroundColor"
+              :selected-layer="selectedLayer"
+              :active-tool="activeTool || undefined"
+              :show-floating-toolbar="true"
               @canvas-ready="handleCanvasReady"
               @zoom-changed="handleZoomChanged"
+              @tool-update="handleToolUpdate"
+              @duplicate-layer="handleDuplicateSelectedLayer"
+              @delete-layer="handleDeleteSelectedLayer"
+              @lock-layer="handleLockSelectedLayer"
             />
 
             <!-- Zoom Controls -->
@@ -148,8 +154,6 @@ import type { Layer, LayerType } from '@/types'
 import ModernSidebar from './Sidebar/ModernSidebar.vue'
 import ModernToolbar from './Toolbar/ModernToolbar.vue'
 import ModernPropertiesPanel from './Sidebar/ModernPropertiesPanel.vue'
-import TextToolbar from './Toolbar/TextToolbar.vue'
-import ShapeToolbar from './Toolbar/ShapeToolbar.vue'
 import ZoomControls from './Canvas/ZoomControls.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
 
@@ -161,7 +165,6 @@ import MediaPanel from './Panels/MediaPanel.vue'
 import AnimationPanel from './Panels/AnimationPanel.vue'
 import ColorsPanel from './Panels/ColorsPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
-import CanvasDebugTest from './CanvasDebugTest.vue'
 
 // Icons
 import { XMarkIcon } from '@heroicons/vue/24/outline'
@@ -399,6 +402,25 @@ const handleDuplicateLayer = (layerId: string) => {
 
 const handleDeleteLayer = (layerId: string) => {
   deleteLayer(layerId)
+}
+
+// Floating Context Toolbar Event Handlers
+const handleDuplicateSelectedLayer = () => {
+  if (selectedLayer.value) {
+    handleDuplicateLayer(selectedLayer.value.id)
+  }
+}
+
+const handleDeleteSelectedLayer = () => {
+  if (selectedLayer.value) {
+    handleDeleteLayer(selectedLayer.value.id)
+  }
+}
+
+const handleLockSelectedLayer = () => {
+  if (selectedLayer.value) {
+    handleToggleLock(selectedLayer.value.id)
+  }
 }
 
 const handleToggleVisibility = (layerId: string) => {

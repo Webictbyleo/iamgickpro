@@ -104,13 +104,27 @@
           </div>
         </div>
       </div>
+
+      <!-- Floating Context Toolbar -->
+      <FloatingContextToolbar
+        :selected-layer="selectedLayer"
+        :active-tool="activeTool"
+        :position="floatingToolbarPosition"
+        :show="showFloatingToolbar"
+        @tool-update="(tool, data) => $emit('tool-update', tool, data)"
+        @duplicate-layer="$emit('duplicate-layer')"
+        @delete-layer="$emit('delete-layer')"
+        @lock-layer="$emit('lock-layer')"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import type { Layer } from '@/types'
 import BaseButton from '@/components/common/BaseButton.vue'
+import FloatingContextToolbar from './FloatingContextToolbar.vue'
 
 interface Props {
   width: number
@@ -119,20 +133,36 @@ interface Props {
   backgroundColor: string
   showGrid?: boolean
   showRulers?: boolean
+  selectedLayer?: Layer | null
+  activeTool?: string
+  showFloatingToolbar?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showGrid: false,
-  showRulers: false
+  showRulers: false,
+  selectedLayer: null,
+  activeTool: undefined,
+  showFloatingToolbar: true
 })
 
 const emit = defineEmits<{
   canvasReady: [container: HTMLElement]
   zoomChanged: [zoom: number]
+  'tool-update': [tool: string, data: any]
+  'duplicate-layer': []
+  'delete-layer': []
+  'lock-layer': []
 }>()
 
 const canvasContainer = ref<HTMLElement>()
 const currentZoom = ref(props.zoomLevel)
+
+// Floating toolbar position
+const floatingToolbarPosition = computed(() => ({
+  x: 0,
+  y: 0
+}))
 
 // Computed styles
 const canvasStyle = computed(() => ({

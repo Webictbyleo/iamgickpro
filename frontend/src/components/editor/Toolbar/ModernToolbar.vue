@@ -102,47 +102,11 @@
         <ExportDropdown @export="handleExport" compact />
       </div>
     </div>
-
-    <!-- Secondary Toolbar Row - Show layer-specific toolbar when layer is selected, or tool toolbar when tool is active -->
-    <div 
-      v-if="selectedLayer || (activeTool && toolOptions[activeTool])"
-      class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 flex items-center"
-    >
-      <!-- Priority 1: Show layer-specific toolbar if a layer is selected -->
-      <TextToolbar
-        v-if="selectedLayer && selectedLayer.type === 'text'"
-        :fontFamily="selectedLayer.properties?.fontFamily"
-        :fontSize="selectedLayer.properties?.fontSize"
-        :fontWeight="selectedLayer.properties?.fontWeight"
-        :fontStyle="selectedLayer.properties?.fontStyle"
-        :textDecoration="selectedLayer.properties?.textDecoration"
-        :textAlign="selectedLayer.properties?.textAlign"
-        :color="selectedLayer.properties?.fill"
-        @update="(props) => $emit('tool-update', 'text', props)"
-      />
-      
-      <ShapeToolbar
-        v-else-if="selectedLayer && selectedLayer.type === 'shape'"
-        :fill="selectedLayer.properties?.fill"
-        :stroke="selectedLayer.properties?.stroke"
-        :strokeWidth="selectedLayer.properties?.strokeWidth"
-        :cornerRadius="selectedLayer.properties?.cornerRadius"
-        @update="(props) => $emit('tool-update', 'shape', props)"
-      />
-      
-      <!-- Priority 2: Show tool-specific toolbar only if no layer is selected -->
-      <component 
-        v-else-if="!selectedLayer && activeTool && toolOptions[activeTool]"
-        :is="toolOptions[activeTool].component" 
-        v-bind="toolOptions[activeTool].props"
-        @update="handleToolUpdate"
-      />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import {
   DocumentTextIcon,
   Square3Stack3DIcon,
@@ -153,8 +117,6 @@ import {
 } from '@heroicons/vue/24/outline'
 import ModernButton from '@/components/common/ModernButton.vue'
 import ExportDropdown from './ExportDropdown.vue'
-import TextToolbar from './TextToolbar.vue'
-import ShapeToolbar from './ShapeToolbar.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
 import RedoIcon from '@/components/icons/RedoIcon.vue'
 
@@ -189,20 +151,7 @@ const emit = defineEmits<{
   'present': []
   'export': [format: string]
   'tool-change': [tool: string]
-  'tool-update': [tool: string, data: any]
 }>()
-
-// Tool-specific options and components
-const toolOptions = computed(() => ({
-  text: {
-    component: TextToolbar,
-    props: {}
-  },
-  shapes: {
-    component: ShapeToolbar,
-    props: {}
-  }
-} as Record<string, { component: any; props: any }>))
 
 const updateDesignName = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -211,10 +160,6 @@ const updateDesignName = (event: Event) => {
 
 const handleExport = (format: string) => {
   emit('export', format)
-}
-
-const handleToolUpdate = (data: any) => {
-  emit('tool-update', props.activeTool || 'select', data)
 }
 
 const handleToolChange = (tool: string) => {
