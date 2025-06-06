@@ -119,6 +119,7 @@ export interface LayerAPI {
   // Layer selection and transformation
   selectLayer(layerId: string): void
   selectLayers(layerIds: string[]): void
+  toggleSelection(layerId: string): void
   deselectAll(): void
   moveLayer(layerId: string, newIndex: number): void
   duplicateLayer(layerId: string): Promise<LayerNode>

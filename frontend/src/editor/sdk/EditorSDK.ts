@@ -155,28 +155,67 @@ export class EditorSDK extends EventEmitter {
    */
   async loadDesign(design: Design): Promise<void> {
     try {
+      console.log('EditorSDK: Loading design', design)
+      
       // Clear existing layers
       await this.layerManager.clear()
       
       // Set canvas size
       this.canvasManager.setSize(design.width, design.height)
       
+      // Ensure design data structure exists
+      if (!design.designData) {
+        console.warn('EditorSDK: Design data is missing, initializing default structure')
+        design.designData = {
+          version: '1.0',
+          layers: [],
+          canvas: {
+            width: design.width,
+            height: design.height,
+            backgroundColor: '#ffffff'
+          }
+        }
+      }
+      
+      // Ensure canvas settings exist
+      if (!design.designData.canvas) {
+        console.warn('EditorSDK: Canvas settings are missing, initializing defaults')
+        design.designData.canvas = {
+          width: design.width,
+          height: design.height,
+          backgroundColor: '#ffffff'
+        }
+      }
+      
+      // Ensure layers array exists
+      if (!design.designData.layers) {
+        console.warn('EditorSDK: Layers array is missing, initializing empty array')
+        design.designData.layers = []
+      }
+      
       // Set background color
       if (design.designData.canvas.backgroundColor) {
         this.canvasManager.setBackgroundColor(design.designData.canvas.backgroundColor)
       }
       
-      // Load layers
+      // Load layers (safe iteration)
+      console.log(`EditorSDK: Loading ${design.designData.layers.length} layers`)
       for (const layerData of design.designData.layers) {
-        await this.layerManager.createLayer(layerData.type, layerData)
+        try {
+          await this.layerManager.createLayer(layerData.type, layerData)
+        } catch (layerError) {
+          console.error(`EditorSDK: Failed to load layer ${layerData.id}:`, layerError)
+          // Continue loading other layers even if one fails
+        }
       }
       
       // Center view
       this.canvasManager.centerView()
       
+      console.log('EditorSDK: Design loaded successfully')
       this.emit('design:loaded', design)
     } catch (error) {
-      console.error('Failed to load design:', error)
+      console.error('EditorSDK: Failed to load design:', error)
       throw error
     }
   }
@@ -235,14 +274,36 @@ export class EditorSDK extends EventEmitter {
   private setupEventHandlers(): void {
     // Stage click handler for selection
     this.stage.on('click tap', (e) => {
-      const clickedLayer = e.target.getParent()
+      // Get the actual clicked layer, not the parent
+      const clickedNode = e.target
+      const clickedLayer = clickedNode instanceof Konva.Stage ? null : clickedNode
       
-      if (clickedLayer && clickedLayer !== this.stage) {
-        const layerId = clickedLayer.id()
-        if (layerId) {
-          this.layerManager.selectLayer(layerId)
+      if (clickedLayer) {
+        // Prevent event from bubbling to stage
+        e.cancelBubble = true
+        
+        // Handle multi-selection with ctrl/cmd key
+        if (e.evt.ctrlKey || e.evt.metaKey) {
+          const currentSelection = [...this.state.selectedLayers]
+          const layerId = clickedLayer.id()
+          const index = currentSelection.indexOf(layerId)
+          if (index === -1) {
+            currentSelection.push(layerId)
+            this.layerManager.selectLayers(currentSelection)
+          } else {
+            currentSelection.splice(index, 1)
+            this.layerManager.selectLayers(currentSelection)
+          }
+        } else {
+          // Single selection
+          const layerId = clickedLayer.id()
+          if (layerId) {
+            this.layerManager.selectLayer(layerId)
+          }
         }
-      } else {
+      } else if (!e.evt.ctrlKey && !e.evt.metaKey) {
+        // Clear selection when clicking on empty stage area
+        // (but not during multi-select)
         this.layerManager.deselectAll()
       }
     })

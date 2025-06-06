@@ -3,10 +3,11 @@
     <MenuButton as="template">
       <ModernButton
         variant="primary"
-        size="sm"
+        :size="compact ? 'xs' : 'sm'"
+        class="rounded-md"
       >
-        <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
-        Export
+        <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+        <span v-if="!compact" class="ml-1">Export</span>
         <ChevronDownIcon class="w-3 h-3 ml-1" />
       </ModernButton>
     </MenuButton>
@@ -19,7 +20,7 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <MenuItems class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+      <MenuItems class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
         <!-- Quick Export Options -->
         <div class="px-3 py-2 border-b border-gray-100">
           <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Export</p>
@@ -120,6 +121,14 @@ import {
   Cog6ToothIcon
 } from '@heroicons/vue/24/outline'
 import ModernButton from '@/components/common/ModernButton.vue'
+
+interface Props {
+  compact?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+  compact: false
+})
 
 const emit = defineEmits<{
   export: [format: string]

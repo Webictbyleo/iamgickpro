@@ -183,29 +183,80 @@ export const useDesignStore = defineStore('design', () => {
   }
   
   const addLayer = (layer: Layer) => {
-    if (currentDesign.value) {
-      currentDesign.value.designData.layers.push(layer)
-      currentDesign.value.updatedAt = new Date().toISOString()
+    if (!currentDesign.value) {
+      console.warn('Cannot add layer: No current design loaded')
+      return
     }
+
+    // Ensure designData exists
+    if (!currentDesign.value.designData) {
+      console.warn('Cannot add layer: Design data is not initialized')
+      // Initialize design data if missing
+      currentDesign.value.designData = {
+        version: '1.0',
+        layers: [],
+        canvas: {
+          width: currentDesign.value.width || 800,
+          height: currentDesign.value.height || 600,
+          backgroundColor: '#ffffff',
+        },
+      }
+    }
+
+    // Ensure layers array exists
+    if (!currentDesign.value.designData.layers) {
+      console.warn('Cannot add layer: Layers array is not initialized, creating new array')
+      currentDesign.value.designData.layers = []
+    }
+
+    // Add the layer
+    currentDesign.value.designData.layers.push(layer)
+    currentDesign.value.updatedAt = new Date().toISOString()
+    
+    console.log(`Layer added successfully. Total layers: ${currentDesign.value.designData.layers.length}`)
   }
   
   const removeLayer = (layerId: string) => {
-    if (currentDesign.value) {
-      const index = currentDesign.value.designData.layers.findIndex(l => l.id === layerId)
-      if (index >= 0) {
-        currentDesign.value.designData.layers.splice(index, 1)
-        currentDesign.value.updatedAt = new Date().toISOString()
-      }
+    if (!currentDesign.value) {
+      console.warn('Cannot remove layer: No current design loaded')
+      return
+    }
+
+    // Ensure designData and layers exist
+    if (!currentDesign.value.designData?.layers) {
+      console.warn('Cannot remove layer: Layers array is not initialized')
+      return
+    }
+
+    const index = currentDesign.value.designData.layers.findIndex(l => l.id === layerId)
+    if (index >= 0) {
+      currentDesign.value.designData.layers.splice(index, 1)
+      currentDesign.value.updatedAt = new Date().toISOString()
+      console.log(`Layer ${layerId} removed successfully. Total layers: ${currentDesign.value.designData.layers.length}`)
+    } else {
+      console.warn(`Layer ${layerId} not found in design`)
     }
   }
   
   const updateLayer = (layerId: string, updates: Partial<Layer>) => {
-    if (currentDesign.value) {
-      const layer = currentDesign.value.designData.layers.find(l => l.id === layerId)
-      if (layer) {
-        Object.assign(layer, updates)
-        currentDesign.value.updatedAt = new Date().toISOString()
-      }
+    if (!currentDesign.value) {
+      console.warn('Cannot update layer: No current design loaded')
+      return
+    }
+
+    // Ensure designData and layers exist
+    if (!currentDesign.value.designData?.layers) {
+      console.warn('Cannot update layer: Layers array is not initialized')
+      return
+    }
+
+    const layer = currentDesign.value.designData.layers.find(l => l.id === layerId)
+    if (layer) {
+      Object.assign(layer, updates)
+      currentDesign.value.updatedAt = new Date().toISOString()
+      console.log(`Layer ${layerId} updated successfully`)
+    } else {
+      console.warn(`Layer ${layerId} not found in design`)
     }
   }
   

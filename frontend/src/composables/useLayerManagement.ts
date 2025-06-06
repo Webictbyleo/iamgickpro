@@ -100,21 +100,17 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const selectLayer = (layerId: string, event: MouseEvent) => {
+  const selectLayer = (layerId: string, event?: MouseEvent) => {
     if (!editorSDK.value) return
 
-    const isMultiSelect = event.ctrlKey || event.metaKey
+    const isMultiSelect = event?.ctrlKey || event?.metaKey
     
     if (isMultiSelect) {
-      // Toggle selection
-      const currentSelection = designStore.selectedLayerIds
-      if (currentSelection.includes(layerId)) {
-        designStore.selectedLayerIds = currentSelection.filter(id => id !== layerId)
-      } else {
-        designStore.selectedLayerIds = [...currentSelection, layerId]
-      }
+      // Toggle selection for multi-select
+      editorSDK.value.layers.toggleSelection(layerId)
     } else {
-      designStore.selectedLayerIds = [layerId]
+      // Single selection
+      editorSDK.value.layers.selectLayer(layerId)
     }
   }
 

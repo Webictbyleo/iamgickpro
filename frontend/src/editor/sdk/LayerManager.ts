@@ -45,52 +45,41 @@ export class LayerManager implements LayerAPI {
     // Create Konva node
     const konvaNode = renderer.render(layerNode)
     layerNode.konvaNode = konvaNode
-    
-    console.log('LayerManager: Konva node created', {
-      layerId: layerNode.id,
-      nodeType: konvaNode.getClassName(),
-      position: { x: konvaNode.x(), y: konvaNode.y() },
-      size: { width: konvaNode.width?.(), height: konvaNode.height?.() },
-      visible: konvaNode.visible()
-    })
-    
+
     // Add click event to make layer selectable
-    konvaNode.on('click tap', () => {
-      this.selectLayer(layerNode.id)
+    konvaNode.on('click tap', (evt: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      // Handle multi-selection with ctrl/cmd key
+      if (evt.evt.ctrlKey || evt.evt.metaKey) {
+        const currentSelection = [...this.state.selectedLayers]
+        const index = currentSelection.indexOf(layerNode.id)
+        if (index === -1) {
+          currentSelection.push(layerNode.id)
+        } else {
+          currentSelection.splice(index, 1)
+        }
+        this.selectLayers(currentSelection)
+      } else {
+        // Single selection for normal click
+        this.selectLayer(layerNode.id)
+      }
+      // Stop event bubbling to prevent stage from clearing selection
+      evt.cancelBubble = true
     })
-    
+
     // Make layer draggable
     konvaNode.draggable(true)
-     // Add to main layer (cast to Shape since all our rendered nodes are shapes/groups)
-   this.mainLayer.add(konvaNode as Konva.Shape | Konva.Group)
     
-   // Debug: Log layer creation
-   console.log('LayerManager: Layer created', {
-     layerId: layerNode.id,
-     layerType: type,
-     konvaNode: konvaNode,
-     mainLayerChildren: this.mainLayer.children.length,
-     nodePosition: `(${konvaNode.x()}, ${konvaNode.y()})`,
-     nodeVisible: konvaNode.visible()
-   })
-   
-   // Force redraw to ensure element appears
-   this.mainLayer.batchDraw()
+    // Add to main layer
+    this.mainLayer.add(konvaNode as Konva.Shape | Konva.Group)
     
-    console.log('LayerManager: Added to main layer', {
-      mainLayerChildren: this.mainLayer.children.length
-    })
-    
-    // Force redraw to make the element visible
-    this.mainLayer.batchDraw()
-    
-    console.log('LayerManager: Batch draw completed')
-    
-    // Store layer
+    // Store layer in collection
     this.layers.set(layerNode.id, layerNode)
     
-    // Convert LayerNode to Layer for the event
-    const layerData: Layer = {
+    // Force redraw
+    this.mainLayer.batchDraw()
+    
+    // Emit creation event    
+    this.emitter.emit('layer:created', {
       id: layerNode.id,
       type: layerNode.type as LayerTypeImport,
       name: layerNode.name,
@@ -106,9 +95,8 @@ export class LayerManager implements LayerAPI {
       scaleY: layerNode.scaleY,
       zIndex: layerNode.zIndex,
       properties: layerNode.properties
-    }
+    })
     
-    this.emitter.emit('layer:created', layerData)
     return layerNode
   }
 
@@ -196,58 +184,78 @@ export class LayerManager implements LayerAPI {
   // ============================================================================
 
   selectLayer(layerId: string): void {
+    const layer = this.layers.get(layerId)
+    if (!layer) return
+
+    // Update internal selection state
     this.state.selectedLayers = [layerId]
+    
+    // Update visual selection
+    if (layer.konvaNode) {
+      layer.konvaNode.moveToTop()
+      this.mainLayer.batchDraw()
+    }
+
+    // Update transformer
     this.updateTransformer()
+
+    // Emit selection event
     this.emitSelectionChange()
   }
 
   selectLayers(layerIds: string[]): void {
-    this.state.selectedLayers = [...layerIds]
+    // Update internal selection state
+    this.state.selectedLayers = layerIds.filter(id => this.layers.has(id))
+    
+    // Update visual selection
+    this.state.selectedLayers.forEach(id => {
+      const layer = this.layers.get(id)
+      if (layer?.konvaNode) {
+        layer.konvaNode.moveToTop()
+      }
+    })
+    
+    this.mainLayer.batchDraw()
+
+    // Update transformer
     this.updateTransformer()
+
+    // Emit selection event
     this.emitSelectionChange()
+  }
+
+  toggleSelection(layerId: string): void {
+    const currentSelection = [...this.state.selectedLayers]
+    const index = currentSelection.indexOf(layerId)
+    
+    if (index === -1) {
+      // Add to selection
+      currentSelection.push(layerId)
+    } else {
+      // Remove from selection
+      currentSelection.splice(index, 1)
+    }
+    
+    this.selectLayers(currentSelection)
   }
 
   deselectAll(): void {
+    // Clear internal selection state
     this.state.selectedLayers = []
+    
+    // Update transformer
     this.updateTransformer()
+    
+    // Emit selection event
     this.emitSelectionChange()
   }
 
-  getSelectedLayers(): LayerNode[] {
-    return this.state.selectedLayers
-      .map(id => this.layers.get(id))
-      .filter(Boolean) as LayerNode[]
+  getLayer(layerId: string): LayerNode | null {
+    return this.layers.get(layerId) || null
   }
 
-  // ============================================================================
-  // LAYER HIERARCHY
-  // ============================================================================
-
-  async setParent(layerId: string, parentId: string | null): Promise<void> {
-    const layer = this.layers.get(layerId)
-    if (!layer) return
-
-    // Remove from current parent
-    if (layer.parent) {
-      const childIndex = layer.parent.children?.indexOf(layer) ?? -1
-      if (childIndex > -1) {
-        layer.parent.children?.splice(childIndex, 1)
-      }
-    }
-
-    // Set new parent
-    if (parentId) {
-      const parent = this.layers.get(parentId)
-      if (parent) {
-        layer.parent = parent
-        if (!parent.children) parent.children = []
-        parent.children.push(layer)
-      }
-    } else {
-      layer.parent = undefined
-    }
-
-    this.updateLayerOrder()
+  getAllLayers(): LayerNode[] {
+    return Array.from(this.layers.values())
   }
 
   moveLayer(layerId: string, newIndex: number): void {
@@ -277,50 +285,40 @@ export class LayerManager implements LayerAPI {
     this.emitter.emit('layer:moved', { layerId, newIndex: clampedIndex })
   }
 
-  getLayer(layerId: string): LayerNode | null {
-    return this.layers.get(layerId) || null
+  async clear(): Promise<void> {
+    // Clear all layers
+    Array.from(this.layers.values()).forEach(layer => {
+      if (layer.konvaNode) {
+        layer.konvaNode.destroy()
+      }
+    })
+    
+    this.layers.clear()
+    this.mainLayer.removeChildren()
+    this.mainLayer.batchDraw()
   }
 
-  getAllLayers(): LayerNode[] {
-    return Array.from(this.layers.values())
-  }
-
-  // ============================================================================
-  // LAYER TRANSFORMATION
-  // ============================================================================
-
-  async transformLayer(layerId: string, transform: Partial<Transform>): Promise<void> {
-    const layer = this.layers.get(layerId)
-    if (!layer) return
-
-    // Update layer properties
-    if (transform.x !== undefined) layer.x = transform.x
-    if (transform.y !== undefined) layer.y = transform.y
-    if (transform.width !== undefined) layer.width = transform.width
-    if (transform.height !== undefined) layer.height = transform.height
-    if (transform.rotation !== undefined) layer.rotation = transform.rotation
-    if (transform.scaleX !== undefined) layer.scaleX = transform.scaleX
-    if (transform.scaleY !== undefined) layer.scaleY = transform.scaleY
-    if (transform.opacity !== undefined) layer.opacity = transform.opacity
-
-    // Update Konva node
-    if (layer.konvaNode) {
-      this.syncLayerToNode(layer, layer.konvaNode)
+  destroy(): void {
+    // Remove all layers
+    Array.from(this.layers.values()).forEach(layer => {
+      if (layer.konvaNode) {
+        layer.konvaNode.destroy()
+      }
+    })
+    
+    // Clear collections
+    this.layers.clear()
+    this.renderers.clear()
+    
+    // Remove transformer
+    if (this.transformer) {
+      this.transformer.destroy()
+      this.transformer = null
     }
-
-    this.emitter.emit('layer:updated', layer)
-  }
-
-  getLayerBounds(layerId: string): { x: number, y: number, width: number, height: number } | null {
-    const layer = this.layers.get(layerId)
-    if (!layer || !layer.konvaNode) return null
-
-    const clientRect = layer.konvaNode.getClientRect()
-    return {
-      x: clientRect.x,
-      y: clientRect.y,
-      width: clientRect.width,
-      height: clientRect.height
+    
+    // Remove main layer
+    if (this.mainLayer) {
+      this.mainLayer.destroy()
     }
   }
 
@@ -328,16 +326,120 @@ export class LayerManager implements LayerAPI {
   // PRIVATE METHODS
   // ============================================================================
 
-  private createMainLayer(): Konva.Layer {
-    const layer = new Konva.Layer({ name: 'main-layer' })
-    this.stage.add(layer)
-    return layer
+  private emitSelectionChange(): void {
+    // Get selected layer data
+    const selectedLayers = this.state.selectedLayers.map(id => {
+      const layer = this.layers.get(id)
+      if (!layer) return null
+
+      return {
+        id: layer.id,
+        type: layer.type,
+        name: layer.name,
+        properties: layer.properties,
+        visible: layer.visible,
+        locked: layer.locked,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        rotation: layer.rotation,
+        scaleX: layer.scaleX,
+        scaleY: layer.scaleY,
+        zIndex: layer.zIndex
+      }
+    }).filter(Boolean)
+
+    // Emit both events for compatibility
+    this.emitter.emit('layer:selected', selectedLayers)
+    this.emitter.emit('selection:changed', this.state.selectedLayers)
   }
 
-  private createUILayer(): Konva.Layer {
-    const layer = new Konva.Layer({ name: 'ui-layer' })
-    this.stage.add(layer)
-    return layer
+  private updateTransformer(): void {
+    // Get selected layer nodes
+    const selectedNodes = this.state.selectedLayers
+      .map(id => this.getLayer(id))
+      .filter((layer): layer is LayerNode => layer !== null && layer.konvaNode !== undefined)
+      .map(layer => layer.konvaNode!)
+
+    // Create transformer lazily when first needed
+    if (selectedNodes.length > 0 && !this.transformer) {
+      this.createTransformerLazily()
+    }
+
+    if (this.transformer) {
+      // Update transformer nodes
+      this.transformer.nodes(selectedNodes)
+
+      // Update transformer visibility
+      this.transformer.visible(selectedNodes.length > 0)
+
+      // Force redraw of transformer layer
+      this.transformer.getLayer()?.batchDraw()
+    }
+  }
+
+  private createTransformerLazily(): void {
+    // Get or create UI layer
+    let uiLayer = this.stage.getLayers()[1]
+    if (!uiLayer) {
+      uiLayer = new Konva.Layer({ name: 'ui-layer' })
+      this.stage.add(uiLayer)
+    }
+
+    // Create transformer
+    this.transformer = new Konva.Transformer({
+      boundBoxFunc: (oldBox, newBox) => {
+        if (newBox.width < 5 || newBox.height < 5) {
+          return oldBox
+        }
+        return newBox
+      }
+    })
+
+    uiLayer.add(this.transformer)
+  }
+
+  private setupLayers(): void {
+    // Only create the main content layer if it doesn't exist
+    const layers = this.stage.getLayers()
+    
+    if (layers.length === 0) {
+      this.mainLayer = new Konva.Layer()
+      this.stage.add(this.mainLayer)
+    } else {
+      this.mainLayer = layers[0]
+    }
+  }
+
+  private setupRenderers(): void {
+    this.renderers.set('text', new TextLayerRenderer())
+    this.renderers.set('image', new ImageLayerRenderer())
+    this.renderers.set('shape', new ShapeLayerRenderer())
+    this.renderers.set('group', new GroupLayerRenderer())
+  }
+
+  private setupTransformer(): void {
+    // Don't create UI layer automatically - only create when actually needed
+    // The transformer will be created lazily when first selection is made
+  }
+
+  private updateKonvaNode(node: Konva.Node, layer: LayerNode): void {
+    node.setAttrs({
+      x: layer.x,
+      y: layer.y,
+      rotation: layer.rotation,
+      scaleX: layer.scaleX,
+      scaleY: layer.scaleY,
+      opacity: layer.opacity,
+      visible: layer.visible,
+      listening: !layer.locked
+    })
+  }
+
+  private getNextZIndex(): number {
+    const layers = Array.from(this.layers.values())
+    return layers.length > 0 ? Math.max(...layers.map(l => l.zIndex)) + 1 : 0
   }
 
   private createLayerNode(type: string, data: Partial<Layer>): LayerNode {
@@ -365,58 +467,11 @@ export class LayerManager implements LayerAPI {
       rotation: data.rotation || 0,
       scaleX: data.scaleX || 1,
       scaleY: data.scaleY || 1,
-      zIndex: data.zIndex || 0,
-      properties: mergedProperties,
-      parent: null,
-      children: []
-    }
+      zIndex: data.zIndex || this.getNextZIndex(),
+      properties: mergedProperties
+    } as LayerNode
     
     return layerNode
-  }
-
-  private updateKonvaNode(node: Konva.Node, layer: LayerNode): void {
-    node.setAttrs({
-      x: layer.x,
-      y: layer.y,
-      rotation: layer.rotation,
-      scaleX: layer.scaleX,
-      scaleY: layer.scaleY,
-      opacity: layer.opacity,
-      visible: layer.visible,
-      listening: !layer.locked
-    })
-  }
-
-  private emitSelectionChange(): void {
-    this.emitter.emit('layer:selected', this.state.selectedLayers)
-  }
-
-  private setupRenderers(): void {
-    this.renderers.set('text', new TextLayerRenderer())
-    this.renderers.set('image', new ImageLayerRenderer())
-    this.renderers.set('shape', new ShapeLayerRenderer())
-    this.renderers.set('group', new GroupLayerRenderer())
-  }
-
-  private setupLayers(): void {
-    // Only create the main content layer if it doesn't exist
-    // Don't automatically create UI layers
-    const layers = this.stage.getLayers()
-    
-    if (layers.length === 0) {
-      // Only create main content layer
-      this.mainLayer = new Konva.Layer()
-      this.stage.add(this.mainLayer)
-      console.log('LayerManager: Created new main layer')
-    } else {
-      this.mainLayer = layers[0]
-      console.log('LayerManager: Using existing layer')
-    }
-    
-    console.log('LayerManager: Setup complete', {
-      mainLayerExists: !!this.mainLayer,
-      stageLayers: this.stage.getLayers().length
-    })
   }
 
   private getRenderer(type: string): KonvaLayerRenderer {
@@ -458,123 +513,6 @@ export class LayerManager implements LayerAPI {
         return {}
       default:
         return {}
-    }
-  }
-
-  private getNextZIndex(): number {
-    const layers = Array.from(this.layers.values())
-    return layers.length > 0 ? Math.max(...layers.map(l => l.zIndex)) + 1 : 0
-  }
-
-  private syncLayerToNode(layer: LayerNode, node: Konva.Node): void {
-    node.setAttrs({
-      x: layer.x,
-      y: layer.y,
-      width: layer.width,
-      height: layer.height,
-      rotation: layer.rotation,
-      scaleX: layer.scaleX,
-      scaleY: layer.scaleY,
-      opacity: layer.opacity,
-      visible: layer.visible,
-      listening: !layer.locked
-    })
-
-    // Update renderer-specific properties
-    const renderer = this.getRenderer(layer.type)
-    if (renderer) {
-      renderer.update(node, layer)
-    }
-  }
-
-  private syncNodeToLayer(node: Konva.Node, layer: LayerNode): void {
-    const attrs = node.getAttrs()
-    layer.x = attrs.x || 0
-    layer.y = attrs.y || 0
-    layer.width = attrs.width || layer.width
-    layer.height = attrs.height || layer.height
-    layer.rotation = attrs.rotation || 0
-    layer.scaleX = attrs.scaleX || 1
-    layer.scaleY = attrs.scaleY || 1
-    layer.opacity = attrs.opacity ?? 1
-  }
-
-  private updateLayerOrder(): void {
-    const sortedLayers = this.getAllLayers()
-    sortedLayers.forEach((layer, index) => {
-      if (layer.konvaNode) {
-        layer.konvaNode.zIndex(index)
-      }
-    })
-  }
-
-  private updateTransformer(): void {
-    const selectedNodes = this.state.selectedLayers
-      .map(id => this.getLayer(id))
-      .filter((layer): layer is LayerNode => layer !== null && layer.konvaNode !== undefined)
-      .map(layer => layer.konvaNode!)
-
-    // Create transformer and UI layer lazily when first needed
-    if (selectedNodes.length > 0 && !this.transformer) {
-      this.createTransformerLazily()
-    }
-
-    if (this.transformer) {
-      if (selectedNodes.length > 0) {
-        this.transformer.nodes(selectedNodes)
-        this.transformer.getLayer()?.batchDraw()
-      } else {
-        this.transformer.nodes([])
-        this.transformer.getLayer()?.batchDraw()
-      }
-    }
-  }
-
-  private createTransformerLazily(): void {
-    // Get or create UI layer
-    let uiLayer = this.stage.getLayers()[1]
-    if (!uiLayer) {
-      uiLayer = new Konva.Layer({ name: 'ui-layer' })
-      this.stage.add(uiLayer)
-    }
-
-    // Create transformer
-    this.transformer = new Konva.Transformer({
-      boundBoxFunc: (oldBox, newBox) => {
-        if (newBox.width < 5 || newBox.height < 5) {
-          return oldBox
-        }
-        return newBox
-      }
-    })
-
-    uiLayer.add(this.transformer)
-  }
-
-  private setupTransformer(): void {
-    // Don't create UI layer automatically - only create when actually needed
-    // The transformer will be created lazily when first selection is made
-  }
-
-  async clear(): Promise<void> {
-    // Clear all layers
-    Array.from(this.layers.values()).forEach(layer => {
-      if (layer.konvaNode) {
-        layer.konvaNode.destroy()
-      }
-    })
-    
-    this.layers.clear()
-    this.state.selectedLayers = []
-    this.updateTransformer()
-  }
-
-  destroy(): void {
-    this.layers.clear()
-    this.renderers.clear()
-    if (this.transformer) {
-      this.transformer.destroy()
-      this.transformer = null
     }
   }
 }

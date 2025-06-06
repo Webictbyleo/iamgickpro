@@ -12,17 +12,7 @@
           @click="$emit('close')"
           class="lg:hidden"
         >
-       const updateLayerName = (value: string) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'name', value);
-  }
-};
-
-const updateLayerX = (value: number) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'x', value);
-  }
-};on class="w-5 h-5" />
+          <XMarkIcon class="w-5 h-5" />
         </ModernButton>
       </div>
     </div>
@@ -196,10 +186,10 @@ const updateLayerX = (value: number) => {
           />
         </div>
 
-        <!-- Text Properties -->
+        <!-- Text Properties - Simplified to avoid duplication with toolbar -->
         <div v-if="selectedLayer.type === 'text'" class="space-y-4">
           <h4 class="text-sm font-medium text-gray-900 dark:text-white">
-            Text Properties
+            Text Content
           </h4>
           
           <PropertyInput
@@ -207,56 +197,16 @@ const updateLayerX = (value: number) => {
             :value="selectedLayer.properties?.text || ''"
             @update:value="updateTextContent"
             placeholder="Enter text"
+            multiline
+            :rows="3"
           />
-
-          <PropertyDropdown
-            label="Font Family"
-            :value="selectedLayer.properties?.fontFamily || 'Arial'"
-            :options="fontFamilyOptions"
-            @update:value="updateFontFamily"
-          />
-
-          <PropertyInput
-            label="Font Size"
-            type="number"
-            :value="selectedLayer.properties?.fontSize || 16"
-            @update:value="updateFontSize"
-            suffix="px"
-            :min="8"
-            :max="200"
-          />
-
-          <PropertyColorPicker
-            label="Text Color"
-            :value="selectedLayer.properties?.fill || '#000000'"
-            @update:value="updateTextColor"
-            show-gradients
-          />
-
-          <div class="grid grid-cols-3 gap-2">
-            <PropertyToggle
-              label="Bold"
-              :active="selectedLayer.properties?.fontWeight === 'bold'"
-              @update="updateFontWeight"
-            />
-            <PropertyToggle
-              label="Italic" 
-              :active="selectedLayer.properties?.fontStyle === 'italic'"
-              @update="updateFontStyle"
-            />
-            <PropertyToggle
-              label="Underline"
-              :active="selectedLayer.properties?.textDecoration === 'underline'"
-              @update="updateTextDecoration"
-            />
+          
+          <!-- Note about text formatting -->
+          <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-md">
+            <p class="text-xs text-blue-700 dark:text-blue-300">
+              Text formatting options are available in the toolbar when this text element is selected.
+            </p>
           </div>
-
-          <PropertyDropdown
-            label="Text Align"
-            :value="selectedLayer.properties?.textAlign || 'left'"
-            :options="textAlignOptions"
-            @update:value="updateTextAlign"
-          />
         </div>
 
         <!-- Shape Properties -->
@@ -588,48 +538,6 @@ const updateLayerOpacity = (value: number) => {
 const updateTextContent = (value: string) => {
   if (selectedLayer.value) {
     designStore.updateLayerProperty(selectedLayer.value.id, 'properties.text', value);
-  }
-};
-
-const updateFontFamily = (value: string) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontFamily', value);
-  }
-};
-
-const updateFontSize = (value: number) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontSize', value);
-  }
-};
-
-const updateTextColor = (value: string) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fill', value);
-  }
-};
-
-const updateFontWeight = (value: boolean) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontWeight', value ? 'bold' : 'normal');
-  }
-};
-
-const updateFontStyle = (value: boolean) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontStyle', value ? 'italic' : 'normal');
-  }
-};
-
-const updateTextDecoration = (value: boolean) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.textDecoration', value ? 'underline' : 'none');
-  }
-};
-
-const updateTextAlign = (value: string) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.textAlign', value);
   }
 };
 

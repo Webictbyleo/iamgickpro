@@ -18,11 +18,13 @@
         :can-undo="canUndo"
         :can-redo="canRedo"
         :active-tool="activeTool || undefined"
+        :selected-layer="selectedLayer"
         @save="handleSave"
         @export="handleExport"
         @undo="handleUndo"
         @redo="handleRedo"
         @tool-change="handleToolChange"
+        @tool-update="handleToolUpdate"
       />
 
       <!-- Canvas Debug Test (temporary) - DISABLED -->
@@ -100,23 +102,6 @@
 
         <!-- Canvas Area -->
         <div class="flex-1 bg-gray-100 dark:bg-gray-800 relative flex flex-col min-w-0 h-full">
-          <!-- Tool-specific Toolbar -->
-          <div 
-            v-if="activeTool && activeTool !== 'select'"
-            class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex-shrink-0"
-          >
-            <TextToolbar 
-              v-if="activeTool === 'text'"
-              :selected-layer="selectedLayer"
-              @update-property="handleUpdateProperty"
-            />
-            
-            <ShapeToolbar 
-              v-if="activeTool === 'shape'"
-              :selected-layer="selectedLayer"
-              @update-property="handleUpdateProperty"
-            />
-          </div>
 
           <!-- Canvas -->
           <div class="flex-1 relative min-h-0">
@@ -145,7 +130,8 @@
         <!-- Right Properties Panel -->
         <ModernPropertiesPanel
           v-if="showPropertiesPanel"
-          :show-design-properties="!selectedLayer"
+          :show-design-properties="!selectedLayer || !selectedLayer.id"
+          :selected-layer="selectedLayer"
           @close="showPropertiesPanel = false"
         />
       </div>
@@ -154,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide } from 'vue'
+import { ref, computed, provide, watch } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { Layer, LayerType } from '@/types'
 
@@ -292,6 +278,15 @@ const backgroundColor = computed({
 const layers = computed(() => designStore.currentDesign?.designData?.layers || [])
 const selectedLayer = computed(() => selectedLayers.value[0] || null)
 
+// Watch for layer selection changes to automatically switch to select tool
+watch(selectedLayer, (newLayer) => {
+  if (newLayer) {
+    // When a layer is selected, automatically switch to select tool
+    // This ensures the layer-specific toolbar will show instead of tool toolbar
+    activeTool.value = 'select'
+  }
+})
+
 // Helper functions
 const getPanelTitle = (panel: string) => {
   switch (panel) {
@@ -308,9 +303,18 @@ const getPanelTitle = (panel: string) => {
 // Event handlers
 const handleToolChange = (tool: string) => {
   activeTool.value = tool as any
-  // Close panels when switching to select tool
+  
+  // Keep properties panel open for select tool, close for other creation tools
   if (tool === 'select') {
-    // Keep properties panel open for select tool
+    // Properties panel should remain visible when select tool is active
+    if (selectedLayers.value.length > 0) {
+      showPropertiesPanel.value = true
+    }
+  } else {
+    // For creation tools, don't show properties panel until something is selected
+    if (!selectedLayers.value.length) {
+      showPropertiesPanel.value = false
+    }
   }
 }
 
@@ -352,13 +356,41 @@ const handleAddTemplate = (template: any) => {
   // TODO: Implement template handling logic
 }
 
-const handleUseTemplate = (template: any) => {
-  console.log('Using template:', template)
-  // TODO: Implement template usage logic - replace current design with template
+const handleUseTemplate = async (template: any) => {
+  try {
+    // Create a new design with template dimensions
+    const newDesign = designStore.createNewDesign(
+      template.width || 800,
+      template.height || 600
+    )
+
+    // Copy template data if available
+    if (template.designData) {
+      newDesign.designData = { ...template.designData }
+    }
+
+    newDesign.name = `${template.name} Copy`
+    newDesign.title = `${template.name} Copy`
+
+    // Save the design
+    const result = await designStore.saveDesign(newDesign)
+
+    if (result.success && editorSDK.value) {
+      // Load the template data into the editor
+      await editorSDK.value.loadDesign(newDesign)
+      activePanel.value = null // Close the templates panel
+    } else {
+      console.error('Failed to create design from template:', result.error)
+    }
+  } catch (error) {
+    console.error('Template application failed:', error)
+  }
 }
 
 const handleSelectLayer = (layerId: string, event: MouseEvent) => {
   selectLayer(layerId, event)
+  // Ensure properties panel is visible when a layer is selected
+  showPropertiesPanel.value = true
 }
 
 const handleDuplicateLayer = (layerId: string) => {
@@ -479,6 +511,54 @@ const handleApplyGradient = (gradientData: any) => {
       }
     }
     updateLayerProperties(selectedLayer.value.id, updates)
+  }
+}
+
+
+
+const handleToolUpdate = (toolType: string, properties: any) => {
+  if (selectedLayer.value) {
+    if (toolType === 'text' && selectedLayer.value.type === 'text') {
+      // Map the properties from TextToolbar to layer property paths
+      Object.entries(properties).forEach(([key, value]) => {
+        let updatePath = key;
+        
+        // Map toolbar property names to layer property paths
+        switch (key) {
+          case 'fontFamily':
+            updatePath = 'properties.fontFamily';
+            break;
+          case 'fontSize':
+            updatePath = 'properties.fontSize';
+            break;
+          case 'fontWeight':
+            updatePath = 'properties.fontWeight';
+            break;
+          case 'fontStyle':
+            updatePath = 'properties.fontStyle';
+            break;
+          case 'textDecoration':
+            updatePath = 'properties.textDecoration';
+            break;
+          case 'textAlign':
+            updatePath = 'properties.textAlign';
+            break;
+          case 'color':
+            updatePath = 'properties.fill';
+            break;
+          default:
+            updatePath = `properties.${key}`;
+        }
+        
+        // Update the design store
+        designStore.updateLayerProperty(selectedLayer.value.id, updatePath, value);
+      });
+    } else if (toolType === 'shape' && selectedLayer.value.type === 'shape') {
+      // Similar mapping for shape properties
+      Object.entries(properties).forEach(([key, value]) => {
+        designStore.updateLayerProperty(selectedLayer.value.id, `properties.${key}`, value);
+      });
+    }
   }
 }
 

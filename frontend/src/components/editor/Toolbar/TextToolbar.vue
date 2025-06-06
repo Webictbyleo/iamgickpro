@@ -122,7 +122,7 @@ const props = withDefaults(defineProps<Props>(), {
   color: '#000000'
 })
 
-defineEmits<{
+const emit = defineEmits<{
   update: [properties: Partial<Props>]
 }>()
 

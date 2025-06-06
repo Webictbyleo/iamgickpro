@@ -59,7 +59,12 @@ export function useDesignEditor() {
 
       // Load current design if exists
       if (currentDesign) {
+        console.log('Loading existing design into editor:', currentDesign.id)
         await editorSDK.value.loadDesign(currentDesign)
+      } else {
+        console.log('No current design found, editor initialized with empty canvas')
+        // Editor is ready to use even without a design
+        // The SDK will handle layer creation when they're added
       }
 
       // Start auto-save
@@ -75,24 +80,31 @@ export function useDesignEditor() {
   const setupSDKEventListeners = () => {
     if (!editorSDK.value) return
 
+    console.log('Setting up SDK event listeners')
+
     // Layer events
     editorSDK.value.on('layer:created', (layer: any) => {
+      console.log('🎯 Event received: layer:created', layer)
       designStore.addLayer(layer)
       hasUnsavedChanges.value = true
+      console.log('📦 Design store layers after add:', designStore.currentDesign?.designData?.layers)
     })
 
     editorSDK.value.on('layer:updated', (layer: any) => {
+      console.log('🎯 Event received: layer:updated', layer)
       designStore.updateLayer(layer.id, layer)
       hasUnsavedChanges.value = true
     })
 
     editorSDK.value.on('layer:deleted', (layerId: string) => {
+      console.log('🎯 Event received: layer:deleted', layerId)
       designStore.removeLayer(layerId)
       hasUnsavedChanges.value = true
     })
 
     // Selection events
     editorSDK.value.on('selection:changed', (layerIds: string[]) => {
+      console.log('🎯 Event received: selection:changed', layerIds)
       designStore.selectedLayerIds = layerIds
     })
 

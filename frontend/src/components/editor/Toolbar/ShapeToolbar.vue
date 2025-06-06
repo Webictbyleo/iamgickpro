@@ -94,7 +94,7 @@ const props = withDefaults(defineProps<Props>(), {
   hasShadow: false
 })
 
-defineEmits<{
+const emit = defineEmits<{
   update: [properties: Partial<Props>]
 }>()
 
