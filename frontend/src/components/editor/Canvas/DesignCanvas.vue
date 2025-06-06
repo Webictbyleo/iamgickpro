@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 bg-gray-100 relative flex flex-col min-w-0">
+  <div class="h-full bg-gray-100 relative flex flex-col">
     <!-- Canvas Toolbar -->
     <div class="bg-white border-b px-4 py-2 flex items-center justify-between flex-shrink-0">
       <div class="flex items-center space-x-4">
@@ -54,7 +54,7 @@
     </div>
     
     <!-- Canvas Container -->
-    <div class="flex-1 overflow-hidden relative">
+    <div class="flex-1 overflow-hidden relative min-h-0">
       <div class="absolute inset-0 flex items-center justify-center p-8">
         <div
           ref="canvasContainer"
@@ -231,7 +231,16 @@ const updateZoom = (zoom: number) => {
 onMounted(async () => {
   await nextTick()
   if (canvasContainer.value) {
+    console.log('DesignCanvas: Container ready', {
+      container: canvasContainer.value,
+      containerDimensions: `${canvasContainer.value.offsetWidth}x${canvasContainer.value.offsetHeight}`,
+      containerClasses: canvasContainer.value.className,
+      containerStyle: canvasContainer.value.style.cssText,
+      containerChildren: canvasContainer.value.children.length
+    })
     emit('canvasReady', canvasContainer.value)
+  } else {
+    console.error('DesignCanvas: Container not found!')
   }
 })
 

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct EditorSDK Test</title>
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        
+        #canvas-container {
+            border: 2px solid #333;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 800px;
+            height: 600px;
+            position: relative;
+            margin: 20px auto;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Direct EditorSDK Integration Test</h1>
+    <p>This test simulates exactly what our Vue component does.</p>
+    
+    <div style="text-align: center; margin: 20px 0;">
+        <button onclick="initializeSDK()">Initialize SDK</button>
+        <button onclick="addRectangle()">Add Rectangle</button>
+        <button onclick="addText()">Add Text</button>
+        <button onclick="debugCanvas()">Debug Canvas</button>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <div id="debug-info">Debug info will appear here...</div>
+
+    <script>
+        // Simulate the EditorSDK pattern
+        let sdk = null;
+        let layerCounter = 0;
+
+        function log(message) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+            console.log(message);
+        }
+
+        // Simplified EditorSDK simulation
+        class SimpleSDK {
+            constructor(config) {
+                this.config = config;
+                this.container = config.container;
+                this.layers = new Map();
+                
+                // Clear container
+                this.container.innerHTML = '';
+                
+                // Create stage
+                this.stage = new Konva.Stage({
+                    container: this.container,
+                    width: config.width,
+                    height: config.height
+                });
+                
+                // Create main layer
+                this.mainLayer = new Konva.Layer();
+                this.stage.add(this.mainLayer);
+                
+                // Style canvas for visibility
+                const canvas = this.container.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.position = 'relative';
+                    canvas.style.zIndex = '10';
+                    canvas.style.display = 'block';
+                }
+                
+                log(`SDK initialized with stage ${this.stage.width()}x${this.stage.height()}`);
+                log(`Main layer added, canvas element found: ${canvas ? 'YES' : 'NO'}`);
+            }
+            
+            createLayer(type, data) {
+                layerCounter++;
+                const id = `layer-${layerCounter}`;
+                
+                let konvaNode;
+                
+                if (type === 'shape') {
+                    konvaNode = new Konva.Rect({
+                        x: data.x || 100,
+                        y: data.y || 100,
+                        width: data.width || 100,
+                        height: data.height || 100,
+                        fill: data.properties?.fill || '#ff6b6b',
+                        stroke: data.properties?.stroke || '#333',
+                        strokeWidth: data.properties?.strokeWidth || 2,
+                        draggable: true
+                    });
+                } else if (type === 'text') {
+                    konvaNode = new Konva.Text({
+                        x: data.x || 100,
+                        y: data.y || 100,
+                        text: data.properties?.text || 'Hello World',
+                        fontSize: data.properties?.fontSize || 24,
+                        fill: data.properties?.fill || '#333',
+                        draggable: true
+                    });
+                }
+                
+                if (konvaNode) {
+                    // Add to main layer
+                    this.mainLayer.add(konvaNode);
+                    
+                    // Store layer
+                    this.layers.set(id, { id, type, konvaNode, data });
+                    
+                    // Force redraw
+                    this.mainLayer.batchDraw();
+                    
+                    log(`Created ${type} layer with ID: ${id}`);
+                    log(`Main layer now has ${this.mainLayer.children.length} children`);
+                    log(`Node position: (${konvaNode.x()}, ${konvaNode.y()})`);
+                    log(`Node visible: ${konvaNode.visible()}`);
+                    
+                    return { id, type, konvaNode };
+                } else {
+                    log(`ERROR: Failed to create ${type} layer`);
+                    return null;
+                }
+            }
+            
+            debug() {
+                log('=== SDK DEBUG ===');
+                log(`Stage: ${this.stage.width()}x${this.stage.height()}`);
+                log(`Stage position: (${this.stage.x()}, ${this.stage.y()})`);
+                log(`Stage visible: ${this.stage.visible()}`);
+                log(`Stage children: ${this.stage.children.length}`);
+                log(`Main layer children: ${this.mainLayer.children.length}`);
+                log(`Stored layers: ${this.layers.size}`);
+                
+                const canvas = this.container.querySelector('canvas');
+                if (canvas) {
+                    log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+                    log(`Canvas style: ${canvas.style.cssText}`);
+                } else {
+                    log('ERROR: Canvas element not found!');
+                }
+                
+                this.mainLayer.children.forEach((child, index) => {
+                    log(`  Child ${index}: ${child.className} at (${child.x()}, ${child.y()})`);
+                });
+            }
+        }
+
+        function initializeSDK() {
+            const container = document.getElementById('canvas-container');
+            
+            try {
+                sdk = new SimpleSDK({
+                    container: container,
+                    width: 800,
+                    height: 600
+                });
+                log('SDK initialization complete');
+            } catch (error) {
+                log(`ERROR initializing SDK: ${error.message}`);
+            }
+        }
+
+        function addRectangle() {
+            if (!sdk) {
+                log('ERROR: SDK not initialized');
+                return;
+            }
+            
+            sdk.createLayer('shape', {
+                x: Math.random() * 500 + 50,
+                y: Math.random() * 400 + 50,
+                width: 120,
+                height: 80,
+                properties: {
+                    fill: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                    stroke: '#333',
+                    strokeWidth: 2
+                }
+            });
+        }
+
+        function addText() {
+            if (!sdk) {
+                log('ERROR: SDK not initialized');
+                return;
+            }
+            
+            sdk.createLayer('text', {
+                x: Math.random() * 500 + 50,
+                y: Math.random() * 400 + 50,
+                properties: {
+                    text: `Text ${layerCounter + 1}`,
+                    fontSize: 24,
+                    fill: '#333'
+                }
+            });
+        }
+
+        function debugCanvas() {
+            if (!sdk) {
+                log('ERROR: SDK not initialized');
+                return;
+            }
+            
+            sdk.debug();
+        }
+
+        // Auto-initialize when page loads
+        window.onload = function() {
+            log('Page loaded, ready to test');
+        }
+    </script>
+</body>
+</html>

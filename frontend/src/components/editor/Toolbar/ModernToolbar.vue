@@ -194,7 +194,7 @@ const toolOptions = computed(() => ({
     component: ShapeToolbar,
     props: {}
   }
-}))
+} as Record<string, { component: any; props: any }>))
 
 const updateDesignName = (event: Event) => {
   const target = event.target as HTMLInputElement

@@ -55,7 +55,7 @@
         
         <!-- Notification badge for certain panels -->
         <div 
-          v-if="panel.badge && panel.badgeCount > 0"
+          v-if="panel.badge && (panel.badgeCount ?? 0) > 0"
           class="absolute -right-1 -top-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
         >
           <span class="text-xs text-white font-semibold">{{ panel.badgeCount }}</span>
@@ -66,7 +66,7 @@
     <!-- Quick Actions -->
     <div class="flex flex-col space-y-2 mt-auto">
       <button
-        @click="$emit('save')"
+        @click="$emit('action', 'save')"
         class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-green-400 hover:bg-gray-800 transition-all duration-200"
         title="Save (Ctrl+S)"
       >
@@ -76,7 +76,7 @@
       </button>
 
       <button
-        @click="$emit('export')"
+        @click="$emit('action', 'export')"
         class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-400 hover:bg-gray-800 transition-all duration-200"
         title="Export"
       >
@@ -118,10 +118,9 @@ interface Panel {
 }
 
 const emit = defineEmits<{
-  'tool-changed': [toolId: string]
-  'panel-changed': [panelId: string]
-  'save': []
-  'export': []
+  'tool-change': [toolId: string]
+  'panel-change': [panelId: string]
+  'action': [action: string]
 }>()
 
 const activeTool = ref('select')
@@ -146,11 +145,11 @@ const panels: Panel[] = [
 
 const setActiveTool = (toolId: string) => {
   activeTool.value = toolId
-  emit('tool-changed', toolId)
+  emit('tool-change', toolId)
 }
 
 const setActivePanel = (panelId: string) => {
   activePanel.value = panelId
-  emit('panel-changed', panelId)
+  emit('panel-change', panelId)
 }
 </script>

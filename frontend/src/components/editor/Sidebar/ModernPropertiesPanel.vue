@@ -86,7 +86,7 @@ const updateLayerX = (value: number) => {
           <div class="mb-4">
             <PropertyColorPicker
               label="Background Color"
-              :value="design?.backgroundColor || '#ffffff'"
+              :value="design?.designData.canvas.backgroundColor || '#ffffff'"
               @update:value="updateBackgroundColor"
               show-gradients
             />
@@ -236,18 +236,18 @@ const updateLayerX = (value: number) => {
           <div class="grid grid-cols-3 gap-2">
             <PropertyToggle
               label="Bold"
-              :value="selectedLayer.properties?.fontWeight === 'bold'"
-              @update:value="updateFontWeight"
+              :active="selectedLayer.properties?.fontWeight === 'bold'"
+              @update="updateFontWeight"
             />
             <PropertyToggle
               label="Italic" 
-              :value="selectedLayer.properties?.fontStyle === 'italic'"
-              @update:value="updateFontStyle"
+              :active="selectedLayer.properties?.fontStyle === 'italic'"
+              @update="updateFontStyle"
             />
             <PropertyToggle
               label="Underline"
-              :value="selectedLayer.properties?.textDecoration === 'underline'"
-              @update:value="updateTextDecoration"
+              :active="selectedLayer.properties?.textDecoration === 'underline'"
+              @update="updateTextDecoration"
             />
           </div>
 
@@ -361,8 +361,8 @@ const updateLayerX = (value: number) => {
                 Drop Shadow
               </label>
               <PropertyToggle
-                :value="selectedLayer.properties?.shadow?.enabled || false"
-                @update:value="updateShadowEnabled"
+                :active="selectedLayer.properties?.shadow?.enabled || false"
+                @update="updateShadowEnabled"
               />
             </div>
             
@@ -433,13 +433,14 @@ const updateLayerX = (value: number) => {
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { useDesignStore } from '@/stores/design';
 import ModernButton from '@/components/common/ModernButton.vue';
 import PropertyInput from '@/components/editor/Properties/PropertyInput.vue';
 import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue';
 import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue';
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue';
+import type { EditorSDK } from '@/editor/sdk/EditorSDK';
 import {
   XMarkIcon,
   CursorArrowRaysIcon,
@@ -464,6 +465,7 @@ const emit = defineEmits<{
 }>();
 
 const designStore = useDesignStore();
+const editorSDK = inject<EditorSDK | null>('editorSDK', null);
 
 const selectedLayer = computed(() => designStore.selectedLayers[0]);
 const design = computed(() => designStore.currentDesign);
@@ -542,13 +544,13 @@ const updateBackgroundColor = (value: string) => {
 // Layer update methods
 const updateLayerName = (value: string) => {
   if (selectedLayer.value) {
-    designStore.updateLayerProperties(selectedLayer.value.id, { name: value });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'name', value);
   }
 };
 
 const updateLayerX = (value: number) => {
   if (selectedLayer.value) {
-    designStore.updateLayerProperties(selectedLayer.value.id, { x: value });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'x', value);
   }
 };
 
@@ -585,19 +587,19 @@ const updateLayerOpacity = (value: number) => {
 // Text properties
 const updateTextContent = (value: string) => {
   if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'text', value, 'properties');
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.text', value);
   }
 };
 
 const updateFontFamily = (value: string) => {
   if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'fontFamily', value, 'properties');
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontFamily', value);
   }
 };
 
 const updateFontSize = (value: number) => {
   if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'fontSize', value, 'properties');
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontSize', value);
   }
 };
 
@@ -609,181 +611,125 @@ const updateTextColor = (value: string) => {
 
 const updateFontWeight = (value: boolean) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, fontWeight: value ? 'bold' : 'normal' }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontWeight', value ? 'bold' : 'normal');
   }
 };
 
 const updateFontStyle = (value: boolean) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, fontStyle: value ? 'italic' : 'normal' }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fontStyle', value ? 'italic' : 'normal');
   }
 };
 
 const updateTextDecoration = (value: boolean) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, textDecoration: value ? 'underline' : 'none' }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.textDecoration', value ? 'underline' : 'none');
   }
 };
 
 const updateTextAlign = (value: string) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, textAlign: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.textAlign', value);
   }
 };
 
 // Shape properties
 const updateShapeFill = (value: string) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, fill: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.fill', value);
   }
 };
 
 const updateShapeStroke = (value: string) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, stroke: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.stroke', value);
   }
 };
 
 const updateStrokeWidth = (value: number) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, strokeWidth: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.strokeWidth', value);
   }
 };
 
 const updateCornerRadius = (value: number) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, cornerRadius: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.cornerRadius', value);
   }
 };
 
 // Image properties
 const updateObjectFit = (value: string) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, objectFit: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.objectFit', value);
   }
 };
 
 const updateBrightness = (value: number) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, brightness: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.brightness', value);
   }
 };
 
 const updateContrast = (value: number) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, contrast: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.contrast', value);
   }
 };
 
 const updateSaturation = (value: number) => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { ...selectedLayer.value.properties, saturation: value }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.saturation', value);
   }
 };
 
 // Effects
 const updateShadowEnabled = (value: boolean) => {
   if (selectedLayer.value) {
-    const shadow = selectedLayer.value.properties?.shadow || {};
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { 
-        ...selectedLayer.value.properties, 
-        shadow: { ...shadow, enabled: value }
-      }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.shadow.enabled', value);
   }
 };
 
 const updateShadowColor = (value: string) => {
   if (selectedLayer.value) {
-    const shadow = selectedLayer.value.properties?.shadow || {};
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { 
-        ...selectedLayer.value.properties, 
-        shadow: { ...shadow, color: value }
-      }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.shadow.color', value);
   }
 };
 
 const updateShadowOffsetX = (value: number) => {
   if (selectedLayer.value) {
-    const shadow = selectedLayer.value.properties?.shadow || {};
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { 
-        ...selectedLayer.value.properties, 
-        shadow: { ...shadow, offsetX: value }
-      }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.shadow.offsetX', value);
   }
 };
 
 const updateShadowOffsetY = (value: number) => {
   if (selectedLayer.value) {
-    const shadow = selectedLayer.value.properties?.shadow || {};
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { 
-        ...selectedLayer.value.properties, 
-        shadow: { ...shadow, offsetY: value }
-      }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.shadow.offsetY', value);
   }
 };
 
 const updateShadowBlur = (value: number) => {
   if (selectedLayer.value) {
-    const shadow = selectedLayer.value.properties?.shadow || {};
-    editorStore.updateLayer(selectedLayer.value.id, {
-      properties: { 
-        ...selectedLayer.value.properties, 
-        shadow: { ...shadow, blur: value }
-      }
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.shadow.blur', value);
   }
 };
 
 // Layer actions
 const deleteLayer = () => {
-  if (selectedLayer.value) {
-    editorStore.deleteLayer(selectedLayer.value.id);
+  if (selectedLayer.value && editorSDK) {
+    editorSDK.layers.deleteLayer(selectedLayer.value.id);
   }
 };
 
 const duplicateLayer = () => {
   if (selectedLayer.value) {
-    editorStore.duplicateLayer(selectedLayer.value.id);
+    designStore.duplicateLayer(selectedLayer.value.id);
   }
 };
 
 const lockLayer = () => {
   if (selectedLayer.value) {
-    editorStore.updateLayer(selectedLayer.value.id, { 
-      locked: !selectedLayer.value.locked 
-    });
+    designStore.updateLayerProperty(selectedLayer.value.id, 'locked', !selectedLayer.value.locked);
   }
 };
 </script>

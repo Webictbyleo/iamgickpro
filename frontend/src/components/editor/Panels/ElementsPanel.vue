@@ -91,29 +91,6 @@
           </button>
         </div>
       </div>
-
-      <!-- Templates -->
-      <div class="p-3 border-t">
-        <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-          <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-          </svg>
-          Quick Templates
-        </h3>
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            v-for="template in templates"
-            :key="template.id"
-            @click="addTemplate(template)"
-            class="group flex flex-col p-3 rounded-lg border border-gray-100 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 hover:shadow-sm"
-          >
-            <div class="w-full h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-md mb-2 flex items-center justify-center">
-              <span class="text-xs text-purple-600 font-medium">{{ template.name }}</span>
-            </div>
-            <span class="text-xs font-medium text-gray-700 group-hover:text-purple-700 text-center">{{ template.name }}</span>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -140,15 +117,8 @@ interface ShapeConfig {
   icon: string
 }
 
-interface Template {
-  id: string
-  name: string
-  data: any
-}
-
 const emit = defineEmits<{
   'add-element': [type: LayerType, properties: any]
-  'add-template': [template: Template]
 }>()
 
 const searchQuery = ref('')
@@ -201,30 +171,6 @@ const shapes: ShapeConfig[] = [
   { type: 'star', label: 'Star', icon: '⭐' },
   { type: 'polygon', label: 'Polygon', icon: '🔶' },
   { type: 'heart', label: 'Heart', icon: '💙' }
-]
-
-// Sample templates
-const templates: Template[] = [
-  {
-    id: 'social-post',
-    name: 'Social Post',
-    data: { width: 1080, height: 1080, background: '#ffffff' }
-  },
-  {
-    id: 'story',
-    name: 'Story',
-    data: { width: 1080, height: 1920, background: '#ffffff' }
-  },
-  {
-    id: 'business-card',
-    name: 'Business Card',
-    data: { width: 1050, height: 600, background: '#ffffff' }
-  },
-  {
-    id: 'flyer',
-    name: 'Flyer',
-    data: { width: 2100, height: 2970, background: '#ffffff' }
-  }
 ]
 
 // Computed filtered arrays
@@ -280,10 +226,5 @@ const addImagePlaceholder = () => {
     alt: 'Image Placeholder',
     objectFit: 'cover'
   })
-}
-
-const addTemplate = (template: Template) => {
-  // Emit template data separately from elements
-  emit('add-template', template)
 }
 </script>

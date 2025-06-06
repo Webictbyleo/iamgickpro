@@ -214,3 +214,8 @@ This is a modern web-based design platform (similar to Canva) with the following
 * **Routing:** Use `vue-router` for navigation. Implement route guards for protected areas.
 * **Code Quality:** Use ESLint and Prettier with TypeScript and Vue plugins.
 * **Testing:** Write unit tests for components and Composable functions (e.g., using Vitest, Vue Testing Library). E2E tests with Cypress or Playwright.
+
+## Test User credentials
+### Pls use this test account for anything test and login ifor protected pages
+email: johndoe@example.com
+password:Vyhd7Y#PjTb7!TA

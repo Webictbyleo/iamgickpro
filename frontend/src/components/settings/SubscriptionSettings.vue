@@ -116,8 +116,8 @@ interface Plan {
 
 interface UsageStat {
   label: string
-  used: number
-  limit: number | 'unlimited'
+  used: number | string
+  limit: number | string
   percentage?: number
 }
 

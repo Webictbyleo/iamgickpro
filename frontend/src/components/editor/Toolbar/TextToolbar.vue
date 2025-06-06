@@ -6,7 +6,7 @@
       <PropertyDropdown
         :value="fontFamily"
         :options="fontOptions"
-        @update="$emit('update', { fontFamily: $event })"
+        @update="$emit('update', { fontFamily: String($event) })"
         class="w-32"
       />
     </div>
@@ -17,10 +17,10 @@
       <PropertyInput
         :value="fontSize"
         type="number"
-        @update="$emit('update', { fontSize: $event })"
+        @update="$emit('update', { fontSize: Number($event) })"
         class="w-16"
-        min="8"
-        max="200"
+        :min="8"
+        :max="200"
       />
     </div>
 

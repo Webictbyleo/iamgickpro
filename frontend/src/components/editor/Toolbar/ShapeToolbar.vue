@@ -6,7 +6,7 @@
       <PropertyDropdown
         :value="shapeType"
         :options="shapeOptions"
-        @update="$emit('update', { shapeType: $event })"
+        @update="$emit('update', { shapeType: String($event) })"
         class="w-32"
       />
     </div>
@@ -36,10 +36,10 @@
       <PropertyInput
         :value="strokeWidth"
         type="number"
-        @update="$emit('update', { strokeWidth: $event })"
+        @update="$emit('update', { strokeWidth: Number($event) })"
         class="w-16"
-        min="0"
-        max="20"
+        :min="0"
+        :max="20"
       />
     </div>
 
@@ -49,10 +49,10 @@
       <PropertyInput
         :value="borderRadius"
         type="number"
-        @update="$emit('update', { borderRadius: $event })"
+        @update="$emit('update', { borderRadius: Number($event) })"
         class="w-16"
-        min="0"
-        max="100"
+        :min="0"
+        :max="100"
       />
     </div>
 

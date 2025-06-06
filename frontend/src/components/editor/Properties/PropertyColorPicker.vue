@@ -213,8 +213,8 @@ const updateHex = (event: Event) => {
   }
 }
 
-const updateGradientType = (type: string) => {
-  gradientType.value = type
+const updateGradientType = (value: string | number) => {
+  gradientType.value = String(value)
   updateGradientValue()
 }
 

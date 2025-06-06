@@ -35,6 +35,8 @@ export class LayerManager implements LayerAPI {
   // ============================================================================
 
   async createLayer(type: string, data: Partial<Layer>): Promise<LayerNode> {
+    console.log('LayerManager: Creating layer', { type, data })
+    
     const layerNode = this.createLayerNode(type, data)
     
     // Get renderer for the layer type
@@ -44,6 +46,14 @@ export class LayerManager implements LayerAPI {
     const konvaNode = renderer.render(layerNode)
     layerNode.konvaNode = konvaNode
     
+    console.log('LayerManager: Konva node created', {
+      layerId: layerNode.id,
+      nodeType: konvaNode.getClassName(),
+      position: { x: konvaNode.x(), y: konvaNode.y() },
+      size: { width: konvaNode.width?.(), height: konvaNode.height?.() },
+      visible: konvaNode.visible()
+    })
+    
     // Add click event to make layer selectable
     konvaNode.on('click tap', () => {
       this.selectLayer(layerNode.id)
@@ -51,11 +61,30 @@ export class LayerManager implements LayerAPI {
     
     // Make layer draggable
     konvaNode.draggable(true)
-    
-    // Add to main layer (cast to Shape since all our rendered nodes are shapes/groups)
+     // Add to main layer (cast to Shape since all our rendered nodes are shapes/groups)
    this.mainLayer.add(konvaNode as Konva.Shape | Konva.Group)
     
+   // Debug: Log layer creation
+   console.log('LayerManager: Layer created', {
+     layerId: layerNode.id,
+     layerType: type,
+     konvaNode: konvaNode,
+     mainLayerChildren: this.mainLayer.children.length,
+     nodePosition: `(${konvaNode.x()}, ${konvaNode.y()})`,
+     nodeVisible: konvaNode.visible()
+   })
    
+   // Force redraw to ensure element appears
+   this.mainLayer.batchDraw()
+    
+    console.log('LayerManager: Added to main layer', {
+      mainLayerChildren: this.mainLayer.children.length
+    })
+    
+    // Force redraw to make the element visible
+    this.mainLayer.batchDraw()
+    
+    console.log('LayerManager: Batch draw completed')
     
     // Store layer
     this.layers.set(layerNode.id, layerNode)
@@ -101,6 +130,9 @@ export class LayerManager implements LayerAPI {
     this.layers.delete(layerId)
     this.updateTransformer()
     
+    // Force redraw to reflect the deletion
+    this.mainLayer.batchDraw()
+    
     this.emitter.emit('layer:deleted', layerId)
   }
 
@@ -117,6 +149,9 @@ export class LayerManager implements LayerAPI {
     if (layer.konvaNode) {
       this.updateKonvaNode(layer.konvaNode, layer)
     }
+
+    // Force redraw to reflect the updates
+    this.mainLayer.batchDraw()
 
     // Convert LayerNode to Layer for the event
     const layerData: Layer = {
@@ -372,9 +407,16 @@ export class LayerManager implements LayerAPI {
       // Only create main content layer
       this.mainLayer = new Konva.Layer()
       this.stage.add(this.mainLayer)
+      console.log('LayerManager: Created new main layer')
     } else {
       this.mainLayer = layers[0]
+      console.log('LayerManager: Using existing layer')
     }
+    
+    console.log('LayerManager: Setup complete', {
+      mainLayerExists: !!this.mainLayer,
+      stageLayers: this.stage.getLayers().length
+    })
   }
 
   private getRenderer(type: string): KonvaLayerRenderer {

@@ -10,7 +10,7 @@
     />
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-h-0">
+    <div class="flex-1 flex flex-col min-h-0 h-full">
       <!-- Modern Toolbar -->
       <ModernToolbar 
         v-model:design-name="designName"
@@ -25,15 +25,18 @@
         @tool-change="handleToolChange"
       />
 
+      <!-- Canvas Debug Test (temporary) - DISABLED -->
+      <!-- <CanvasDebugTest /> -->
+
       <!-- Canvas Container -->
-      <div class="flex-1 flex min-h-0">
+      <div class="flex-1 flex min-h-0 h-full">
         <!-- Left Panel (Elements, Templates, Media) -->
         <div 
           v-if="activePanel && leftPanels.includes(activePanel)"
-          class="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col"
+          class="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full"
         >
           <!-- Panel Header -->
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ getPanelTitle(activePanel) }}
             </h2>
@@ -59,19 +62,43 @@
               @add-media="handleAddMedia" 
             />
 
-            <!-- Templates Panel (placeholder) -->
-            <div v-if="activePanel === 'templates'" class="p-4">
-              <p class="text-gray-500 dark:text-gray-400">Templates panel coming soon...</p>
-            </div>
+            <!-- Animation Panel -->
+            <AnimationPanel 
+              v-if="activePanel === 'animation'"
+              :selected-layers="selectedLayers"
+              @update-animation="handleUpdateAnimation"
+              @preview-animation="handlePreviewAnimation"
+              @stop-animation="handleStopAnimation"
+            />
+
+            <!-- Colors Panel -->
+            <ColorsPanel 
+              v-if="activePanel === 'colors'"
+              @apply-color="handleApplyColor"
+              @apply-gradient="handleApplyGradient"
+            />
+
+            <!-- Layers Panel -->
+            <LayerPanel 
+              v-if="activePanel === 'layers'"
+              :layers="layers"
+              :selected-layers="selectedLayers"
+              @select-layer="handleSelectLayer"
+              @duplicate-layer="handleDuplicateLayer"
+              @delete-layer="handleDeleteLayer"
+              @toggle-visibility="handleToggleVisibility"
+              @toggle-lock="handleToggleLock"
+              @reorder-layers="handleReorderLayers"
+            />
           </div>
         </div>
 
         <!-- Canvas Area -->
-        <div class="flex-1 bg-gray-100 dark:bg-gray-800 relative flex flex-col min-w-0">
+        <div class="flex-1 bg-gray-100 dark:bg-gray-800 relative flex flex-col min-w-0 h-full">
           <!-- Tool-specific Toolbar -->
           <div 
             v-if="activeTool && activeTool !== 'select'"
-            class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2"
+            class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex-shrink-0"
           >
             <TextToolbar 
               v-if="activeTool === 'text'"
@@ -87,7 +114,7 @@
           </div>
 
           <!-- Canvas -->
-          <div class="flex-1 relative">
+          <div class="flex-1 relative min-h-0">
             <DesignCanvas 
               :width="canvasWidth"
               :height="canvasHeight"
@@ -116,40 +143,6 @@
           :show-design-properties="!selectedLayer"
           @close="showPropertiesPanel = false"
         />
-
-        <!-- Layers Panel (Bottom) -->
-        <div 
-          v-if="activePanel === 'layers'"
-          class="absolute bottom-0 left-20 right-0 h-64 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-20"
-        >
-          <!-- Panel Header -->
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-              Layers
-            </h2>
-            <ModernButton
-              variant="ghost"
-              size="sm"
-              @click="activePanel = null"
-            >
-              <XMarkIcon class="w-5 h-5" />
-            </ModernButton>
-          </div>
-
-          <!-- Layers Content -->
-          <div class="flex-1 overflow-y-auto p-4">
-            <LayerPanel 
-              :layers="layers"
-              :selected-layers="selectedLayers"
-              @select-layer="handleSelectLayer"
-              @duplicate-layer="handleDuplicateLayer"
-              @delete-layer="handleDeleteLayer"
-              @toggle-visibility="handleToggleVisibility"
-              @toggle-lock="handleToggleLock"
-              @reorder-layers="handleReorderLayers"
-            />
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -173,7 +166,10 @@ import ModernButton from '@/components/common/ModernButton.vue'
 import ElementsPanel from './Panels/ElementsPanel.vue'
 import LayerPanel from './Panels/LayerPanel.vue'
 import MediaPanel from './Panels/MediaPanel.vue'
+import AnimationPanel from './Panels/AnimationPanel.vue'
+import ColorsPanel from './Panels/ColorsPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
+import CanvasDebugTest from './CanvasDebugTest.vue'
 
 // Icons
 import { XMarkIcon } from '@heroicons/vue/24/outline'
@@ -238,14 +234,14 @@ useKeyboardShortcuts({
 
 // Modern UI State
 const activeTool = ref<'select' | 'text' | 'shape' | 'image' | null>('select')
-const activePanel = ref<'elements' | 'templates' | 'media' | 'layers' | null>(null)
+const activePanel = ref<'elements' | 'layers' | 'media' | 'animation' | 'colors' | null>('elements') // Set default panel
 const showPropertiesPanel = ref(true)
 const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
 
-// Panel configuration
-const leftPanels = ['elements', 'templates', 'media']
+// Panel configuration - include all panels that should show in left sidebar
+const leftPanels = ['elements', 'media', 'layers', 'animation', 'colors']
 
 // Computed properties
 const designName = computed({
@@ -294,9 +290,10 @@ const selectedLayer = computed(() => selectedLayers.value[0] || null)
 const getPanelTitle = (panel: string) => {
   switch (panel) {
     case 'elements': return 'Elements'
-    case 'templates': return 'Templates'
     case 'media': return 'Media'
     case 'layers': return 'Layers'
+    case 'animation': return 'Animation'
+    case 'colors': return 'Colors'
     default: return 'Panel'
   }
 }
@@ -406,6 +403,71 @@ const handleRedo = () => {
 
 const handleAddMedia = (mediaData: any) => {
   addElement('image', mediaData)
+}
+
+// Animation Panel Event Handlers
+const handleUpdateAnimation = (animationData: any) => {
+  if (selectedLayer.value && editorSDK.value) {
+    // Use the available animation API methods
+    const { layerId, time, properties } = animationData
+    editorSDK.value.animation.addKeyframe(layerId || selectedLayer.value.id, time || 0, properties || {})
+  }
+}
+
+const handlePreviewAnimation = (animationData: any) => {
+  if (editorSDK.value) {
+    // Use the available animation API methods
+    editorSDK.value.animation.play()
+  }
+}
+
+const handleStopAnimation = () => {
+  if (editorSDK.value) {
+    editorSDK.value.animation.stop()
+  }
+}
+
+// Colors Panel Event Handlers
+const handleApplyColor = (colorData: any) => {
+  if (selectedLayer.value) {
+    if (selectedLayer.value.type === 'shape') {
+      const updates: Partial<Layer> = {
+        properties: {
+          ...selectedLayer.value.properties,
+          fill: {
+            type: 'solid' as const,
+            color: colorData.color,
+            opacity: colorData.opacity || 1
+          }
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+    } else if (selectedLayer.value.type === 'text') {
+      const updates: Partial<Layer> = {
+        properties: {
+          ...selectedLayer.value.properties,
+          color: colorData.color
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+    }
+  }
+}
+
+const handleApplyGradient = (gradientData: any) => {
+  if (selectedLayer.value && selectedLayer.value.type === 'shape') {
+    const updates: Partial<Layer> = {
+      properties: {
+        ...selectedLayer.value.properties,
+        fill: {
+          type: gradientData.type || 'linear' as const,
+          colors: gradientData.colors || [],
+          angle: gradientData.angle || 0
+        }
+      }
+    }
+    updateLayerProperties(selectedLayer.value.id, updates)
+  }
 }
 
 // Provide editor context to child components

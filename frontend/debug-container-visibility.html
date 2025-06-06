@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Container Visibility Debug</title>
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 32px;
+            background: #f3f4f6;
+            min-height: 80vh;
+        }
+        
+        .canvas-container {
+            background: white;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            border: 1px solid #e5e7eb;
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
+        
+        .canvas-background {
+            position: absolute;
+            inset: 0;
+            background-color: #ffffff;
+            z-index: 1;
+        }
+        
+        /* Konva canvas should be above background */
+        .canvas-container canvas {
+            position: relative !important;
+            z-index: 2 !important;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Container Visibility Debug</h1>
+    <p>Testing if the canvas container setup matches the Vue component structure.</p>
+    
+    <div>
+        <button onclick="initializeCanvas()">Initialize Canvas</button>
+        <button onclick="addTestElement()">Add Test Rectangle</button>
+        <button onclick="debugContainer()">Debug Container</button>
+        <button onclick="debugKonvaCanvas()">Debug Konva Canvas</button>
+        <button onclick="toggleBackground()">Toggle Background</button>
+    </div>
+    
+    <!-- This matches the Vue component structure -->
+    <div class="canvas-wrapper">
+        <div id="canvas-container" class="canvas-container">
+            <!-- Background div like in Vue component -->
+            <div id="canvas-background" class="canvas-background"></div>
+            <!-- Konva stage will be mounted here -->
+        </div>
+    </div>
+    
+    <div id="debug-info">Debug info will appear here...</div>
+
+    <script>
+        let stage = null;
+        let mainLayer = null;
+        let backgroundVisible = true;
+
+        function log(message) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+            console.log(message);
+        }
+
+        function initializeCanvas() {
+            const container = document.getElementById('canvas-container');
+            
+            log('=== INITIALIZING CANVAS ===');
+            log(`Container found: ${container ? 'YES' : 'NO'}`);
+            log(`Container dimensions: ${container.offsetWidth}x${container.offsetHeight}`);
+            log(`Container position: ${getComputedStyle(container).position}`);
+            log(`Container z-index: ${getComputedStyle(container).zIndex}`);
+            
+            // Clear existing Konva content but keep Vue-managed elements
+            const existingCanvas = container.querySelector('canvas');
+            if (existingCanvas) {
+                existingCanvas.remove();
+                log('Removed existing canvas');
+            }
+            
+            // Create stage
+            stage = new Konva.Stage({
+                container: container,
+                width: 800,
+                height: 600
+            });
+            
+            // Create main layer
+            mainLayer = new Konva.Layer();
+            stage.add(mainLayer);
+            
+            log(`Stage created with size: ${stage.width()}x${stage.height()}`);
+            log(`Stage container: ${stage.container()}`);
+            
+            // Check canvas element
+            const canvas = container.querySelector('canvas');
+            if (canvas) {
+                log(`Canvas element found: YES`);
+                log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+                log(`Canvas display style: ${getComputedStyle(canvas).display}`);
+                log(`Canvas position: ${getComputedStyle(canvas).position}`);
+                log(`Canvas z-index: ${getComputedStyle(canvas).zIndex}`);
+            } else {
+                log('Canvas element NOT FOUND!');
+            }
+            
+            stage.batchDraw();
+        }
+
+        function addTestElement() {
+            if (!stage || !mainLayer) {
+                log('ERROR: Canvas not initialized');
+                return;
+            }
+            
+            const rect = new Konva.Rect({
+                x: 100,
+                y: 100,
+                width: 150,
+                height: 100,
+                fill: '#ff6b6b',
+                stroke: '#333',
+                strokeWidth: 2,
+                draggable: true
+            });
+            
+            mainLayer.add(rect);
+            mainLayer.batchDraw();
+            
+            log('Added test rectangle');
+            log(`Rectangle position: (${rect.x()}, ${rect.y()})`);
+            log(`Rectangle size: ${rect.width()}x${rect.height()}`);
+            log(`Main layer children: ${mainLayer.children.length}`);
+        }
+
+        function debugContainer() {
+            const container = document.getElementById('canvas-container');
+            const background = document.getElementById('canvas-background');
+            const canvas = container.querySelector('canvas');
+            
+            log('=== CONTAINER DEBUG ===');
+            log(`Container visible: ${container.offsetParent !== null}`);
+            log(`Container computed style:`);
+            const containerStyle = getComputedStyle(container);
+            log(`  display: ${containerStyle.display}`);
+            log(`  visibility: ${containerStyle.visibility}`);
+            log(`  opacity: ${containerStyle.opacity}`);
+            log(`  position: ${containerStyle.position}`);
+            log(`  width: ${containerStyle.width}`);
+            log(`  height: ${containerStyle.height}`);
+            
+            if (background) {
+                log(`Background element:`);
+                const bgStyle = getComputedStyle(background);
+                log(`  display: ${bgStyle.display}`);
+                log(`  position: ${bgStyle.position}`);
+                log(`  z-index: ${bgStyle.zIndex}`);
+            }
+            
+            if (canvas) {
+                log(`Canvas element:`);
+                const canvasStyle = getComputedStyle(canvas);
+                log(`  display: ${canvasStyle.display}`);
+                log(`  position: ${canvasStyle.position}`);
+                log(`  z-index: ${canvasStyle.zIndex}`);
+                log(`  width: ${canvasStyle.width}`);
+                log(`  height: ${canvasStyle.height}`);
+            }
+        }
+
+        function debugKonvaCanvas() {
+            if (!stage) {
+                log('ERROR: Stage not initialized');
+                return;
+            }
+            
+            log('=== KONVA DEBUG ===');
+            log(`Stage size: ${stage.width()}x${stage.height()}`);
+            log(`Stage position: (${stage.x()}, ${stage.y()})`);
+            log(`Stage scale: ${stage.scaleX()}, ${stage.scaleY()}`);
+            log(`Stage visible: ${stage.visible()}`);
+            log(`Stage layers: ${stage.children.length}`);
+            
+            const canvas = stage.getCanvas()._canvas;
+            log(`Canvas element dimensions: ${canvas.width}x${canvas.height}`);
+            log(`Canvas style dimensions: ${canvas.style.width} x ${canvas.style.height}`);
+        }
+
+        function toggleBackground() {
+            const background = document.getElementById('canvas-background');
+            backgroundVisible = !backgroundVisible;
+            background.style.display = backgroundVisible ? 'block' : 'none';
+            log(`Background ${backgroundVisible ? 'shown' : 'hidden'}`);
+        }
+    </script>
+</body>
+</html>

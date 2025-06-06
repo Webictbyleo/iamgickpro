@@ -51,11 +51,42 @@ export class EditorSDK extends EventEmitter {
     // Clear any existing content in the container
     container.innerHTML = ''
     
+    console.log('EditorSDK: Container setup', {
+      container: container,
+      containerClasses: container.className
+    })
+    
     // Create Konva Stage
     this.stage = new Konva.Stage({
       container,
       width: config.width || 800,
       height: config.height || 600
+    })
+    
+    // Debug: Log stage creation
+    console.log('EditorSDK: Stage created', {
+      container: container,
+      containerDimensions: `${container.offsetWidth}x${container.offsetHeight}`,
+      stageDimensions: `${this.stage.width()}x${this.stage.height()}`,
+      stageContainer: this.stage.container()
+    })
+    
+    // Ensure canvas is properly positioned and visible
+    const canvas = container.querySelector('canvas')
+    if (canvas) {
+      canvas.style.position = 'relative'
+      canvas.style.zIndex = '10'
+      canvas.style.display = 'block'
+      console.log('EditorSDK: Canvas styled', {
+        canvasElement: canvas,
+        canvasStyle: canvas.style.cssText
+      })
+    }
+    console.log('EditorSDK: Stage created', {
+      container: container.tagName,
+      width: this.stage.width(),
+      height: this.stage.height(),
+      containerSize: `${container.offsetWidth}x${container.offsetHeight}`
     })
     
     // Initialize managers
