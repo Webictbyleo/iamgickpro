@@ -12,6 +12,9 @@ package-lock.json
 
 # Testing
 /coverage
+**test*.html
+**test*.ts
+/*test*.js
 
 # Editor directories and files
 .vscode/*

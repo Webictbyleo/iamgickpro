@@ -20,22 +20,7 @@
         class="w-20"
         :show-dropdown-icon="false"
       />
-      <div class="flex flex-col">
-        <button
-          @click="increaseFontSize"
-          class="px-1 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-t border border-gray-300"
-          title="Increase font size"
-        >
-          <ChevronUpIcon class="w-3 h-3" />
-        </button>
-        <button
-          @click="decreaseFontSize"
-          class="px-1 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-b border border-gray-300 border-t-0"
-          title="Decrease font size"
-        >
-          <ChevronDownIcon class="w-3 h-3" />
-        </button>
-      </div>
+      
     </div>
 
     <!-- Font Style Controls -->

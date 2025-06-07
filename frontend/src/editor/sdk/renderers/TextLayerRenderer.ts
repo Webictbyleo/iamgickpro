@@ -50,6 +50,12 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       wrap: 'word' // Always enable word wrapping for better text behavior
     })
 
+    // Initialize base dimensions for proper resize behavior
+    textNode.setAttr('baseDimensions', {
+      width: layerData.width,
+      height: layerData.height
+    })
+
     this.applyTextEffects(textNode, props)
     this.setupTextInteractions(textNode, layerData)
     
@@ -87,6 +93,14 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
         draggable: !layerData.locked,
         wrap: 'word' // Always enable word wrapping for better text behavior
       })
+      
+      // Ensure base dimensions are always set for proper resize behavior
+      if (!node.getAttr('baseDimensions')) {
+        node.setAttr('baseDimensions', {
+          width: layerData.width,
+          height: layerData.height
+        })
+      }
       
       this.applyTextEffects(node, props)
       
@@ -182,10 +196,11 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     // Calculate auto-resize dimensions based on mode
     switch (config.mode) {
       case 'width':
-        // Enable wrapping to get accurate text measurements
-        textNode.wrap('word')
-        const textWidthCase1 = textNode.getTextWidth()
-        newWidth = textWidthCase1 + padding.left + padding.right
+        // First disable wrapping to get natural text width
+        textNode.wrap('none')
+        textNode._clearCache('text')
+        const naturalWidth = textNode.getTextWidth()
+        newWidth = naturalWidth + padding.left + padding.right
         
         // Apply width constraints
         if (config.minWidth && newWidth < config.minWidth) {
@@ -195,32 +210,55 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
           newWidth = config.maxWidth
         }
         
-        // Set the constrained width and measure wrapped height
-        textNode.width(newWidth - padding.left - padding.right)
-        textNode._clearCache('text')
-        newHeight = textNode.getTextHeight() + padding.top + padding.bottom
+        // Check if text needs to wrap based on final width
+        const availableWidth = newWidth - padding.left - padding.right
+        if (naturalWidth > availableWidth) {
+          // Text needs to wrap - enable wrapping and calculate wrapped height
+          textNode.wrap('word')
+          textNode.width(availableWidth)
+          textNode._clearCache('text')
+          newHeight = textNode.getTextHeight() + padding.top + padding.bottom
+        } else {
+          // Text fits naturally - use minimal height
+          textNode.width(availableWidth)
+          newHeight = textNode.fontSize() * textNode.lineHeight() + padding.top + padding.bottom
+        }
         break
         
       case 'height':
         // For height-only mode, text should wrap to fit current width and expand height
-        textNode.wrap('word')
-        textNode.width(layerData.width - padding.left - padding.right)
+        const availableWidthForHeight = layerData.width - padding.left - padding.right
+        
+        // First check if text fits naturally without wrapping
+        textNode.wrap('none')
         textNode._clearCache('text')
-        newHeight = textNode.getTextHeight() + padding.top + padding.bottom
+        const naturalTextWidth = textNode.getTextWidth()
+        
+        if (naturalTextWidth <= availableWidthForHeight) {
+          // Text fits in one line - use minimal height
+          textNode.width(availableWidthForHeight)
+          newHeight = textNode.fontSize() * textNode.lineHeight() + padding.top + padding.bottom
+        } else {
+          // Text overflows - enable wrapping and expand height
+          textNode.wrap('word')
+          textNode.width(availableWidthForHeight)
+          textNode._clearCache('text')
+          newHeight = textNode.getTextHeight() + padding.top + padding.bottom
+        }
         
         // Apply height constraints (but prioritize content over constraints)
         if (config.minHeight && newHeight < config.minHeight) {
           newHeight = config.minHeight
         }
-        // Don't apply maxHeight constraint for height mode - let content expand
         break
         
       case 'both':
-        // Enable wrapping first to get accurate measurements
-        textNode.wrap('word')
-        const textWidthCase3 = textNode.getTextWidth()
+        // First get natural text dimensions without wrapping
+        textNode.wrap('none')
+        textNode._clearCache('text')
+        const naturalTextWidthBoth = textNode.getTextWidth()
         
-        newWidth = textWidthCase3 + padding.left + padding.right
+        newWidth = naturalTextWidthBoth + padding.left + padding.right
         
         // Apply width constraints
         if (config.minWidth && newWidth < config.minWidth) {
@@ -230,16 +268,24 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
           newWidth = config.maxWidth
         }
         
-        // Set the constrained width and recalculate height based on wrapping
-        textNode.width(newWidth - padding.left - padding.right)
-        textNode._clearCache('text')
-        newHeight = textNode.getTextHeight() + padding.top + padding.bottom
+        // Check if text needs to wrap based on final width
+        const finalAvailableWidth = newWidth - padding.left - padding.right
+        if (naturalTextWidthBoth > finalAvailableWidth) {
+          // Text needs to wrap - enable wrapping and calculate wrapped height
+          textNode.wrap('word')
+          textNode.width(finalAvailableWidth)
+          textNode._clearCache('text')
+          newHeight = textNode.getTextHeight() + padding.top + padding.bottom
+        } else {
+          // Text fits naturally - use minimal height
+          textNode.width(finalAvailableWidth)
+          newHeight = textNode.fontSize() * textNode.lineHeight() + padding.top + padding.bottom
+        }
         
         // Apply height constraints (but prioritize content over maxHeight)
         if (config.minHeight && newHeight < config.minHeight) {
           newHeight = config.minHeight
         }
-        // Don't apply maxHeight constraint - let content expand naturally
         break
     }
     

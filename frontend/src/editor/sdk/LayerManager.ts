@@ -465,7 +465,7 @@ export class LayerManager implements LayerAPI {
               newBox.width = newBox.width * constraintScale
             }
           }
-          // Middle handles: width resizing only (text will wrap)
+          // Middle handles: width resizing with dynamic height expansion
           else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
             // Constrain width changes only
             if (newBox.width < minWidth) {
@@ -474,8 +474,15 @@ export class LayerManager implements LayerAPI {
               newBox.width = maxWidth
             }
             
-            // Maintain original height for middle handles (text will wrap to new width)
-            newBox.height = oldBox.height
+            // For middle handles, allow height to expand as needed for text wrapping
+            // Don't constrain the height to oldBox.height - let it grow for wrapped text
+            // The actual height will be calculated in the resize handlers based on text content
+            
+            // Only apply minimum height constraint
+            if (newBox.height < minHeight) {
+              newBox.height = minHeight
+            }
+            // Don't restrict maximum height to allow text expansion
           }
           
           return newBox
@@ -669,160 +676,137 @@ export class LayerManager implements LayerAPI {
    * Preview text layer resize during transform for real-time feedback
    * This method provides visual feedback without committing changes
    */
+  /**
+   * Preview text layer resize during transform (Canva-style behavior)
+   */
   private previewTextLayerResize(layer: LayerNode): void {
-    if (layer.type !== 'text' || !layer.konvaNode) return
+    if (!layer.konvaNode || layer.type !== 'text') return
     
     const textNode = layer.konvaNode as Konva.Text
-    
-    // Get current transform values and active anchor
-    const scaleX = textNode.scaleX()
-    const scaleY = textNode.scaleY()
     const activeAnchor = this.transformer?.getActiveAnchor()
     
-    // Handle different resize modes based on which handle is being used
-    if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
-      // Corner handles: uniform scaling - maintain both scaleX and scaleY
-      // This preserves text appearance and prevents distortion
-      const uniformScale = Math.min(Math.abs(scaleX), Math.abs(scaleY))
-      textNode.scaleX(scaleX < 0 ? -uniformScale : uniformScale)
-      textNode.scaleY(scaleY < 0 ? -uniformScale : uniformScale)
-      
-    } else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
-      // Middle handles: width resizing with text wrapping
-      const currentWidth = textNode.width()
-      const newWidth = currentWidth * scaleX
-      
-      // Apply width constraints
-      const minWidth = 50
-      const maxWidth = 2000
-      const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
-      
-      // Reset scale and apply width directly for text wrapping
-      textNode.scaleX(1)
-      textNode.scaleY(1)
-      textNode.width(constrainedWidth)
-      
-      // Enable text wrapping for middle handle resizing
-      textNode.wrap('word')
-      
-      // Update layer width for consistency
-      layer.width = constrainedWidth
+    // Store base dimensions if not already stored
+    if (!textNode.getAttr('baseDimensions')) {
+      textNode.setAttr('baseDimensions', {
+        width: layer.width,
+        height: layer.height
+      })
     }
     
-    // Clear any cached rendering to ensure text quality during preview
-    textNode.clearCache()
+    const baseDimensions = textNode.getAttr('baseDimensions')
+    
+    // Determine resize type based on active anchor
+    const isWidthResize = activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)
+    const isCornerResize = activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)
+    
+    if (isWidthResize) {
+      // Middle handle resize: Text wrapping (reset scale, apply width)
+      // Calculate the new width based on current transform box size
+      const transformBox = textNode.getClientRect()
+      
+      textNode.setAttrs({
+        width: transformBox.width,
+        scaleX: 1,
+        scaleY: 1
+      })
+    } else if (isCornerResize) {
+      // Corner handle resize: Uniform scaling (keep scale, don't reset)
+      // This maintains text appearance and prevents distortion
+      const scaleX = textNode.scaleX()
+      const scaleY = textNode.scaleY()
+      
+      // Apply uniform scaling - use the smaller scale to maintain aspect ratio
+      const uniformScale = Math.min(Math.abs(scaleX), Math.abs(scaleY))
+      
+      textNode.setAttrs({
+        scaleX: scaleX < 0 ? -uniformScale : uniformScale,
+        scaleY: scaleY < 0 ? -uniformScale : uniformScale
+      })
+    }
   }
 
   /**
    * Handle final text layer resize when transform ends
    * This method commits the resize changes and applies auto-resize if enabled
    */
+  /**
+   * Handle final text layer resize when transform ends (Canva-style behavior)  
+   */
   private handleTextLayerResize(layer: LayerNode): void {
-    if (layer.type !== 'text' || !layer.konvaNode) return
+    if (!layer.konvaNode || layer.type !== 'text') return
     
     const textNode = layer.konvaNode as Konva.Text
+    const activeAnchor = this.transformer?.getActiveAnchor()
     
-    try {
-      // Get the final transform values
-      const scaleX = textNode.scaleX()
-      const scaleY = textNode.scaleY()
-      const activeAnchor = this.transformer?.getActiveAnchor()
+    // Store base dimensions if not already stored
+    if (!textNode.getAttr('baseDimensions')) {
+      textNode.setAttr('baseDimensions', {
+        width: layer.width,
+        height: layer.height
+      })
+    }
+    
+    const baseDimensions = textNode.getAttr('baseDimensions')
+    
+    // Determine resize type based on active anchor
+    const isWidthResize = activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)
+    const isCornerResize = activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)
+    
+    if (isWidthResize) {
+      // Middle handle resize: Text wrapping (reset scale, apply width)
+      // Calculate the new width based on current transform box size
+      const transformBox = textNode.getClientRect()
       
-      // Handle different resize modes based on which handle was used
-      if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
-        // Corner handles: uniform scaling - keep scales applied to maintain text appearance
-        // The text size (fontSize) effectively changes with the scale
-        const uniformScale = Math.min(Math.abs(scaleX), Math.abs(scaleY))
-        
-        // Apply uniform scale to both dimensions
-        textNode.scaleX(scaleX < 0 ? -uniformScale : uniformScale)
-        textNode.scaleY(scaleY < 0 ? -uniformScale : uniformScale)
-        
-        // Update layer dimensions to reflect the scaled size
-        layer.width = textNode.width() * Math.abs(uniformScale)
-        layer.height = textNode.height() * Math.abs(uniformScale)
-        
-        // Update scale values in layer data
-        layer.scaleX = textNode.scaleX()
-        layer.scaleY = textNode.scaleY()
-        
-      } else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
-        // Middle handles: width resizing with text wrapping and height expansion
-        const currentWidth = textNode.width()
-        const newWidth = currentWidth * Math.abs(scaleX)
-        
-        // Apply width constraints
-        const minWidth = 50
-        const maxWidth = 2000
-        const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
-        
-        // Reset scales and apply width directly
-        textNode.scaleX(1)
-        textNode.scaleY(1)
-        textNode.width(constrainedWidth)
-        
-        // Enable text wrapping for the new width
-        textNode.wrap('word')
-        
-        // Clear cache to ensure proper text measurement
-        textNode._clearCache('text')
-        
-        // Always update height based on wrapped content - this is the key fix!
-        const wrappedHeight = textNode.getTextHeight()
-        
-        // Update layer dimensions
-        layer.width = constrainedWidth
-        layer.height = wrappedHeight // Always use actual wrapped height
-        layer.scaleX = 1
-        layer.scaleY = 1
-        
-        // Update text node height to match calculated wrapped height
-        textNode.height(wrappedHeight)
-        
-        // Apply auto-resize if enabled for additional adjustments (padding, etc.)
-        const renderer = this.getRenderer('text') as TextLayerRenderer
-        if (renderer) {
-          const autoResizeConfig = layer.properties.autoResize
-          if (autoResizeConfig && autoResizeConfig.enabled) {
-            try {
-              // Apply auto-resize logic to adjust height based on wrapped text
-              renderer.applyAutoResize(textNode, layer, autoResizeConfig)
-              
-              // Update layer dimensions after auto-resize
-              layer.width = textNode.width()
-              layer.height = textNode.height()
-            } catch (error) {
-              console.warn('Auto-resize failed for text layer:', error)
-            }
-          }
-        }
-      }
-      
-      // Clear any cached rendering to ensure text quality
-      textNode.clearCache()
-      
-      // Force redraw to ensure text renders clearly
-      textNode.getLayer()?.draw()
-      
-      // Emit layer update event
-      this.emitter.emit('layer:updated', { 
-        layerId: layer.id, 
-        properties: { 
-          width: layer.width, 
-          height: layer.height,
-          scaleX: layer.scaleX,
-          scaleY: layer.scaleY
-        } 
+      textNode.setAttrs({
+        width: transformBox.width,
+        scaleX: 1,
+        scaleY: 1
       })
       
-    } catch (error) {
-      console.error('Error handling text layer resize:', error)
-      // Reset to original state if resize fails
-      textNode.scaleX(1)
-      textNode.scaleY(1)
-      textNode.clearCache()
-      textNode.getLayer()?.draw()
+      // Update layer dimensions - reset to new base dimensions without scale
+      layer.width = textNode.width()
+      layer.height = textNode.height()
+      layer.scaleX = 1
+      layer.scaleY = 1
+      
+      // Update stored base dimensions for future operations
+      textNode.setAttr('baseDimensions', {
+        width: layer.width,
+        height: layer.height
+      })
+      
+    } else if (isCornerResize) {
+      // Corner handle resize: Uniform scaling (keep scale values)
+      const scaleX = textNode.scaleX()
+      const scaleY = textNode.scaleY()
+      
+      // Apply uniform scaling - use the smaller scale to maintain aspect ratio
+      const uniformScale = Math.min(Math.abs(scaleX), Math.abs(scaleY))
+      
+      textNode.setAttrs({
+        scaleX: scaleX < 0 ? -uniformScale : uniformScale,
+        scaleY: scaleY < 0 ? -uniformScale : uniformScale
+      })
+      
+      // Update layer scale values (base dimensions stay the same)
+      layer.scaleX = textNode.scaleX()
+      layer.scaleY = textNode.scaleY()
+      // width and height remain as original base dimensions
     }
+
+    // Force redraw
+    textNode.getLayer()?.draw()
+
+    // Emit layer update event
+    this.emitter.emit('layer:updated', { 
+      layerId: layer.id, 
+      properties: { 
+        width: layer.width, 
+        height: layer.height,
+        scaleX: layer.scaleX,
+        scaleY: layer.scaleY
+      } 
+    })
   }
 
   /**
