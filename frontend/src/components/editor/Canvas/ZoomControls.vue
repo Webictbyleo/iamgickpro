@@ -129,6 +129,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:zoom': [zoom: number];
   'pan-to-center': [];
+  'fit-to-screen': [];
 }>();
 
 const showSlider = ref(false);
@@ -144,7 +145,7 @@ const quickZoomLevels = [
   { label: '200%', value: 2 },
 ];
 
-// Zoom functions
+// Zoom functions - Use emits to let EditorLayout handle zoom logic
 const zoomIn = () => {
   const newZoom = Math.min(props.zoom * 1.2, props.maxZoom);
   emit('update:zoom', newZoom);
@@ -157,21 +158,15 @@ const zoomOut = () => {
 
 const actualSize = () => {
   emit('update:zoom', 1);
-  emit('pan-to-center');
 };
 
 const fitToScreen = () => {
-  const scaleX = (props.containerWidth - 100) / props.canvasWidth; // 100px padding
-  const scaleY = (props.containerHeight - 100) / props.canvasHeight; // 100px padding
-  const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
-  
-  emit('update:zoom', Math.max(scale, props.minZoom));
-  emit('pan-to-center');
+  // Emit fit-to-screen event to let EditorLayout handle with editorSDK.canvas.zoomToFit()
+  emit('fit-to-screen');
 };
 
 const setZoom = (zoom: number) => {
   emit('update:zoom', zoom);
-  emit('pan-to-center');
 };
 
 const onSliderChange = (event: Event) => {
@@ -241,25 +236,49 @@ onUnmounted(() => {
 /* Custom slider styles */
 input[type="range"] {
   -webkit-appearance: none;
+  appearance: none;
   background: transparent;
 }
 
 input[type="range"]::-webkit-slider-track {
-  @apply bg-gray-200 dark:bg-gray-700 h-1 rounded-lg;
+  background: #e5e7eb;
+  height: 0.25rem;
+  border-radius: 0.5rem;
+}
+
+.dark input[type="range"]::-webkit-slider-track {
+  background: #374151;
 }
 
 input[type="range"]::-webkit-slider-thumb {
-  @apply bg-blue-600 w-3 h-3 rounded-full cursor-pointer;
+  background: #2563eb;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
   -webkit-appearance: none;
+  appearance: none;
   margin-top: -4px;
 }
 
 input[type="range"]::-moz-range-track {
-  @apply bg-gray-200 dark:bg-gray-700 h-1 rounded-lg border-0;
+  background: #e5e7eb;
+  height: 0.25rem;
+  border-radius: 0.5rem;
+  border: 0;
+}
+
+.dark input[type="range"]::-moz-range-track {
+  background: #374151;
 }
 
 input[type="range"]::-moz-range-thumb {
-  @apply bg-blue-600 w-3 h-3 rounded-full cursor-pointer border-0;
+  background: #2563eb;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 0;
   margin-top: -4px;
 }
 </style>

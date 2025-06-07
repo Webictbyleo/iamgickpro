@@ -140,9 +140,10 @@ export interface CanvasAPI {
   // Viewport control
   centerView(): void
   zoomToFit(): void
-  zoomIn(): void
-  zoomOut(): void
   resetZoom(): void
+  setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void
+  getZoom(): number
+  setPanMode(enabled: boolean): void
   destroy(): void
 }
 

@@ -185,6 +185,11 @@ export interface ImageLayerProperties extends BaseLayerProperties {
   objectPosition: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top left' | 'top right' | 'bottom left' | 'bottom right'
   preserveAspectRatio: boolean
   quality: number
+  // Scaling and dimension properties
+  scaleMode?: 'fill' | 'fit' | 'stretch' // New: Controls how image scales within container
+  originalWidth?: number // New: Store original image dimensions
+  originalHeight?: number // New: Store original image dimensions
+  explicitDimensions?: boolean // New: Whether dimensions were explicitly set by user
   // Filter properties (following backend order and ranges)
   blur: number // 0-50px
   brightness: number // 0-3

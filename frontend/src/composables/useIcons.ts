@@ -62,7 +62,13 @@ export const useActionIcons = () => ({
   sort: createIcon('M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12'),
   more: createIcon('M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z'),
   plus: createIcon('M12 6v6m0 0v6m0-6h6m-6 0H6'),
-  minus: createIcon('M20 12H4')
+  minus: createIcon('M20 12H4'),
+  move: createIcon('M9 12l-2 2 4 4m6-6l-2-2m0 4l-2-2m8 0l-4-4m0 8l-4-4'),
+  arrowsPointingOut: createIcon('M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4'),
+  squares2x2: createIcon('M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z', '0 0 24 24'),
+  viewfinder: createIcon('M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6z', '0 0 24 24'),
+  gridDots: createIcon('M12 12h.01M12 5h.01M12 19h.01M5 12h.01M19 12h.01M5 5h.01M5 19h.01M19 5h.01M19 19h.01', '0 0 24 24'),
+  layout: createIcon('M4 4h16v4H4zM4 10h6v10H4zM12 10h8v4h-8zM12 16h8v8h-8z'),
 })
 
 // Status icons

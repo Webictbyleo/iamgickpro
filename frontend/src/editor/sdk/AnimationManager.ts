@@ -14,13 +14,7 @@ export class AnimationManager implements AnimationAPI {
     private state: EditorState,
     private emitter: EventEmitter
   ) {
-    // Debug canvas count during AnimationManager initialization
-    const beforeCanvases = document.querySelectorAll('canvas')
-    console.log(`🔍 AnimationManager: Starting constructor, global canvas count: ${beforeCanvases.length}`)
     
-    // AnimationManager initialization complete
-    const finalCanvases = document.querySelectorAll('canvas')
-    console.log(`🔍 AnimationManager: Constructor complete, global canvas count: ${finalCanvases.length}`)
   }
 
   // ============================================================================

@@ -102,7 +102,17 @@ export class CanvasManager implements CanvasAPI {
     this.stage.scale({ x: scale, y: scale })
     this.stage.position({ x, y })
     
+    // Update state to maintain consistency with setZoom method
     this.state.zoom = scale
+    this.state.panX = x
+    this.state.panY = y
+    
+    // Emit viewport change event for consistency
+    this.eventEmitter.emit('viewport:changed', { 
+      zoom: scale, 
+      panX: x, 
+      panY: y 
+    })
     this.state.panX = x
     this.state.panY = y
     
@@ -149,12 +159,38 @@ export class CanvasManager implements CanvasAPI {
     })
   }
 
-  setZoom(zoom: number): void {
+  setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void {
     const clampedZoom = Math.max(0.1, Math.min(10, zoom))
     const oldScale = this.stage.scaleX()
-    const pointer = this.stage.getPointerPosition()
     
-    if (pointer) {
+    // If zoomToCenter is true or no pointer is available, zoom to center
+    const pointer = this.stage.getPointerPosition()
+    const shouldZoomToCenter = options?.zoomToCenter || !pointer
+    
+    if (shouldZoomToCenter) {
+      // Zoom to center of the stage
+      const stageWidth = this.stage.width()
+      const stageHeight = this.stage.height()
+      const stageCenter = {
+        x: stageWidth / 2,
+        y: stageHeight / 2
+      }
+      
+      const mousePointTo = {
+        x: (stageCenter.x - this.stage.x()) / oldScale,
+        y: (stageCenter.y - this.stage.y()) / oldScale
+      }
+      
+      const newPos = {
+        x: stageCenter.x - mousePointTo.x * clampedZoom,
+        y: stageCenter.y - mousePointTo.y * clampedZoom
+      }
+      
+      this.stage.position(newPos)
+      this.state.panX = newPos.x
+      this.state.panY = newPos.y
+    } else {
+      // Zoom towards mouse pointer
       const mousePointTo = {
         x: (pointer.x - this.stage.x()) / oldScale,
         y: (pointer.y - this.stage.y()) / oldScale
@@ -199,6 +235,16 @@ export class CanvasManager implements CanvasAPI {
       panX: newPos.x, 
       panY: newPos.y 
     })
+  }
+
+  setPanMode(enabled: boolean): void {
+    if (enabled) {
+      this.stage.draggable(true)
+      this.stage.container().style.cursor = 'grab'
+    } else {
+      this.stage.draggable(false)
+      this.stage.container().style.cursor = 'default'
+    }
   }
 
   centerView(): void {
@@ -402,6 +448,29 @@ export class CanvasManager implements CanvasAPI {
         })
       }
     })
+
+    // Update cursor during stage drag for pan mode
+    this.stage.on('dragstart', () => {
+      this.stage.container().style.cursor = 'grabbing'
+    })
+
+    this.stage.on('dragend', () => {
+      // Only reset cursor if not in pan mode
+      if (!this.stage.draggable()) {
+        this.stage.container().style.cursor = 'default'
+      } else {
+        this.stage.container().style.cursor = 'grab'
+      }
+      
+      // Update state after pan
+      this.state.panX = this.stage.x()
+      this.state.panY = this.stage.y()
+      this.eventEmitter.emit('viewport:changed', { 
+        zoom: this.state.zoom, 
+        panX: this.state.panX, 
+        panY: this.state.panY 
+      })
+    })
   }
 
   private createBackground(): void {
@@ -480,15 +549,19 @@ export class CanvasManager implements CanvasAPI {
   }
 
   private getContentBounds(): { x: number, y: number, width: number, height: number } | null {
-    const nodes = this.stage.find('.layer-node')
-    if (nodes.length === 0) return null
+    // Get the main layer (first layer) which contains all the layer nodes
+    const mainLayer = this.stage.getLayers()[0]
+    if (!mainLayer) return null
+    
+    const layerNodes = mainLayer.getChildren()
+    if (layerNodes.length === 0) return null
     
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
     let maxY = -Infinity
     
-    nodes.forEach(node => {
+    layerNodes.forEach(node => {
       const bounds = node.getClientRect()
       minX = Math.min(minX, bounds.x)
       minY = Math.min(minY, bounds.y)
@@ -530,16 +603,16 @@ export class CanvasManager implements CanvasAPI {
 
   zoomIn(): void {
     const newScale = this.state.zoom * 1.2
-    this.setZoom(newScale)
+    this.setZoom(newScale, { zoomToCenter: true })
   }
 
   zoomOut(): void {
     const newScale = this.state.zoom / 1.2
-    this.setZoom(newScale)
+    this.setZoom(newScale, { zoomToCenter: true })
   }
 
   resetZoom(): void {
-    this.setZoom(1)
+    this.setZoom(1, { zoomToCenter: true })
     this.stage.position({ x: 0, y: 0 })
     this.updateState()
   }

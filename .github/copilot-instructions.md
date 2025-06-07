@@ -217,5 +217,7 @@ This is a modern web-based design platform (similar to Canva) with the following
 
 ## Test User credentials
 ### Pls use this test account for anything test and login ifor protected pages
-email: johndoe@example.com
-password:Vyhd7Y#PjTb7!TA
+**Email:** johndoe@example.com
+**Password:** Vyhd7Y#PjTb7!TA
+### Frontend Development URL
+**URL:** http://localhost:3000

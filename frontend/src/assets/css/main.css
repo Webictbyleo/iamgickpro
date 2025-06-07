@@ -47,3 +47,24 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
 }
+
+/* Canvas Editor Konva Integration */
+@layer components {
+  /* Ensure Konva canvas elements fill their container properly */
+  .konva-canvas-container canvas,
+  .konva-canvas-container .konvajs-content {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Prevent canvas layout shifts during zoom operations */
+  .konva-canvas-container {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Ensure proper canvas layering */
+  .konva-canvas-container canvas {
+    z-index: 1;
+  }
+}

@@ -93,9 +93,9 @@
               @select-layer="handleSelectLayer"
               @duplicate-layer="handleDuplicateLayer"
               @delete-layer="handleDeleteLayer"
-              @toggle-visibility="handleToggleVisibility"
-              @toggle-lock="handleToggleLock"
-              @reorder-layers="handleReorderLayers"
+              @toggle-visibility="toggleLayerVisibility"
+              @toggle-lock="toggleLayerLock"
+              @reorder-layers="reorderLayers"
             />
 
             <!-- Contextual Panels -->
@@ -115,18 +115,18 @@
             <DesignCanvas 
               :width="canvasWidth"
               :height="canvasHeight"
-              :zoom-level="zoomLevel"
               :background-color="backgroundColor"
+              :zoom-level="zoomLevel"
               :selected-layer="selectedLayer"
               :active-tool="activeTool || undefined"
               :show-floating-toolbar="true"
               @canvas-ready="handleCanvasReady"
-              @zoom-changed="handleZoomChanged"
               @tool-update="handleToolUpdate"
               @duplicate-layer="handleDuplicateSelectedLayer"
               @delete-layer="handleDeleteSelectedLayer"
               @lock-layer="handleLockSelectedLayer"
               @toggle-panel="handleTogglePanel"
+              @position-preset="handlePositionPreset"
             />
 
             <!-- Zoom Controls -->
@@ -138,6 +138,7 @@
               :container-height="canvasContainerHeight"
               @update:zoom="handleZoomChanged"
               @pan-to-center="handlePanToCenter"
+              @fit-to-screen="handleFitToScreen"
             />
           </div>
         </div>
@@ -149,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide, watch, onMounted } from 'vue'
+import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { Layer, LayerType, ImageLayerProperties } from '@/types'
 
@@ -177,6 +178,7 @@ import { useDesignEditor } from '@/composables/useDesignEditor'
 import { useLayerManagement } from '@/composables/useLayerManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { usePanelManagement } from '@/composables/usePanelManagement'
+import { useRoute } from 'vue-router'
 
 const designStore = useDesignStore()
 
@@ -204,7 +206,8 @@ const {
   saveDesign,
   exportDesign,
   undo,
-  redo
+  redo,
+  cleanup
 } = useDesignEditor()
 
 const {
@@ -254,7 +257,7 @@ useKeyboardShortcuts({
 
 // Initialize with default panel
 onMounted(() => {
-  handlePanelChange('elements')
+  
 })
 
 // Modern UI State
@@ -327,6 +330,17 @@ watch(selectedLayer, (newLayer, oldLayer) => {
 // Event handlers
 const handleToolChange = (tool: string) => {
   activeTool.value = tool as any
+  
+  // Handle tool-specific functionality
+  if (editorSDK.value?.canvas) {
+    if (tool === 'pan') {
+      // Enable pan mode
+      editorSDK.value.canvas.setPanMode(true)
+    } else {
+      // Disable pan mode for other tools
+      editorSDK.value.canvas.setPanMode(false)
+    }
+  }
   
   // When switching tools, clear any active panel if needed
   // This provides more canvas space for the user
@@ -426,22 +440,70 @@ const handleDeleteSelectedLayer = () => {
 
 const handleLockSelectedLayer = () => {
   if (selectedLayer.value) {
-    handleToggleLock(selectedLayer.value.id)
+    toggleLayerLock(selectedLayer.value.id)
   }
 }
 
-const handleToggleVisibility = (layerId: string) => {
-  toggleLayerVisibility(layerId)
+const handlePositionPreset = (preset: string) => {
+  if (!selectedLayer.value || !editorSDK.value) return
+
+  // Get canvas dimensions
+  const canvasWidth = designStore.currentDesign?.width || 800
+  const canvasHeight = designStore.currentDesign?.height || 600
+  
+  // Get layer dimensions
+  const layer = selectedLayer.value
+  const layerWidth = layer.width
+  const layerHeight = layer.height
+  
+  let x = layer.x
+  let y = layer.y
+  
+  // Calculate position based on preset
+  switch (preset) {
+    case 'top-left':
+      x = 0
+      y = 0
+      break
+    case 'top-center':
+      x = (canvasWidth - layerWidth) / 2
+      y = 0
+      break
+    case 'top-right':
+      x = canvasWidth - layerWidth
+      y = 0
+      break
+    case 'center-left':
+      x = 0
+      y = (canvasHeight - layerHeight) / 2
+      break
+    case 'center':
+      x = (canvasWidth - layerWidth) / 2
+      y = (canvasHeight - layerHeight) / 2
+      break
+    case 'center-right':
+      x = canvasWidth - layerWidth
+      y = (canvasHeight - layerHeight) / 2
+      break
+    case 'bottom-left':
+      x = 0
+      y = canvasHeight - layerHeight
+      break
+    case 'bottom-center':
+      x = (canvasWidth - layerWidth) / 2
+      y = canvasHeight - layerHeight
+      break
+    case 'bottom-right':
+      x = canvasWidth - layerWidth
+      y = canvasHeight - layerHeight
+      break
+  }
+  
+  // Update layer position
+  editorSDK.value.layers.updateLayer(layer.id, { x, y })
 }
 
-const handleToggleLock = (layerId: string) => {
-  toggleLayerLock(layerId)
-}
-
-const handleReorderLayers = (layerIds: string[]) => {
-  reorderLayers(layerIds)
-}
-
+// ...existing code...
 const handleUpdateProperty = (property: string, value: any) => {
   if (selectedLayer.value) {
     const updates = { [property]: value }
@@ -451,11 +513,24 @@ const handleUpdateProperty = (property: string, value: any) => {
 
 const handleZoomChanged = (zoom: number) => {
   zoomLevel.value = zoom
+  // Apply zoom using editorSDK with zoomToCenter option for programmatic zooms
+  if (editorSDK.value) {
+    editorSDK.value.canvas.setZoom(zoom, { zoomToCenter: true })
+  }
 }
 
 const handlePanToCenter = () => {
   // Use centerView instead of panToCenter
   editorSDK.value?.canvas.centerView()
+}
+
+const handleFitToScreen = () => {
+  // Use zoomToFit method from editorSDK
+  if (editorSDK.value) {
+    editorSDK.value.canvas.zoomToFit()
+    zoomLevel.value = editorSDK.value.canvas.getZoom() || 1
+    console.log('Canvas zoomed to fit screen:', zoomLevel.value)
+  }
 }
 
 const handleSave = () => {
@@ -621,6 +696,62 @@ const handleApplyImageEdit = (updatedProperties: any) => {
   }
   closeContextualPanels()
 }
+const route = useRoute()
+// Load design when component mounts
+onMounted(async () => {
+  const designId = route.params.id as string
+  if (designId && designId !== 'new') {
+    try {
+      const loadResult = await designStore.loadDesign(designId)
+      
+      if (!loadResult.success) {
+        console.warn(`Failed to load design ${designId}:`, loadResult.error)
+        
+        // Create a fallback design when loading fails
+        console.log('Creating fallback design due to load failure')
+        const fallbackDesign = designStore.createNewDesign(800, 600)
+        fallbackDesign.name = `Design ${designId} (Recovery)`
+        fallbackDesign.title = `Design ${designId} (Recovery)`
+        
+        // Don't save the fallback design automatically - let user decide
+        console.log('Fallback design created:', fallbackDesign)
+      }
+    } catch (error) {
+      console.error('Failed to load design:', error)
+      
+      // Create a fallback design when exception occurs
+      console.log('Creating fallback design due to exception')
+      const fallbackDesign = designStore.createNewDesign(800, 600)
+      fallbackDesign.name = `Design ${designId} (Recovery)`
+      fallbackDesign.title = `Design ${designId} (Recovery)`
+      
+      // Don't save the fallback design automatically - let user decide
+      console.log('Fallback design created:', fallbackDesign)
+    }
+  } else {
+    // Create new design
+    const newDesign = designStore.createNewDesign(800, 600)
+    newDesign.name = 'Untitled Design'
+    newDesign.title = 'Untitled Design'
+    
+    // Save the new design to the backend
+    try {
+      await designStore.saveDesign(newDesign)
+    } catch (error) {
+      console.error('Failed to save new design:', error)
+      // Design is still available locally even if save fails
+    }
+  }
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  cleanup()
+  // Optionally save the design if there are unsaved changes
+  if (hasUnsavedChanges.value) {
+    saveDesign()
+  }
+})
 
 // Provide editor context to child components
 provide('editorSDK', editorSDK)

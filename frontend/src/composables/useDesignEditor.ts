@@ -196,6 +196,7 @@ export function useDesignEditor() {
     if (hasUnsavedChanges.value && designStore.currentDesign) {
       await saveDesign()
     }
+    designStore.clearCurrentDesign()
   }
 
   return {

@@ -418,6 +418,23 @@ export const useDesignStore = defineStore('design', () => {
     selectedLayerIds.value = []
   }
 
+  // Method to clear the current design
+  const clearCurrentDesign = () => {
+    currentDesign.value = null
+    selectedLayerIds.value = []
+  }
+
+  // Method to reset the store
+  const resetStore = () => {
+    currentDesign.value = null
+    designs.value = []
+    isLoading.value = false
+    error.value = null
+    selectedLayerIds.value = []
+  }
+
+
+
   const selectedLayerIds = ref<string[]>([])
   const selectedLayers = computed(() => 
     selectedLayerIds.value.map(id => getLayerById(id)).filter(Boolean) as Layer[]
@@ -453,5 +470,7 @@ export const useDesignStore = defineStore('design', () => {
     reorderLayers,
     duplicateLayer,
     clearSelection,
+    clearCurrentDesign,
+    resetStore
   }
 })

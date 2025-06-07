@@ -22,6 +22,7 @@
           @delete-layer="$emit('delete-layer')"
           @lock-layer="$emit('lock-layer')"
           @toggle-panel="(panelType, data) => $emit('toggle-panel', panelType, data)"
+          @position-preset="(preset) => $emit('position-preset', preset)"
         />
       </Transition>
     </div>
@@ -31,7 +32,7 @@
       <div class="absolute inset-0 flex items-center justify-center p-8">
         <div
           ref="canvasContainer"
-          class="bg-white shadow-lg border relative"
+          class="bg-white shadow-lg border relative konva-canvas-container"
           :style="canvasStyle"
         >
           <!-- Konva Stage will be mounted here -->
@@ -82,15 +83,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import type { Layer } from '@/types'
 import FloatingContextToolbar from './FloatingContextToolbar.vue'
 
 interface Props {
   width: number
   height: number
-  zoomLevel: number
   backgroundColor: string
+  zoomLevel?: number
   showGrid?: boolean
   showRulers?: boolean
   selectedLayer?: Layer | null
@@ -99,6 +100,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  zoomLevel: 1,
   showGrid: false,
   showRulers: false,
   selectedLayer: null,
@@ -108,16 +110,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   canvasReady: [container: HTMLElement]
-  zoomChanged: [zoom: number]
   'tool-update': [tool: string, data: any]
   'duplicate-layer': []
   'delete-layer': []
   'lock-layer': []
   'toggle-panel': [panelType: string, data?: any]
+  'position-preset': [preset: string]
 }>()
 
 const canvasContainer = ref<HTMLElement>()
-const currentZoom = ref(props.zoomLevel)
 
 // Floating toolbar position
 const floatingToolbarPosition = computed(() => ({
@@ -126,17 +127,24 @@ const floatingToolbarPosition = computed(() => ({
 }))
 
 // Computed styles
-const canvasStyle = computed(() => ({
-  width: props.width * currentZoom.value + 'px',
-  height: props.height * currentZoom.value + 'px',
-  minWidth: props.width * currentZoom.value + 'px',
-  minHeight: props.height * currentZoom.value + 'px'
-}))
+const canvasStyle = computed(() => {
+  const scaledWidth = props.width * props.zoomLevel
+  const scaledHeight = props.height * props.zoomLevel
+  
+  return {
+    width: scaledWidth + 'px',
+    height: scaledHeight + 'px',
+    minWidth: scaledWidth + 'px',
+    minHeight: scaledHeight + 'px',
+    transform: `scale(${props.zoomLevel})`,
+    transformOrigin: 'center center'
+  }
+})
 
 const gridStyle = computed(() => {
   if (!props.showGrid) return {}
   
-  const gridSize = 20 * currentZoom.value
+  const gridSize = 20 * props.zoomLevel
   return {
     backgroundImage: `
       linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
@@ -151,10 +159,10 @@ const horizontalMarks = computed(() => {
   if (!props.showRulers) return []
   
   const marks = []
-  const step = 50 * currentZoom.value
-  const majorStep = 100 * currentZoom.value
+  const step = 50 * props.zoomLevel
+  const majorStep = 100 * props.zoomLevel
   
-  for (let i = 0; i <= props.width * currentZoom.value; i += step) {
+  for (let i = 0; i <= props.width * props.zoomLevel; i += step) {
     marks.push({
       position: i,
       size: i % majorStep === 0 ? 24 : 12
@@ -168,10 +176,10 @@ const verticalMarks = computed(() => {
   if (!props.showRulers) return []
   
   const marks = []
-  const step = 50 * currentZoom.value
-  const majorStep = 100 * currentZoom.value
+  const step = 50 * props.zoomLevel
+  const majorStep = 100 * props.zoomLevel
   
-  for (let i = 0; i <= props.height * currentZoom.value; i += step) {
+  for (let i = 0; i <= props.height * props.zoomLevel; i += step) {
     marks.push({
       position: i,
       size: i % majorStep === 0 ? 24 : 12
@@ -196,10 +204,5 @@ onMounted(async () => {
   } else {
     console.error('DesignCanvas: Container not found!')
   }
-})
-
-// Watch for external zoom changes
-watch(() => props.zoomLevel, (newZoom) => {
-  currentZoom.value = newZoom
 })
 </script>

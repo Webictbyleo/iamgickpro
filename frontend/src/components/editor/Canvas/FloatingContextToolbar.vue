@@ -69,6 +69,129 @@
         v-if="selectedLayer" 
         class="flex items-center space-x-1 ml-3 pl-3 border-l border-gray-200/60 dark:border-gray-700/60"
       >
+        <!-- Position Controls -->
+        <div class="flex items-center space-x-1 pr-2 mr-2 border-r border-gray-200/60 dark:border-gray-700/60">
+          <IconDropdown
+            :icon="PositionIcon"
+            tooltip="Position presets"
+            placement="bottom-start"
+            width="w-48"
+            :showChevron="false"
+            buttonClass="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+            iconClass="w-3.5 h-3.5"
+          >
+            <template #default="{ close }">
+              <div class="p-2">
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">Position Presets</div>
+                <div class="grid grid-cols-3 gap-1 mb-3">
+                  <!-- Top row -->
+                  <button
+                    @click="setPosition('top-left', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Top Left"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute top-0 left-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Top Left</span>
+                  </button>
+                  <button
+                    @click="setPosition('top-center', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Top Center"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Top Center</span>
+                  </button>
+                  <button
+                    @click="setPosition('top-right', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Top Right"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Top Right</span>
+                  </button>
+                  
+                  <!-- Middle row -->
+                  <button
+                    @click="setPosition('center-left', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Center Left"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute top-1/2 left-0 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Left</span>
+                  </button>
+                  <button
+                    @click="setPosition('center', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Center"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Center</span>
+                  </button>
+                  <button
+                    @click="setPosition('center-right', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Center Right"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute top-1/2 right-0 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Right</span>
+                  </button>
+                  
+                  <!-- Bottom row -->
+                  <button
+                    @click="setPosition('bottom-left', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Bottom Left"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute bottom-0 left-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Bottom Left</span>
+                  </button>
+                  <button
+                    @click="setPosition('bottom-center', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Bottom Center"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Bottom Center</span>
+                  </button>
+                  <button
+                    @click="setPosition('bottom-right', close)"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    title="Bottom Right"
+                  >
+                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                      <div class="absolute bottom-0 right-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                    </div>
+                    <span>Bottom Right</span>
+                  </button>
+                </div>
+                
+                <!-- Current position display -->
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-2 px-2">
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    Current: X: {{ Math.round(selectedLayer.x) }}, Y: {{ Math.round(selectedLayer.y) }}
+                  </div>
+                </div>
+              </div>
+            </template>
+          </IconDropdown>
+        </div>
+
         <ModernButton
           variant="ghost"
           size="xs"
@@ -116,9 +239,11 @@ import {
   DocumentDuplicateIcon, 
   TrashIcon, 
   LockClosedIcon, 
-  LockOpenIcon 
+  LockOpenIcon
 } from '@heroicons/vue/24/outline'
+import PositionIcon from '@/components/icons/PositionIcon.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
+import IconDropdown from '@/components/ui/IconDropdown.vue'
 import TextToolbar from '@/components/editor/Toolbar/TextToolbar.vue'
 import ShapeToolbar from '@/components/editor/Toolbar/ShapeToolbar.vue'
 import ImageToolbar from '@/components/editor/Toolbar/ImageToolbar.vue'
@@ -148,6 +273,7 @@ const emit = defineEmits<{
   'delete-layer': []
   'lock-layer': []
   'toggle-panel': [panelType: string, data?: any]
+  'position-preset': [preset: string]
 }>()
 
 // Tool-specific options and components - fixed 'shapes' to 'shape'
@@ -187,6 +313,12 @@ const floatingStyle = computed(() => {
 
 const handleToolUpdate = (data: any) => {
   emit('tool-update', props.activeTool || 'select', data)
+}
+
+const setPosition = (preset: string, closeCallback: () => void) => {
+  emit('position-preset', preset)
+  // Don't automatically close the dropdown when clicking presets
+  // closeCallback()
 }
 </script>
 

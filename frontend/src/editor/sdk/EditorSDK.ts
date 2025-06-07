@@ -14,6 +14,7 @@ import { LayerManager } from './LayerManager'
 import { CanvasManager } from './CanvasManager'
 import { AnimationManager } from './AnimationManager'
 import { PluginManager } from './PluginManager'
+import { TransformManager } from './TransformManager'
 import type { Layer, Design, LayerType } from '../../types'
 
 /**
@@ -25,6 +26,7 @@ export class EditorSDK extends EventEmitter {
   private canvasManager: CanvasManager
   private animationManager: AnimationManager
   private pluginManager: PluginManager
+  private transformManager: TransformManager
   
   private state: EditorState = {
     selectedLayers: [],
@@ -51,10 +53,7 @@ export class EditorSDK extends EventEmitter {
     // Clear any existing content in the container
     container.innerHTML = ''
     
-    console.log('EditorSDK: Container setup', {
-      container: container,
-      containerClasses: container.className
-    })
+    
     
     // Create Konva Stage
     this.stage = new Konva.Stage({
@@ -63,37 +62,15 @@ export class EditorSDK extends EventEmitter {
       height: config.height || 600
     })
     
-    // Debug: Log stage creation
-    console.log('EditorSDK: Stage created', {
-      container: container,
-      containerDimensions: `${container.offsetWidth}x${container.offsetHeight}`,
-      stageDimensions: `${this.stage.width()}x${this.stage.height()}`,
-      stageContainer: this.stage.container()
-    })
     
-    // Ensure canvas is properly positioned and visible
-    const canvas = container.querySelector('canvas')
-    if (canvas) {
-      canvas.style.position = 'relative'
-      canvas.style.zIndex = '10'
-      canvas.style.display = 'block'
-      console.log('EditorSDK: Canvas styled', {
-        canvasElement: canvas,
-        canvasStyle: canvas.style.cssText
-      })
-    }
-    console.log('EditorSDK: Stage created', {
-      container: container.tagName,
-      width: this.stage.width(),
-      height: this.stage.height(),
-      containerSize: `${container.offsetWidth}x${container.offsetHeight}`
-    })
+    
     
     // Initialize managers
     this.layerManager = new LayerManager(this.stage, this.state, this)
     this.canvasManager = new CanvasManager(this.stage, this.state, this)
     this.animationManager = new AnimationManager(this.state, this)
     this.pluginManager = new PluginManager(this.state, this)
+    this.transformManager = new TransformManager(this.stage, this)
     
     // Connect managers
     this.connectManagers()
@@ -109,6 +86,9 @@ export class EditorSDK extends EventEmitter {
   private connectManagers(): void {
     // Connect AnimationManager with LayerManager for layer lookup
     this.animationManager.setLayerFinder((layerId: string) => this.layerManager.getLayer(layerId))
+    
+    // Connect LayerManager with TransformManager for transformation handling
+    this.layerManager.setTransformManager(this.transformManager)
   }
 
   // ============================================================================
@@ -141,6 +121,38 @@ export class EditorSDK extends EventEmitter {
    */
   get plugins(): PluginAPI {
     return this.pluginManager as PluginAPI
+  }
+
+  /**
+   * Transform management API
+   */
+  get transform() {
+    return {
+      selectLayers: (layerIds: string[]) => {
+        const layers = layerIds.map(id => this.layerManager.getLayer(id)).filter(Boolean) as LayerNode[]
+        this.transformManager.selectLayers(layers)
+        // Update state for compatibility
+        this.state.selectedLayers = layerIds
+      },
+      selectLayer: (layerId: string) => {
+        const layer = this.layerManager.getLayer(layerId)
+        if (layer) {
+          this.transformManager.selectLayer(layer)
+          // Update state for compatibility
+          this.state.selectedLayers = [layerId]
+        }
+      },
+      deselectAll: () => {
+        this.transformManager.deselectAll()
+        // Update state for compatibility
+        this.state.selectedLayers = []
+      },
+      applyPositionPreset: (preset: string) => {
+        const canvasSize = this.canvasManager.getSize()
+        this.transformManager.applyPositionPreset(preset, canvasSize.width, canvasSize.height)
+      },
+      getSelectedLayers: () => this.transformManager.getSelectedLayers()
+    }
   }
 
   /**
@@ -263,6 +275,7 @@ export class EditorSDK extends EventEmitter {
     this.canvasManager.destroy()
     this.animationManager.destroy()
     this.pluginManager.destroy()
+    this.transformManager.destroy()
     this.stage.destroy()
     this.removeAllListeners()
   }

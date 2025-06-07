@@ -118,11 +118,13 @@
                   v-model="selectedFormat"
                   class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
                 >
-                  <option value="png">PNG - High Quality</option>
-                  <option value="jpg">JPG - Smaller Size</option>
-                  <option value="svg">SVG - Vector</option>
-                  <option value="pdf">PDF - Document</option>
-                  <option value="webp">WebP - Modern</option>
+                  <option 
+                    v-for="format in advancedFormats" 
+                    :key="format.value" 
+                    :value="format.value"
+                  >
+                    {{ format.label }}
+                  </option>
                 </select>
               </div>
 
@@ -218,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import {
   ChevronDownIcon,
@@ -229,6 +231,7 @@ import {
   Cog6ToothIcon
 } from '@heroicons/vue/24/outline'
 import NestedDropdownView from '@/components/ui/NestedDropdownView.vue'
+import { useDesignStore } from '@/stores/design'
 
 interface Props {
   compact?: boolean;
@@ -243,13 +246,43 @@ const emit = defineEmits<{
   'advanced-export': []
 }>()
 
+// Design store to access current design
+const designStore = useDesignStore()
+
 // Advanced export state
 const selectedFormat = ref('png')
 const exportQuality = ref(90)
 const exportScale = ref(1)
 const exportBackground = ref<'transparent' | 'white'>('transparent')
 
-const moreFormats = [
+// Check if current design has animations
+const hasAnimations = computed(() => {
+  const { currentDesign } = designStore
+  if (!currentDesign?.designData?.layers) return false
+  
+  // Check if any layer has animation data or is a video layer
+  return currentDesign.designData.layers.some((layer: any) => {
+    // Check for video layer type
+    if (layer.type === 'video') {
+      return true
+    }
+    
+    // Check for animations property (backend entity structure)
+    if (layer.animations && Array.isArray(layer.animations) && layer.animations.length > 0) {
+      return true
+    }
+    
+    // Check for animation properties in layer properties
+    if (layer.properties?.animation) {
+      return true
+    }
+    
+    return false
+  })
+})
+
+// Base formats that are always available
+const baseFormats = [
   { 
     value: 'svg', 
     label: 'SVG Vector', 
@@ -267,14 +300,57 @@ const moreFormats = [
     label: 'WebP Modern', 
     extension: '.webp',
     icon: PhotoIcon
-  },
+  }
+]
+
+// Animation formats (only shown when design has animations)
+const animationFormats = [
   { 
     value: 'gif', 
     label: 'Animated GIF', 
     extension: '.gif',
     icon: FilmIcon
+  },
+  { 
+    value: 'mp4', 
+    label: 'MP4 Video', 
+    extension: '.mp4',
+    icon: FilmIcon
   }
 ]
+
+// Computed property for formats available in "More Formats" section
+const moreFormats = computed(() => {
+  const formats = [...baseFormats]
+  
+  // Add animation formats if design has animations
+  if (hasAnimations.value) {
+    formats.push(...animationFormats)
+  }
+  
+  return formats
+})
+
+// Computed property for formats available in advanced export
+const advancedFormats = computed(() => {
+  const formats = [
+    { value: 'png', label: 'PNG - High Quality' },
+    { value: 'jpg', label: 'JPG - Smaller Size' },
+    { value: 'svg', label: 'SVG - Vector' },
+    { value: 'pdf', label: 'PDF - Document' },
+    { value: 'webp', label: 'WebP - Modern' }
+  ]
+  
+  // Add animation formats if design has animations
+  if (hasAnimations.value) {
+    formats.push(
+      { value: 'gif', label: 'GIF - Animation' },
+      { value: 'mp4', label: 'MP4 - Video' }
+    )
+  }
+  
+  return formats
+})
 
 const handleExport = (format: string) => {
   emit('export', format)

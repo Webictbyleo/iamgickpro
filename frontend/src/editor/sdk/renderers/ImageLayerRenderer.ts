@@ -66,6 +66,12 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     const properties = layer.properties as ImageLayerProperties
     const imageNode = node.findOne('Image') as Konva.Image
 
+    // Update group dimensions
+    node.setAttrs({
+      width: layer.width,
+      height: layer.height
+    })
+
     // Update image source if changed
     if (properties.src && (!imageNode || (imageNode.image() as HTMLImageElement)?.src !== properties.src)) {
       const placeholder = node.findOne('Rect') as Konva.Rect
@@ -76,6 +82,12 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
 
     // Update transforms and positioning if image exists
     if (imageNode) {
+      // Re-apply scaling with new layer dimensions for proper clipping
+      const img = imageNode.image() as HTMLImageElement
+      if (img) {
+        this.applyImageScaling(imageNode, img, layer, properties)
+      }
+      
       this.applyImageTransforms(imageNode, layer, properties)
       
       // Update filters if present
@@ -142,7 +154,28 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         height: layer.height
       })
 
+      // Store the real image dimensions for proper scaling and clipping
       const properties = layer.properties as ImageLayerProperties
+      
+      // Update layer properties with actual image dimensions if not already set
+      if (!properties.originalWidth || !properties.originalHeight) {
+        properties.originalWidth = img.width
+        properties.originalHeight = img.height
+        
+        // Update layer dimensions to match image aspect ratio if not explicitly set
+        if (!properties.explicitDimensions) {
+          const aspectRatio = img.width / img.height
+          if (layer.width / layer.height !== aspectRatio) {
+            // Adjust dimensions to maintain aspect ratio, keeping the larger dimension
+            if (layer.width / aspectRatio > layer.height) {
+              layer.height = layer.width / aspectRatio
+            } else {
+              layer.width = layer.height * aspectRatio
+            }
+          }
+        }
+      }
+
       this.applyImageScaling(imageNode, img, layer, properties)
       this.applyImageTransforms(imageNode, layer, properties)
 
@@ -167,32 +200,91 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     layer: LayerNode,
     properties: ImageLayerProperties
   ): void {
-    // Default to 'contain' behavior - scale to fit while preserving aspect ratio
-    const containerRatio = layer.width / layer.height
-    const imageRatio = img.width / img.height
+    // Store original image dimensions for clipping calculations
+    if (!imageNode.getAttr('originalWidth')) {
+      imageNode.setAttr('originalWidth', img.width)
+      imageNode.setAttr('originalHeight', img.height)
+    }
 
-    if (properties.preserveAspectRatio !== false) {
-      // Contain behavior: scale to fit within container while preserving aspect ratio
+    const originalWidth = imageNode.getAttr('originalWidth')
+    const originalHeight = imageNode.getAttr('originalHeight')
+    const containerWidth = layer.width
+    const containerHeight = layer.height
+
+    // Determine scaling mode
+    const scaleMode = properties.scaleMode || 'fill' // Default to fill for Canva-like behavior
+    
+    if (scaleMode === 'fill') {
+      // Fill mode: Scale image to fill container completely with proper cropping
+      // This creates the Canva-style behavior where images fill the container
+      
+      // Set the display size to match container
+      imageNode.setAttrs({
+        width: containerWidth,
+        height: containerHeight,
+        x: 0,
+        y: 0
+      })
+
+      // Calculate crop using Konva's proper crop method
+      const crop = this.getCrop(
+        { width: originalWidth, height: originalHeight },
+        { width: containerWidth, height: containerHeight },
+        properties.objectPosition || 'center-middle'
+      )
+      
+      // Apply crop attributes
+      imageNode.setAttrs({
+        cropX: crop.cropX,
+        cropY: crop.cropY,
+        cropWidth: crop.cropWidth,
+        cropHeight: crop.cropHeight
+      })
+    } else if (scaleMode === 'fit' || properties.preserveAspectRatio !== false) {
+      // Fit/Contain mode: Scale to fit within container while preserving aspect ratio
+      const imageRatio = originalWidth / originalHeight
+      const containerRatio = containerWidth / containerHeight
+      
       if (imageRatio > containerRatio) {
-        const height = layer.width / imageRatio
+        const height = containerWidth / imageRatio
         imageNode.setAttrs({
-          width: layer.width,
+          width: containerWidth,
           height: height,
-          y: (layer.height - height) / 2
+          x: 0,
+          y: (containerHeight - height) / 2
         })
       } else {
-        const width = layer.height * imageRatio
+        const width = containerHeight * imageRatio
         imageNode.setAttrs({
           width: width,
-          height: layer.height,
-          x: (layer.width - width) / 2
+          height: containerHeight,
+          x: (containerWidth - width) / 2,
+          y: 0
         })
       }
-    } else {
-      // Fill behavior: stretch to fill container exactly
+      
+      // No clipping needed in fit mode - clear any existing crop
       imageNode.setAttrs({
-        width: layer.width,
-        height: layer.height
+        cropX: undefined,
+        cropY: undefined,
+        cropWidth: undefined,
+        cropHeight: undefined
+      })
+    } else {
+      // Stretch mode: stretch to fill container exactly (no aspect ratio preservation)
+      imageNode.setAttrs({
+        width: containerWidth,
+        height: containerHeight,
+        x: 0,
+        y: 0
+      })
+      
+      // No clipping needed in stretch mode - clear any existing crop
+      imageNode.setAttrs({
+        cropX: undefined,
+        cropY: undefined,
+        cropWidth: undefined,
+        cropHeight: undefined
       })
     }
   }
@@ -310,70 +402,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         offsetY
       })
     }
-
-    // Handle object positioning for cropping/positioning within container
-    this.applyObjectPosition(imageNode, layer, properties)
-  }
-
-  private applyObjectPosition(
-    imageNode: Konva.Image,
-    layer: LayerNode,
-    properties: ImageLayerProperties
-  ): void {
-    const position = properties.objectPosition || 'center'
-    
-    // This method adjusts the image position within its container
-    // based on the objectPosition property (similar to CSS object-position)
-    const imageWidth = imageNode.width()
-    const imageHeight = imageNode.height()
-    const containerWidth = layer.width
-    const containerHeight = layer.height
-    
-    let x = imageNode.x()
-    let y = imageNode.y()
-    
-    // Calculate positioning based on objectPosition value
-    switch (position) {
-      case 'top':
-        x = (containerWidth - imageWidth) / 2
-        y = 0
-        break
-      case 'bottom':
-        x = (containerWidth - imageWidth) / 2
-        y = containerHeight - imageHeight
-        break
-      case 'left':
-        x = 0
-        y = (containerHeight - imageHeight) / 2
-        break
-      case 'right':
-        x = containerWidth - imageWidth
-        y = (containerHeight - imageHeight) / 2
-        break
-      case 'top left':
-        x = 0
-        y = 0
-        break
-      case 'top right':
-        x = containerWidth - imageWidth
-        y = 0
-        break
-      case 'bottom left':
-        x = 0
-        y = containerHeight - imageHeight
-        break
-      case 'bottom right':
-        x = containerWidth - imageWidth
-        y = containerHeight - imageHeight
-        break
-      case 'center':
-      default:
-        x = (containerWidth - imageWidth) / 2
-        y = (containerHeight - imageHeight) / 2
-        break
-    }
-    
-    imageNode.setAttrs({ x, y })
   }
 
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {
@@ -398,5 +426,98 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       const container = group.getStage()?.container()
       if (container) container.style.cursor = 'default'
     })
+  }
+
+  // Function to calculate crop values from source image, its visible size and a crop strategy
+  // Based on Konva.js documentation: https://konvajs.org/docs/sandbox/Scale_Image_To_Fit.html
+  private getCrop(
+    image: { width: number; height: number }, 
+    size: { width: number; height: number }, 
+    clipPosition: string = 'center-middle'
+  ): { cropX: number; cropY: number; cropWidth: number; cropHeight: number } {
+    const width = size.width
+    const height = size.height
+    const aspectRatio = width / height
+
+    let newWidth: number
+    let newHeight: number
+
+    const imageRatio = image.width / image.height
+
+    // Calculate the crop dimensions to fill the container
+    if (aspectRatio >= imageRatio) {
+      newWidth = image.width
+      newHeight = image.width / aspectRatio
+    } else {
+      newWidth = image.height * aspectRatio
+      newHeight = image.height
+    }
+
+    let x = 0
+    let y = 0
+    
+    // Map our objectPosition values to Konva crop positions
+    const position = this.mapObjectPositionToCropPosition(clipPosition)
+    
+    if (position === 'left-top') {
+      x = 0
+      y = 0
+    } else if (position === 'left-middle') {
+      x = 0
+      y = (image.height - newHeight) / 2
+    } else if (position === 'left-bottom') {
+      x = 0
+      y = image.height - newHeight
+    } else if (position === 'center-top') {
+      x = (image.width - newWidth) / 2
+      y = 0
+    } else if (position === 'center-middle') {
+      x = (image.width - newWidth) / 2
+      y = (image.height - newHeight) / 2
+    } else if (position === 'center-bottom') {
+      x = (image.width - newWidth) / 2
+      y = image.height - newHeight
+    } else if (position === 'right-top') {
+      x = image.width - newWidth
+      y = 0
+    } else if (position === 'right-middle') {
+      x = image.width - newWidth
+      y = (image.height - newHeight) / 2
+    } else if (position === 'right-bottom') {
+      x = image.width - newWidth
+      y = image.height - newHeight
+    }
+
+    return {
+      cropX: x,
+      cropY: y,
+      cropWidth: newWidth,
+      cropHeight: newHeight,
+    }
+  }
+
+  // Map CSS object-position values to Konva crop position values
+  private mapObjectPositionToCropPosition(objectPosition: string): string {
+    switch (objectPosition) {
+      case 'top':
+        return 'center-top'
+      case 'bottom':
+        return 'center-bottom'
+      case 'left':
+        return 'left-middle'
+      case 'right':
+        return 'right-middle'
+      case 'top left':
+        return 'left-top'
+      case 'top right':
+        return 'right-top'
+      case 'bottom left':
+        return 'left-bottom'
+      case 'bottom right':
+        return 'right-bottom'
+      case 'center':
+      default:
+        return 'center-middle'
+    }
   }
 }

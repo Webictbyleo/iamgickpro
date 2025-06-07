@@ -16,8 +16,8 @@
     <div class="flex items-center space-x-2">
       <label class="text-sm font-medium text-gray-700">Fill:</label>
       <PropertyColorPicker
-        :value="fill"
-        @update="$emit('update', { fill: $event })"
+        :value="getFillColorString(props.fill)"
+        @update="handleFillUpdate"
         allow-gradient
       />
     </div>
@@ -26,8 +26,8 @@
     <div class="flex items-center space-x-2">
       <label class="text-sm font-medium text-gray-700">Stroke:</label>
       <PropertyColorPicker
-        :value="stroke"
-        @update="$emit('update', { stroke: $event })"
+        :value="getStrokeColorString(props.stroke)"
+        @update="handleStrokeUpdate"
       />
     </div>
 
@@ -76,11 +76,12 @@ import PropertyInput from '@/components/editor/Properties/PropertyInput.vue'
 import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue'
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue'
 import ShadowIcon from '@/components/icons/ShadowIcon.vue'
+import type { ShapeFillConfig } from '@/types'
 
 interface Props {
   shapeType?: string
-  fill?: string
-  stroke?: string
+  fill?: string | ShapeFillConfig
+  stroke?: string | ShapeFillConfig
   strokeWidth?: number
   borderRadius?: number
   hasShadow?: boolean
@@ -98,6 +99,91 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   update: [properties: Partial<Props>]
 }>()
+
+// Helper functions to convert between ShapeFillConfig and string values
+function getFillColorString(fill: string | ShapeFillConfig | undefined): string {
+  if (!fill) return '#3498db'
+  if (typeof fill === 'string') return fill
+  
+  // Handle ShapeFillConfig object
+  if (fill.type === 'solid') {
+    return fill.color || '#3498db'
+  } else if (fill.type === 'linear' && fill.colors && fill.colors.length >= 2) {
+    // Convert gradient to CSS linear-gradient string
+    const angle = fill.angle || 0
+    const stops = fill.colors || []
+    const stopStrings = stops.map(stop => `${stop.color} ${stop.stop * 100}%`)
+    return `linear-gradient(${angle}deg, ${stopStrings.join(', ')})`
+  } else if (fill.type === 'radial' && fill.colors && fill.colors.length >= 2) {
+    // Convert radial gradient to CSS radial-gradient string
+    const stops = fill.colors || []
+    const stopStrings = stops.map(stop => `${stop.color} ${stop.stop * 100}%`)
+    return `radial-gradient(circle, ${stopStrings.join(', ')})`
+  }
+  
+  return fill.color || '#3498db'
+}
+
+function getStrokeColorString(stroke: string | ShapeFillConfig | undefined): string {
+  if (!stroke) return '#2980b9'
+  if (typeof stroke === 'string') return stroke
+  
+  // Handle ShapeFillConfig object - stroke is typically solid color
+  if (stroke.type === 'solid') {
+    return stroke.color || '#2980b9'
+  }
+  
+  return stroke.color || '#2980b9'
+}
+
+function handleFillUpdate(colorValue: string) {
+  // Convert string back to appropriate format
+  if (colorValue.startsWith('linear-gradient') || colorValue.startsWith('radial-gradient')) {
+    // For gradients, create a ShapeFillConfig object
+    const fillConfig: ShapeFillConfig = {
+      type: colorValue.startsWith('linear-gradient') ? 'linear' : 'radial',
+      color: colorValue,
+      opacity: 1,
+      ...parseGradientString(colorValue)
+    }
+    emit('update', { fill: fillConfig })
+  } else {
+    // For solid colors, can send as string or ShapeFillConfig
+    emit('update', { fill: colorValue })
+  }
+}
+
+function handleStrokeUpdate(colorValue: string) {
+  // Stroke is typically a solid color
+  emit('update', { stroke: colorValue })
+}
+
+function parseGradientString(gradientStr: string) {
+  // Basic gradient parsing - this is a simplified version
+  // In a real implementation, you'd want more robust CSS gradient parsing
+  const isLinear = gradientStr.startsWith('linear-gradient')
+  
+  if (isLinear) {
+    return {
+      angle: 0, // Default angle
+      colors: [
+        { color: '#3498db', stop: 0 },
+        { color: '#2980b9', stop: 1 }
+      ]
+    }
+  } else {
+    // Radial gradient
+    return {
+      centerX: 0.5,
+      centerY: 0.5,
+      radius: 0.5,
+      colors: [
+        { color: '#3498db', stop: 0 },
+        { color: '#2980b9', stop: 1 }
+      ]
+    }
+  }
+}
 
 const shapeOptions = [
   { value: 'rectangle', label: 'Rectangle' },
