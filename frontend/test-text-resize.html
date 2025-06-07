@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Auto-Resize Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #666;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ccc;
+            position: relative;
+            background: #fafafa;
+        }
+        
+        .controls {
+            margin-top: 10px;
+        }
+        
+        .controls button {
+            margin: 5px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background: #0056b3;
+        }
+        
+        .log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Auto-Resize Height Expansion Test</h1>
+        
+        <div class="test-section">
+            <h2>Canva-Style Text Resizing with Auto Height</h2>
+            <p>This test verifies that text layers automatically expand their height when width is constrained and text wraps to multiple lines.</p>
+            
+            <div id="canvas-container"></div>
+            
+            <div class="controls">
+                <button onclick="addShortText()">Add Short Text</button>
+                <button onclick="addLongText()">Add Long Text</button>
+                <button onclick="clearCanvas()">Clear Canvas</button>
+                <button onclick="testResize()">Test Auto-Resize</button>
+            </div>
+            
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let stage, layer, transformer;
+        let textCounter = 0;
+        
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function initCanvas() {
+            // Create stage
+            stage = new Konva.Stage({
+                container: 'canvas-container',
+                width: document.getElementById('canvas-container').offsetWidth,
+                height: 600
+            });
+            
+            // Create main layer
+            layer = new Konva.Layer();
+            stage.add(layer);
+            
+            // Create transformer
+            transformer = new Konva.Transformer({
+                enabledAnchors: [
+                    'top-left', 'top-right', 'bottom-left', 'bottom-right',
+                    'middle-left', 'middle-right'
+                ],
+                boundBoxFunc: function(oldBox, newBox) {
+                    const activeAnchor = transformer.getActiveAnchor();
+                    log(`Resize with anchor: ${activeAnchor}`);
+                    
+                    // Middle handles: constrain width only
+                    if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
+                        if (newBox.width < 50) newBox.width = 50;
+                        if (newBox.width > 500) newBox.width = 500;
+                        // Keep original height (text will wrap and expand)
+                        newBox.height = oldBox.height;
+                    }
+                    
+                    return newBox;
+                }
+            });
+            layer.add(transformer);
+            
+            // Handle transform events
+            transformer.on('transform', function() {
+                const nodes = transformer.nodes();
+                if (nodes.length === 1 && nodes[0] instanceof Konva.Text) {
+                    handleTextTransform(nodes[0]);
+                }
+            });
+            
+            transformer.on('transformend', function() {
+                const nodes = transformer.nodes();
+                if (nodes.length === 1 && nodes[0] instanceof Konva.Text) {
+                    handleTextTransformEnd(nodes[0]);
+                }
+            });
+            
+            log('Canvas initialized successfully');
+        }
+        
+        function handleTextTransform(textNode) {
+            const activeAnchor = transformer.getActiveAnchor();
+            
+            if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
+                // Middle handle: resize width and auto-adjust height
+                const scaleX = textNode.scaleX();
+                const newWidth = textNode.width() * Math.abs(scaleX);
+                
+                // Apply width
+                textNode.scaleX(1);
+                textNode.scaleY(1);
+                textNode.width(newWidth);
+                textNode.wrap('word');
+                
+                // Clear cache and measure new height
+                textNode._clearCache('text');
+                const newHeight = textNode.getTextHeight();
+                textNode.height(newHeight);
+                
+                log(`Width resized to: ${newWidth.toFixed(1)}px, Height auto-adjusted to: ${newHeight.toFixed(1)}px`);
+            }
+        }
+        
+        function handleTextTransformEnd(textNode) {
+            const activeAnchor = transformer.getActiveAnchor();
+            log(`Transform ended with anchor: ${activeAnchor}`);
+            log(`Final dimensions: ${textNode.width().toFixed(1)}x${textNode.height().toFixed(1)}`);
+        }
+        
+        function createTextNode(text, x, y, width) {
+            textCounter++;
+            
+            const textNode = new Konva.Text({
+                x: x,
+                y: y,
+                text: text,
+                fontSize: 16,
+                fontFamily: 'Arial',
+                fill: '#333',
+                width: width,
+                wrap: 'word',
+                align: 'left',
+                verticalAlign: 'top',
+                lineHeight: 1.2,
+                draggable: true,
+                name: `text-${textCounter}`
+            });
+            
+            // Calculate initial height based on content
+            textNode._clearCache('text');
+            const initialHeight = textNode.getTextHeight();
+            textNode.height(initialHeight);
+            
+            // Add click handler for selection
+            textNode.on('click', function() {
+                transformer.nodes([textNode]);
+                layer.draw();
+                log(`Selected text: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`);
+            });
+            
+            layer.add(textNode);
+            layer.draw();
+            
+            log(`Created text node ${textCounter}: ${width}x${initialHeight.toFixed(1)} px`);
+            
+            return textNode;
+        }
+        
+        function addShortText() {
+            const text = "Short text sample";
+            const x = Math.random() * 300 + 50;
+            const y = Math.random() * 200 + 50;
+            createTextNode(text, x, y, 200);
+        }
+        
+        function addLongText() {
+            const text = "This is a much longer text sample that should demonstrate how text automatically wraps to multiple lines when the width is constrained, and how the height should automatically expand to accommodate all the wrapped content without cutting off any text.";
+            const x = Math.random() * 300 + 50;
+            const y = Math.random() * 200 + 50;
+            createTextNode(text, x, y, 200);
+        }
+        
+        function clearCanvas() {
+            // Remove all text nodes
+            const textNodes = layer.find('Text');
+            textNodes.forEach(node => node.destroy());
+            transformer.nodes([]);
+            layer.draw();
+            textCounter = 0;
+            log('Canvas cleared');
+        }
+        
+        function testResize() {
+            const textNodes = layer.find('Text');
+            if (textNodes.length === 0) {
+                log('No text nodes to test. Add some text first.');
+                return;
+            }
+            
+            const textNode = textNodes[0];
+            const originalWidth = textNode.width();
+            const newWidth = originalWidth * 0.7; // Make narrower to force wrapping
+            
+            textNode.width(newWidth);
+            textNode.wrap('word');
+            textNode._clearCache('text');
+            const newHeight = textNode.getTextHeight();
+            textNode.height(newHeight);
+            
+            layer.draw();
+            
+            log(`Test resize: ${originalWidth.toFixed(1)} -> ${newWidth.toFixed(1)}px width`);
+            log(`Height adjusted to: ${newHeight.toFixed(1)}px`);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', initCanvas);
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (stage) {
+                stage.width(document.getElementById('canvas-container').offsetWidth);
+                layer.draw();
+            }
+        });
+    </script>
+</body>
+</html>

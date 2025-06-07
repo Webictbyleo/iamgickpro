@@ -200,6 +200,112 @@
             multiline
             :rows="3"
           />
+
+          <!-- Auto-Resize Configuration -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                Auto-Resize
+              </h5>
+              <PropertyToggle
+                :active="selectedLayer.properties?.autoResize?.enabled || false"
+                @update="updateAutoResizeEnabled"
+                tooltip="Enable auto-resize to automatically adjust text layer dimensions"
+              />
+            </div>
+            
+            <div v-if="selectedLayer.properties?.autoResize?.enabled" class="space-y-3 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+              <!-- Auto-Resize Mode -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Resize Mode
+                </label>
+                <PropertyDropdown
+                  :value="selectedLayer.properties?.autoResize?.mode || 'none'"
+                  :options="autoResizeModeOptions"
+                  @update="updateAutoResizeMode"
+                />
+              </div>
+              
+              <!-- Constraints -->
+              <div v-if="selectedLayer.properties?.autoResize?.mode !== 'none'" class="space-y-3">
+                <h6 class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Constraints
+                </h6>
+                
+                <!-- Width Constraints -->
+                <div v-if="selectedLayer.properties?.autoResize?.mode === 'width' || selectedLayer.properties?.autoResize?.mode === 'both'" class="grid grid-cols-2 gap-2">
+                  <PropertyInput
+                    label="Min Width"
+                    type="number"
+                    :value="selectedLayer.properties?.autoResize?.minWidth || 50"
+                    @update:value="updateAutoResizeMinWidth"
+                    suffix="px"
+                    :min="10"
+                    :max="2000"
+                  />
+                  <PropertyInput
+                    label="Max Width"
+                    type="number"
+                    :value="selectedLayer.properties?.autoResize?.maxWidth || 800"
+                    @update:value="updateAutoResizeMaxWidth"
+                    suffix="px"
+                    :min="50"
+                    :max="2000"
+                  />
+                </div>
+                
+                <!-- Height Constraints -->
+                <div v-if="selectedLayer.properties?.autoResize?.mode === 'height' || selectedLayer.properties?.autoResize?.mode === 'both'" class="grid grid-cols-2 gap-2">
+                  <PropertyInput
+                    label="Min Height"
+                    type="number"
+                    :value="selectedLayer.properties?.autoResize?.minHeight || 20"
+                    @update:value="updateAutoResizeMinHeight"
+                    suffix="px"
+                    :min="10"
+                    :max="1000"
+                  />
+                  <PropertyInput
+                    label="Max Height"
+                    type="number"
+                    :value="selectedLayer.properties?.autoResize?.maxHeight || 400"
+                    @update:value="updateAutoResizeMaxHeight"
+                    suffix="px"
+                    :min="20"
+                    :max="1000"
+                  />
+                </div>
+                
+                <!-- Padding -->
+                <div class="space-y-2">
+                  <label class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Padding
+                  </label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <PropertyInput
+                      label="Horizontal"
+                      type="number"
+                      :value="(selectedLayer.properties?.autoResize?.padding?.left || 4) + (selectedLayer.properties?.autoResize?.padding?.right || 4)"
+                      @update:value="updateAutoResizePaddingHorizontal"
+                      suffix="px"
+                      :min="0"
+                      :max="50"
+                    />
+                    <PropertyInput
+                      label="Vertical"
+                      type="number"
+                      :value="(selectedLayer.properties?.autoResize?.padding?.top || 4) + (selectedLayer.properties?.autoResize?.padding?.bottom || 4)"
+                      @update:value="updateAutoResizePaddingVertical"
+                      suffix="px"
+                      :min="0"
+                      :max="50"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           
           <!-- Note about text formatting -->
           <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-md">
@@ -254,13 +360,6 @@
           <h4 class="text-sm font-medium text-gray-900 dark:text-white">
             Image Properties
           </h4>
-          
-          <PropertyDropdown
-            label="Object Fit"
-            :value="selectedLayer.properties?.objectFit || 'contain'"
-            :options="objectFitOptions"
-            @update:value="updateObjectFit"
-          />
 
           <!-- Image Filters -->
           <div class="space-y-3">
@@ -439,11 +538,12 @@ const textAlignOptions = [
   { label: 'Justify', value: 'justify' },
 ];
 
-const objectFitOptions = [
-  { label: 'Contain', value: 'contain' },
-  { label: 'Cover', value: 'cover' },
-  { label: 'Fill', value: 'fill' },
-  { label: 'Scale Down', value: 'scale-down' },
+// Auto-resize mode options
+const autoResizeModeOptions = [
+  { label: 'None', value: 'none' },
+  { label: 'Width Only', value: 'width' },
+  { label: 'Height Only', value: 'height' },
+  { label: 'Both Dimensions', value: 'both' },
 ];
 
 // Helper functions
@@ -541,6 +641,76 @@ const updateTextContent = (value: string) => {
   }
 };
 
+// Auto-resize properties
+const updateAutoResizeEnabled = (value: boolean) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.enabled', value);
+    
+    // Set default values when enabling auto-resize
+    if (value && !selectedLayer.value.properties?.autoResize) {
+      const defaultConfig = {
+        enabled: true,
+        mode: 'width',
+        minWidth: 50,
+        maxWidth: 800,
+        minHeight: 20,
+        maxHeight: 400,
+        padding: { top: 4, right: 4, bottom: 4, left: 4 }
+      };
+      
+      Object.entries(defaultConfig).forEach(([key, val]) => {
+        designStore.updateLayerProperty(selectedLayer.value.id, `properties.autoResize.${key}`, val);
+      });
+    }
+  }
+};
+
+const updateAutoResizeMode = (value: string | number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.mode', String(value));
+  }
+};
+
+const updateAutoResizeMinWidth = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.minWidth', value);
+  }
+};
+
+const updateAutoResizeMaxWidth = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.maxWidth', value);
+  }
+};
+
+const updateAutoResizeMinHeight = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.minHeight', value);
+  }
+};
+
+const updateAutoResizeMaxHeight = (value: number) => {
+  if (selectedLayer.value) {
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.maxHeight', value);
+  }
+};
+
+const updateAutoResizePaddingHorizontal = (value: number) => {
+  if (selectedLayer.value) {
+    const horizontalPadding = value / 2;
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.padding.left', horizontalPadding);
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.padding.right', horizontalPadding);
+  }
+};
+
+const updateAutoResizePaddingVertical = (value: number) => {
+  if (selectedLayer.value) {
+    const verticalPadding = value / 2;
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.padding.top', verticalPadding);
+    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.autoResize.padding.bottom', verticalPadding);
+  }
+};
+
 // Shape properties
 const updateShapeFill = (value: string) => {
   if (selectedLayer.value) {
@@ -567,12 +737,6 @@ const updateCornerRadius = (value: number) => {
 };
 
 // Image properties
-const updateObjectFit = (value: string) => {
-  if (selectedLayer.value) {
-    designStore.updateLayerProperty(selectedLayer.value.id, 'properties.objectFit', value);
-  }
-};
-
 const updateBrightness = (value: number) => {
   if (selectedLayer.value) {
     designStore.updateLayerProperty(selectedLayer.value.id, 'properties.brightness', value);

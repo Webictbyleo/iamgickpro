@@ -93,14 +93,12 @@ import { ref, computed } from 'vue'
 import {
   CursorArrowRaysIcon,
   HandRaisedIcon,
-  DocumentTextIcon,
-  Square3Stack3DIcon,
-  PhotoIcon,
   Squares2X2Icon,
   Square3Stack3DIcon as LayersIcon,
   PlayIcon,
   SwatchIcon,
-  DocumentDuplicateIcon
+  DocumentDuplicateIcon,
+  FilmIcon
 } from '@heroicons/vue/24/outline'
 
 interface Tool {
@@ -127,19 +125,17 @@ const emit = defineEmits<{
 const activeTool = ref('select')
 const activePanel = ref('elements')
 
-// Tool configuration
+// Tool configuration - keeping only essential editor tools
 const tools: Tool[] = [
   { id: 'select', icon: CursorArrowRaysIcon, tooltip: 'Select Tool', shortcut: 'V' },
-  { id: 'pan', icon: HandRaisedIcon, tooltip: 'Pan Tool', shortcut: 'H' },
-  { id: 'text', icon: DocumentTextIcon, tooltip: 'Text Tool', shortcut: 'T' },
-  { id: 'shapes', icon: Square3Stack3DIcon, tooltip: 'Shapes Tool', shortcut: 'R' }
+  { id: 'pan', icon: HandRaisedIcon, tooltip: 'Pan Tool', shortcut: 'H' }
 ]
 
 // Panel configuration
 const panels: Panel[] = [
   { id: 'elements', icon: Squares2X2Icon, label: 'Elements' },
   { id: 'templates', icon: DocumentDuplicateIcon, label: 'Templates' },
-  { id: 'media', icon: PhotoIcon, label: 'Media' },
+  { id: 'media', icon: FilmIcon, label: 'Media' },
   { id: 'layers', icon: LayersIcon, label: 'Layers' },
   { id: 'animation', icon: PlayIcon, label: 'Animation' },
   { id: 'colors', icon: SwatchIcon, label: 'Colors' }

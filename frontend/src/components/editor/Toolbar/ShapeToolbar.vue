@@ -8,6 +8,7 @@
         :options="shapeOptions"
         @update="$emit('update', { shapeType: String($event) })"
         class="w-32"
+        :show-dropdown-icon="false"
       />
     </div>
 

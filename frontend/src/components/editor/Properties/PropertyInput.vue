@@ -1,7 +1,33 @@
 <template>
-  <input
+  <div v-if="label" class="space-y-1">
+    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+      {{ label }}
+    </label>
+    <component
+      :is="multiline ? 'textarea' : 'input'"
+      :value="value"
+      :type="multiline ? undefined : type"
+      :rows="multiline ? rows : undefined"
+      :min="min"
+      :max="max"
+      :step="step"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :class="inputClasses"
+      @input="handleInput"
+      @blur="handleBlur"
+      @keydown.enter="multiline ? undefined : handleBlur"
+    />
+    <div v-if="suffix && type !== 'range'" class="text-xs text-gray-500 dark:text-gray-400">
+      {{ formattedValue }} {{ suffix }}
+    </div>
+  </div>
+  <component
+    v-else
+    :is="multiline ? 'textarea' : 'input'"
     :value="value"
-    :type="type"
+    :type="multiline ? undefined : type"
+    :rows="multiline ? rows : undefined"
     :min="min"
     :max="max"
     :step="step"
@@ -10,7 +36,7 @@
     :class="inputClasses"
     @input="handleInput"
     @blur="handleBlur"
-    @keydown.enter="handleBlur"
+    @keydown.enter="multiline ? undefined : handleBlur"
   />
 </template>
 
@@ -25,13 +51,19 @@ interface Props {
   min?: number
   max?: number
   step?: number
+  label?: string
+  multiline?: boolean
+  rows?: number
+  suffix?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   type: 'text',
   placeholder: '',
   disabled: false,
-  step: 1
+  step: 1,
+  multiline: false,
+  rows: 3
 })
 
 const emit = defineEmits<{
@@ -44,6 +76,13 @@ const inputClasses = computed(() => [
   'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50',
   'transition-colors duration-200'
 ])
+
+const formattedValue = computed(() => {
+  if (props.type === 'number') {
+    return typeof props.value === 'number' ? props.value.toString() : props.value
+  }
+  return props.value
+})
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement

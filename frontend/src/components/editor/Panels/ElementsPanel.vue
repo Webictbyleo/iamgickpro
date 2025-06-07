@@ -144,8 +144,7 @@ const basicElements: ElementConfig[] = [
     icon: PhotoIcon,
     defaultProps: {
       src: 'https://picsum.photos/400/300',
-      alt: 'Sample Image',
-      objectFit: 'cover'
+      alt: 'Sample Image'
     }
   },
   {
@@ -222,9 +221,8 @@ const addTextElement = () => {
 
 const addImagePlaceholder = () => {
   addElement('image', {
-    src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTI1SDE2MFYxNDBIMTc1VjEyNVoiIGZpbGw9IiM5Q0E0QUYiLz4KPHA+dGggZD0iTTE0MCAyMDBIMjYwTDIzMCAxNTBMMjAwIDE4MEwxNzAgMTUwTDE0MCAyMDBaIiBmaWxsPSIjOUNBNEFGIi8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNkI3Mjg4IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPkNsaWNrIHRvIGFkZCBpbWFnZTwvdGV4dD4KPC9zdmc+',
-    alt: 'Image Placeholder',
-    objectFit: 'cover'
+    src: 'https://picsum.photos/400/300',
+    alt: 'Image Placeholder'
   })
 }
 </script>

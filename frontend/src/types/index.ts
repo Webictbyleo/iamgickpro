@@ -148,19 +148,57 @@ export interface TextLayerProperties extends BaseLayerProperties {
   lineHeight: number
   letterSpacing: number
   textDecoration: 'none' | 'underline' | 'overline' | 'line-through'
+  // Auto-resize properties for dynamic text sizing
+  autoResize: AutoResizeConfig
+}
+
+// Auto-resize configuration for text layers
+export interface AutoResizeConfig {
+  enabled: boolean
+  mode: 'width' | 'height' | 'both' | 'none'
+  maxWidth?: number
+  maxHeight?: number
+  minWidth?: number
+  minHeight?: number
+  padding?: {
+    top: number
+    right: number
+    bottom: number
+    left: number
+  }
+}
+
+// Image shadow configuration matching backend structure
+export interface ImageShadowConfig {
+  enabled: boolean
+  offsetX?: number
+  offsetY?: number
+  blur?: number
+  color?: string
+  opacity?: number
 }
 
 // Image layer properties matching backend ImageLayerProperties
 export interface ImageLayerProperties extends BaseLayerProperties {
   src: string
   alt: string
-  objectFit: 'fill' | 'contain' | 'cover' | 'none' | 'scale-down'
   objectPosition: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top left' | 'top right' | 'bottom left' | 'bottom right'
+  preserveAspectRatio: boolean
   quality: number
-  brightness: number
-  contrast: number
-  saturation: number
-  blur: number
+  // Filter properties (following backend order and ranges)
+  blur: number // 0-50px
+  brightness: number // 0-3
+  contrast: number // 0-3
+  saturation: number // 0-3
+  hue: number // -360 to 360 degrees
+  sepia: number // 0-1
+  grayscale: number // 0-1
+  invert: number // 0-1
+  // SVG filter properties
+  shadow: ImageShadowConfig
+  // Additional frontend properties for UI convenience
+  flipX: boolean
+  flipY: boolean
 }
 
 // Shape fill configuration matching backend structure

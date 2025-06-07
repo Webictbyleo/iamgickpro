@@ -46,7 +46,16 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
             textDecoration: 'none',
             lineHeight: 1.2,
             letterSpacing: 0,
-            wordSpacing: 0
+            wordSpacing: 0,
+            autoResize: {
+              enabled: false,
+              mode: 'none',
+              minWidth: 50,
+              maxWidth: 800,
+              minHeight: 20,
+              maxHeight: 400,
+              padding: { top: 4, right: 4, bottom: 4, left: 4 }
+            }
           } as TextLayerProperties
         }
         
@@ -87,8 +96,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
           type: 'image',
           properties: {
             src: properties.src || 'https://picsum.photos/400/300',
-            alt: properties.alt || 'Sample Image',
-            objectFit: properties.objectFit || 'cover'
+            alt: properties.alt || 'Sample Image'
           } as ImageLayerProperties
         }
         

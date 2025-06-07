@@ -302,22 +302,6 @@
         <div v-if="primaryLayer.type === 'image'" class="space-y-4">
           <h3 class="text-sm font-medium text-gray-900 mb-3">Image</h3>
           
-          <!-- Object Fit -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Object Fit</label>
-            <select
-              :value="primaryLayer.properties.objectFit"
-              @change="handleImagePropertySelect('objectFit', $event)"
-              class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="cover">Cover</option>
-              <option value="contain">Contain</option>
-              <option value="fill">Fill</option>
-              <option value="none">None</option>
-              <option value="scale-down">Scale Down</option>
-            </select>
-          </div>
-          
           <!-- Alt Text -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">Alt Text</label>

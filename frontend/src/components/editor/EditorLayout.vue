@@ -5,7 +5,7 @@
       :active-tool="activeTool"
       :active-panel="activePanel"
       @tool-change="handleToolChange"
-      @panel-change="handlePanelChange"
+      @panel-change="handleSidebarPanelChange"
       @action="handleSidebarAction"
     />
 
@@ -31,20 +31,20 @@
 
       <!-- Canvas Container -->
       <div class="flex-1 flex min-h-0 h-full">
-        <!-- Left Panel (Elements, Templates, Media) -->
+        <!-- Left Panel (Elements, Templates, Media, Contextual) -->
         <div 
-          v-if="activePanel && leftPanels.includes(activePanel)"
+          v-if="activePanel && availablePanels.includes(activePanel) || activePanelModal"
           class="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full"
         >
           <!-- Panel Header -->
           <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ getPanelTitle(activePanel) }}
+              {{ getPanelTitle(activePanel || activePanelModal || '') }}
             </h2>
             <ModernButton
               variant="ghost"
               size="sm"
-              @click="activePanel = null"
+              @click="handleCancelPanelModal"
             >
               <XMarkIcon class="w-5 h-5" />
             </ModernButton>
@@ -52,6 +52,7 @@
 
           <!-- Panel Content -->
           <div class="flex-1 overflow-y-auto">
+            <!-- Regular Panels -->
             <ElementsPanel 
               v-if="activePanel === 'elements'" 
               @add-element="handleAddElement" 
@@ -96,6 +97,13 @@
               @toggle-lock="handleToggleLock"
               @reorder-layers="handleReorderLayers"
             />
+
+            <!-- Contextual Panels -->
+            <ImageEditingPanel
+              v-if="activePanelModal === 'image-editing' && selectedLayer && selectedLayer.type === 'image'"
+              :properties="selectedLayer.properties as ImageLayerProperties"
+              @apply="handleApplyImageEdit"
+            />
           </div>
         </div>
 
@@ -118,6 +126,7 @@
               @duplicate-layer="handleDuplicateSelectedLayer"
               @delete-layer="handleDeleteSelectedLayer"
               @lock-layer="handleLockSelectedLayer"
+              @toggle-panel="handleTogglePanel"
             />
 
             <!-- Zoom Controls -->
@@ -133,27 +142,20 @@
           </div>
         </div>
 
-        <!-- Right Properties Panel -->
-        <ModernPropertiesPanel
-          v-if="showPropertiesPanel"
-          :show-design-properties="!selectedLayer || !selectedLayer.id"
-          :selected-layer="selectedLayer"
-          @close="showPropertiesPanel = false"
-        />
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide, watch } from 'vue'
+import { ref, computed, provide, watch, onMounted } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties } from '@/types'
 
 // Modern Component imports
 import ModernSidebar from './Sidebar/ModernSidebar.vue'
 import ModernToolbar from './Toolbar/ModernToolbar.vue'
-import ModernPropertiesPanel from './Sidebar/ModernPropertiesPanel.vue'
 import ZoomControls from './Canvas/ZoomControls.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
 
@@ -165,6 +167,7 @@ import MediaPanel from './Panels/MediaPanel.vue'
 import AnimationPanel from './Panels/AnimationPanel.vue'
 import ColorsPanel from './Panels/ColorsPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
+import ImageEditingPanel from './Panels/ImageEditingPanel.vue'
 
 // Icons
 import { XMarkIcon } from '@heroicons/vue/24/outline'
@@ -173,6 +176,7 @@ import { XMarkIcon } from '@heroicons/vue/24/outline'
 import { useDesignEditor } from '@/composables/useDesignEditor'
 import { useLayerManagement } from '@/composables/useLayerManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { usePanelManagement } from '@/composables/usePanelManagement'
 
 const designStore = useDesignStore()
 
@@ -215,6 +219,27 @@ const {
   updateLayerProperties
 } = useLayerManagement(editorSDK)
 
+// Initialize smart panel management
+const {
+  activePanel,
+  activePanelModal,
+  currentPanelState,
+  leftPanels: availablePanels,
+  autoCloseContextual,
+  getPanelTitle,
+  isLeftPanel,
+  getContextualPanelForLayer,
+  handlePanelChange,
+  handleToggleContextualPanel,
+  handleLayerSelectionChange,
+  closeAllPanels,
+  closeContextualPanels,
+  isPanelActive,
+  cachePanelData,
+  getCachedPanelData,
+  cleanCache
+} = usePanelManagement()
+
 // Set up keyboard shortcuts
 useKeyboardShortcuts({
   onSave: saveDesign,
@@ -227,10 +252,13 @@ useKeyboardShortcuts({
   }
 })
 
+// Initialize with default panel
+onMounted(() => {
+  handlePanelChange('elements')
+})
+
 // Modern UI State
-const activeTool = ref<'select' | 'text' | 'shape' | 'image' | null>('select')
-const activePanel = ref<'elements' | 'templates' | 'layers' | 'media' | 'animation' | 'colors' | null>('elements') // Set default panel
-const showPropertiesPanel = ref(true)
+const activeTool = ref<'select' | 'text' | 'shape' | 'image' | 'pan' | null>('select')
 const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
@@ -281,55 +309,35 @@ const backgroundColor = computed({
 const layers = computed(() => designStore.currentDesign?.designData?.layers || [])
 const selectedLayer = computed(() => selectedLayers.value[0] || null)
 
-// Watch for layer selection changes to automatically switch to select tool
-watch(selectedLayer, (newLayer) => {
+// Watch for layer selection changes and auto-close contextual panels
+watch(selectedLayer, (newLayer, oldLayer) => {
   if (newLayer) {
     // When a layer is selected, automatically switch to select tool
     // This ensures the layer-specific toolbar will show instead of tool toolbar
     activeTool.value = 'select'
+    
+    // Handle layer selection change through panel management
+    handleLayerSelectionChange(selectedLayer.value ? [selectedLayer.value] : [])
+  } else {
+    // Auto-close contextual panel when no layer is selected
+    closeContextualPanels()
   }
 })
-
-// Helper functions
-const getPanelTitle = (panel: string) => {
-  switch (panel) {
-    case 'elements': return 'Elements'
-    case 'templates': return 'Templates'
-    case 'media': return 'Media'
-    case 'layers': return 'Layers'
-    case 'animation': return 'Animation'
-    case 'colors': return 'Colors'
-    default: return 'Panel'
-  }
-}
 
 // Event handlers
 const handleToolChange = (tool: string) => {
   activeTool.value = tool as any
   
-  // Keep properties panel open for select tool, close for other creation tools
-  if (tool === 'select') {
-    // Properties panel should remain visible when select tool is active
-    if (selectedLayers.value.length > 0) {
-      showPropertiesPanel.value = true
-    }
-  } else {
-    // For creation tools, don't show properties panel until something is selected
-    if (!selectedLayers.value.length) {
-      showPropertiesPanel.value = false
-    }
-  }
+  // When switching tools, clear any active panel if needed
+  // This provides more canvas space for the user
 }
 
-const handlePanelChange = (panel: string) => {
-  activePanel.value = activePanel.value === panel ? null : panel as any
+const handleSidebarPanelChange = (panel: string) => {
+  handlePanelChange(panel)
 }
 
 const handleSidebarAction = (action: string) => {
   switch (action) {
-    case 'properties':
-      showPropertiesPanel.value = !showPropertiesPanel.value
-      break
     case 'save':
       handleSave()
       break
@@ -381,7 +389,7 @@ const handleUseTemplate = async (template: any) => {
     if (result.success && editorSDK.value) {
       // Load the template data into the editor
       await editorSDK.value.loadDesign(newDesign)
-      activePanel.value = null // Close the templates panel
+      closeAllPanels() // Close panels using new panel management
     } else {
       console.error('Failed to create design from template:', result.error)
     }
@@ -392,8 +400,7 @@ const handleUseTemplate = async (template: any) => {
 
 const handleSelectLayer = (layerId: string, event: MouseEvent) => {
   selectLayer(layerId, event)
-  // Ensure properties panel is visible when a layer is selected
-  showPropertiesPanel.value = true
+  // Layer selection will automatically show context toolbar
 }
 
 const handleDuplicateLayer = (layerId: string) => {
@@ -580,8 +587,39 @@ const handleToolUpdate = (toolType: string, properties: any) => {
       Object.entries(properties).forEach(([key, value]) => {
         designStore.updateLayerProperty(selectedLayer.value.id, `properties.${key}`, value);
       });
+    } else if (toolType === 'image' && selectedLayer.value.type === 'image') {
+      // Handle image properties
+      Object.entries(properties).forEach(([key, value]) => {
+        designStore.updateLayerProperty(selectedLayer.value.id, `properties.${key}`, value);
+      });
     }
   }
+}
+
+// Generic Panel Modal Handlers
+const handleTogglePanel = (panelType: string, data?: any) => {
+  // Handle both regular and contextual panels through the smart panel management
+  if (isLeftPanel(panelType)) {
+    handlePanelChange(panelType)
+  } else {
+    handleToggleContextualPanel(panelType, data)
+  }
+}
+
+const handleCancelPanelModal = () => {
+  closeAllPanels()
+}
+
+const handleApplyImageEdit = (updatedProperties: any) => {
+  if (selectedLayer.value && selectedLayer.value.type === 'image') {
+    updateLayerProperties(selectedLayer.value.id, {
+      properties: {
+        ...selectedLayer.value.properties,
+        ...updatedProperties
+      }
+    })
+  }
+  closeContextualPanels()
 }
 
 // Provide editor context to child components

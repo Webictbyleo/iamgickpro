@@ -2,7 +2,10 @@
   <Listbox v-model="selectedValue" as="div" class="relative">
     <ListboxButton :class="buttonClasses">
       <span class="truncate">{{ selectedLabel }}</span>
-      <ChevronDownIcon class="h-4 w-4 text-gray-400 ml-2" />
+      <ChevronDownIcon 
+        v-if="showDropdownIcon" 
+        class="h-4 w-4 text-gray-400 ml-2" 
+      />
     </ListboxButton>
 
     <Transition
@@ -57,11 +60,13 @@ interface Props {
   options: Option[]
   placeholder?: string
   disabled?: boolean
+  showDropdownIcon?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select an option',
-  disabled: false
+  disabled: false,
+  showDropdownIcon: true
 })
 
 const emit = defineEmits<{
@@ -79,7 +84,8 @@ const selectedLabel = computed(() => {
 })
 
 const buttonClasses = computed(() => [
-  'relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent',
+  'relative w-full cursor-default rounded-lg bg-white py-2 pl-3 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent',
+  props.showDropdownIcon ? 'pr-10' : 'pr-3',
   props.disabled ? 'opacity-50 cursor-not-allowed' : ''
 ])
 </script>

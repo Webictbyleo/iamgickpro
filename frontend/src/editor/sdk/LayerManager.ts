@@ -357,10 +357,11 @@ export class LayerManager implements LayerAPI {
 
   private updateTransformer(): void {
     // Get selected layer nodes
-    const selectedNodes = this.state.selectedLayers
+    const selectedLayers = this.state.selectedLayers
       .map(id => this.getLayer(id))
       .filter((layer): layer is LayerNode => layer !== null && layer.konvaNode !== undefined)
-      .map(layer => layer.konvaNode!)
+    
+    const selectedNodes = selectedLayers.map(layer => layer.konvaNode!)
 
     // Create transformer lazily when first needed
     if (selectedNodes.length > 0 && !this.transformer) {
@@ -370,6 +371,9 @@ export class LayerManager implements LayerAPI {
     if (this.transformer) {
       // Update transformer nodes
       this.transformer.nodes(selectedNodes)
+
+      // Configure transformer behavior based on selected layer types
+      this.configureTransformerForLayers(selectedLayers)
 
       // Update transformer visibility
       this.transformer.visible(selectedNodes.length > 0)
@@ -400,6 +404,145 @@ export class LayerManager implements LayerAPI {
     uiLayer.add(this.transformer)
   }
 
+  private configureTransformerForLayers(layers: LayerNode[]): void {
+    if (!this.transformer) return
+
+    // Check if all selected layers are text layers
+    const allTextLayers = layers.every(layer => layer.type === 'text')
+    const hasTextLayers = layers.some(layer => layer.type === 'text')
+
+    if (allTextLayers) {
+      // For text layers only: Canva-style resize behavior
+      this.transformer.setAttrs({
+        enabledAnchors: [
+          // Corner handles for uniform scaling (prevents distortion)
+          'top-left', 'top-right', 'bottom-left', 'bottom-right',
+          // Middle handles for width resizing with text wrapping
+          'middle-left', 'middle-right'
+        ],
+        keepRatio: false,
+        centeredScaling: false,
+        rotateEnabled: true,
+        borderEnabled: true,
+        anchorSize: 8,
+        // Enhanced constraint function for Canva-style text resizing
+        boundBoxFunc: (oldBox: { x: number; y: number; width: number; height: number }, newBox: { x: number; y: number; width: number; height: number }) => {
+          // Get the current transformer anchor being used
+          const activeAnchor = this.transformer?.getActiveAnchor()
+          
+          // Minimum dimensions
+          const minWidth = 50
+          const maxWidth = 2000
+          const minHeight = 20
+          
+          // Corner handles: uniform scaling (maintain aspect ratio)
+          if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+            // Calculate scale factors
+            const scaleX = newBox.width / oldBox.width
+            const scaleY = newBox.height / oldBox.height
+            
+            // Use the smaller scale to maintain aspect ratio
+            const uniformScale = Math.min(scaleX, scaleY)
+            
+            // Apply uniform scaling
+            newBox.width = oldBox.width * uniformScale
+            newBox.height = oldBox.height * uniformScale
+            
+            // Apply constraints
+            if (newBox.width < minWidth) {
+              const constraintScale = minWidth / newBox.width
+              newBox.width = minWidth
+              newBox.height = newBox.height * constraintScale
+            }
+            if (newBox.width > maxWidth) {
+              const constraintScale = maxWidth / newBox.width
+              newBox.width = maxWidth
+              newBox.height = newBox.height * constraintScale
+            }
+            if (newBox.height < minHeight) {
+              const constraintScale = minHeight / newBox.height
+              newBox.height = minHeight
+              newBox.width = newBox.width * constraintScale
+            }
+          }
+          // Middle handles: width resizing only (text will wrap)
+          else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
+            // Constrain width changes only
+            if (newBox.width < minWidth) {
+              newBox.width = minWidth
+            } else if (newBox.width > maxWidth) {
+              newBox.width = maxWidth
+            }
+            
+            // Maintain original height for middle handles (text will wrap to new width)
+            newBox.height = oldBox.height
+          }
+          
+          return newBox
+        }
+      })
+    } else if (hasTextLayers) {
+      // Mixed selection: disable resize to prevent text distortion
+      this.transformer.setAttrs({
+        enabledAnchors: [], // No resize handles
+        keepRatio: false,
+        centeredScaling: false,
+        rotateEnabled: false,
+        borderEnabled: true,
+        anchorSize: 0,
+        boundBoxFunc: (oldBox: { x: number; y: number; width: number; height: number }, newBox: { x: number; y: number; width: number; height: number }) => {
+          // Prevent any scaling for mixed selections with text
+          return oldBox
+        }
+      })
+    } else {
+      // Non-text layers: full transform capabilities
+      this.transformer.setAttrs({
+        enabledAnchors: [
+          'top-left', 'top-center', 'top-right',
+          'middle-right', 'middle-left',
+          'bottom-left', 'bottom-center', 'bottom-right'
+        ],
+        keepRatio: false,
+        centeredScaling: false,
+        rotateEnabled: true,
+        borderEnabled: true,
+        anchorSize: 8,
+        boundBoxFunc: (oldBox: { x: number; y: number; width: number; height: number }, newBox: { x: number; y: number; width: number; height: number }) => {
+          // Standard minimum size constraints for non-text layers
+          if (newBox.width < 5 || newBox.height < 5) {
+            return oldBox
+          }
+          return newBox
+        }
+      })
+    }
+
+    // Enhanced transform event listeners for text layers
+    this.transformer.off('transformend.textResize')
+    this.transformer.off('transform.textPreview')
+    
+    if (hasTextLayers) {
+      // Real-time preview during transform (optional, can be disabled for performance)
+      this.transformer.on('transform.textPreview', () => {
+        layers.forEach(layer => {
+          if (layer.type === 'text' && layer.konvaNode) {
+            this.previewTextLayerResize(layer)
+          }
+        })
+      })
+      
+      // Final resize handling when transform ends
+      this.transformer.on('transformend.textResize', () => {
+        layers.forEach(layer => {
+          if (layer.type === 'text' && layer.konvaNode) {
+            this.handleTextLayerResize(layer)
+          }
+        })
+      })
+    }
+  }
+
   private setupLayers(): void {
     // Only create the main content layer if it doesn't exist
     const layers = this.stage.getLayers()
@@ -413,7 +556,10 @@ export class LayerManager implements LayerAPI {
   }
 
   private setupRenderers(): void {
-    this.renderers.set('text', new TextLayerRenderer())
+    const textRenderer = new TextLayerRenderer()
+    textRenderer.setEventEmitter(this.emitter) // Pass event emitter for inline editing
+    
+    this.renderers.set('text', textRenderer)
     this.renderers.set('image', new ImageLayerRenderer())
     this.renderers.set('shape', new ShapeLayerRenderer())
     this.renderers.set('group', new GroupLayerRenderer())
@@ -506,8 +652,7 @@ export class LayerManager implements LayerAPI {
         }
       case 'image':
         return {
-          src: '',
-          objectFit: 'contain'
+          src: ''
         }
       case 'group':
         return {}
@@ -515,4 +660,217 @@ export class LayerManager implements LayerAPI {
         return {}
     }
   }
+
+  // ============================================================================
+  // TEXT LAYER RESIZE HANDLING
+  // ============================================================================
+
+  /**
+   * Preview text layer resize during transform for real-time feedback
+   * This method provides visual feedback without committing changes
+   */
+  private previewTextLayerResize(layer: LayerNode): void {
+    if (layer.type !== 'text' || !layer.konvaNode) return
+    
+    const textNode = layer.konvaNode as Konva.Text
+    
+    // Get current transform values and active anchor
+    const scaleX = textNode.scaleX()
+    const scaleY = textNode.scaleY()
+    const activeAnchor = this.transformer?.getActiveAnchor()
+    
+    // Handle different resize modes based on which handle is being used
+    if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+      // Corner handles: uniform scaling - maintain both scaleX and scaleY
+      // This preserves text appearance and prevents distortion
+      const uniformScale = Math.min(Math.abs(scaleX), Math.abs(scaleY))
+      textNode.scaleX(scaleX < 0 ? -uniformScale : uniformScale)
+      textNode.scaleY(scaleY < 0 ? -uniformScale : uniformScale)
+      
+    } else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
+      // Middle handles: width resizing with text wrapping
+      const currentWidth = textNode.width()
+      const newWidth = currentWidth * scaleX
+      
+      // Apply width constraints
+      const minWidth = 50
+      const maxWidth = 2000
+      const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
+      
+      // Reset scale and apply width directly for text wrapping
+      textNode.scaleX(1)
+      textNode.scaleY(1)
+      textNode.width(constrainedWidth)
+      
+      // Enable text wrapping for middle handle resizing
+      textNode.wrap('word')
+      
+      // Update layer width for consistency
+      layer.width = constrainedWidth
+    }
+    
+    // Clear any cached rendering to ensure text quality during preview
+    textNode.clearCache()
+  }
+
+  /**
+   * Handle final text layer resize when transform ends
+   * This method commits the resize changes and applies auto-resize if enabled
+   */
+  private handleTextLayerResize(layer: LayerNode): void {
+    if (layer.type !== 'text' || !layer.konvaNode) return
+    
+    const textNode = layer.konvaNode as Konva.Text
+    
+    try {
+      // Get the final transform values
+      const scaleX = textNode.scaleX()
+      const scaleY = textNode.scaleY()
+      const activeAnchor = this.transformer?.getActiveAnchor()
+      
+      // Handle different resize modes based on which handle was used
+      if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+        // Corner handles: uniform scaling - keep scales applied to maintain text appearance
+        // The text size (fontSize) effectively changes with the scale
+        const uniformScale = Math.min(Math.abs(scaleX), Math.abs(scaleY))
+        
+        // Apply uniform scale to both dimensions
+        textNode.scaleX(scaleX < 0 ? -uniformScale : uniformScale)
+        textNode.scaleY(scaleY < 0 ? -uniformScale : uniformScale)
+        
+        // Update layer dimensions to reflect the scaled size
+        layer.width = textNode.width() * Math.abs(uniformScale)
+        layer.height = textNode.height() * Math.abs(uniformScale)
+        
+        // Update scale values in layer data
+        layer.scaleX = textNode.scaleX()
+        layer.scaleY = textNode.scaleY()
+        
+      } else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
+        // Middle handles: width resizing with text wrapping and height expansion
+        const currentWidth = textNode.width()
+        const newWidth = currentWidth * Math.abs(scaleX)
+        
+        // Apply width constraints
+        const minWidth = 50
+        const maxWidth = 2000
+        const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
+        
+        // Reset scales and apply width directly
+        textNode.scaleX(1)
+        textNode.scaleY(1)
+        textNode.width(constrainedWidth)
+        
+        // Enable text wrapping for the new width
+        textNode.wrap('word')
+        
+        // Clear cache to ensure proper text measurement
+        textNode._clearCache('text')
+        
+        // Always update height based on wrapped content - this is the key fix!
+        const wrappedHeight = textNode.getTextHeight()
+        
+        // Update layer dimensions
+        layer.width = constrainedWidth
+        layer.height = wrappedHeight // Always use actual wrapped height
+        layer.scaleX = 1
+        layer.scaleY = 1
+        
+        // Update text node height to match calculated wrapped height
+        textNode.height(wrappedHeight)
+        
+        // Apply auto-resize if enabled for additional adjustments (padding, etc.)
+        const renderer = this.getRenderer('text') as TextLayerRenderer
+        if (renderer) {
+          const autoResizeConfig = layer.properties.autoResize
+          if (autoResizeConfig && autoResizeConfig.enabled) {
+            try {
+              // Apply auto-resize logic to adjust height based on wrapped text
+              renderer.applyAutoResize(textNode, layer, autoResizeConfig)
+              
+              // Update layer dimensions after auto-resize
+              layer.width = textNode.width()
+              layer.height = textNode.height()
+            } catch (error) {
+              console.warn('Auto-resize failed for text layer:', error)
+            }
+          }
+        }
+      }
+      
+      // Clear any cached rendering to ensure text quality
+      textNode.clearCache()
+      
+      // Force redraw to ensure text renders clearly
+      textNode.getLayer()?.draw()
+      
+      // Emit layer update event
+      this.emitter.emit('layer:updated', { 
+        layerId: layer.id, 
+        properties: { 
+          width: layer.width, 
+          height: layer.height,
+          scaleX: layer.scaleX,
+          scaleY: layer.scaleY
+        } 
+      })
+      
+    } catch (error) {
+      console.error('Error handling text layer resize:', error)
+      // Reset to original state if resize fails
+      textNode.scaleX(1)
+      textNode.scaleY(1)
+      textNode.clearCache()
+      textNode.getLayer()?.draw()
+    }
+  }
+
+  /**
+   * Optimize text layer rendering quality
+   * This method ensures text remains sharp and readable during and after transforms
+   */
+  private optimizeTextQuality(textNode: Konva.Text): void {
+    try {
+      // Clear any existing cache that might cause blurriness
+      textNode.clearCache()
+      
+      // Set optimal text rendering properties
+      textNode.perfectDrawEnabled(false) // Disable for better performance
+      textNode.strokeHitEnabled(false) // Optimize hit detection
+      
+      // Ensure text is properly positioned on pixel boundaries to prevent blurriness
+      const x = Math.round(textNode.x())
+      const y = Math.round(textNode.y())
+      textNode.position({ x, y })
+      
+      // Force immediate redraw
+      textNode.getLayer()?.batchDraw()
+      
+    } catch (error) {
+      console.warn('Text quality optimization failed:', error)
+    }
+  }
+
+  /**
+   * Validate auto-resize configuration to ensure valid settings
+   */
+  private validateAutoResizeConfig(config: any): boolean {
+    if (!config || typeof config !== 'object') return false
+    
+    // Check required properties
+    if (typeof config.enabled !== 'boolean') return false
+    
+    // Validate numeric constraints if present
+    if (config.minFontSize !== undefined && (typeof config.minFontSize !== 'number' || config.minFontSize < 1)) return false
+    if (config.maxFontSize !== undefined && (typeof config.maxFontSize !== 'number' || config.maxFontSize > 300)) return false
+    if (config.minWidth !== undefined && (typeof config.minWidth !== 'number' || config.minWidth < 1)) return false
+    if (config.maxWidth !== undefined && (typeof config.maxWidth !== 'number' || config.maxWidth < 0)) return false
+    
+    // Validate mode if present
+    if (config.mode !== undefined && !['width', 'height', 'both'].includes(config.mode)) return false
+    
+    return true
+  }
+
+  // ============================================================================
 }

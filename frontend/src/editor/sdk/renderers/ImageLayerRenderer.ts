@@ -74,9 +74,14 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       this.loadImage(properties.src, layer, node, placeholder, loadingText)
     }
 
-    // Update filters if present
-    if (imageNode && this.hasImageFilters(properties)) {
-      this.applyImageFilters(imageNode, properties)
+    // Update transforms and positioning if image exists
+    if (imageNode) {
+      this.applyImageTransforms(imageNode, layer, properties)
+      
+      // Update filters if present
+      if (this.hasImageFilters(properties)) {
+        this.applyImageFilters(imageNode, properties)
+      }
     }
   }
 
@@ -138,7 +143,8 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       })
 
       const properties = layer.properties as ImageLayerProperties
-      this.applyObjectFit(imageNode, img, layer, properties)
+      this.applyImageScaling(imageNode, img, layer, properties)
+      this.applyImageTransforms(imageNode, layer, properties)
 
       if (this.hasImageFilters(properties)) {
         this.applyImageFilters(imageNode, properties)
@@ -155,68 +161,39 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     }
   }
 
-  private applyObjectFit(
+  private applyImageScaling(
     imageNode: Konva.Image, 
     img: HTMLImageElement, 
     layer: LayerNode,
     properties: ImageLayerProperties
   ): void {
-    const objectFit = properties.objectFit || 'contain'
+    // Default to 'contain' behavior - scale to fit while preserving aspect ratio
     const containerRatio = layer.width / layer.height
     const imageRatio = img.width / img.height
 
-    switch (objectFit) {
-      case 'contain':
-        if (imageRatio > containerRatio) {
-          const height = layer.width / imageRatio
-          imageNode.setAttrs({
-            width: layer.width,
-            height: height,
-            y: (layer.height - height) / 2
-          })
-        } else {
-          const width = layer.height * imageRatio
-          imageNode.setAttrs({
-            width: width,
-            height: layer.height,
-            x: (layer.width - width) / 2
-          })
-        }
-        break
-
-      case 'cover':
-        if (imageRatio > containerRatio) {
-          const width = layer.height * imageRatio
-          imageNode.setAttrs({
-            width: width,
-            height: layer.height,
-            x: (layer.width - width) / 2
-          })
-        } else {
-          const height = layer.width / imageRatio
-          imageNode.setAttrs({
-            width: layer.width,
-            height: height,
-            y: (layer.height - height) / 2
-          })
-        }
-        break
-
-      case 'fill':
+    if (properties.preserveAspectRatio !== false) {
+      // Contain behavior: scale to fit within container while preserving aspect ratio
+      if (imageRatio > containerRatio) {
+        const height = layer.width / imageRatio
         imageNode.setAttrs({
           width: layer.width,
-          height: layer.height
+          height: height,
+          y: (layer.height - height) / 2
         })
-        break
-
-      case 'none':
+      } else {
+        const width = layer.height * imageRatio
         imageNode.setAttrs({
-          width: img.width,
-          height: img.height,
-          x: (layer.width - img.width) / 2,
-          y: (layer.height - img.height) / 2
+          width: width,
+          height: layer.height,
+          x: (layer.width - width) / 2
         })
-        break
+      }
+    } else {
+      // Fill behavior: stretch to fill container exactly
+      imageNode.setAttrs({
+        width: layer.width,
+        height: layer.height
+      })
     }
   }
 
@@ -225,38 +202,178 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       properties.brightness !== undefined ||
       properties.contrast !== undefined ||
       properties.saturation !== undefined ||
-      properties.blur !== undefined
+      properties.blur !== undefined ||
+      properties.hue !== undefined ||
+      properties.sepia !== undefined ||
+      properties.grayscale !== undefined ||
+      properties.invert !== undefined ||
+      (properties.shadow && properties.shadow.enabled)
     )
   }
 
   private applyImageFilters(imageNode: Konva.Image, properties: ImageLayerProperties): void {
     const konvaFilters: any[] = []
 
-    if (properties.brightness !== undefined && properties.brightness !== 0) {
+    // Apply filters in the same order as backend for consistency
+    // 1. Basic color adjustments
+    if (properties.brightness !== undefined && properties.brightness !== 1) {
       konvaFilters.push(Konva.Filters.Brighten)
-      imageNode.brightness(properties.brightness / 100)
+      // Convert 0-3 range to Konva's -1 to 1 range
+      const brightnessValue = (properties.brightness - 1) * 0.5
+      imageNode.brightness(Math.max(-1, Math.min(1, brightnessValue)))
     }
 
-    if (properties.contrast !== undefined && properties.contrast !== 0) {
+    if (properties.contrast !== undefined && properties.contrast !== 1) {
       konvaFilters.push(Konva.Filters.Contrast)
-      imageNode.contrast(properties.contrast)
+      // Convert 0-3 range to Konva's contrast range (-100 to 100)
+      const contrastValue = (properties.contrast - 1) * 50
+      imageNode.contrast(Math.max(-100, Math.min(100, contrastValue)))
     }
 
-    if (properties.saturation !== undefined && properties.saturation !== 0) {
+    if (properties.saturation !== undefined && properties.saturation !== 1) {
       konvaFilters.push(Konva.Filters.HSV)
-      const saturationValue = 1 + (properties.saturation / 100)
-      imageNode.saturation(Math.max(0, saturationValue))
+      imageNode.saturation(Math.max(0, properties.saturation))
     }
 
+    // 2. Hue rotation
+    if (properties.hue !== undefined && properties.hue !== 0) {
+      if (!konvaFilters.includes(Konva.Filters.HSV)) {
+        konvaFilters.push(Konva.Filters.HSV)
+      }
+      imageNode.hue(properties.hue)
+    }
+
+    // 3. Special effects
+    if (properties.sepia !== undefined && properties.sepia > 0) {
+      konvaFilters.push(Konva.Filters.Sepia)
+    }
+
+    if (properties.grayscale !== undefined && properties.grayscale > 0) {
+      konvaFilters.push(Konva.Filters.Grayscale)
+    }
+
+    if (properties.invert !== undefined && properties.invert > 0) {
+      konvaFilters.push(Konva.Filters.Invert)
+    }
+
+    // 4. Blur (applied last for best visual result)
     if (properties.blur !== undefined && properties.blur > 0) {
       konvaFilters.push(Konva.Filters.Blur)
-      imageNode.blurRadius(properties.blur)
+      imageNode.blurRadius(Math.max(0, Math.min(50, properties.blur)))
     }
 
+    // 5. Shadow effect (applied to the image node directly, not as a filter)
+    if (properties.shadow?.enabled) {
+      imageNode.shadowColor(properties.shadow.color || '#000000')
+      imageNode.shadowBlur(Math.max(0, properties.shadow.blur || 10))
+      imageNode.shadowOffset({
+        x: properties.shadow.offsetX || 0,
+        y: properties.shadow.offsetY || 0
+      })
+      imageNode.shadowOpacity(Math.max(0, Math.min(1, properties.shadow.opacity || 0.5)))
+    }
+
+    // Apply all filters and cache for performance
     if (konvaFilters.length > 0) {
       imageNode.filters(konvaFilters)
       imageNode.cache()
     }
+  }
+
+  private applyImageTransforms(
+    imageNode: Konva.Image,
+    layer: LayerNode,
+    properties: ImageLayerProperties
+  ): void {
+    let scaleX = 1
+    let scaleY = 1
+    let offsetX = 0
+    let offsetY = 0
+
+    // Handle flip transformations
+    if (properties.flipX) {
+      scaleX = -1
+      offsetX = imageNode.width()
+    }
+
+    if (properties.flipY) {
+      scaleY = -1
+      offsetY = imageNode.height()
+    }
+
+    // Apply transformations
+    if (scaleX !== 1 || scaleY !== 1) {
+      imageNode.setAttrs({
+        scaleX,
+        scaleY,
+        offsetX,
+        offsetY
+      })
+    }
+
+    // Handle object positioning for cropping/positioning within container
+    this.applyObjectPosition(imageNode, layer, properties)
+  }
+
+  private applyObjectPosition(
+    imageNode: Konva.Image,
+    layer: LayerNode,
+    properties: ImageLayerProperties
+  ): void {
+    const position = properties.objectPosition || 'center'
+    
+    // This method adjusts the image position within its container
+    // based on the objectPosition property (similar to CSS object-position)
+    const imageWidth = imageNode.width()
+    const imageHeight = imageNode.height()
+    const containerWidth = layer.width
+    const containerHeight = layer.height
+    
+    let x = imageNode.x()
+    let y = imageNode.y()
+    
+    // Calculate positioning based on objectPosition value
+    switch (position) {
+      case 'top':
+        x = (containerWidth - imageWidth) / 2
+        y = 0
+        break
+      case 'bottom':
+        x = (containerWidth - imageWidth) / 2
+        y = containerHeight - imageHeight
+        break
+      case 'left':
+        x = 0
+        y = (containerHeight - imageHeight) / 2
+        break
+      case 'right':
+        x = containerWidth - imageWidth
+        y = (containerHeight - imageHeight) / 2
+        break
+      case 'top left':
+        x = 0
+        y = 0
+        break
+      case 'top right':
+        x = containerWidth - imageWidth
+        y = 0
+        break
+      case 'bottom left':
+        x = 0
+        y = containerHeight - imageHeight
+        break
+      case 'bottom right':
+        x = containerWidth - imageWidth
+        y = containerHeight - imageHeight
+        break
+      case 'center':
+      default:
+        x = (containerWidth - imageWidth) / 2
+        y = (containerHeight - imageHeight) / 2
+        break
+    }
+    
+    imageNode.setAttrs({ x, y })
   }
 
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {

@@ -282,8 +282,7 @@ const handleFileUpload = (event: Event) => {
 const addMedia = (mediaData: any) => {
   const imageData = {
     src: mediaData.src || mediaData.thumbnail,
-    alt: mediaData.alt || mediaData.name || 'Image',
-    objectFit: 'cover'
+    alt: mediaData.alt || mediaData.name || 'Image'
   }
   
   emit('addMedia', imageData)

@@ -2,7 +2,7 @@
   <Transition name="floating-toolbar">
     <div 
       v-if="shouldShow"
-      class="absolute top-4 left-1/2 transform -translate-x-1/2 z-40 bg-white/95 dark:bg-gray-900/95 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-2.5 flex items-center space-x-3 backdrop-blur-md"
+      class="relative bg-white/95 dark:bg-gray-900/95 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-2.5 flex items-center space-x-3"
       :style="floatingStyle"
     >
       <!-- Context-specific toolbars based on selected layer or active tool -->
@@ -30,6 +30,30 @@
         :borderRadius="selectedLayer.properties?.borderRadius"
         :hasShadow="selectedLayer.properties?.hasShadow"
         @update="(props) => $emit('tool-update', 'shape', props)"
+      />
+      
+      <!-- Image Layer Toolbar -->
+      <ImageToolbar
+        v-else-if="selectedLayer && selectedLayer.type === 'image'"
+        :alt="selectedLayer.properties?.alt"
+        :opacity="selectedLayer.properties?.opacity"
+        :borderRadius="selectedLayer.properties?.borderRadius"
+        :objectPosition="selectedLayer.properties?.objectPosition"
+        :preserveAspectRatio="selectedLayer.properties?.preserveAspectRatio"
+        :quality="selectedLayer.properties?.quality"
+        :brightness="selectedLayer.properties?.brightness"
+        :contrast="selectedLayer.properties?.contrast"
+        :saturation="selectedLayer.properties?.saturation"
+        :blur="selectedLayer.properties?.blur"
+        :hue="selectedLayer.properties?.hue"
+        :sepia="selectedLayer.properties?.sepia"
+        :grayscale="selectedLayer.properties?.grayscale"
+        :invert="selectedLayer.properties?.invert"
+        :flipX="selectedLayer.properties?.flipX"
+        :flipY="selectedLayer.properties?.flipY"
+        :shadowEnabled="selectedLayer.properties?.shadow?.enabled"
+        @update="(props) => $emit('tool-update', 'image', props)"
+        @edit-image="$emit('toggle-panel', 'image-editing', selectedLayer)"
       />
       
       <!-- Tool-specific Toolbar (when no layer selected but tool is active) -->
@@ -97,6 +121,7 @@ import {
 import ModernButton from '@/components/common/ModernButton.vue'
 import TextToolbar from '@/components/editor/Toolbar/TextToolbar.vue'
 import ShapeToolbar from '@/components/editor/Toolbar/ShapeToolbar.vue'
+import ImageToolbar from '@/components/editor/Toolbar/ImageToolbar.vue'
 
 interface ToolOption {
   component: Component
@@ -122,6 +147,7 @@ const emit = defineEmits<{
   'duplicate-layer': []
   'delete-layer': []
   'lock-layer': []
+  'toggle-panel': [panelType: string, data?: any]
 }>()
 
 // Tool-specific options and components - fixed 'shapes' to 'shape'
@@ -132,6 +158,10 @@ const toolOptions = computed((): Record<string, ToolOption> => ({
   },
   shape: {
     component: ShapeToolbar,
+    props: {}
+  },
+  image: {
+    component: ImageToolbar,
     props: {}
   }
 }))
@@ -148,17 +178,10 @@ const shouldShow = computed(() => {
 
 // Dynamic positioning for the floating toolbar
 const floatingStyle = computed(() => {
-  if (props.position && (props.position.x !== 0 || props.position.y !== 0)) {
-    return {
-      position: 'fixed' as const,
-      left: `${props.position.x}px`,
-      top: `${props.position.y}px`,
-      transform: 'translate(-50%, -100%)',
-      zIndex: 50
-    }
-  }
+  // For future use if we need dynamic positioning
+  // Currently using relative positioning within the toolbar area
   return {
-    zIndex: 40
+    maxWidth: '100%'
   }
 })
 
@@ -179,18 +202,18 @@ const handleToolUpdate = (data: any) => {
 
 .floating-toolbar-enter-from {
   opacity: 0;
-  transform: translate(-50%, -100%) scale(0.9) translateY(10px);
+  transform: scale(0.9) translateY(-10px);
 }
 
 .floating-toolbar-leave-to {
   opacity: 0;
-  transform: translate(-50%, -100%) scale(0.95) translateY(-5px);
+  transform: scale(0.95) translateY(-5px);
 }
 
 .floating-toolbar-enter-to,
 .floating-toolbar-leave-from {
   opacity: 1;
-  transform: translate(-50%, -100%) scale(1) translateY(0);
+  transform: scale(1) translateY(0);
 }
 
 /* Enhanced backdrop blur and shadow */
