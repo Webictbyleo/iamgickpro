@@ -15,6 +15,8 @@ package-lock.json
 **test*.html
 **test*.ts
 /*test*.js
+/*debug*.html
+/*debug*.js
 
 # Editor directories and files
 .vscode/*

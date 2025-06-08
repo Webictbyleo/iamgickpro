@@ -26,12 +26,12 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
   render(layerData: LayerNode): Konva.Node {
     const props = this.getTextProperties(layerData.properties as Partial<TextLayerProperties>)
     
+    // Following Konva docs exactly - NEVER set height for text wrapping
     const textNode = new Konva.Text({
       id: layerData.id,
       x: layerData.x,
       y: layerData.y,
       width: layerData.width,
-      height: layerData.height,
       text: props.text,
       fontSize: props.fontSize,
       fontFamily: props.fontFamily,
@@ -47,22 +47,11 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       scaleX: layerData.scaleX,
       scaleY: layerData.scaleY,
       draggable: !layerData.locked,
-      wrap: 'word' // Always enable word wrapping for better text behavior
-    })
-
-    // Initialize base dimensions for proper resize behavior
-    textNode.setAttr('baseDimensions', {
-      width: layerData.width,
-      height: layerData.height
+      wrap: 'word'
     })
 
     this.applyTextEffects(textNode, props)
     this.setupTextInteractions(textNode, layerData)
-    
-    // Apply auto-resize if enabled
-    if (props.autoResize.enabled) {
-      this.applyAutoResize(textNode, layerData, props.autoResize)
-    }
     
     return textNode
   }
@@ -71,11 +60,11 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     if (node instanceof Konva.Text) {
       const props = this.getTextProperties(layerData.properties as Partial<TextLayerProperties>)
       
+      // Following Konva docs exactly - NEVER set height for text wrapping
       node.setAttrs({
         x: layerData.x,
         y: layerData.y,
         width: layerData.width,
-        height: layerData.height,
         text: props.text,
         fontSize: props.fontSize,
         fontFamily: props.fontFamily,
@@ -91,26 +80,13 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
         scaleX: layerData.scaleX,
         scaleY: layerData.scaleY,
         draggable: !layerData.locked,
-        wrap: 'word' // Always enable word wrapping for better text behavior
+        wrap: 'word'
       })
-      
-      // Ensure base dimensions are always set for proper resize behavior
-      if (!node.getAttr('baseDimensions')) {
-        node.setAttr('baseDimensions', {
-          width: layerData.width,
-          height: layerData.height
-        })
-      }
       
       this.applyTextEffects(node, props)
       
       // Re-setup interactions (they may have been lost during update)
       this.setupTextInteractions(node, layerData)
-      
-      // Apply auto-resize if enabled
-      if (props.autoResize.enabled) {
-        this.applyAutoResize(node, layerData, props.autoResize)
-      }
     }
   }
 
@@ -180,135 +156,13 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     }
   }
 
-  /**
-   * Apply auto-resize logic to text node based on configuration
-   */
-  public applyAutoResize(textNode: Konva.Text, layerData: LayerNode, config: AutoResizeConfig): void {
-    if (!config.enabled || config.mode === 'none') {
-      return
-    }
-
-    const padding = config.padding || { top: 4, right: 4, bottom: 4, left: 4 }
-    
-    let newWidth = layerData.width
-    let newHeight = layerData.height
-    
-    // Calculate auto-resize dimensions based on mode
-    switch (config.mode) {
-      case 'width':
-        // First disable wrapping to get natural text width
-        textNode.wrap('none')
-        textNode._clearCache('text')
-        const naturalWidth = textNode.getTextWidth()
-        newWidth = naturalWidth + padding.left + padding.right
-        
-        // Apply width constraints
-        if (config.minWidth && newWidth < config.minWidth) {
-          newWidth = config.minWidth
-        }
-        if (config.maxWidth && newWidth > config.maxWidth) {
-          newWidth = config.maxWidth
-        }
-        
-        // Check if text needs to wrap based on final width
-        const availableWidth = newWidth - padding.left - padding.right
-        if (naturalWidth > availableWidth) {
-          // Text needs to wrap - enable wrapping and calculate wrapped height
-          textNode.wrap('word')
-          textNode.width(availableWidth)
-          textNode._clearCache('text')
-          newHeight = textNode.getTextHeight() + padding.top + padding.bottom
-        } else {
-          // Text fits naturally - use minimal height
-          textNode.width(availableWidth)
-          newHeight = textNode.fontSize() * textNode.lineHeight() + padding.top + padding.bottom
-        }
-        break
-        
-      case 'height':
-        // For height-only mode, text should wrap to fit current width and expand height
-        const availableWidthForHeight = layerData.width - padding.left - padding.right
-        
-        // First check if text fits naturally without wrapping
-        textNode.wrap('none')
-        textNode._clearCache('text')
-        const naturalTextWidth = textNode.getTextWidth()
-        
-        if (naturalTextWidth <= availableWidthForHeight) {
-          // Text fits in one line - use minimal height
-          textNode.width(availableWidthForHeight)
-          newHeight = textNode.fontSize() * textNode.lineHeight() + padding.top + padding.bottom
-        } else {
-          // Text overflows - enable wrapping and expand height
-          textNode.wrap('word')
-          textNode.width(availableWidthForHeight)
-          textNode._clearCache('text')
-          newHeight = textNode.getTextHeight() + padding.top + padding.bottom
-        }
-        
-        // Apply height constraints (but prioritize content over constraints)
-        if (config.minHeight && newHeight < config.minHeight) {
-          newHeight = config.minHeight
-        }
-        break
-        
-      case 'both':
-        // First get natural text dimensions without wrapping
-        textNode.wrap('none')
-        textNode._clearCache('text')
-        const naturalTextWidthBoth = textNode.getTextWidth()
-        
-        newWidth = naturalTextWidthBoth + padding.left + padding.right
-        
-        // Apply width constraints
-        if (config.minWidth && newWidth < config.minWidth) {
-          newWidth = config.minWidth
-        }
-        if (config.maxWidth && newWidth > config.maxWidth) {
-          newWidth = config.maxWidth
-        }
-        
-        // Check if text needs to wrap based on final width
-        const finalAvailableWidth = newWidth - padding.left - padding.right
-        if (naturalTextWidthBoth > finalAvailableWidth) {
-          // Text needs to wrap - enable wrapping and calculate wrapped height
-          textNode.wrap('word')
-          textNode.width(finalAvailableWidth)
-          textNode._clearCache('text')
-          newHeight = textNode.getTextHeight() + padding.top + padding.bottom
-        } else {
-          // Text fits naturally - use minimal height
-          textNode.width(finalAvailableWidth)
-          newHeight = textNode.fontSize() * textNode.lineHeight() + padding.top + padding.bottom
-        }
-        
-        // Apply height constraints (but prioritize content over maxHeight)
-        if (config.minHeight && newHeight < config.minHeight) {
-          newHeight = config.minHeight
-        }
-        break
-    }
-    
-    // Update text node dimensions
-    textNode.setAttrs({
-      width: newWidth - padding.left - padding.right,
-      height: newHeight - padding.top - padding.bottom
-    })
-    
-    // Update layer data for consistency (this would typically trigger layer update events)
-    layerData.width = newWidth
-    layerData.height = newHeight
-  }
+  
 
   /**
    * Setup enhanced text interactions for modern editing experience
    */
   private setupTextInteractions(textNode: Konva.Text, layerData: LayerNode): void {
-    // Double-click to enter inline edit mode
-    textNode.on('dblclick dbltap', (e) => {
-      e.cancelBubble = true
-      this.startInlineEdit(textNode, layerData)
-    })
+    
 
     // Enhanced hover states
     textNode.on('mouseenter', () => {
@@ -346,160 +200,10 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     })
   }
 
-  /**
-   * Start inline text editing
-   */
-  private startInlineEdit(textNode: Konva.Text, layerData: LayerNode): void {
-    if (layerData.locked || this.editingLayer) return
+  
 
-    this.editingLayer = layerData.id
-    this.editStartText = textNode.text()
 
-    const stage = textNode.getStage()
-    if (!stage) return
-
-    const container = stage.container()
-    
-    // Get text position on screen
-    const textPosition = textNode.getAbsolutePosition()
-    const stageBox = stage.container().getBoundingClientRect()
-    const transform = stage.getAbsoluteTransform().copy()
-    transform.invert()
-    
-    // Create invisible textarea for editing
-    this.textInput = document.createElement('textarea')
-    this.textInput.value = textNode.text()
-    
-    // Style the textarea to match the text
-    const props = this.getTextProperties(layerData.properties as Partial<TextLayerProperties>)
-    this.textInput.style.cssText = `
-      position: absolute;
-      top: ${stageBox.top + textPosition.y * stage.scaleY()}px;
-      left: ${stageBox.left + textPosition.x * stage.scaleX()}px;
-      width: ${textNode.width() * stage.scaleX()}px;
-      min-height: ${textNode.height() * stage.scaleY()}px;
-      font-family: ${props.fontFamily};
-      font-size: ${props.fontSize * stage.scaleY()}px;
-      font-weight: ${props.fontWeight};
-      font-style: ${props.fontStyle};
-      color: ${props.color};
-      text-align: ${props.textAlign};
-      line-height: ${props.lineHeight};
-      background: rgba(255, 255, 255, 0.95);
-      border: 2px solid #3b82f6;
-      border-radius: 4px;
-      padding: 4px;
-      margin: 0;
-      resize: none;
-      outline: none;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(8px);
-    `
-
-    // Hide the original text node
-    textNode.visible(false)
-    textNode.getLayer()?.batchDraw()
-
-    // Add to document
-    document.body.appendChild(this.textInput)
-    this.textInput.focus()
-    this.textInput.select()
-
-    // Auto-resize textarea as user types
-    const autoResize = () => {
-      this.textInput!.style.height = 'auto'
-      this.textInput!.style.height = Math.max(this.textInput!.scrollHeight, parseInt(this.textInput!.style.minHeight)) + 'px'
-    }
-
-    // Real-time preview
-    const updatePreview = () => {
-      if (this.textInput && this.editingLayer) {
-        textNode.text(this.textInput.value)
-        
-        // Apply auto-resize if enabled
-        const props = this.getTextProperties(layerData.properties as Partial<TextLayerProperties>)
-        if (props.autoResize.enabled) {
-          this.applyAutoResize(textNode, layerData, props.autoResize)
-        }
-        
-        autoResize()
-        // Don't show text node yet, keep it hidden until editing is done
-      }
-    }
-
-    // Event listeners
-    this.textInput.addEventListener('input', updatePreview)
-    this.textInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        this.cancelInlineEdit(textNode)
-      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        this.finishInlineEdit(textNode, layerData)
-      }
-      e.stopPropagation()
-    })
-
-    this.textInput.addEventListener('blur', () => {
-      this.finishInlineEdit(textNode, layerData)
-    })
-
-    // Initial auto-resize
-    autoResize()
-  }
-
-  /**
-   * Finish inline text editing and commit changes
-   */
-  private finishInlineEdit(textNode: Konva.Text, layerData: LayerNode): void {
-    if (!this.textInput || !this.editingLayer) return
-
-    const newText = this.textInput.value
-    
-    // Update the text
-    textNode.text(newText)
-    textNode.visible(true)
-    
-    // Apply auto-resize if enabled
-    const props = this.getTextProperties(layerData.properties as Partial<TextLayerProperties>)
-    if (props.autoResize.enabled) {
-      this.applyAutoResize(textNode, layerData, props.autoResize)
-    }
-
-    // Clean up
-    document.body.removeChild(this.textInput)
-    this.textInput = null
-    this.editingLayer = null
-
-    // Redraw
-    textNode.getLayer()?.batchDraw()
-
-    // Emit change event if text actually changed
-    if (newText !== this.editStartText && this.eventEmitter) {
-      this.eventEmitter.emit('layer:update', {
-        layerId: layerData.id,
-        properties: { text: newText }
-      })
-    }
-  }
-
-  /**
-   * Cancel inline text editing without saving changes
-   */
-  private cancelInlineEdit(textNode: Konva.Text): void {
-    if (!this.textInput || !this.editingLayer) return
-
-    // Restore original text
-    textNode.text(this.editStartText)
-    textNode.visible(true)
-
-    // Clean up
-    document.body.removeChild(this.textInput)
-    this.textInput = null
-    this.editingLayer = null
-
-    // Redraw
-    textNode.getLayer()?.batchDraw()
-  }
+ 
 
   /**
    * Check if a layer is currently being edited

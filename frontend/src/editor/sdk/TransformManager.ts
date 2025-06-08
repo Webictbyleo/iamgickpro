@@ -175,18 +175,18 @@ export class TransformManager {
       boundBoxFunc: (oldBox: Box, newBox: Box) => {
         const activeAnchor = this.transformer?.getActiveAnchor()
         const minWidth = 50
-        const minHeight = 20
 
         // Corner handles: uniform scaling
         if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
           const scale = Math.min(newBox.width / oldBox.width, newBox.height / oldBox.height)
           newBox.width = Math.max(minWidth, oldBox.width * scale)
-          newBox.height = Math.max(minHeight, oldBox.height * scale)
+          newBox.height = Math.max(20, oldBox.height * scale)
         }
-        // Side handles: width resizing only
+        // Side handles: width resizing only - DON'T constrain height for text wrapping
         else if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
           newBox.width = Math.max(minWidth, newBox.width)
-          newBox.height = Math.max(minHeight, oldBox.height) // Maintain height for now
+          // Let height expand/contract naturally based on text content
+          // Don't set any height constraints here
         }
 
         return newBox
@@ -275,15 +275,20 @@ export class TransformManager {
     this.transformer.on('transformend.transform-manager', () => {
       this.handleTransformEnd()
     })
+
+    // Add individual transform handlers for each selected node
+    this.addNodeTransformHandlers()
   }
 
   private handleTransform(): void {
-    // Handle real-time transformations, especially for image cropping
+    // Handle real-time transformations for images and text
     this.selectedLayers.forEach(layer => {
       if (!layer.konvaNode) return
 
       if (layer.type === 'image') {
         this.handleImageTransformRealtime(layer)
+      } else if (layer.type === 'text') {
+        this.handleTextTransformRealtime(layer)
       }
     })
   }
@@ -337,6 +342,31 @@ export class TransformManager {
     }
   }
 
+  private handleTextTransformRealtime(layer: LayerNode): void {
+    // Handle real-time text transformation during transform event
+    if (!layer.konvaNode || layer.type !== 'text') return
+
+    const textNode = layer.konvaNode as Konva.Text
+    const activeAnchor = this.transformer?.getActiveAnchor()
+
+    if (!activeAnchor || !textNode) return
+
+    // Check if we're using middle handles for width resizing (text wrapping)
+    if (['middle-left', 'middle-right'].includes(activeAnchor)) {
+      // Follow Konva documentation pattern exactly:
+      // Just reset scale and apply to width - that's it!
+      textNode.setAttrs({
+        width: textNode.width() * textNode.scaleX(),
+        scaleX: 1,
+      })
+    }
+    // Corner handles maintain aspect ratio for uniform scaling
+    else if (['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+      // For corner handles, we let the scale happen normally for uniform scaling
+      // The final scale will be applied in handleTextTransform during transformend
+    }
+  }
+
   private handleTransformEnd(): void {
     this.selectedLayers.forEach(layer => {
       if (!layer.konvaNode) return
@@ -357,16 +387,16 @@ export class TransformManager {
         this.handleDefaultTransform(layer)
       }
 
-      // For non-image layers, reset scale to 1 and apply to width/height
-      // For image layers, this is handled in handleImageTransform
-      if (layer.type !== 'image' && (node.scaleX() !== 1 || node.scaleY() !== 1)) {
+      // For non-text, non-image layers, reset scale to 1 and apply to width/height
+      // Text and image layers are handled in their specific transform methods
+      if (layer.type !== 'image' && layer.type !== 'text' && (node.scaleX() !== 1 || node.scaleY() !== 1)) {
         layer.width = layer.width * Math.abs(node.scaleX())
         layer.height = layer.height * Math.abs(node.scaleY())
         layer.scaleX = 1
         layer.scaleY = 1
         
         node.setAttrs({
-          width: layer.width,
+          width: layer.width,  
           height: layer.height,
           scaleX: 1,
           scaleY: 1
@@ -381,22 +411,47 @@ export class TransformManager {
   }
 
   private handleTextTransform(layer: LayerNode): void {
-    // Handle text-specific transformations like text wrapping
-    const textNode = layer.konvaNode as Konva.Text
+    // Handle text-specific transformations following Konva docs exactly
+    const textNode = layer.konvaNode as Konva.Text  
     const activeAnchor = this.transformer?.getActiveAnchor()
 
-    if (activeAnchor && ['middle-left', 'middle-right'].includes(activeAnchor)) {
-      // Width resizing: apply new width and let text wrap
-      const newWidth = textNode.width() * Math.abs(textNode.scaleX())
+    if (!textNode || !activeAnchor) return
+
+    // Middle handles: Width resizing for text wrapping
+    if (['middle-left', 'middle-right'].includes(activeAnchor)) {
+      // Following Konva docs: just update width, let height be auto-calculated
+      layer.width = textNode.width()
+      // DON'T set layer.height - let it be determined by text content
+      // DON'T set height on textNode - it should wrap naturally
+    }
+    // Corner handles: Uniform scaling
+    else if (['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+      // Uniform scaling: apply scale to both font size and dimensions
+      const scaleX = Math.abs(textNode.scaleX())
+      const scaleY = Math.abs(textNode.scaleY())
+      const scale = Math.min(scaleX, scaleY) // Use minimum scale for uniform scaling
+      
+      // Get current font size and calculate new font size
+      const currentFontSize = textNode.fontSize() || 16
+      const newFontSize = Math.max(8, currentFontSize * scale) // Minimum font size of 8
+      
+      // Calculate new width
+      const newWidth = textNode.width() * scaleX
+      
+      // Apply the scaling - NO height management
       textNode.setAttrs({
+        fontSize: newFontSize,
         width: newWidth,
         scaleX: 1,
         scaleY: 1
       })
       
-      // Update layer dimensions
+      // Update layer data - NO height management
       layer.width = newWidth
-      layer.height = textNode.height() // Use actual text height after wrapping
+      // Update font size in properties if they exist
+      if (layer.properties && 'fontSize' in layer.properties) {
+        (layer.properties as any).fontSize = newFontSize
+      }
     }
   }
 
@@ -636,7 +691,44 @@ export class TransformManager {
     }
   }
 
+  private addNodeTransformHandlers(): void {
+    // Add individual transform handlers for each selected node
+    // This follows the Konva documentation pattern for text wrapping
+    this.selectedLayers.forEach(layer => {
+      if (!layer.konvaNode) return
+
+      // Remove existing transform handlers for this node
+      layer.konvaNode.off('transform.node-transform')
+
+      if (layer.type === 'text') {
+        // Add text-specific transform handler for real-time text wrapping
+        layer.konvaNode.on('transform.node-transform', () => {
+          const textNode = layer.konvaNode as Konva.Text
+          const activeAnchor = this.transformer?.getActiveAnchor()
+
+          if (!textNode || !activeAnchor) return
+
+          // Handle width resizing for text wrapping (middle handles)
+          if (['middle-left', 'middle-right'].includes(activeAnchor)) {
+            // Follow Konva documentation pattern exactly
+            textNode.setAttrs({
+              width: textNode.width() * textNode.scaleX(),
+              scaleX: 1,
+            })
+          }
+        })
+      }
+    })
+  }
+
   destroy(): void {
+    // Clean up node transform handlers
+    this.selectedLayers.forEach(layer => {
+      if (layer.konvaNode) {
+        layer.konvaNode.off('transform.node-transform')
+      }
+    })
+
     if (this.transformer) {
       this.transformer.destroy()
       this.transformer = null
