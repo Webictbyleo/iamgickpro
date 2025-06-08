@@ -25,7 +25,7 @@ readonly class PaginatedResponseDTO
     {
         return [
             'data' => array_map(
-                fn($item) => method_exists($item, 'toArray') ? $item->toArray() : $item,
+                fn($item) => (is_object($item) && method_exists($item, 'toArray')) ? $item->toArray() : $item,
                 $this->data
             ),
             'pagination' => [

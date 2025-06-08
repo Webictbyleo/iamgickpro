@@ -61,7 +61,7 @@ class MediaRepository extends ServiceEntityRepository
             ->andWhere('m.user = :user')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('user', $user)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->getQuery()
@@ -85,7 +85,7 @@ class MediaRepository extends ServiceEntityRepository
             ->andWhere('m.type = :type')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('type', $type)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->getQuery()
@@ -109,7 +109,7 @@ class MediaRepository extends ServiceEntityRepository
             ->andWhere('m.source = :source')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('source', $source)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->getQuery()
@@ -135,7 +135,7 @@ class MediaRepository extends ServiceEntityRepository
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->setParameter('type', $type)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -164,7 +164,7 @@ class MediaRepository extends ServiceEntityRepository
                ->setParameter('type', $type);
         }
 
-        return $qb->orderBy('m.createdAt', 'DESC')
+        return $qb->orderBy('m.created_at', 'DESC')
                   ->setMaxResults($limit)
                   ->getQuery()
                   ->getResult();
@@ -186,7 +186,7 @@ class MediaRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('m')
             ->andWhere('m.user = :user')
-            ->andWhere('m.fileName LIKE :query OR m.altText LIKE :query')
+            ->andWhere('m.name LIKE :query')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->setParameter('query', '%' . $query . '%');
@@ -196,7 +196,7 @@ class MediaRepository extends ServiceEntityRepository
                ->setParameter('type', $type);
         }
 
-        return $qb->orderBy('m.createdAt', 'DESC')
+        return $qb->orderBy('m.created_at', 'DESC')
                   ->setMaxResults($limit)
                   ->getQuery()
                   ->getResult();
@@ -222,7 +222,7 @@ class MediaRepository extends ServiceEntityRepository
                ->setParameter("tag_{$index}", json_encode($tag));
         }
 
-        return $qb->orderBy('m.createdAt', 'DESC')
+        return $qb->orderBy('m.created_at', 'DESC')
                   ->setMaxResults($limit)
                   ->getQuery()
                   ->getResult();
@@ -250,7 +250,7 @@ class MediaRepository extends ServiceEntityRepository
             ->setParameter('maxWidth', $maxWidth)
             ->setParameter('minHeight', $minHeight)
             ->setParameter('maxHeight', $maxHeight)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -292,10 +292,10 @@ class MediaRepository extends ServiceEntityRepository
         $since = new \DateTimeImmutable("-{$days} days");
         
         return $this->createQueryBuilder('m')
-            ->andWhere('m.createdAt >= :since')
+            ->andWhere('m.created_at >= :since')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('since', $since)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -318,11 +318,11 @@ class MediaRepository extends ServiceEntityRepository
         
         return $this->createQueryBuilder('m')
             ->andWhere('m.user = :user')
-            ->andWhere('m.createdAt >= :since')
+            ->andWhere('m.created_at >= :since')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->setParameter('since', $since)
-            ->orderBy('m.createdAt', 'DESC')
+            ->orderBy('m.created_at', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -426,7 +426,7 @@ class MediaRepository extends ServiceEntityRepository
             ->andWhere('m.hash = :hash')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('hash', $hash)
-            ->orderBy('m.createdAt', 'ASC')
+            ->orderBy('m.created_at', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -468,7 +468,7 @@ class MediaRepository extends ServiceEntityRepository
             ->update()
             ->set('m.deletedAt', ':now')
             ->where('m.deletedAt IS NULL')
-            ->andWhere('m.createdAt < :expired')
+            ->andWhere('m.created_at < :expired')
             ->andWhere('m.source = :temp')
             ->setParameter('now', new \DateTimeImmutable())
             ->setParameter('expired', $expiredDate)
@@ -498,6 +498,87 @@ class MediaRepository extends ServiceEntityRepository
             ->setParameter('source', $source)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Find media items with advanced filtering support.
+     * 
+     * Retrieves media items based on multiple filter criteria including type, source,
+     * and text search. Supports pagination and is designed to work with the
+     * SearchMediaRequestDTO for comprehensive media filtering.
+     * 
+     * @param array<string, string> $filters Associative array of filters (type, source, etc.)
+     * @param int $page Page number for pagination (1-based)
+     * @param int $limit Number of items per page
+     * @param string|null $search Optional text search across filename and alt text
+     * @return Media[] Array of Media entities matching the criteria
+     */
+    public function findByFilters(array $filters, int $page, int $limit, ?string $search = null): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->andWhere('m.deletedAt IS NULL');
+
+        // Apply filter criteria
+        if (isset($filters['type'])) {
+            $qb->andWhere('m.type = :type')
+               ->setParameter('type', $filters['type']);
+        }
+
+        if (isset($filters['source'])) {
+            $qb->andWhere('m.source = :source')
+               ->setParameter('source', $filters['source']);
+        }
+
+        // Apply text search if provided
+        if ($search !== null && $search !== '') {
+            $qb->andWhere('m.name LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        // Calculate offset for pagination
+        $offset = ($page - 1) * $limit;
+
+        return $qb->orderBy('m.created_at', 'DESC')
+                  ->setMaxResults($limit)
+                  ->setFirstResult($offset)
+                  ->getQuery()
+                  ->getResult();
+    }
+
+    /**
+     * Count media items with advanced filtering support.
+     * 
+     * Counts the total number of media items that match the given filter criteria.
+     * Used in conjunction with findByFilters for pagination calculations.
+     * 
+     * @param array<string, string> $filters Associative array of filters (type, source, etc.)
+     * @param string|null $search Optional text search across filename and alt text
+     * @return int Total count of media items matching the criteria
+     */
+    public function countByFilters(array $filters, ?string $search = null): int
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->andWhere('m.deletedAt IS NULL');
+
+        // Apply filter criteria
+        if (isset($filters['type'])) {
+            $qb->andWhere('m.type = :type')
+               ->setParameter('type', $filters['type']);
+        }
+
+        if (isset($filters['source'])) {
+            $qb->andWhere('m.source = :source')
+               ->setParameter('source', $filters['source']);
+        }
+
+        // Apply text search if provided
+        if ($search !== null && $search !== '') {
+            $qb->andWhere('m.name LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /**
@@ -534,5 +615,91 @@ class MediaRepository extends ServiceEntityRepository
         $stmt->bindValue('limit', $limit, 'integer');
         
         return $stmt->executeQuery()->fetchAllAssociative();
+    }
+
+    /**
+     * Find popular media based on usage statistics.
+     * 
+     * Retrieves media items that are frequently used in designs,
+     * based on usage count stored in metadata. Used for displaying
+     * trending content and recommendations.
+     * 
+     * @param int $limit Maximum number of popular media items to return (default: 20)
+     * @return Media[] Array of popular Media entities ordered by usage count
+     */
+    public function findPopular(int $limit = 20): array
+    {
+        // This uses a raw SQL query to sort by JSON field for usage_count
+        $sql = "
+            SELECT m.* FROM media m 
+            WHERE m.deleted_at IS NULL 
+            AND JSON_EXTRACT(m.metadata, '$.usage_count') IS NOT NULL
+            ORDER BY CAST(JSON_EXTRACT(m.metadata, '$.usage_count') AS UNSIGNED) DESC
+            LIMIT :limit
+        ";
+
+        $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
+        $stmt->bindValue('limit', $limit, 'integer');
+        $result = $stmt->executeQuery();
+
+        $mediaIds = array_column($result->fetchAllAssociative(), 'id');
+        
+        if (empty($mediaIds)) {
+            // Fallback to recent media if no usage stats available
+            return $this->findRecent(7, $limit);
+        }
+
+        return $this->createQueryBuilder('m')
+            ->andWhere('m.id IN (:ids)')
+            ->setParameter('ids', $mediaIds)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find duplicate media files by user and hash.
+     * 
+     * Retrieves media items uploaded by a specific user that share the same
+     * file hash, indicating identical file content. Used for user-specific
+     * deduplication and storage optimization.
+     * 
+     * @param User $user The user whose media to check for duplicates
+     * @return array Array of arrays, each containing Media entities with the same hash
+     */
+    public function findDuplicatesByUser(User $user): array
+    {
+        // First, find all hashes that have more than one media item for this user
+        $duplicateHashes = $this->createQueryBuilder('m')
+            ->select('m.hash')
+            ->andWhere('m.user = :user')
+            ->andWhere('m.deletedAt IS NULL')
+            ->andWhere('m.hash IS NOT NULL')
+            ->setParameter('user', $user)
+            ->groupBy('m.hash')
+            ->having('COUNT(m.id) > 1')
+            ->getQuery()
+            ->getResult();
+
+        $duplicateGroups = [];
+        
+        // For each duplicate hash, get all media items
+        foreach ($duplicateHashes as $hashResult) {
+            $hash = $hashResult['hash'];
+            $mediaItems = $this->createQueryBuilder('m')
+                ->andWhere('m.user = :user')
+                ->andWhere('m.hash = :hash')
+                ->andWhere('m.deletedAt IS NULL')
+                ->setParameter('user', $user)
+                ->setParameter('hash', $hash)
+                ->orderBy('m.created_at', 'ASC')
+                ->getQuery()
+                ->getResult();
+                
+            if (count($mediaItems) > 1) {
+                $duplicateGroups[] = $mediaItems;
+            }
+        }
+        
+        return $duplicateGroups;
     }
 }

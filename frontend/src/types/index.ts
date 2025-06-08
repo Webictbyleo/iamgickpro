@@ -32,6 +32,20 @@ export interface PaginatedApiResponse<T> extends BaseApiResponse {
 }
 
 /**
+ * Backend paginated response structure (actual response from PaginatedResponseDTO)
+ */
+export interface BackendPaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
+}
+
+/**
  * Authentication response structure
  */
 export interface AuthApiResponse extends BaseApiResponse {
@@ -806,17 +820,17 @@ export interface MediaApiResponse extends BaseApiResponse {
 }
 
 /**
- * Media list paginated response
+ * Media list paginated response (matches backend PaginatedResponseDTO structure)
  */
-export interface MediaListApiResponse extends BaseApiResponse {
-  data: {
-    media: MediaItem[]
-    pagination: {
-      total: number
-      page: number
-      totalPages: number
-    }
+export interface MediaListApiResponse {
+  data: MediaItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
   }
+  message: string
 }
 
 /**

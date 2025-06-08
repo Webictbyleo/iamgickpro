@@ -54,9 +54,9 @@ export function useUserMedia(): UserMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media) {
-        userMedia.value = response.data.data.media
-        hasMoreUserMedia.value = response.data.data.media.length === ITEMS_PER_PAGE
+      if (response.data?.data) {
+        userMedia.value = response.data.data
+        hasMoreUserMedia.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         userMedia.value = []
         hasMoreUserMedia.value = false
@@ -87,9 +87,9 @@ export function useUserMedia(): UserMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media && response.data.data.media.length > 0) {
-        userMedia.value.push(...response.data.data.media)
-        hasMoreUserMedia.value = response.data.data.media.length === ITEMS_PER_PAGE
+      if (response.data?.data && response.data.data.length > 0) {
+        userMedia.value.push(...response.data.data)
+        hasMoreUserMedia.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         hasMoreUserMedia.value = false
       }

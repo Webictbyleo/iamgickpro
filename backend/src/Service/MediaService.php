@@ -273,14 +273,19 @@ readonly class MediaService
         int $limit = 20,
         int $offset = 0
     ): array {
-        return $this->mediaRepository->findByFilters([
-            'query' => $query,
-            'type' => $type,
-            'source' => $source,
-            'user' => $user,
-            'limit' => $limit,
-            'offset' => $offset
-        ]);
+        // Build filters array from non-null parameters
+        $filters = [];
+        if ($type !== null) {
+            $filters['type'] = $type;
+        }
+        if ($source !== null) {
+            $filters['source'] = $source;
+        }
+        
+        // Calculate page from offset and limit
+        $page = (int) floor($offset / $limit) + 1;
+        
+        return $this->mediaRepository->findByFilters($filters, $page, $limit, $query);
     }
 
     public function getUserMedia(User $user, int $limit = 20, int $offset = 0): array

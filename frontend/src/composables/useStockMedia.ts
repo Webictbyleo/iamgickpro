@@ -94,9 +94,9 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media) {
-        stockPhotos.value = response.data.data.media.map(transformMediaItem)
-        hasMorePhotos.value = response.data.data.media.length === ITEMS_PER_PAGE
+      if (response.data?.data) {
+        stockPhotos.value = response.data.data.map(transformMediaItem)
+        hasMorePhotos.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         stockPhotos.value = []
         hasMorePhotos.value = false
@@ -128,9 +128,9 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media) {
-        stockIcons.value = response.data.data.media.map(transformMediaItem)
-        hasMoreIcons.value = response.data.data.media.length === ITEMS_PER_PAGE
+      if (response.data?.data) {
+        stockIcons.value = response.data.data.map(transformMediaItem)
+        hasMoreIcons.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         stockIcons.value = []
         hasMoreIcons.value = false
@@ -162,9 +162,9 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media) {
-        stockShapes.value = response.data.data.media.map(transformMediaItem)
-        hasMoreShapes.value = response.data.data.media.length === ITEMS_PER_PAGE
+      if (response.data?.data) {
+        stockShapes.value = response.data.data.map(transformMediaItem)
+        hasMoreShapes.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         stockShapes.value = []
         hasMoreShapes.value = false
@@ -196,9 +196,9 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media) {
-        stockVideos.value = response.data.data.media.map(transformMediaItem)
-        hasMoreVideos.value = response.data.data.media.length === ITEMS_PER_PAGE
+      if (response.data?.data) {
+        stockVideos.value = response.data.data.map(transformMediaItem)
+        hasMoreVideos.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         stockVideos.value = []
         hasMoreVideos.value = false
@@ -229,10 +229,10 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media && response.data.data.media.length > 0) {
-        const newPhotos = response.data.data.media.map(transformMediaItem)
+      if (response.data?.data && response.data.data.length > 0) {
+        const newPhotos = response.data.data.map(transformMediaItem)
         stockPhotos.value.push(...newPhotos)
-        hasMorePhotos.value = response.data.data.media.length === ITEMS_PER_PAGE
+        hasMorePhotos.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         hasMorePhotos.value = false
       }
@@ -261,10 +261,10 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media && response.data.data.media.length > 0) {
-        const newIcons = response.data.data.media.map(transformMediaItem)
+      if (response.data?.data && response.data.data.length > 0) {
+        const newIcons = response.data.data.map(transformMediaItem)
         stockIcons.value.push(...newIcons)
-        hasMoreIcons.value = response.data.data.media.length === ITEMS_PER_PAGE
+        hasMoreIcons.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         hasMoreIcons.value = false
       }
@@ -293,10 +293,10 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media && response.data.data.media.length > 0) {
-        const newShapes = response.data.data.media.map(transformMediaItem)
+      if (response.data?.data && response.data.data.length > 0) {
+        const newShapes = response.data.data.map(transformMediaItem)
         stockShapes.value.push(...newShapes)
-        hasMoreShapes.value = response.data.data.media.length === ITEMS_PER_PAGE
+        hasMoreShapes.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         hasMoreShapes.value = false
       }
@@ -325,10 +325,10 @@ export function useStockMedia(): UseStockMediaReturn {
         limit: ITEMS_PER_PAGE
       })
       
-      if (response.data?.data?.media && response.data.data.media.length > 0) {
-        const newVideos = response.data.data.media.map(transformMediaItem)
+      if (response.data?.data && response.data.data.length > 0) {
+        const newVideos = response.data.data.map(transformMediaItem)
         stockVideos.value.push(...newVideos)
-        hasMoreVideos.value = response.data.data.media.length === ITEMS_PER_PAGE
+        hasMoreVideos.value = response.data.data.length === ITEMS_PER_PAGE
       } else {
         hasMoreVideos.value = false
       }

@@ -400,4 +400,49 @@ class Media
     {
         $this->updated_at = new \DateTimeImmutable();
     }
+
+    /**
+     * Convert the media entity to an array representation
+     *
+     * Returns a standardized array format for API responses and data serialization.
+     * This method ensures consistent media data structure across all endpoints.
+     *
+     * @param bool $includeUser Whether to include user information in the response
+     * @return array<string, mixed> Array representation of the media entity
+     */
+    public function toArray(bool $includeUser = false): array
+    {
+        $data = [
+            'id' => $this->getId(),
+            'uuid' => $this->getUuid()?->toRfc4122(),
+            'name' => $this->getName(),
+            'type' => $this->getType(),
+            'mimeType' => $this->getMimeType(),
+            'size' => $this->getSize(),
+            'url' => $this->getUrl(),
+            'thumbnailUrl' => $this->getThumbnailUrl(),
+            'width' => $this->getWidth(),
+            'height' => $this->getHeight(),
+            'duration' => $this->getDuration(),
+            'source' => $this->getSource(),
+            'sourceId' => $this->getSourceId(),
+            'metadata' => $this->getMetadata(),
+            'tags' => $this->getTags(),
+            'attribution' => $this->getAttribution(),
+            'license' => $this->getLicense(),
+            'isPremium' => $this->isIsPremium(),
+            'isActive' => $this->isIsActive(),
+            'createdAt' => $this->getCreatedAt()?->format('c'),
+            'updatedAt' => $this->getUpdatedAt()?->format('c'),
+        ];
+
+        if ($includeUser && $this->getUser()) {
+            $data['uploadedBy'] = [
+                'id' => $this->getUser()->getId(),
+                'username' => $this->getUser()->getUsername(),
+            ];
+        }
+
+        return $data;
+    }
 }

@@ -184,33 +184,13 @@ class ResponseDTOFactory
      */
     public function createMediaResponse(Media $media, string $message = 'Media retrieved successfully'): MediaResponseDTO
     {
-        $mediaData = [
-            'id' => $media->getId(),
-            'uuid' => $media->getUuid()->toRfc4122(),
-            'name' => $media->getName(),
-            'type' => $media->getType(),
-            'mimeType' => $media->getMimeType(),
-            'size' => $media->getSize(),
-            'url' => $media->getUrl(),
-            'thumbnail' => $media->getThumbnailUrl(),
-            'width' => $media->getWidth(),
-            'height' => $media->getHeight(),
-            'duration' => $media->getDuration(),
-            'source' => $media->getSource(),
-            'sourceId' => $media->getSourceId(),
-            'metadata' => $media->getMetadata(),
-            'tags' => $media->getTags(),
-            'attribution' => $media->getAttribution(),
-            'license' => $media->getLicense(),
-            'isPremium' => $media->isIsPremium(),
-            'isActive' => $media->isIsActive(),
-            'uploadedBy' => $media->getUser() ? [
-                'id' => $media->getUser()->getId(),
-                'username' => $media->getUser()->getUsername(),
-            ] : null,
-            'createdAt' => $media->getCreatedAt()->format('c'),
-            'updatedAt' => $media->getUpdatedAt()?->format('c'),
-        ];
+        $mediaData = $media->toArray(includeUser: true);
+        
+        // Adjust the thumbnail field name for backward compatibility
+        if (isset($mediaData['thumbnailUrl'])) {
+            $mediaData['thumbnail'] = $mediaData['thumbnailUrl'];
+            unset($mediaData['thumbnailUrl']);
+        }
 
         return new MediaResponseDTO(
             success: true,

@@ -85,28 +85,7 @@ class MediaController extends AbstractController
             $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
             $total = $this->mediaRepository->countByFilters($filters, $dto->search);
 
-            $mediaData = array_map(function (Media $media) {
-                return [
-                    'id' => $media->getId(),
-                    'uuid' => $media->getUuid()->toRfc4122(),
-                    'name' => $media->getName(),
-                    'type' => $media->getType(),
-                    'mimeType' => $media->getMimeType(),
-                    'size' => $media->getSize(),
-                    'url' => $media->getUrl(),
-                    'thumbnailUrl' => $media->getThumbnailUrl(),
-                    'width' => $media->getWidth(),
-                    'height' => $media->getHeight(),
-                    'duration' => $media->getDuration(),
-                    'source' => $media->getSource(),
-                    'metadata' => $media->getMetadata(),
-                    'tags' => $media->getTags(),
-                    'isPremium' => $media->isIsPremium(),
-                    'isActive' => $media->isIsActive(),
-                    'createdAt' => $media->getCreatedAt()->format('c'),
-                    'updatedAt' => $media->getUpdatedAt()?->format('c'),
-                ];
-            }, $media);
+            $mediaData = array_map(fn(Media $mediaItem) => $mediaItem->toArray(), $media);
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 $mediaData,
@@ -508,24 +487,7 @@ class MediaController extends AbstractController
             $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
             $total = $this->mediaRepository->countByFilters($filters, $dto->search);
 
-            $mediaData = array_map(function (Media $media) {
-                return [
-                    'id' => $media->getId(),
-                    'uuid' => $media->getUuid()->toRfc4122(),
-                    'name' => $media->getName(),
-                    'type' => $media->getType(),
-                    'mimeType' => $media->getMimeType(),
-                    'size' => $media->getSize(),
-                    'url' => $media->getUrl(),
-                    'thumbnailUrl' => $media->getThumbnailUrl(),
-                    'source' => $media->getSource(),
-                    'metadata' => $media->getMetadata(),
-                    'tags' => $media->getTags(),
-                    'isPremium' => $media->isIsPremium(),
-                    'isActive' => $media->isIsActive(),
-                    'createdAt' => $media->getCreatedAt()->format('c'),
-                ];
-            }, $media);
+            $mediaData = array_map(fn(Media $mediaItem) => $mediaItem->toArray(), $media);
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 $mediaData,
