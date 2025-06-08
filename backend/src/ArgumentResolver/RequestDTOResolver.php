@@ -10,6 +10,8 @@ use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use ReflectionClass;
+use ReflectionParameter;
 
 /**
  * Argument resolver for automatically deserializing and validating request DTOs
@@ -32,6 +34,35 @@ class RequestDTOResolver implements ValueResolverInterface
         // Check if the class has a RequestDTO suffix or implements a marker interface
         if (!str_ends_with($type, 'RequestDTO') && !str_ends_with($type, 'DTO')) {
             return [];
+        }
+
+        // Special handling for UploadMediaRequestDTO with multipart/form-data
+        if ($type === UploadMediaRequestDTO::class && 
+            str_starts_with($request->headers->get('Content-Type', ''), 'multipart/form-data')) {
+            
+            // Extract file and name from the request
+            $file = $request->files->get('file');
+            $name = $request->request->get('name');
+
+            // Create the DTO
+            $dto = new UploadMediaRequestDTO(
+                file: $file,
+                name: $name
+            );
+
+            // Validate the DTO
+            $violations = $this->validator->validate($dto);
+            
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[] = sprintf('%s: %s', $violation->getPropertyPath(), $violation->getMessage());
+                }
+                throw new BadRequestHttpException('Validation failed: ' . implode(', ', $errors));
+            }
+            
+            yield $dto;
+            return;
         }
 
         $content = $request->getContent();

@@ -22,6 +22,17 @@
         ]"
       />
       
+      <!-- Optional text -->
+      <span 
+        v-if="text"
+        :class="[
+          'ml-2 text-sm font-medium transition-colors duration-200',
+          disabled ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'
+        ]"
+      >
+        {{ text }}
+      </span>
+      
       <!-- Optional chevron -->
       <ChevronDownIcon 
         v-if="showChevron"
@@ -63,6 +74,7 @@ import { ChevronDownIcon } from '@heroicons/vue/24/outline'
 
 interface Props {
   icon: any // Vue component for the icon
+  text?: string // Optional text to show alongside icon
   tooltip?: string
   placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
   width?: string
@@ -73,6 +85,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  text: '',
   tooltip: '',
   placement: 'bottom-start',
   width: 'w-64',

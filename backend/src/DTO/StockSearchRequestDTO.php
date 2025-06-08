@@ -68,23 +68,13 @@ readonly class StockSearchRequestDTO
          * are more commonly used in designs.
          */
         #[Assert\Choice(
-            choices: ['image', 'video'],
+            choices: ['image', 'video','shape', 'icon'],
             message: 'Type must be one of: image, video'
         )]
         public string $type = 'image',
-
-        /**
-         * Stock media provider source.
-         * 
-         * Specifies which external stock media provider to search.
-         * Each provider has different content, licensing, and API
-         * characteristics. Defaults to Unsplash for high-quality images.
-         */
-        #[Assert\Choice(
-            choices: ['unsplash', 'pexels', 'pixabay'],
-            message: 'Source must be one of: unsplash, pexels, pixabay'
-        )]
-        public string $source = 'unsplash',
+        
+        
+        
     ) {
     }
 

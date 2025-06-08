@@ -447,7 +447,7 @@ export interface ExportJobSearchParams extends SearchParams {
 
 export interface StockMediaSearchParams extends PaginationParams {
   query?: string
-  category?: string
+  type?: 'image' | 'video' | 'shape' | 'icon'
   color?: string
   orientation?: 'landscape' | 'portrait' | 'square'
 }

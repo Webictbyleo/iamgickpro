@@ -1144,7 +1144,7 @@
                     }
                 },
                 {
-                    "name": "Create a new media file entry",
+                    "name": "Create a new media file entry from existing data",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -1276,6 +1276,33 @@
                                 "media",
                                 "stock",
                                 "search"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Upload a new media file",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/media\/upload",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "media",
+                                "upload"
                             ]
                         }
                     }
@@ -2442,6 +2469,177 @@
                                 "api",
                                 "user",
                                 "subscription"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "VideoAnalysisController",
+            "item": [
+                {
+                    "name": "Extract basic video information",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/video-analysis\/extract-info",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "video-analysis",
+                                "extract-info"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Generate designs from YouTube video",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/video-analysis\/generate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "video-analysis",
+                                "generate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get user's video analysis jobs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/video-analysis\/jobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "video-analysis",
+                                "jobs"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get video analysis job status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/video-analysis\/jobs\/{jobId}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "video-analysis",
+                                "jobs",
+                                "{jobId}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete video analysis job",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/video-analysis\/jobs\/{jobId}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "video-analysis",
+                                "jobs",
+                                "{jobId}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Retry failed video analysis job",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/api\/video-analysis\/jobs\/{jobId}\/retry",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "video-analysis",
+                                "jobs",
+                                "{jobId}",
+                                "retry"
                             ]
                         }
                     }

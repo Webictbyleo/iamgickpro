@@ -428,9 +428,9 @@ const searchMedia = async () => {
 const loadStockMedia = async () => {
   try {
     isLoading.value = true
-    const response = await mediaAPI.getStockMedia({
+    const response = await mediaAPI.searchStockMedia({
       query: searchQuery.value,
-      category: selectedType.value, // Use category instead of type for stock media
+      type: selectedType.value as 'image' | 'video' | 'shape', // Use type parameter for stock media
       page: currentPage.value,
       limit: 24
     })

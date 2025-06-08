@@ -252,23 +252,16 @@ export const mediaAPI = {
   getMedia: (params?: MediaSearchParams) => 
     api.get<MediaListApiResponse>('/media', { params }),
 
-  // POST /media
+  // POST /media/upload
   uploadMedia: (file: File, data?: {
     name?: string
-    description?: string
-    tags?: string[]
-    folder?: string
   }) => {
     const formData = new FormData()
     formData.append('file', file)
     if (data?.name) formData.append('name', data.name)
-    if (data?.description) formData.append('description', data.description)
-    if (data?.tags) formData.append('tags', JSON.stringify(data.tags))
-    if (data?.folder) formData.append('folder', data.folder)
     
-    return api.post<ApiResponse<MediaItem>>('/media', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    // Don't set Content-Type header - let browser set it automatically with boundary
+    return api.post<ApiResponse<MediaItem>>('/media/upload', formData)
   },
 
   // DELETE /media/bulk/delete
@@ -308,10 +301,6 @@ export const mediaAPI = {
 
   // DELETE /media/{uuid}
   deleteMedia: (uuid: string) => api.delete<ApiResponse<{ message: string }>>(`/media/${uuid}`),
-
-  // Additional methods for compatibility
-  getStockMedia: (params?: StockMediaSearchParams) => 
-    api.get<MediaListApiResponse>('/media/stock', { params }),
 }
 
 // Plugin API - aligned with PluginController (12 endpoints)

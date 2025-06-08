@@ -4,18 +4,34 @@ import axios from 'axios'
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
-// Request interceptor to add auth token
+
+// Request interceptor to add auth token and set appropriate headers
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // For FormData, ensure no Content-Type header is set so browser can set it with boundary
+    if (config.data instanceof FormData) {
+      // Remove any Content-Type headers that might have been set
+      delete config.headers['Content-Type']
+      delete config.headers['content-type']
+      // Ensure headers object doesn't have the default
+      if (config.headers.common) {
+        delete config.headers.common['Content-Type']
+      }
+    } else {
+      // For non-FormData requests, set Content-Type to application/json if not already set
+      const hasContentType = config.headers['Content-Type'] || config.headers['content-type']
+      if (!hasContentType) {
+        config.headers['Content-Type'] = 'application/json'
+      }
+    }
+    
     return config
   },
   (error) => {

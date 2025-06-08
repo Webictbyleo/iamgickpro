@@ -4,7 +4,7 @@ Comprehensive API for the modern web-based design platform
 
 **Version:** 1.0.0
 
-**Generated on:** 2025-06-03 14:53:03
+**Generated on:** 2025-06-08 13:01:11
 **Generator:** Enhanced API Documentation Generator v2.0
 **Symfony Version:** 7.0.10
 **PHP Version:** 8.4.7
@@ -39,12 +39,13 @@ Comprehensive API for the modern web-based design platform
 - [DesignController](#designcontroller) *(8 routes)*
 - [ExportJobController](#exportjobcontroller) *(10 routes)*
 - [LayerController](#layercontroller) *(7 routes)*
-- [MediaController](#mediacontroller) *(9 routes)*
+- [MediaController](#mediacontroller) *(10 routes)*
 - [PluginController](#plugincontroller) *(12 routes)*
 - [ProjectController](#projectcontroller) *(8 routes)*
 - [SearchController](#searchcontroller) *(5 routes)*
 - [TemplateController](#templatecontroller) *(6 routes)*
 - [UserController](#usercontroller) *(8 routes)*
+- [VideoAnalysisController](#videoanalysiscontroller) *(6 routes)*
 
 ---
 
@@ -1946,13 +1947,23 @@ interface CreateLayerRequestDTO {
     blur?: number;
   } | {
     shapeType?: string;
-    fillColor?: string;
-    fillOpacity?: number;
-    strokeColor?: string;
+    fill?: any[];
+    stroke?: string;
     strokeWidth?: number;
     strokeOpacity?: number;
-    borderRadius?: number;
+    strokeDashArray?: string;
+    strokeLineCap?: string;
+    strokeLineJoin?: string;
+    cornerRadius?: number;
     sides?: number;
+    points?: number;
+    innerRadius?: number;
+    x1?: number;
+    y1?: number;
+    x2?: number;
+    y2?: number;
+    shadow?: any[];
+    glow?: any[];
   };
 
   /**
@@ -2129,13 +2140,23 @@ interface BulkUpdateLayersRequestDTO {
     blur?: number;
   } | {
     shapeType?: string;
-    fillColor?: string;
-    fillOpacity?: number;
-    strokeColor?: string;
+    fill?: any[];
+    stroke?: string;
     strokeWidth?: number;
     strokeOpacity?: number;
-    borderRadius?: number;
+    strokeDashArray?: string;
+    strokeLineCap?: string;
+    strokeLineJoin?: string;
+    cornerRadius?: number;
     sides?: number;
+    points?: number;
+    innerRadius?: number;
+    x1?: number;
+    y1?: number;
+    x2?: number;
+    y2?: number;
+    shadow?: any[];
+    glow?: any[];
   };
     zIndex?: number | null;
     visible?: boolean | null;
@@ -2280,13 +2301,23 @@ interface UpdateLayerRequestDTO {
     blur?: number;
   } | {
     shapeType?: string;
-    fillColor?: string;
-    fillOpacity?: number;
-    strokeColor?: string;
+    fill?: any[];
+    stroke?: string;
     strokeWidth?: number;
     strokeOpacity?: number;
-    borderRadius?: number;
+    strokeDashArray?: string;
+    strokeLineCap?: string;
+    strokeLineJoin?: string;
+    cornerRadius?: number;
     sides?: number;
+    points?: number;
+    innerRadius?: number;
+    x1?: number;
+    y1?: number;
+    x2?: number;
+    y2?: number;
+    shadow?: any[];
+    glow?: any[];
   };
 
   /**
@@ -2600,7 +2631,7 @@ async function examplePutRequest() {
 
 ## MediaController
 
-*9 routes*
+*10 routes*
 
 Media Controller
 
@@ -2726,11 +2757,13 @@ async function exampleGetRequest() {
 <!-- Route 2 -->
 ### POST /api/media
 
-Create a new media file entry
+Create a new media file entry from existing data
 
-Creates a new media file record in the database with the provided metadata.
-This endpoint handles media file upload processing and validation.
-All uploaded media files are associated with the authenticated user.
+Creates a new media file record in the database with pre-existing metadata.
+This endpoint is used for creating media records from external sources (stock photos, etc.)
+or when the file already exists and you just need to create the database record.
+For actual file uploads, use the /upload endpoint instead.
+All created media files are associated with the authenticated user.
 
 #### Request Body
 
@@ -3265,15 +3298,9 @@ interface StockSearchRequestDTO {
 
   /**
    * Type of stock media to search for. Specifies whether to search for images or videos from the stoc...
-   * @validation Choice=choices: ['image'  'video']  message: 'Type must be one of: image  video'
+   * @validation Choice=choices: ['image'  'video'  'shape'  'icon']  message: 'Type must be one of: image  video'
    */
   type?: string;
-
-  /**
-   * Stock media provider source. Specifies which external stock media provider to search. Each provid...
-   * @validation Choice=choices: ['unsplash'  'pexels'  'pixabay']  message: 'Source must be one of: unsplash  pexels  pixabay'
-   */
-  source?: string;
 
 }
 ```
@@ -3288,8 +3315,7 @@ async function exampleGetRequest() {
         "query": "example_string",
         "page": 25,
         "limit": 20,
-        "type": "example_type",
-        "source": "example_string"
+        "type": "example_type"
     };
 
   try {
@@ -3334,6 +3360,97 @@ async function exampleGetRequest() {
 ---
 
 <!-- Route 7 -->
+### POST /api/media/upload
+
+Upload a new media file
+
+Handles actual file upload with optional name and creates a new media record.
+Accepts a file upload along with an optional display name for the media item.
+Automatically processes the file, extracts metadata, and stores it securely.
+All uploaded media files are associated with the authenticated user.
+
+#### Request Body
+
+**UploadMediaRequestDTO**
+
+Data Transfer Object for media file upload requests.
+
+Simplified DTO that only accepts the file being uploaded and an optional name.
+All other metadata (size, dimensions, MIME type, etc.) is automatically
+extracted from the file by the MediaService.
+
+```typescript
+interface UploadMediaRequestDTO {
+  /**
+   * The uploaded media file. Must be a valid media file (image, video, or audio) within size limits. ...
+   * @validation NotNull=message: 'Media file is required'
+   * @validation File=maxSize: '100M'  maxSizeMessage: 'Media file size cannot exceed 100MB'  mimeTypes: ['image/jpeg'  'image/jpg'  'image/png'  'image/gif'  'image/webp'  'image/svg+xml'  'video/mp4'  'video/webm'  'video/ogg'  'video/avi'  'video/mov'  'video/wmv'  'audio/mpeg'  'audio/wav'  'audio/ogg'  'audio/aac'  'audio/mp3']  mimeTypesMessage: 'Media file must be a valid image  video  or audio file'
+   */
+  file?: UploadedFile;
+
+  /**
+   * Optional display name for the media file. If not provided, the original filename will be used. Mu...
+   * @validation Length=min: 1  max: 255  minMessage: 'Media name must be at least {{ limit }} character long'  maxMessage: 'Media name cannot be longer than {{ limit }} characters'
+   */
+  name?: string;
+
+}
+```
+
+**Example Request:**
+
+```javascript
+// Example API Request for POST /api/media/upload
+async function examplePostRequest() {
+  const url = 'https://example.com/api/media/upload';
+  const requestData = {
+        "file": null,
+        "name": null
+    };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      throw new Error('API error: ' + response.status);
+    }
+
+    const data = await response.json();
+    console.log('Success:', data);
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+```
+
+#### Response
+
+**Response Schema:**
+
+```json
+{
+    "media": null,
+    "mediaList": null,
+    "total": null,
+    "page": null,
+    "totalPages": null,
+    "message": "example_string",
+    "success": true,
+    "timestamp": "example_string"
+}
+```
+
+---
+
+<!-- Route 8 -->
 ### GET /api/media/{uuid}
 
 Get details of a specific media file
@@ -3364,7 +3481,7 @@ Only allows access to media files owned by the authenticated user.
 
 ---
 
-<!-- Route 8 -->
+<!-- Route 9 -->
 ### PUT /api/media/{uuid}
 
 Update media file metadata
@@ -3507,7 +3624,7 @@ async function examplePutRequest() {
 
 ---
 
-<!-- Route 9 -->
+<!-- Route 10 -->
 ### DELETE /api/media/{uuid}
 
 Delete a media file
@@ -5412,6 +5529,197 @@ Get user subscription information
 
 Returns current subscription details including plan type, billing status,
 usage limits, and subscription features for the authenticated user.
+
+---
+
+## VideoAnalysisController
+
+*6 routes*
+
+Video Analysis Controller
+
+Provides YouTube video analysis and AI-powered thumbnail generation functionality.
+Handles video metadata extraction, background processing of analysis jobs,
+and thumbnail design generation using artificial intelligence.
+
+Features:
+- YouTube video information extraction and metadata parsing
+- AI-powered thumbnail design generation from video content
+- Background job processing with status tracking and progress updates
+- Multiple thumbnail styles and customization options
+- Job queue management with retry mechanisms
+- User permission-based access control and job ownership
+
+All endpoints require user authentication and implement proper error handling.
+Processing jobs are queued for background execution with real-time status updates.
+
+<!-- Route 1 -->
+### GET /api/video-analysis/extract-info
+
+Extract basic video information
+
+Extracts basic metadata from a YouTube video without creating a full
+analysis job. Returns video title, description, duration, thumbnail,
+and other metadata for preview purposes.
+
+Query Parameters:
+- videoUrl: YouTube video URL (required)
+
+---
+
+<!-- Route 2 -->
+### POST /api/video-analysis/generate
+
+Generate designs from YouTube video
+
+Creates a new video analysis job to process a YouTube video and generate
+AI-powered thumbnail designs. The job is queued for background processing
+and returns immediately with a job ID for status tracking.
+
+Request Body:
+- videoUrl: YouTube video URL (required)
+- designTypes: Array of design types to generate (optional)
+- customPrompt: Custom AI prompt for design generation (optional)
+- options: Thumbnail generation options including style, size, count (optional)
+
+#### Request Body
+
+**GenerateDesignFromVideoRequestDTO**
+
+Data Transfer Object for video analysis generation requests.
+
+Handles the submission of YouTube video analysis jobs for
+generating AI-powered thumbnail designs. Supports various
+thumbnail styles, sizes, and customization options.
+
+```typescript
+interface GenerateDesignFromVideoRequestDTO {
+  /**
+   * YouTube video URL to analyze. Must be a valid YouTube URL (youtube.com or youtu.be). The system w...
+   * @validation NotBlank=message: 'Video URL is required'
+   * @validation Url=message: 'Must be a valid URL'
+   * @validation Regex=pattern: '/^https?:\/\/=?:www\.?=?:youtube\.com\/watch\?v=|youtu\.be\/[\w-]+/'  message: 'Must be a valid YouTube URL'
+   */
+  videoUrl: string;
+
+  /**
+   * Design types to generate from the video. Array of design types that should be created: - 'thumbna...
+   * @validation Type=type: 'array'  message: 'Design types must be an array'
+   * @validation All=[Symfony\Component\Validator\Constraints\Choice]
+   */
+  designTypes?: string[] | null;
+
+  /**
+   * Custom prompt for AI design generation. Additional instructions to guide the AI in creating thumb...
+   * @validation Type=type: 'string'  message: 'Custom prompt must be a string'
+   * @validation Length=max: 500  maxMessage: 'Custom prompt cannot exceed 500 characters'
+   */
+  customPrompt?: string;
+
+  /**
+   * Thumbnail generation options. Configuration for the thumbnail generation process: - style: Visual...
+   * @validation Type=type: 'array'  message: 'Options must be an array'
+   */
+  options?: Record<string, any>;
+
+}
+```
+
+**Example Request:**
+
+```javascript
+// Example API Request for POST /api/video-analysis/generate
+async function examplePostRequest() {
+  const url = 'https://example.com/api/video-analysis/generate';
+  const requestData = {
+        "videoUrl": "https:\/\/example.com",
+        "designTypes": null,
+        "customPrompt": null,
+        "options": null
+    };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      throw new Error('API error: ' + response.status);
+    }
+
+    const data = await response.json();
+    console.log('Success:', data);
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+```
+
+---
+
+<!-- Route 3 -->
+### GET /api/video-analysis/jobs
+
+Get user's video analysis jobs
+
+Retrieves a paginated list of video analysis jobs for the authenticated user.
+Supports filtering by status and sorting options for job management.
+
+Query Parameters:
+- page: Page number for pagination (default: 1)
+- limit: Items per page, max 50 (default: 10)
+- status: Filter by job status (optional)
+- sort: Sort order - newest, oldest, status (default: newest)
+
+---
+
+<!-- Route 4 -->
+### GET /api/video-analysis/jobs/{jobId}
+
+Get video analysis job status
+
+Retrieves the current status and results of a video analysis job.
+Returns job details including progress, status, and results if completed.
+Users can only access their own jobs.
+
+#### Parameters
+
+- **jobId** (string)
+
+---
+
+<!-- Route 5 -->
+### DELETE /api/video-analysis/jobs/{jobId}
+
+Delete video analysis job
+
+Deletes a video analysis job and its associated data.
+Users can only delete their own jobs. Jobs that are currently
+processing cannot be deleted and must be cancelled first.
+
+#### Parameters
+
+- **jobId** (string)
+
+---
+
+<!-- Route 6 -->
+### POST /api/video-analysis/jobs/{jobId}/retry
+
+Retry failed video analysis job
+
+Retries a failed video analysis job by resetting its status and
+requeuing it for processing. Only failed jobs can be retried.
+
+#### Parameters
+
+- **jobId** (string)
 
 ---
 

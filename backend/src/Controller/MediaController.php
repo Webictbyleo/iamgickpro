@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequireContentType;
 use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\BulkDeleteMediaRequestDTO;
 use App\DTO\CreateMediaRequestDTO;
 use App\DTO\DuplicateMediaRequestDTO;
+use App\DTO\Request\UploadMediaRequestDTO;
 use App\DTO\Response\ErrorResponseDTO;
 use App\DTO\Response\MediaResponseDTO;
 use App\DTO\Response\PaginatedResponseDTO;
@@ -18,6 +20,7 @@ use App\DTO\UpdateMediaRequestDTO;
 use App\Entity\Media;
 use App\Entity\User;
 use App\Repository\MediaRepository;
+use App\Service\MediaService;
 use App\Service\ResponseDTOFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -47,6 +50,7 @@ class MediaController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
         private readonly ResponseDTOFactory $responseDTOFactory,
+        private readonly MediaService $mediaService,
     ) {}
 
     /**
@@ -124,6 +128,82 @@ class MediaController extends AbstractController
     }
 
     /**
+     * Upload a new media file
+     * 
+     * Handles actual file upload with optional name and creates a new media record.
+     * Accepts a file upload along with an optional display name for the media item.
+     * Automatically processes the file, extracts metadata, and stores it securely.
+     * All uploaded media files are associated with the authenticated user.
+     * 
+     * @param UploadMediaRequestDTO $dto Upload data including:
+     *                                  - file: The actual media file to upload (required)
+     *                                  - name: Optional display name (uses filename if not provided)
+     * @return JsonResponse<MediaResponseDTO|ErrorResponseDTO> Created media record or validation errors
+     */
+    #[Route(
+        '/upload',
+        name: 'upload',
+        methods: ['POST'],
+        condition: 'request.headers.get("Content-Type") matches "~^multipart/form-data~"'
+    )]
+    #[RequireContentType('multipart/form-data', 'File upload requires multipart/form-data content type')]
+    public function upload(UploadMediaRequestDTO $dto): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            if (!$dto->file) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('No file provided');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+
+            // Validate the DTO
+            $errors = $this->validator->validate($dto);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+
+            // Use MediaService to handle the file upload and create media record
+            // MediaService will automatically extract all metadata from the file
+            $media = $this->mediaService->uploadFile($dto->file, $user);
+
+            // Update media name if provided
+            if ($dto->name) {
+                $media->setName($dto->name);
+            }
+
+            // Save the media record
+            $this->entityManager->flush();
+
+            $mediaResponse = $this->responseDTOFactory->createMediaResponse(
+                $media,
+                'Media uploaded successfully'
+            );
+            return $this->mediaResponse($mediaResponse, Response::HTTP_CREATED);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to upload media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Get details of a specific media file
      * 
      * Returns detailed information about a single media file including metadata.
@@ -167,11 +247,13 @@ class MediaController extends AbstractController
     }
 
     /**
-     * Create a new media file entry
+     * Create a new media file entry from existing data
      * 
-     * Creates a new media file record in the database with the provided metadata.
-     * This endpoint handles media file upload processing and validation.
-     * All uploaded media files are associated with the authenticated user.
+     * Creates a new media file record in the database with pre-existing metadata.
+     * This endpoint is used for creating media records from external sources (stock photos, etc.)
+     * or when the file already exists and you just need to create the database record.
+     * For actual file uploads, use the /upload endpoint instead.
+     * All created media files are associated with the authenticated user.
      * 
      * @param CreateMediaRequestDTO $dto Media creation data including:
      *                                  - name: Display name for the media file (required)
@@ -541,7 +623,7 @@ class MediaController extends AbstractController
             }
 
             // TODO: Implement stock media API integration
-            // This would integrate with Unsplash, Pexels, Pixabay, etc.
+            // This would integrate with Unsplash, Pexels, etc.
             
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 [], // Empty media array for now

@@ -75,6 +75,7 @@
             :icon="PositionIcon"
             tooltip="Position presets"
             placement="bottom-start"
+            text="Position"
             width="w-48"
             :showChevron="false"
             buttonClass="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"

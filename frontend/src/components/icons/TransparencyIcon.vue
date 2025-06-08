@@ -7,24 +7,58 @@
     xmlns="http://www.w3.org/2000/svg"
     :class="className"
   >
-    <!-- Checkerboard pattern for transparency -->
+    <!-- Define patterns and gradients -->
     <defs>
-      <pattern id="transparency-pattern" patternUnits="userSpaceOnUse" width="4" height="4">
-        <rect width="2" height="2" fill="#e5e7eb" />
-        <rect x="2" y="2" width="2" height="2" fill="#e5e7eb" />
-        <rect x="2" y="0" width="2" height="2" fill="#ffffff" />
-        <rect x="0" y="2" width="2" height="2" fill="#ffffff" />
+      <!-- Checkerboard pattern for transparency -->
+      <pattern id="transparency-checkerboard" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
+        <rect x="0" y="0" width="1.5" height="1.5" fill="#d1d5db" />
+        <rect x="1.5" y="1.5" width="1.5" height="1.5" fill="#d1d5db" />
+        <rect x="0" y="1.5" width="1.5" height="1.5" fill="#f3f4f6" />
+        <rect x="1.5" y="0" width="1.5" height="1.5" fill="#f3f4f6" />
       </pattern>
+      
+      <!-- Gradient from solid to transparent -->
+      <linearGradient id="fade-to-transparent" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:currentColor;stop-opacity:1" />
+        <stop offset="70%" style="stop-color:currentColor;stop-opacity:0.3" />
+        <stop offset="100%" style="stop-color:currentColor;stop-opacity:0" />
+      </linearGradient>
     </defs>
     
-    <!-- Background circle with transparency pattern -->
-    <circle cx="12" cy="12" r="9" fill="url(#transparency-pattern)" stroke="currentColor" stroke-width="1.5" />
+    <!-- Main square with rounded corners -->
+    <rect 
+      x="3" 
+      y="3" 
+      width="18" 
+      height="18" 
+      rx="3" 
+      ry="3"
+      stroke="currentColor" 
+      stroke-width="1.5"
+      fill="none"
+    />
     
-    <!-- Opacity gradient overlay -->
-    <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2" opacity="0.7" />
+    <!-- Checkerboard background in the right portion -->
+    <rect 
+      x="12" 
+      y="4.5" 
+      width="7.5" 
+      height="15" 
+      rx="2" 
+      ry="2"
+      fill="url(#transparency-checkerboard)"
+    />
     
-    <!-- Center dot -->
-    <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.8" />
+    <!-- Gradient overlay showing fade to transparency -->
+    <rect 
+      x="4.5" 
+      y="4.5" 
+      width="15" 
+      height="15" 
+      rx="2" 
+      ry="2"
+      fill="url(#fade-to-transparent)"
+    />
   </svg>
 </template>
 
