@@ -98,7 +98,8 @@ import {
   PlayIcon,
   SwatchIcon,
   DocumentDuplicateIcon,
-  FilmIcon
+  FilmIcon,
+  CloudArrowUpIcon
 } from '@heroicons/vue/24/outline'
 
 interface Tool {
@@ -135,7 +136,8 @@ const tools: Tool[] = [
 const panels: Panel[] = [
   { id: 'elements', icon: Squares2X2Icon, label: 'Elements' },
   { id: 'templates', icon: DocumentDuplicateIcon, label: 'Templates' },
-  { id: 'media', icon: FilmIcon, label: 'Media' },
+  { id: 'uploads', icon: CloudArrowUpIcon, label: 'Uploads' },
+  { id: 'media', icon: FilmIcon, label: 'Stock Media' },
   { id: 'layers', icon: LayersIcon, label: 'Layers' },
   { id: 'animation', icon: PlayIcon, label: 'Animation' },
   { id: 'colors', icon: SwatchIcon, label: 'Colors' }

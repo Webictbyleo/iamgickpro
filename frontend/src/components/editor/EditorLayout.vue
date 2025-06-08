@@ -64,6 +64,11 @@
               @use-template="handleUseTemplate"
             />
             
+            <UploadPanel 
+              v-if="activePanel === 'uploads'" 
+              @add-media="handleAddMedia" 
+            />
+            
             <MediaPanel 
               v-if="activePanel === 'media'" 
               @add-media="handleAddMedia" 
@@ -163,6 +168,7 @@ import ModernButton from '@/components/common/ModernButton.vue'
 // Legacy component imports (still used)
 import ElementsPanel from './Panels/ElementsPanel.vue'
 import TemplatesPanel from './Panels/TemplatesPanel.vue'
+import UploadPanel from './Panels/UploadPanel.vue'
 import LayerPanel from './Panels/LayerPanel.vue'
 import MediaPanel from './Panels/MediaPanel.vue'
 import AnimationPanel from './Panels/AnimationPanel.vue'
