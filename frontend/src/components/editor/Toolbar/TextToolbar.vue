@@ -86,12 +86,12 @@
       />
     </div>
 
-    <!-- Advanced Text Controls Toggle -->
+    <!-- Spacing -->
     <div class="relative">
       <button
         @click="showAdvancedControls = !showAdvancedControls"
         class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border"
-        title="Advanced Text Controls"
+        title="Spacing"
       >
         Aa
       </button>
@@ -131,16 +131,6 @@
       </div>
     </div>
 
-    <!-- Auto-resize Controls -->
-    <div class="flex items-center space-x-2">
-      <PropertyDropdown
-        :value="autoResize?.mode || 'none'"
-        :options="autoResizeOptions"
-        @update="updateAutoResize"
-        class="w-20"
-        :show-dropdown-icon="false"
-      />
-    </div>
   </div>
 </template>
 
