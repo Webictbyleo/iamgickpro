@@ -41,6 +41,7 @@ import type {
   SearchSuggestionApiResponse,
   DesignsApiResponse,
   TemplatesApiResponse,
+  MediaApiResponse,
   MediaListApiResponse,
   ProjectsApiResponse,
   ExportJobsApiResponse,
@@ -261,7 +262,7 @@ export const mediaAPI = {
     if (data?.name) formData.append('name', data.name)
     
     // Don't set Content-Type header - let browser set it automatically with boundary
-    return api.post<ApiResponse<MediaItem>>('/media/upload', formData)
+    return api.post<MediaApiResponse>('/media/upload', formData)
   },
 
   // DELETE /media/bulk/delete
@@ -273,7 +274,7 @@ export const mediaAPI = {
   duplicateMedia: (uuid: string, data?: {
     name?: string
     folder?: string
-  }) => api.post<ApiResponse<MediaItem>>(`/media/duplicate/${uuid}`, data),
+  }) => api.post<MediaApiResponse>(`/media/duplicate/${uuid}`, data),
 
   // GET /media/search
   searchMedia: (params: {
@@ -289,7 +290,7 @@ export const mediaAPI = {
     api.get<MediaListApiResponse>('/media/stock/search', { params }),
 
   // GET /media/{uuid}
-  getMediaItem: (uuid: string) => api.get<ApiResponse<MediaItem>>(`/media/${uuid}`),
+  getMediaItem: (uuid: string) => api.get<MediaApiResponse>(`/media/${uuid}`),
 
   // PUT /media/{uuid}
   updateMedia: (uuid: string, data: {
@@ -297,7 +298,7 @@ export const mediaAPI = {
     description?: string
     tags?: string[]
     isActive?: boolean
-  }) => api.put<ApiResponse<MediaItem>>(`/media/${uuid}`, data),
+  }) => api.put<MediaApiResponse>(`/media/${uuid}`, data),
 
   // DELETE /media/{uuid}
   deleteMedia: (uuid: string) => api.delete<ApiResponse<{ message: string }>>(`/media/${uuid}`),

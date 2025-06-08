@@ -112,13 +112,18 @@ export function useUserMedia(): UserMediaReturn {
       
       // Upload files one by one
       for (const file of Array.from(files)) {
-        await mediaAPI.uploadMedia(file, {
+        const response = await mediaAPI.uploadMedia(file, {
           name: file.name
         })
+        
+        // The response has the structure: { success, message, timestamp, data: { media: MediaItem } }
+        if (response.data?.data?.media) {
+          // Add the uploaded media to the beginning of the list
+          userMedia.value.unshift(response.data.data.media)
+        }
       }
       
-      // Refresh the media list to show uploaded files
-      await searchUserMedia(currentQuery.value, currentType.value)
+      // Note: We don't need to refresh the entire list since we're adding uploaded files directly
       
     } catch (error) {
       console.error('Failed to upload files:', error)

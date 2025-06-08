@@ -186,13 +186,13 @@ class ResponseDTOFactory
     {
         $mediaData = [
             'id' => $media->getId(),
-            'uuid' => $media->getUuid(),
+            'uuid' => $media->getUuid()->toRfc4122(),
             'name' => $media->getName(),
             'type' => $media->getType(),
             'mimeType' => $media->getMimeType(),
             'size' => $media->getSize(),
             'url' => $media->getUrl(),
-            'thumbnailUrl' => $media->getThumbnailUrl(),
+            'thumbnail' => $media->getThumbnailUrl(),
             'width' => $media->getWidth(),
             'height' => $media->getHeight(),
             'duration' => $media->getDuration(),
@@ -226,7 +226,7 @@ class ResponseDTOFactory
     {
         $templateData = [
             'id' => $template->getId(),
-            'uuid' => $template->getUuid(),
+            'uuid' => $template->getUuid()->toRfc4122(),
             'name' => $template->getName(),
             'description' => $template->getDescription(),
             'category' => $template->getCategory(),
@@ -262,7 +262,7 @@ class ResponseDTOFactory
         $templatesData = array_map(function (Template $template) {
             return [
                 'id' => $template->getId(),
-                'uuid' => $template->getUuid(),
+                'uuid' => $template->getUuid()->toRfc4122(),
                 'name' => $template->getName(),
                 'description' => $template->getDescription(),
                 'category' => $template->getCategory(),

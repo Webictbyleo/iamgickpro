@@ -345,18 +345,31 @@ export interface Template {
 
 export interface MediaItem {
   id: string
+  uuid: string
   name: string
   type: 'image' | 'video' | 'audio'
-  url: string
-  thumbnail?: string
+  mimeType: string
   size: number
+  url: string
+  thumbnailUrl?: string
+  thumbnail?: string // Keep for backward compatibility
   width?: number
   height?: number
-  tags: string[]
-  isPremium: boolean
+  duration?: number
   source: 'upload' | 'stock'
+  sourceId?: string
+  metadata?: any
+  tags: string[]
+  attribution?: string
+  license?: string
+  isPremium: boolean
+  isActive: boolean
+  uploadedBy?: {
+    id: string
+    username: string
+  }
   createdAt: string
-  updatedAt: string
+  updatedAt?: string
 }
 
 export interface Project {
@@ -784,7 +797,7 @@ export interface TemplatesApiResponse extends BaseApiResponse {
 }
 
 /**
- * Media API Response Types - matching backend MediaResponseDTO structure
+ * Single Media API Response Types - matching backend MediaResponseDTO structure for single media
  */
 export interface MediaApiResponse extends BaseApiResponse {
   data: {
