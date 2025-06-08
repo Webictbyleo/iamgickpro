@@ -36,32 +36,9 @@ class RequestDTOResolver implements ValueResolverInterface
             return [];
         }
 
-        // Special handling for UploadMediaRequestDTO with multipart/form-data
-        if ($type === UploadMediaRequestDTO::class && 
-            str_starts_with($request->headers->get('Content-Type', ''), 'multipart/form-data')) {
-            
-            // Extract file and name from the request
-            $file = $request->files->get('file');
-            $name = $request->request->get('name');
-
-            // Create the DTO
-            $dto = new UploadMediaRequestDTO(
-                file: $file,
-                name: $name
-            );
-
-            // Validate the DTO
-            $violations = $this->validator->validate($dto);
-            
-            if (count($violations) > 0) {
-                $errors = [];
-                foreach ($violations as $violation) {
-                    $errors[] = sprintf('%s: %s', $violation->getPropertyPath(), $violation->getMessage());
-                }
-                throw new BadRequestHttpException('Validation failed: ' . implode(', ', $errors));
-            }
-            
-            yield $dto;
+        // Handle multipart/form-data requests generically
+        if (str_starts_with($request->headers->get('Content-Type', ''), 'multipart/form-data')) {
+            yield from $this->resolveMultipartFormData($request, $type);
             return;
         }
 
@@ -90,6 +67,53 @@ class RequestDTOResolver implements ValueResolverInterface
             
         } catch (\Symfony\Component\Serializer\Exception\NotEncodableValueException $e) {
             throw new BadRequestHttpException('Invalid JSON format');
+        }
+    }
+
+    private function resolveMultipartFormData(Request $request, string $type): iterable
+    {
+        try {
+            $reflectionClass = new ReflectionClass($type);
+            $constructor = $reflectionClass->getConstructor();
+            
+            if (!$constructor) {
+                throw new BadRequestHttpException("DTO {$type} must have a constructor");
+            }
+            
+            $parameters = $constructor->getParameters();
+            $constructorArgs = [];
+            
+            foreach ($parameters as $parameter) {
+                $paramName = $parameter->getName();
+                $paramType = $parameter->getType();
+                
+                // Handle file uploads
+                if ($paramType && $paramType->getName() === 'Symfony\Component\HttpFoundation\File\UploadedFile') {
+                    $constructorArgs[$paramName] = $request->files->get($paramName);
+                } else {
+                    // Handle regular form fields
+                    $constructorArgs[$paramName] = $request->request->get($paramName);
+                }
+            }
+            
+            // Create the DTO using named arguments
+            $dto = $reflectionClass->newInstance(...$constructorArgs);
+            
+            // Validate the DTO
+            $violations = $this->validator->validate($dto);
+            
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[] = sprintf('%s: %s', $violation->getPropertyPath(), $violation->getMessage());
+                }
+                throw new BadRequestHttpException('Validation failed: ' . implode(', ', $errors));
+            }
+            
+            yield $dto;
+            
+        } catch (\ReflectionException $e) {
+            throw new BadRequestHttpException("Failed to resolve DTO {$type}: " . $e->getMessage());
         }
     }
 }

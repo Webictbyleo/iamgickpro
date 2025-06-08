@@ -60,6 +60,9 @@ readonly class MediaService
         $fileSize = filesize($filePath);
         $mimeType = mime_content_type($filePath);
 
+        // Determine media type from MIME type
+        $type = $this->getMediaTypeFromMimeType($mimeType);
+
         // Get image dimensions if it's an image
         $width = null;
         $height = null;
@@ -73,6 +76,7 @@ readonly class MediaService
 
         $media = new Media();
         $media->setName($originalFilename)
+              ->setType($type)
               ->setUrl('/media/' . $fileName)
               ->setMimeType($mimeType)
               ->setSize($fileSize)
@@ -513,5 +517,37 @@ readonly class MediaService
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    private function getMediaTypeFromMimeType(string $mimeType): string
+    {
+        if (str_starts_with($mimeType, 'image/')) {
+            return 'image';
+        }
+        
+        if (str_starts_with($mimeType, 'video/')) {
+            return 'video';
+        }
+        
+        if (str_starts_with($mimeType, 'audio/')) {
+            return 'audio';
+        }
+        
+        // PDF and other document types
+        if (in_array($mimeType, [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            'text/csv'
+        ])) {
+            return 'document';
+        }
+        
+        return 'other';
     }
 }
