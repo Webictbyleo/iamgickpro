@@ -63,5 +63,5 @@ final_*_results.txt
 shape_test_output.txt
 
 # User-specific files
-/public/uploads/
+/public/uploads/**
 /public/temp/

@@ -420,7 +420,7 @@ class Media
             'mimeType' => $this->getMimeType(),
             'size' => $this->getSize(),
             'url' => $this->getUrl(),
-            'thumbnailUrl' => $this->getThumbnailUrl(),
+            'thumbnail' => $this->getThumbnailUrl(),
             'width' => $this->getWidth(),
             'height' => $this->getHeight(),
             'duration' => $this->getDuration(),

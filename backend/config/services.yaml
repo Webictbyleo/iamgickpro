@@ -115,3 +115,14 @@ services:
             $projectDir: '%kernel.project_dir%'
 
     App\Service\MediaProcessing\MediaProcessingService: ~
+
+    # Media File Controller Configuration
+    App\Controller\MediaFileController:
+        arguments:
+            $mediaUploadDirectory: '%app.media_directory%'
+            $thumbnailDirectory: '%app.thumbnail_directory%'
+
+    # Clear Media Command Configuration
+    App\Command\ClearMediaCommand:
+        arguments:
+            $uploadDirectory: '%app.upload_directory%'

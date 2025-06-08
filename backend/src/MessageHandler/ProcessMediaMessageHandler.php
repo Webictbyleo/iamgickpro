@@ -7,6 +7,7 @@ namespace App\MessageHandler;
 use App\Service\MediaProcessing\AsyncMediaProcessingService;
 use App\Service\MediaProcessing\MediaProcessingService;
 use App\Service\MediaProcessing\ProcessMediaMessage;
+use App\Service\MediaProcessing\Config\ProcessingConfigFactory;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Psr\Log\LoggerInterface;
 

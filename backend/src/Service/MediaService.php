@@ -7,6 +7,8 @@ namespace App\Service;
 use App\Entity\Media;
 use App\Entity\User;
 use App\Repository\MediaRepository;
+use App\Service\MediaProcessing\MediaProcessingService;
+use App\Service\MediaProcessing\Config\ProcessingConfigFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -19,6 +21,7 @@ readonly class MediaService
         private MediaRepository $mediaRepository,
         private SluggerInterface $slugger,
         private LoggerInterface $logger,
+        private MediaProcessingService $mediaProcessingService,
         private string $mediaUploadDirectory,
         private string $thumbnailDirectory,
         private int $maxFileSize,
@@ -97,7 +100,7 @@ readonly class MediaService
 
         // Generate thumbnail asynchronously
         $this->generateThumbnail($media);
-
+        
         $this->logger->info('File uploaded successfully', [
             'media_id' => $media->getId(),
             'filename' => $fileName,
@@ -169,27 +172,39 @@ readonly class MediaService
 
         $thumbnailName = 'thumb_' . pathinfo($metadata['original_filename'] ?? 'unknown', PATHINFO_FILENAME) . '.jpg';
         $thumbnailPath = $this->thumbnailDirectory . '/' . $thumbnailName;
-
+        
         try {
-            // Generate thumbnail using ImageMagick
-            $command = sprintf(
-                'convert "%s" -thumbnail 300x300^ -gravity center -extent 300x300 "%s"',
-                escapeshellarg($filePath),
-                escapeshellarg($thumbnailPath)
+            // Generate thumbnail using production-ready MediaProcessingService
+            $thumbnailConfig = ProcessingConfigFactory::createImage(
+                300, 300, 
+                85, // quality
+                'jpg', // format
+                true, // maintain aspect ratio
+                false // no transparency for thumbnails
             );
 
-            exec($command, $output, $returnCode);
-
-            if ($returnCode === 0 && file_exists($thumbnailPath)) {
+            $result = $this->mediaProcessingService->processImage(
+                $filePath,
+                $thumbnailPath,
+                $thumbnailConfig
+            );
+            
+            if ($result->isSuccess() && file_exists($thumbnailPath)) {
                 $media->setThumbnailUrl('/thumbnails/' . $thumbnailName);
                 $this->entityManager->flush();
-
-                $this->logger->info('Thumbnail generated', [
+                
+                $this->logger->info('Thumbnail generated using MediaProcessingService', [
                     'media_id' => $media->getId(),
-                    'thumbnail_path' => $thumbnailPath
+                    'thumbnail_path' => $thumbnailPath,
+                    'processing_time' => $result->getProcessingTime()
                 ]);
 
                 return $thumbnailPath;
+            } else {
+                $this->logger->error('Thumbnail generation failed', [
+                    'media_id' => $media->getId(),
+                    'error' => $result->getErrorMessage() ?? 'Unknown error'
+                ]);
             }
         } catch (\Exception $e) {
             $this->logger->error('Failed to generate thumbnail', [
@@ -248,14 +263,27 @@ readonly class MediaService
 
     private function processVideoFile(Media $media, string $filePath): void
     {
-        // Extract video metadata (duration, dimensions, etc.)
+        // Extract video metadata using production-ready MediaProcessingService
         try {
-            $videoInfo = shell_exec("ffprobe -v quiet -print_format json -show_format -show_streams " . escapeshellarg($filePath));
-            if ($videoInfo) {
-                $info = json_decode($videoInfo, true);
-                $metadata = $media->getMetadata();
-                $metadata['video_info'] = $info;
-                $media->setMetadata($metadata);
+            $metadata = $this->mediaProcessingService->extractMetadata($filePath);
+            if (!empty($metadata)) {
+                $currentMetadata = $media->getMetadata();
+                $currentMetadata['video_info'] = $metadata;
+                $media->setMetadata($currentMetadata);
+
+                // Update media dimensions if available
+                if (isset($metadata['width']) && isset($metadata['height'])) {
+                    $media->setWidth($metadata['width']);
+                    $media->setHeight($metadata['height']);
+                }
+
+                $this->logger->info('Video metadata extracted using MediaProcessingService', [
+                    'media_id' => $media->getId(),
+                    'duration' => $metadata['duration'] ?? null,
+                    'dimensions' => isset($metadata['width'], $metadata['height']) 
+                        ? $metadata['width'] . 'x' . $metadata['height'] 
+                        : null
+                ]);
             }
         } catch (\Exception $e) {
             $this->logger->warning('Failed to extract video metadata', [
@@ -410,24 +438,26 @@ readonly class MediaService
         $optimizedPath = $filePath . '.optimized';
 
         try {
-            $command = sprintf(
-                'convert "%s" -quality %d',
-                escapeshellarg($filePath),
-                $quality
+            // Create optimization config using production-ready MediaProcessingService
+            $optimizationConfig = ProcessingConfigFactory::createImage(
+                $maxWidth ?? $media->getWidth(),
+                $maxHeight ?? $media->getHeight(),
+                $quality,
+                null, // keep original format
+                true, // maintain aspect ratio
+                true, // preserve transparency
+                true, // strip metadata for optimization
+                false, // not progressive
+                null // no background color
             );
 
-            if ($maxWidth || $maxHeight) {
-                $resize = ($maxWidth && $maxHeight) 
-                    ? "{$maxWidth}x{$maxHeight}>" 
-                    : ($maxWidth ? "{$maxWidth}>" : "x{$maxHeight}>");
-                $command .= " -resize {$resize}";
-            }
+            $result = $this->mediaProcessingService->processImage(
+                $filePath,
+                $optimizedPath,
+                $optimizationConfig
+            );
 
-            $command .= sprintf(' "%s"', escapeshellarg($optimizedPath));
-
-            exec($command, $output, $returnCode);
-
-            if ($returnCode === 0 && file_exists($optimizedPath)) {
+            if ($result->isSuccess() && file_exists($optimizedPath)) {
                 // Replace original with optimized version
                 rename($optimizedPath, $filePath);
                 
@@ -435,23 +465,27 @@ readonly class MediaService
                 $newSize = filesize($filePath);
                 $media->setSize($newSize);
                 
-                // Update dimensions if resized
-                if ($maxWidth || $maxHeight) {
-                    $imageInfo = getimagesize($filePath);
-                    if ($imageInfo) {
-                        $media->setWidth($imageInfo[0]);
-                        $media->setHeight($imageInfo[1]);
-                    }
+                // Update dimensions from processing result
+                $resultMetadata = $result->getMetadata();
+                if (isset($resultMetadata['width']) && isset($resultMetadata['height'])) {
+                    $media->setWidth($resultMetadata['width']);
+                    $media->setHeight($resultMetadata['height']);
                 }
                 
                 $this->entityManager->flush();
 
-                $this->logger->info('Image optimized', [
+                $this->logger->info('Image optimized using MediaProcessingService', [
                     'media_id' => $media->getId(),
-                    'new_size' => $newSize
+                    'new_size' => $newSize,
+                    'processing_time' => $result->getProcessingTime()
                 ]);
 
                 return true;
+            } else {
+                $this->logger->error('Image optimization failed', [
+                    'media_id' => $media->getId(),
+                    'error' => $result->getErrorMessage() ?? 'Unknown error'
+                ]);
             }
         } catch (\Exception $e) {
             $this->logger->error('Failed to optimize image', [

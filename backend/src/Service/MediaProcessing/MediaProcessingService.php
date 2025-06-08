@@ -47,6 +47,22 @@ class MediaProcessingService
     ) {}
 
     /**
+     * Get the ImageMagick processor for direct access
+     */
+    public function getImageMagickProcessor(): ImageMagickProcessor
+    {
+        return $this->imageMagickProcessor;
+    }
+
+    /**
+     * Get the FFmpeg processor for direct access
+     */
+    public function getFfmpegProcessor(): FfmpegProcessor
+    {
+        return $this->ffmpegProcessor;
+    }
+
+    /**
      * Process media file with automatic type detection
      */
     public function processMedia(

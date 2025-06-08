@@ -1,0 +1,67 @@
+# Symfony application front controller
+DirectoryIndex index.php
+
+# Enable URL rewriting
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Handle media files directly from uploads directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^media/(.*)$ uploads/media/$1 [L]
+    
+    # Handle thumbnail files directly from uploads directory  
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^thumbnails/(.*)$ uploads/thumbnails/$1 [L]
+    
+    # Handle other static files if they exist
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # Redirect trailing slashes for directories
+    RewriteRule ^(.*)/$ /$1 [R=301,L]
+    
+    # Handle the front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Set proper MIME types for media files
+<IfModule mod_mime.c>
+    # Images
+    AddType image/jpeg .jpg .jpeg
+    AddType image/png .png
+    AddType image/gif .gif
+    AddType image/webp .webp
+    AddType image/svg+xml .svg
+    
+    # Videos
+    AddType video/mp4 .mp4
+    AddType video/webm .webm
+    AddType video/ogg .ogv
+    
+    # Audio
+    AddType audio/mpeg .mp3
+    AddType audio/ogg .ogg
+    AddType audio/wav .wav
+</IfModule>
+
+# Set cache headers for media files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType video/mp4 "access plus 1 month"
+    ExpiresByType video/webm "access plus 1 month"
+</IfModule>
+
+# Security headers for uploads
+<IfModule mod_headers.c>
+    # Prevent execution of scripts in upload directories
+    <FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+        Header set X-Content-Type-Options nosniff
+        Header set Content-Type text/plain
+    </FilesMatch>
+</IfModule>
