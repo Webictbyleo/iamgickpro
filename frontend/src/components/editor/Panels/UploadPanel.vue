@@ -1,32 +1,19 @@
 <template>
   <div class="flex flex-col h-full">
-    <!-- Header -->
-    <div class="p-4 border-b border-gray-200 bg-white">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900">My Uploads</h3>
-          <p class="text-sm text-gray-600">Upload and manage your media files</p>
-        </div>
-      </div>
-    </div>
+    
 
-    <!-- Upload Section -->
-    <div class="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-b border-gray-200">
-      <!-- Hidden file input -->
-      <input
-        ref="fileInput"
-        type="file"
-        multiple
-        accept="image/*,video/*,audio/*"
-        @change="handleFileUpload"
-        class="hidden"
-      />
-      
+    <!-- Hidden file input (always present for programmatic access) -->
+    <input
+      ref="fileInput"
+      type="file"
+      multiple
+      accept="image/*,video/*,audio/*"
+      @change="handleFileUpload"
+      class="hidden"
+    />
+
+    <!-- Upload Section (only show when no uploads or empty filtered results) -->
+    <div v-if="shouldShowUploadArea" class="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-b border-gray-200">      
       <!-- Compact Upload Area -->
       <div 
         @click="fileInput?.click()"
@@ -91,47 +78,61 @@
       </div>
     </div>
 
-    <!-- Search and Filter -->
-    <div class="p-3 border-b border-gray-200 bg-white space-y-2.5">
+    <!-- Search and Filter (only show when there are uploads) -->
+    <div v-if="userMedia.length > 0" class="border-b border-gray-200 bg-white">
       <!-- Search Bar -->
-      <div class="relative">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search your uploads..."
-          class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
-        />
-        <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <!-- Clear search button -->
-        <button
-          v-if="searchQuery"
-          @click="searchQuery = ''"
-          class="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      <div class="p-3 pb-0">
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search your uploads..."
+            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
+          />
+          <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+          <!-- Clear search button -->
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''"
+            class="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload Button -->
+      <div class="p-3 pt-2">
+        <button
+          @click="fileInput?.click()"
+          class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <span>Upload More Files</span>
         </button>
       </div>
 
-      <!-- Type Filter Pills -->
-      <div class="flex flex-wrap gap-1.5">
+      <!-- Type Filter Tabs -->
+      <div class="flex">
         <button
           v-for="filter in typeFilters"
           :key="filter.id"
           @click="selectedTypeFilter = filter.id"
           :class="[
-            'px-2.5 py-1 text-xs font-medium rounded-full transition-all border',
+            'flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center',
             selectedTypeFilter === filter.id
-              ? 'bg-blue-100 text-blue-700 border-blue-200 shadow-sm'
-              : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+              ? 'text-blue-600 border-blue-600 bg-blue-50/50'
+              : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
           ]"
         >
-          <component :is="iconComponents[filter.icon as keyof typeof iconComponents]" class="w-3 h-3 inline mr-1" />
+          <component :is="iconComponents[filter.icon as keyof typeof iconComponents]" class="w-4 h-4 mr-2" />
           {{ filter.label }}
-          <span v-if="filter.count !== undefined" class="ml-1 opacity-75">({{ filter.count }})</span>
         </button>
       </div>
     </div>
@@ -164,17 +165,15 @@
           }}
         </p>
         <div v-if="!searchQuery" class="space-y-2">
-          <BaseButton
+          <button
             @click="fileInput?.click()"
-            variant="primary"
-            size="sm"
-            class="mx-auto"
+            class="mx-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            Upload Your First File
-          </BaseButton>
+            <span>Upload Your First File</span>
+          </button>
           <p class="text-xs text-gray-400">
             Drag and drop works too!
           </p>
@@ -236,24 +235,7 @@
               </div>
             </div>
 
-            <!-- File Info -->
-            <div class="p-3 bg-white">
-              <p class="text-sm font-medium text-gray-900 truncate mb-1" :title="file.name">
-                {{ file.name }}
-              </p>
-              <div class="flex justify-between items-center">
-                <span :class="[
-                  'text-xs px-2 py-1 rounded-full font-medium uppercase tracking-wide',
-                  file.type === 'image' ? 'bg-green-100 text-green-700' :
-                  file.type === 'video' ? 'bg-red-100 text-red-700' :
-                  file.type === 'audio' ? 'bg-purple-100 text-purple-700' :
-                  'bg-gray-100 text-gray-700'
-                ]">
-                  {{ file.type }}
-                </span>
-                <span class="text-xs text-gray-500 font-medium">{{ formatFileSize(file.size) }}</span>
-              </div>
-            </div>
+            
 
             <!-- Hover Overlay -->
             <div class="absolute inset-0 bg-blue-600/10 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center rounded-xl">
@@ -289,7 +271,6 @@ import BaseButton from '@/components/common/BaseButton.vue'
 import { useUserMedia } from '@/composables/useUserMedia'
 import type { MediaItem } from '@/types'
 import { 
-  FolderIcon, 
   PhotoIcon, 
   VideoCameraIcon, 
   MusicalNoteIcon 
@@ -297,7 +278,6 @@ import {
 
 // Icon components for template
 const iconComponents = {
-  FolderIcon,
   PhotoIcon,
   VideoCameraIcon,
   MusicalNoteIcon
@@ -312,33 +292,24 @@ const fileInput = ref<HTMLInputElement>()
 
 // Search and filter
 const searchQuery = ref('')
-const selectedTypeFilter = ref('all')
+const selectedTypeFilter = ref('image')
 const isDragOver = ref(false)
 
 const typeFilters = computed(() => [
   { 
-    id: 'all', 
-    label: 'All', 
-    icon: 'FolderIcon',
-    count: userMedia.value.length
-  },
-  { 
     id: 'image', 
     label: 'Images', 
-    icon: 'PhotoIcon',
-    count: userMedia.value.filter(f => f.type === 'image').length
+    icon: 'PhotoIcon'
   },
   { 
     id: 'video', 
     label: 'Videos', 
-    icon: 'VideoCameraIcon',
-    count: userMedia.value.filter(f => f.type === 'video').length
+    icon: 'VideoCameraIcon'
   },
   { 
     id: 'audio', 
     label: 'Audio', 
-    icon: 'MusicalNoteIcon',
-    count: userMedia.value.filter(f => f.type === 'audio').length
+    icon: 'MusicalNoteIcon'
   }
 ])
 
@@ -366,11 +337,14 @@ const filteredUploads = computed(() => {
   }
 
   // Filter by type
-  if (selectedTypeFilter.value !== 'all') {
-    filtered = filtered.filter(file => file.type === selectedTypeFilter.value)
-  }
+  filtered = filtered.filter(file => file.type === selectedTypeFilter.value)
 
   return filtered
+})
+
+// Show upload area only when there are no uploads at all
+const shouldShowUploadArea = computed(() => {
+  return userMedia.value.length === 0
 })
 
 // File upload handling
@@ -436,7 +410,7 @@ onMounted(() => {
 
 // Watch for search changes
 watch([searchQuery, selectedTypeFilter], () => {
-  if (searchQuery.value || selectedTypeFilter.value !== 'all') {
+  if (searchQuery.value || selectedTypeFilter.value) {
     // For filtering, we don't need to make new API calls since we're filtering local data
     // The computed property will handle the filtering
   }
