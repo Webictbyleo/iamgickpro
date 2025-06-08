@@ -7,6 +7,7 @@ namespace App\Service\Svg;
 use App\Entity\Design;
 use App\Entity\Layer;
 use App\Service\Svg\LayerRenderer\LayerRendererInterface;
+use App\Service\MediaProcessing\Result\ProcessingResult;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 use DOMElement;
@@ -381,6 +382,137 @@ class SvgRendererService
             'errors' => $errors,
             'warnings' => $warnings
         ];
+    }
+
+    /**
+     * Rasterize SVG file to specified format
+     */
+    public function rasterizeSvg(
+        string $inputPath,
+        string $outputPath,
+        ?int $width = null,
+        ?int $height = null,
+        string $format = 'png',
+        int $quality = 90
+    ): ProcessingResult {
+        try {
+            // Load SVG content
+            if (!file_exists($inputPath)) {
+                return ProcessingResult::failure("SVG file not found: {$inputPath}");
+            }
+
+            $svgContent = file_get_contents($inputPath);
+            if ($svgContent === false) {
+                return ProcessingResult::failure("Could not read SVG file: {$inputPath}");
+            }
+
+            // Parse SVG to get dimensions if not provided
+            $dom = new \DOMDocument();
+            $dom->loadXML($svgContent);
+            $svgElement = $dom->documentElement;
+
+            if ($width === null || $height === null) {
+                $viewBox = $svgElement->getAttribute('viewBox');
+                if ($viewBox) {
+                    $viewBoxParts = explode(' ', $viewBox);
+                    if (count($viewBoxParts) === 4) {
+                        $width = $width ?? (int)$viewBoxParts[2];
+                        $height = $height ?? (int)$viewBoxParts[3];
+                    }
+                }
+                
+                // Fallback to width/height attributes
+                if ($width === null) {
+                    $width = (int)($svgElement->getAttribute('width') ?: 300);
+                }
+                if ($height === null) {
+                    $height = (int)($svgElement->getAttribute('height') ?: 300);
+                }
+            }
+
+            // Use ImageMagick to convert SVG to raster format
+            $command = sprintf(
+                'convert -background transparent -size %dx%d %s %s',
+                $width,
+                $height,
+                escapeshellarg($inputPath),
+                escapeshellarg($outputPath)
+            );
+
+            $output = [];
+            $returnCode = 0;
+            exec($command . ' 2>&1', $output, $returnCode);
+
+            if ($returnCode === 0 && file_exists($outputPath)) {
+                return ProcessingResult::success(
+                    $outputPath,
+                    [
+                        'width' => $width,
+                        'height' => $height,
+                        'format' => $format,
+                        'quality' => $quality
+                    ]
+                );
+            } else {
+                return ProcessingResult::failure(
+                    'SVG rasterization failed: ' . implode(' ', $output),
+                    ['command' => $command, 'return_code' => $returnCode]
+                );
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->error('SVG rasterization failed', [
+                'input_path' => $inputPath,
+                'output_path' => $outputPath,
+                'error' => $e->getMessage()
+            ]);
+
+            return ProcessingResult::failure(
+                'SVG rasterization failed: ' . $e->getMessage(),
+                ['exception' => $e::class]
+            );
+        }
+    }
+
+    /**
+     * Extract width and height from SVG content
+     */
+    private function extractSvgDimensions(string $svgContent): array
+    {
+        $width = 800; // default
+        $height = 600; // default
+
+        // Try to parse SVG dimensions using DOMDocument
+        try {
+            $dom = new \DOMDocument();
+            $dom->loadXML($svgContent);
+            $svgElement = $dom->documentElement;
+
+            if ($svgElement && $svgElement->tagName === 'svg') {
+                // Try width/height attributes first
+                if ($svgElement->hasAttribute('width')) {
+                    $width = (int) filter_var($svgElement->getAttribute('width'), FILTER_SANITIZE_NUMBER_INT);
+                }
+                if ($svgElement->hasAttribute('height')) {
+                    $height = (int) filter_var($svgElement->getAttribute('height'), FILTER_SANITIZE_NUMBER_INT);
+                }
+
+                // If no width/height, try viewBox
+                if (($width === 0 || $height === 0) && $svgElement->hasAttribute('viewBox')) {
+                    $viewBox = $svgElement->getAttribute('viewBox');
+                    $parts = explode(' ', trim($viewBox));
+                    if (count($parts) >= 4) {
+                        $width = (int) $parts[2];
+                        $height = (int) $parts[3];
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Use defaults if parsing fails
+            $this->logger->warning('Failed to parse SVG dimensions', ['error' => $e->getMessage()]);
+        }
+
+        return ['width' => $width, 'height' => $height];
     }
 
     

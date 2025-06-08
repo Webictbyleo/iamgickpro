@@ -26,6 +26,7 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+            - '../src/Service/MediaProcessing/Config/'
 
     # JWT Authentication Service Configuration
     App\Service\AuthService:
@@ -96,3 +97,21 @@ services:
 
     # Response DTO Factory service
     App\Service\ResponseDTOFactory: ~
+
+    # Media Processing Services Configuration
+    App\Service\MediaProcessing\Processor\ImageMagickProcessor:
+        arguments:
+            $imageMagickPath: '/usr/bin/magick'  # ImageMagick 7 binary path
+            $timeLimit: 300  # 5 minutes for complex operations
+
+    App\Service\MediaProcessing\Processor\FfmpegProcessor:
+        arguments:
+            $ffmpegPath: '/usr/bin/ffmpeg'
+            $ffprobePath: '/usr/bin/ffprobe'
+            $timeLimit: 600  # 10 minutes for video processing
+
+    App\Service\MediaProcessing\AsyncMediaProcessingService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\MediaProcessing\MediaProcessingService: ~
