@@ -66,15 +66,46 @@ readonly class MediaService
         // Determine media type from MIME type
         $type = $this->getMediaTypeFromMimeType($mimeType);
 
-        // Get image dimensions if it's an image
+        // Extract basic properties for Media entity using existing MediaProcessingService
         $width = null;
         $height = null;
-        if (str_starts_with($mimeType, 'image/')) {
-            $imageInfo = getimagesize($filePath);
-            if ($imageInfo) {
-                $width = $imageInfo[0];
-                $height = $imageInfo[1];
+        $duration = null;
+
+        try {
+            if ($this->mediaProcessingService) {
+                $metadata = $this->mediaProcessingService->extractMetadata($filePath);
+                
+                if (!empty($metadata)) {
+                    // Extract dimensions for images and videos
+                    if (isset($metadata['video'])) {
+                        $width = $metadata['video']['width'] ?? null;
+                        $height = $metadata['video']['height'] ?? null;
+                    } elseif (isset($metadata['width'], $metadata['height'])) {
+                        $width = $metadata['width'];
+                        $height = $metadata['height'];
+                    }
+                    
+                    // Extract duration for videos and audio
+                    if (isset($metadata['duration'])) {
+                        $duration = (int) ceil($metadata['duration']);
+                    }
+                }
             }
+            
+            // Fallback to PHP's getimagesize for images if MediaProcessingService didn't work
+            if (!$width && !$height && str_starts_with($mimeType, 'image/')) {
+                $imageInfo = getimagesize($filePath);
+                if ($imageInfo) {
+                    $width = $imageInfo[0];
+                    $height = $imageInfo[1];
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to extract media properties during upload', [
+                'file_path' => $filePath,
+                'mime_type' => $mimeType,
+                'error' => $e->getMessage()
+            ]);
         }
 
         $media = new Media();
@@ -85,10 +116,11 @@ readonly class MediaService
               ->setSize($fileSize)
               ->setWidth($width)
               ->setHeight($height)
+              ->setDuration($duration)
               ->setSource('upload')
               ->setUser($user);
 
-        // Store metadata including original filename and file path
+        // Store minimal essential metadata
         $media->setMetadata([
             'original_filename' => $originalFilename,
             'file_path' => $filePath,
@@ -155,10 +187,6 @@ readonly class MediaService
 
     public function generateThumbnail(Media $media): ?string
     {
-        if (!str_starts_with($media->getMimeType(), 'image/')) {
-            return null;
-        }
-
         if ($media->getSource() !== 'upload') {
             return null;
         }
@@ -170,65 +198,159 @@ readonly class MediaService
             return null;
         }
 
-        $thumbnailName = 'thumb_' . pathinfo($metadata['original_filename'] ?? 'unknown', PATHINFO_FILENAME) . '.jpg';
-        $thumbnailPath = $this->thumbnailDirectory . '/' . $thumbnailName;
+        $mimeType = $media->getMimeType();
+        $isImage = str_starts_with($mimeType, 'image/');
+        $isVideo = str_starts_with($mimeType, 'video/');
+
+        if (!$isImage && !$isVideo) {
+            $this->logger->info('Thumbnail generation skipped for unsupported media type', [
+                'media_id' => $media->getId(),
+                'mime_type' => $mimeType
+            ]);
+            return null;
+        }
         
         try {
-            // Generate thumbnail using production-ready MediaProcessingService
-            $thumbnailConfig = ProcessingConfigFactory::createImage(
-                300, 300, 
-                85, // quality
-                'jpg', // format
-                true, // maintain aspect ratio
-                false // no transparency for thumbnails
-            );
-
-            $result = $this->mediaProcessingService->processImage(
-                $filePath,
-                $thumbnailPath,
-                $thumbnailConfig
-            );
-            
-            if ($result->isSuccess() && file_exists($thumbnailPath)) {
-                $media->setThumbnailUrl('/thumbnails/' . $thumbnailName);
-                $this->entityManager->flush();
-                
-                $this->logger->info('Thumbnail generated using MediaProcessingService', [
-                    'media_id' => $media->getId(),
-                    'thumbnail_path' => $thumbnailPath,
-                    'processing_time' => $result->getProcessingTime()
-                ]);
-
-                return $thumbnailPath;
-            } else {
-                $this->logger->error('Thumbnail generation failed', [
-                    'media_id' => $media->getId(),
-                    'error' => $result->getErrorMessage() ?? 'Unknown error'
-                ]);
+            if ($isImage) {
+                return $this->generateImageThumbnail($media, $filePath);
+            } elseif ($isVideo) {
+                return $this->generateVideoThumbnail($media, $filePath);
             }
         } catch (\Exception $e) {
             $this->logger->error('Failed to generate thumbnail', [
                 'media_id' => $media->getId(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'mime_type' => $mimeType
             ]);
         }
 
         return null;
     }
 
+    private function generateImageThumbnail(Media $media, string $filePath): ?string
+    {
+        // Use media UUID for safe thumbnail naming (no database ID exposure)
+        $thumbnailName = 'thumb_' . $media->getUuid()->toRfc4122() . '.jpg';
+        $thumbnailPath = $this->thumbnailDirectory . '/' . $thumbnailName;
+        
+        // Generate thumbnail using production-ready MediaProcessingService
+        $thumbnailConfig = ProcessingConfigFactory::createImage(
+            300, 300, 
+            85, // quality
+            'jpg', // format
+            true, // maintain aspect ratio
+            false // no transparency for thumbnails
+        );
+
+        $result = $this->mediaProcessingService->processImage(
+            $filePath,
+            $thumbnailPath,
+            $thumbnailConfig
+        );
+        
+        if ($result->isSuccess() && file_exists($thumbnailPath)) {
+            $media->setThumbnailUrl('/thumbnails/' . $thumbnailName);
+            $this->entityManager->flush();
+            
+            $this->logger->info('Image thumbnail generated using MediaProcessingService', [
+                'media_id' => $media->getId(),
+                'thumbnail_path' => $thumbnailPath,
+                'processing_time' => $result->getProcessingTime()
+            ]);
+
+            return $thumbnailPath;
+        } else {
+            $this->logger->error('Image thumbnail generation failed', [
+                'media_id' => $media->getId(),
+                'error' => $result->getErrorMessage() ?? 'Unknown error'
+            ]);
+        }
+
+        return null;
+    }
+
+    private function generateVideoThumbnail(Media $media, string $filePath): ?string
+    {
+        // Use media UUID for safe thumbnail naming (no database ID exposure)
+        $thumbnailName = 'thumb_' . $media->getUuid()->toRfc4122() . '.gif';
+        $thumbnailPath = $this->thumbnailDirectory . '/' . $thumbnailName;
+        
+        // Generate GIF thumbnail from video using FFmpeg
+        $result = $this->generateVideoGifThumbnail($filePath, $thumbnailPath);
+        
+        if ($result && file_exists($thumbnailPath)) {
+            $media->setThumbnailUrl('/thumbnails/' . $thumbnailName);
+            $this->entityManager->flush();
+            
+            $this->logger->info('Video GIF thumbnail generated successfully', [
+                'media_id' => $media->getId(),
+                'thumbnail_path' => $thumbnailPath,
+                'file_size' => filesize($thumbnailPath)
+            ]);
+
+            return $thumbnailPath;
+        } else {
+            $this->logger->error('Video GIF thumbnail generation failed', [
+                'media_id' => $media->getId(),
+                'input_path' => $filePath
+            ]);
+        }
+
+        return null;
+    }
+
+    private function generateVideoGifThumbnail(string $videoPath, string $outputPath): bool
+    {
+        try {
+            // For GIF generation, we need to use FFmpeg directly with palette optimization
+            // This creates a high-quality GIF with optimized colors
+            $result = $this->mediaProcessingService->getFfmpegProcessor()->generateVideoGif(
+                $videoPath,
+                $outputPath,
+                startTime: 1.0, // Start from 1 second into video
+                duration: 3.0,  // 3 second GIF
+                width: 300,
+                height: 300,
+                fps: 10 // 10 FPS for good quality/size balance
+            );
+
+            if ($result->isSuccess()) {
+                $this->logger->info('Video GIF thumbnail created successfully', [
+                    'input' => $videoPath,
+                    'output' => $outputPath,
+                    'processing_time' => $result->getProcessingTime(),
+                    'file_size' => file_exists($outputPath) ? filesize($outputPath) : 0
+                ]);
+                return true;
+            } else {
+                $this->logger->error('Video GIF thumbnail processing failed', [
+                    'input' => $videoPath,
+                    'output' => $outputPath,
+                    'error' => $result->getErrorMessage()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Exception during video GIF thumbnail generation', [
+                'input' => $videoPath,
+                'output' => $outputPath,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
     public function processUploadedFile(Media $media, string $filePath, array $metadata = []): void
     {
         try {
-            // Generate thumbnail if it's an image
-            if ($this->isImageFile($media)) {
-                $thumbnailPath = $this->generateThumbnail($media);
-                
-                // Update media metadata with thumbnail path if generated
-                if ($thumbnailPath) {
-                    $currentMetadata = $media->getMetadata();
-                    $currentMetadata['thumbnail'] = $thumbnailPath;
-                    $media->setMetadata($currentMetadata);
-                }
+            // Generate thumbnail for both images and videos
+            $thumbnailPath = $this->generateThumbnail($media);
+            
+            // Update media metadata with thumbnail path if generated
+            if ($thumbnailPath) {
+                $currentMetadata = $media->getMetadata();
+                $currentMetadata['thumbnail'] = $thumbnailPath;
+                $media->setMetadata($currentMetadata);
             }
 
             // Additional processing based on file type

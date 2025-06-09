@@ -32,6 +32,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy stock media original media serving to backend
+      'api/media/proxy':{
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api\/media\/proxy/, '/api/media/proxy')
+      },
       // Proxy API endpoints to backend
       '/api': {
         target: 'http://localhost:8000',

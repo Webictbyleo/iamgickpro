@@ -577,4 +577,108 @@ readonly class FfmpegProcessor
         
         return (float) $framerate;
     }
+
+    /**
+     * Generate an optimized GIF from video with proper palette handling
+     */
+    public function generateVideoGif(
+        string $inputPath,
+        string $outputPath,
+        float $startTime = 0.0,
+        float $duration = 3.0,
+        int $width = 300,
+        int $height = 300,
+        int $fps = 10
+    ): ProcessingResult {
+        $startProcessTime = microtime(true);
+
+        try {
+            if (!file_exists($inputPath)) {
+                return ProcessingResult::failure('Input file does not exist: ' . $inputPath);
+            }
+
+            // Create a temporary palette file
+            $paletteFile = sys_get_temp_dir() . '/' . uniqid('gif_palette_') . '.png';
+            
+            try {
+                // Step 1: Generate optimized palette
+                $paletteCommand = [
+                    escapeshellarg($this->ffmpegPath),
+                    '-ss', (string) $startTime,
+                    '-t', (string) $duration,
+                    '-i', escapeshellarg($inputPath),
+                    '-vf', escapeshellarg("fps={$fps},scale={$width}:{$height}:flags=lanczos:force_original_aspect_ratio=decrease,palettegen=reserve_transparent=0:max_colors=256"),
+                    '-y',
+                    escapeshellarg($paletteFile)
+                ];
+
+                $paletteResult = $this->executeCommand(implode(' ', $paletteCommand));
+                
+                if (!$paletteResult['success']) {
+                    return ProcessingResult::failure('Failed to generate palette: ' . $paletteResult['error']);
+                }
+
+                // Step 2: Generate GIF using the palette
+                $gifCommand = [
+                    escapeshellarg($this->ffmpegPath),
+                    '-ss', (string) $startTime,
+                    '-t', (string) $duration,
+                    '-i', escapeshellarg($inputPath),
+                    '-i', escapeshellarg($paletteFile),
+                    '-lavfi', escapeshellarg("fps={$fps},scale={$width}:{$height}:flags=lanczos:force_original_aspect_ratio=decrease [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5"),
+                    '-y',
+                    escapeshellarg($outputPath)
+                ];
+
+                $this->logger->info('Executing FFmpeg GIF generation command', [
+                    'palette_command' => implode(' ', $paletteCommand),
+                    'gif_command' => implode(' ', $gifCommand),
+                    'input' => $inputPath,
+                    'output' => $outputPath
+                ]);
+
+                $gifResult = $this->executeCommand(implode(' ', $gifCommand));
+                $processingTime = microtime(true) - $startProcessTime;
+
+                if ($gifResult['success'] && file_exists($outputPath)) {
+                    $fileSize = filesize($outputPath);
+                    return ProcessingResult::success(
+                        outputPath: $outputPath,
+                        metadata: [
+                            'duration' => $duration,
+                            'fps' => $fps,
+                            'width' => $width,
+                            'height' => $height,
+                            'file_size' => $fileSize
+                        ],
+                        processingTime: $processingTime
+                    );
+                } else {
+                    return ProcessingResult::failure(
+                        errorMessage: $gifResult['error'] ?? 'GIF generation failed',
+                        processingTime: $processingTime
+                    );
+                }
+
+            } finally {
+                // Clean up temporary palette file
+                if (file_exists($paletteFile)) {
+                    unlink($paletteFile);
+                }
+            }
+
+        } catch (\Exception $e) {
+            $processingTime = microtime(true) - $startProcessTime;
+            $this->logger->error('FFmpeg GIF generation failed', [
+                'input' => $inputPath,
+                'output' => $outputPath,
+                'error' => $e->getMessage()
+            ]);
+
+            return ProcessingResult::failure(
+                errorMessage: $e->getMessage(),
+                processingTime: $processingTime
+            );
+        }
+    }
 }

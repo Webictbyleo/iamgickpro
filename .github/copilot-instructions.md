@@ -221,3 +221,47 @@ This is a modern web-based design platform (similar to Canva) with the following
 **Password:** Vyhd7Y#PjTb7!TA
 ### Frontend Development URL
 **URL:** http://localhost:3000
+
+# Terminal Output Debugging Guide
+
+## Overview
+This guide provides best practices for capturing and interpreting terminal output when debugging PHP/Symfony applications, especially when some commands may not show immediate output or appear to hang.
+
+## Common Terminal Output Issues
+
+### 1. Empty or Missing Output
+**Problem**: Terminal commands appear to run but show no output
+**Solutions**:
+- Add explicit output statements with `echo` or `printf`
+- Use `2>&1` to capture both stdout and stderr
+- Add verbose flags (`-v`, `--verbose`) when available
+- Use `set -x` to show command execution in bash scripts
+
+### 2. Buffered Output
+**Problem**: Output appears delayed or all at once
+**Solutions**:
+- Use `php -u` for unbuffered output
+- Add `flush()` calls in PHP scripts
+- Use `stdbuf -o0` to disable output buffering
+- Add `ob_end_flush()` if output buffering is enabled
+
+### 3. Silent Failures
+**Problem**: Commands complete without errors but don't show expected results
+**Solutions**:
+- Check return codes with `echo $?`
+- Add error reporting: `php -d error_reporting=E_ALL -d display_errors=1`
+- Use `set -e` in bash scripts to exit on errors
+- Add explicit success/failure messages
+
+## Testing Checklist
+
+Before assuming a command failed:
+
+1. ✅ Check return code: `echo $?`
+2. ✅ Run with verbose output: add `-v` flags
+3. ✅ Capture stderr: use `2>&1`
+4. ✅ Add explicit output statements
+5. ✅ Check file permissions and syntax
+6. ✅ Verify environment and working directory
+7. ✅ Test with minimal reproduction case
+8. ✅ Check logs: `tail -f var/log/dev.log`

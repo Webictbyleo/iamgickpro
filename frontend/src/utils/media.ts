@@ -136,17 +136,17 @@ export const isFormatSupported = (filename: string, type: 'image' | 'video' | 'a
   
   switch (type) {
     case 'image':
-      return mediaConfig.supportedImageFormats.includes(extension);
+      return (mediaConfig.supportedImageFormats as readonly string[]).includes(extension);
     case 'video':
-      return mediaConfig.supportedVideoFormats.includes(extension);
-    case 'audio':
-      return mediaConfig.supportedAudioFormats.includes(extension);
+      return (mediaConfig.supportedVideoFormats as readonly string[]).includes(extension);
+    case 'audio':  
+      return (mediaConfig.supportedAudioFormats as readonly string[]).includes(extension);
     case 'all':
-      return [
+      return ([
         ...mediaConfig.supportedImageFormats,
         ...mediaConfig.supportedVideoFormats,
         ...mediaConfig.supportedAudioFormats
-      ].includes(extension);
+      ] as string[]).includes(extension);
     default:
       return false;
   }

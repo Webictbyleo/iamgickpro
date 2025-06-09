@@ -25,7 +25,10 @@ use App\Service\MediaProcessing\MediaProcessingService;
 use App\Service\MediaProcessing\Config\ProcessingConfigFactory;
 use App\Service\MediaProcessing\Config\ImageProcessingConfig;
 use App\Service\ResponseDTOFactory;
+use App\Service\StockMedia\StockMediaService;
+use App\Service\StockMedia\StockMediaException;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,6 +36,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Media Controller
@@ -55,6 +62,9 @@ class MediaController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
         private readonly MediaService $mediaService,
         private readonly MediaProcessingService $mediaProcessingService,
+        private readonly StockMediaService $stockMediaService,
+        private readonly HttpClientInterface $httpClient,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -590,20 +600,117 @@ class MediaController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            // TODO: Implement stock media API integration
-            // This would integrate with Unsplash, Pexels, etc.
+            // Validate the DTO
+            $errors = $this->validator->validate($dto);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+
+            // Search stock media using the stock media service
+            $filters = [];
             
-            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
-                [], // Empty media array for now
+            // Add any additional filters from query parameters
+            // Note: Future enhancement could include category, orientation, color filters
+            // when these properties are added to StockSearchRequestDTO
+            
+            $this->logger->info('Initiating stock media search', [
+                'query' => $dto->query,
+                'type' => $dto->type,
+                'page' => $dto->page,
+                'limit' => $dto->limit,
+                'user_id' => $user->getId()
+            ]);
+            
+            $results = $this->stockMediaService->search(
+                $dto->query,
+                $dto->type,
                 $dto->page,
                 $dto->limit,
-                0, // Total count
-                'Stock media search not yet implemented'
+                $filters
+            );
+
+            // Transform results to our standard media format
+            $mediaData = [];
+            foreach ($results['items'] as $item) {
+                $mediaData[] = [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'type' => $item['type'],
+                    'mime_type' => $item['mimeType'],
+                    'size' => $item['size'],
+                    'url' => $item['url'],
+                    'thumbnail_url' => $item['thumbnailUrl'],
+                    'thumbnail' => $item['thumbnailUrl'],
+                    'thumbnailUrl' => $item['thumbnailUrl'],
+                    'width' => $item['width'],
+                    'height' => $item['height'],
+                    'duration' => $item['duration'] ?? null,
+                    'source' => $item['source'],
+                    'source_id' => $item['sourceId'],
+                    'license' => $item['license'],
+                    'attribution' => $item['attribution'],
+                    'tags' => $item['tags'],
+                    'is_premium' => $item['isPremium'],
+                    'metadata' => $item['metadata'],
+                    'created_at' => null,
+                    'updated_at' => null
+                ];
+            }
+
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $mediaData,
+                $dto->page,
+                $dto->limit,
+                $results['total'],
+                sprintf(
+                    'Found %d %s results from %s',
+                    $results['total'],
+                    $dto->type,
+                    implode(', ', $results['providers'])
+                )
             );
 
             return $this->paginatedResponse($paginatedResponse);
 
+        } catch (StockMediaException $e) {
+            $this->logger->error('Stock media search failed', [
+                'query' => $dto->query,
+                'type' => $dto->type,
+                'error' => $e->getMessage(),
+                'provider' => $e->getProvider()
+            ]);
+
+            $statusCode = match ($e->getCode()) {
+                401 => Response::HTTP_UNAUTHORIZED,
+                403 => Response::HTTP_FORBIDDEN,
+                404 => Response::HTTP_NOT_FOUND,
+                429 => Response::HTTP_TOO_MANY_REQUESTS,
+                default => Response::HTTP_SERVICE_UNAVAILABLE
+            };
+
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Stock media search failed: ' . $e->getMessage(),
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, $statusCode);
+
         } catch (\Exception $e) {
+            $this->logger->error('Unexpected error during stock media search', [
+                'query' => $dto->query,
+                'type' => $dto->type,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to search stock media',
                 [$e->getMessage()]

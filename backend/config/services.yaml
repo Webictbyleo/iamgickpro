@@ -36,6 +36,16 @@ services:
             $maxLoginAttempts: 5
             $lockoutDurationMinutes: 30
 
+    # Testing Services (Public for direct access)
+    # Make interfaces available for testing by aliasing the concrete implementations
+    Doctrine\ORM\EntityManagerInterface:
+        alias: doctrine.orm.default_entity_manager
+        public: true
+    
+    Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface:
+        alias: lexik_jwt_authentication.jwt_manager
+        public: true
+
     # Media Service Configuration
     App\Service\MediaService:
         arguments:
@@ -94,6 +104,48 @@ services:
     App\Service\VideoAnalysisService:
         arguments:
             $youtubeApiKey: '%env(YOUTUBE_API_KEY)%'
+
+    # Stock Media Services Configuration
+    App\Service\StockMedia\StockMediaResponseValidator:
+        public: true
+
+    App\Service\StockMedia\UnsplashService:
+        arguments:
+            $accessKey: '%env(UNSPLASH_ACCESS_KEY)%'
+            $responseValidator: '@App\Service\StockMedia\StockMediaResponseValidator'
+        public: true
+
+    App\Service\StockMedia\IconfinderService:
+        arguments:
+            $apiKey: '%env(ICONFINDER_API_KEY)%'
+            $responseValidator: '@App\Service\StockMedia\StockMediaResponseValidator'
+        public: true
+
+    App\Service\StockMedia\PexelsService:
+        arguments:
+            $apiKey: '%env(PEXELS_API_KEY)%'
+            $responseValidator: '@App\Service\StockMedia\StockMediaResponseValidator'
+        public: true
+
+    # Stock Media Cache Service Configuration
+    App\Service\StockMedia\StockMediaCacheService:
+        arguments:
+            $cache: '@stock_media.cache'
+        public: true
+
+    # Public Media Controller with cache for proxy functionality
+    App\Controller\PublicMediaController:
+        arguments:
+            $cache: '@stock_media.cache'
+        public: true
+
+    App\Service\StockMedia\StockMediaService:
+        arguments:
+            $cacheService: '@App\Service\StockMedia\StockMediaCacheService'
+            $unsplashService: '@App\Service\StockMedia\UnsplashService'
+            $iconfinderService: '@App\Service\StockMedia\IconfinderService'
+            $pexelsService: null
+        public: true
 
     # Response DTO Factory service
     App\Service\ResponseDTOFactory: ~
