@@ -26,38 +26,77 @@
         </div>
       </div>
 
-      <!-- Center Section - History Controls -->
+      <!-- Center Section - History Controls & Status Indicators -->
       <div class="flex-1 flex items-center justify-center">
-        <div class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-2xl p-1.5 shadow-sm border border-gray-200 dark:border-gray-600">
-          <!-- History Controls -->
-          <div class="flex items-center space-x-1">
+        <div class="flex items-center space-x-4">
+          <!-- History Controls - Flat Design -->
+          <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
             <button
               :disabled="!canUndo"
               @click="$emit('undo')"
               :class="[
-                'p-2.5 rounded-xl transition-all duration-200 group relative',
+                'px-3 py-2 transition-all duration-200 flex items-center space-x-1.5 border-r border-gray-200 dark:border-gray-600',
                 canUndo 
-                  ? 'hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-105' 
-                  : 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                  ? 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400' 
+                  : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
               ]"
               title="Undo (Ctrl+Z)"
             >
               <UndoIcon class="w-4 h-4" />
+              <span class="text-xs font-medium">Undo</span>
             </button>
             
             <button
               :disabled="!canRedo"
               @click="$emit('redo')"
               :class="[
-                'p-2.5 rounded-xl transition-all duration-200 group relative',
+                'px-3 py-2 transition-all duration-200 flex items-center space-x-1.5',
                 canRedo 
-                  ? 'hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-105' 
-                  : 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                  ? 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400' 
+                  : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
               ]"
               title="Redo (Ctrl+Y)"
             >
               <RedoIcon class="w-4 h-4" />
+              <span class="text-xs font-medium">Redo</span>
             </button>
+          </div>
+
+          <!-- Save Status Indicator with Icon -->
+          <div class="flex items-center">
+            <div 
+              :class="[
+                'flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200',
+                saveStatus === 'saved' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' :
+                saveStatus === 'saving' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' :
+                saveStatus === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 
+                'bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+              ]"
+              :title="saveStatus === 'saved' ? 'All changes saved' :
+                     saveStatus === 'saving' ? 'Saving changes...' :
+                     saveStatus === 'error' ? 'Failed to save changes' : 'Unsaved changes'"
+            >
+              <!-- Saved Icon -->
+              <CheckCircleIcon 
+                v-if="saveStatus === 'saved'" 
+                class="w-4 h-4"
+              />
+              <!-- Saving Icon -->
+              <ArrowPathIcon 
+                v-else-if="saveStatus === 'saving'" 
+                class="w-4 h-4 animate-spin"
+              />
+              <!-- Error Icon -->
+              <ExclamationCircleIcon 
+                v-else-if="saveStatus === 'error'" 
+                class="w-4 h-4"
+              />
+              <!-- Unsaved Icon -->
+              <ClockIcon 
+                v-else 
+                class="w-4 h-4"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -76,6 +115,12 @@ import ExportDropdown from './ExportDropdown.vue'
 import ResizeDropdown from './ResizeDropdown.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
 import RedoIcon from '@/components/icons/RedoIcon.vue'
+import { 
+  CheckCircleIcon, 
+  ArrowPathIcon, 
+  ExclamationCircleIcon, 
+  ClockIcon 
+} from '@heroicons/vue/24/outline'
 
 interface Props {
   designName: string
@@ -84,13 +129,11 @@ interface Props {
   canRedo: boolean
   showComments?: boolean
   commentCount?: number
-  selectedLayer?: any
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showComments: false,
-  commentCount: 0,
-  selectedLayer: undefined
+  commentCount: 0
 })
 
 const emit = defineEmits<{
