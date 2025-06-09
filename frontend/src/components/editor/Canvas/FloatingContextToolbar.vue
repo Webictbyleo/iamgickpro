@@ -16,7 +16,7 @@
         :fontStyle="selectedLayer.properties?.fontStyle"
         :textDecoration="selectedLayer.properties?.textDecoration"
         :textAlign="selectedLayer.properties?.textAlign"
-        :color="selectedLayer.properties?.fill"
+        :color="selectedLayer.properties?.color"
         @update="(props) => $emit('tool-update', 'text', props)"
       />
       
@@ -27,7 +27,7 @@
         :fill="selectedLayer.properties?.fill"
         :stroke="selectedLayer.properties?.stroke"
         :strokeWidth="selectedLayer.properties?.strokeWidth"
-        :borderRadius="selectedLayer.properties?.borderRadius"
+        :borderRadius="selectedLayer.properties?.cornerRadius"
         :hasShadow="selectedLayer.properties?.hasShadow"
         @update="(props) => $emit('tool-update', 'shape', props)"
       />

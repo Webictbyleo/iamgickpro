@@ -213,6 +213,8 @@
               v-for="icon in filteredIcons"
               :key="icon.id"
               @click="addMedia(icon)"
+              @mouseenter="showTooltip($event, icon.alt)"
+              @mouseleave="hideTooltip"
               class="relative group cursor-pointer border border-gray-200 rounded-lg p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-105"
             >
               <div class="aspect-square flex items-center justify-center">
@@ -224,10 +226,6 @@
                 />
               </div>
               <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
-              <!-- Icon name tooltip -->
-              <div class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                {{ icon.alt }}
-              </div>
             </div>
           </div>
           
@@ -445,6 +443,19 @@
         </div>
       </div>
     </div>
+    
+    <!-- Global Tooltip -->
+    <div
+      v-if="tooltipVisible"
+      class="fixed bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-[9999] pointer-events-none shadow-lg"
+      :style="{
+        left: tooltipPosition.x + 'px',
+        top: tooltipPosition.y + 'px',
+        transform: 'translateX(-50%)'
+      }"
+    >
+      {{ tooltipText }}
+    </div>
   </div>
 </template>
 
@@ -468,6 +479,11 @@ const emit = defineEmits<{
 const activeTab = ref('photos')
 const searchQuery = ref('')
 const searchTimeout = ref<NodeJS.Timeout | null>(null)
+
+// Tooltip state
+const tooltipVisible = ref(false)
+const tooltipText = ref('')
+const tooltipPosition = ref({ x: 0, y: 0 })
 
 const mediaTabs = [
   { id: 'photos', label: 'Photos', icon: PhotoIcon },
@@ -533,38 +549,11 @@ const getCurrentResults = () => {
 
 // Shapes are now managed by the useStockMedia composable
 
-// Computed filters for stock media
-const filteredPhotos = computed(() => {
-  if (!searchQuery.value) return stockPhotos.value
-  return stockPhotos.value.filter((photo: StockMediaItem) => 
-    photo.alt.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    photo.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  )
-})
-
-const filteredIcons = computed(() => {
-  if (!searchQuery.value) return stockIcons.value
-  return stockIcons.value.filter((icon: StockMediaItem) =>
-    icon.alt.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    icon.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  )
-})
-
-const filteredShapes = computed(() => {
-  if (!searchQuery.value) return stockShapes.value
-  return stockShapes.value.filter((shape: StockMediaItem) => 
-    shape.alt.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    shape.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  )
-})
-
-const filteredVideos = computed(() => {
-  if (!searchQuery.value) return stockVideos.value
-  return stockVideos.value.filter((video: StockMediaItem) => 
-    video.alt.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    video.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  )
-})
+// Stock media results (no additional filtering needed since API handles search)
+const filteredPhotos = computed(() => stockPhotos.value)
+const filteredIcons = computed(() => stockIcons.value)
+const filteredShapes = computed(() => stockShapes.value)
+const filteredVideos = computed(() => stockVideos.value)
 
 // Media addition
 const addMedia = (mediaData: any) => {
@@ -691,4 +680,19 @@ watch(activeTab, (newTab) => {
     searchVideos('design')
   }
 })
+
+// Tooltip functionality
+const showTooltip = (event: MouseEvent, text: string) => {
+  const rect = (event.target as HTMLElement).getBoundingClientRect()
+  tooltipText.value = text
+  tooltipPosition.value = {
+    x: rect.left + rect.width / 2,
+    y: rect.bottom + 8
+  }
+  tooltipVisible.value = true
+}
+
+const hideTooltip = () => {
+  tooltipVisible.value = false
+}
 </script>

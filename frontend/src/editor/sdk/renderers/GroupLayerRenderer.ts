@@ -224,17 +224,6 @@ export class GroupLayerRenderer implements KonvaLayerRenderer {
       }
     })
 
-    group.on('dragend', () => {
-      const stage = group.getStage()
-      const container = stage?.container()
-      if (container && container.style) {
-        container.style.cursor = 'default'
-      }
-      // Update layer position
-      layer.x = group.x()
-      layer.y = group.y()
-    })
-
     // Hover effects for group container
     group.on('mouseenter', () => {
       if (!layer.locked) {

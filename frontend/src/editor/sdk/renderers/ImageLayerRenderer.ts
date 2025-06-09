@@ -410,12 +410,7 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       if (container) container.style.cursor = 'grabbing'
     })
 
-    group.on('dragend', () => {
-      const container = group.getStage()?.container()
-      if (container) container.style.cursor = 'default'
-      layer.x = group.x()
-      layer.y = group.y()
-    })
+
 
     group.on('mouseenter', () => {
       const container = group.getStage()?.container()

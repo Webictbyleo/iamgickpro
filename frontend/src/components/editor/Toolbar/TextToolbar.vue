@@ -13,14 +13,19 @@
 
     <!-- Font Size -->
     <div class="flex items-center space-x-1">
-      <PropertyDropdown
-        :value="fontSize"
-        :options="fontSizeOptions"
-        @update="$emit('update', { fontSize: Number($event) })"
-        class="w-20"
-        :show-dropdown-icon="false"
-      />
-      
+      <div class="relative">
+        <input
+          type="number"
+          :value="fontSize"
+          @input="handleFontSizeChange"
+          @blur="handleFontSizeBlur"
+          class="w-16 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          min="8"
+          max="200"
+          step="1"
+        />
+        <span class="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 pointer-events-none">px</span>
+      </div>
     </div>
 
     <!-- Font Style Controls -->
@@ -81,7 +86,7 @@
     <div class="flex items-center space-x-2">
       <PropertyColorPicker
         :value="color"
-        @update="$emit('update', { color: $event })"
+        @update="(colorValue) => $emit('update', { color: colorValue })"
         tooltip="Text Color"
       />
     </div>
@@ -207,26 +212,6 @@ const fontOptions = [
   { value: 'Merriweather', label: 'Merriweather' }
 ]
 
-const fontSizeOptions = [
-  { value: 8, label: '8px' },
-  { value: 10, label: '10px' },
-  { value: 12, label: '12px' },
-  { value: 14, label: '14px' },
-  { value: 16, label: '16px' },
-  { value: 18, label: '18px' },
-  { value: 20, label: '20px' },
-  { value: 24, label: '24px' },
-  { value: 28, label: '28px' },
-  { value: 32, label: '32px' },
-  { value: 36, label: '36px' },
-  { value: 42, label: '42px' },
-  { value: 48, label: '48px' },
-  { value: 56, label: '56px' },
-  { value: 64, label: '64px' },
-  { value: 72, label: '72px' },
-  { value: 96, label: '96px' }
-]
-
 const autoResizeOptions = [
   { value: 'none', label: 'None' },
   { value: 'width', label: 'Width' },
@@ -235,9 +220,32 @@ const autoResizeOptions = [
 ]
 
 // Font size controls
+const handleFontSizeChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = parseInt(target.value)
+  if (!isNaN(value) && value >= 8 && value <= 200) {
+    emit('update', { fontSize: value })
+  }
+}
+
+const handleFontSizeBlur = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  let value = parseInt(target.value)
+  
+  // Clamp value between min and max
+  if (isNaN(value) || value < 8) {
+    value = 8
+  } else if (value > 200) {
+    value = 200
+  }
+  
+  target.value = value.toString()
+  emit('update', { fontSize: value })
+}
+
 const increaseFontSize = () => {
   const currentSize = props.fontSize || 16
-  const newSize = Math.min(96, currentSize + (currentSize < 24 ? 2 : 4))
+  const newSize = Math.min(200, currentSize + (currentSize < 24 ? 2 : 4))
   emit('update', { fontSize: newSize })
 }
 

@@ -442,15 +442,7 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
       }
     })
 
-    shape.on('dragend', () => {
-      const container = shape.getStage()?.container()
-      if (container) {
-        container.style.cursor = 'default'
-      }
-      // Update layer position
-      layer.x = shape.x()
-      layer.y = shape.y()
-    })
+
 
     // Hover effects
     shape.on('mouseenter', () => {

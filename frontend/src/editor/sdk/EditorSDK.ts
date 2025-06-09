@@ -62,8 +62,8 @@ export class EditorSDK extends EventEmitter {
       height: config.height || 600
     })
     
-    
-    
+    // Set up layerEmitter on stage for renderer communication
+    ;(this.stage as any).layerEmitter = this
     
     // Initialize managers
     this.layerManager = new LayerManager(this.stage, this.state, this)

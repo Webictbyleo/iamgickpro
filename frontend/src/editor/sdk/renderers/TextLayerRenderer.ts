@@ -162,7 +162,15 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
    * Setup enhanced text interactions for modern editing experience
    */
   private setupTextInteractions(textNode: Konva.Text, layerData: LayerNode): void {
-    
+    // Drag event handlers
+    textNode.on('dragstart', () => {
+      const container = textNode.getStage()?.container()
+      if (container) {
+        container.style.cursor = 'grabbing'
+      }
+    })
+
+
 
     // Enhanced hover states
     textNode.on('mouseenter', () => {

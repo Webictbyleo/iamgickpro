@@ -278,6 +278,9 @@ export class TransformManager {
 
     // Add individual transform handlers for each selected node
     this.addNodeTransformHandlers()
+    
+    // Add drag handlers for each selected node
+    this.addNodeDragHandlers()
   }
 
   private handleTransform(): void {
@@ -691,6 +694,42 @@ export class TransformManager {
     }
   }
 
+  private addNodeDragHandlers(): void {
+    // Add drag handlers for each selected node to centralize position management
+    this.selectedLayers.forEach(layer => {
+      if (!layer.konvaNode) return
+
+      // Remove existing drag handlers for this node
+      layer.konvaNode.off('dragstart.transform-manager')
+      layer.konvaNode.off('dragend.transform-manager')
+
+      // Add drag start handler
+      layer.konvaNode.on('dragstart.transform-manager', () => {
+        const container = layer.konvaNode?.getStage()?.container()
+        if (container) {
+          container.style.cursor = 'grabbing'
+        }
+      })
+
+      // Add drag end handler
+      layer.konvaNode.on('dragend.transform-manager', () => {
+        const container = layer.konvaNode?.getStage()?.container()
+        if (container) {
+          container.style.cursor = 'default'
+        }
+        
+        // Update layer position from node
+        if (layer.konvaNode) {
+          layer.x = layer.konvaNode.x()
+          layer.y = layer.konvaNode.y()
+          
+          // Emit layer update event to sync with store
+          this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+        }
+      })
+    })
+  }
+
   private addNodeTransformHandlers(): void {
     // Add individual transform handlers for each selected node
     // This follows the Konva documentation pattern for text wrapping
@@ -722,10 +761,12 @@ export class TransformManager {
   }
 
   destroy(): void {
-    // Clean up node transform handlers
+    // Clean up node transform and drag handlers
     this.selectedLayers.forEach(layer => {
       if (layer.konvaNode) {
         layer.konvaNode.off('transform.node-transform')
+        layer.konvaNode.off('dragstart.transform-manager')
+        layer.konvaNode.off('dragend.transform-manager')
       }
     })
 

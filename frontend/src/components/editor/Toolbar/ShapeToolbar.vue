@@ -44,13 +44,13 @@
       />
     </div>
 
-    <!-- Border Radius (for rectangles) -->
+    <!-- Corner Radius (for rectangles) -->
     <div v-if="shapeType === 'rectangle'" class="flex items-center space-x-2">
       <label class="text-sm font-medium text-gray-700">Radius:</label>
       <PropertyInput
-        :value="borderRadius"
+        :value="cornerRadius"
         type="number"
-        @update="$emit('update', { borderRadius: Number($event) })"
+        @update="$emit('update', { cornerRadius: Number($event) })"
         class="w-16"
         :min="0"
         :max="100"
@@ -83,7 +83,7 @@ interface Props {
   fill?: string | ShapeFillConfig
   stroke?: string | ShapeFillConfig
   strokeWidth?: number
-  borderRadius?: number
+  cornerRadius?: number
   hasShadow?: boolean
 }
 
@@ -92,7 +92,7 @@ const props = withDefaults(defineProps<Props>(), {
   fill: '#3498db',
   stroke: '#2980b9',
   strokeWidth: 2,
-  borderRadius: 0,
+  cornerRadius: 0,
   hasShadow: false
 })
 
@@ -137,7 +137,7 @@ function getStrokeColorString(stroke: string | ShapeFillConfig | undefined): str
 }
 
 function handleFillUpdate(colorValue: string) {
-  // Convert string back to appropriate format
+  // Always create a consistent ShapeFillConfig object
   if (colorValue.startsWith('linear-gradient') || colorValue.startsWith('radial-gradient')) {
     // For gradients, create a ShapeFillConfig object
     const fillConfig: ShapeFillConfig = {
@@ -148,8 +148,13 @@ function handleFillUpdate(colorValue: string) {
     }
     emit('update', { fill: fillConfig })
   } else {
-    // For solid colors, can send as string or ShapeFillConfig
-    emit('update', { fill: colorValue })
+    // For solid colors, always use ShapeFillConfig format for consistency
+    const fillConfig: ShapeFillConfig = {
+      type: 'solid',
+      color: colorValue,
+      opacity: 1
+    }
+    emit('update', { fill: fillConfig })
   }
 }
 

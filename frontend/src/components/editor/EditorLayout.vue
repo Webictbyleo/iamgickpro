@@ -582,16 +582,33 @@ const handleStopAnimation = () => {
 }
 
 // Colors Panel Event Handlers
-const handleApplyColor = (colorData: any) => {
+const handleApplyColor = (colorString: string) => {
+  // Parse color string to extract color and opacity
+  let color = colorString
+  let opacity = 1
+
+  if (colorString.startsWith('rgba')) {
+    // Parse rgba(r, g, b, a) format
+    const match = colorString.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/)
+    if (match) {
+      const r = parseInt(match[1])
+      const g = parseInt(match[2])
+      const b = parseInt(match[3])
+      opacity = parseFloat(match[4])
+      color = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+    }
+  }
+
   if (selectedLayer.value) {
+    // Apply color to selected layer
     if (selectedLayer.value.type === 'shape') {
       const updates: Partial<Layer> = {
         properties: {
           ...selectedLayer.value.properties,
           fill: {
             type: 'solid' as const,
-            color: colorData.color,
-            opacity: colorData.opacity || 1
+            color: color,
+            opacity: opacity
           }
         }
       }
@@ -600,27 +617,104 @@ const handleApplyColor = (colorData: any) => {
       const updates: Partial<Layer> = {
         properties: {
           ...selectedLayer.value.properties,
-          color: colorData.color
+          color: color
         }
       }
       updateLayerProperties(selectedLayer.value.id, updates)
     }
+  } else {
+    // No layer selected - apply to canvas background
+    if (editorSDK.value) {
+      editorSDK.value.canvas.setBackgroundColor(color)
+      // Also update the design store background color
+      if (designStore.currentDesign) {
+        designStore.currentDesign.designData.canvas.backgroundColor = color
+        designStore.currentDesign.updatedAt = new Date().toISOString()
+      }
+    }
   }
 }
 
-const handleApplyGradient = (gradientData: any) => {
+const handleApplyGradient = (gradientString: string) => {
+  // Parse CSS gradient string
+  let gradientData: any = {
+    type: 'linear',
+    colors: [],
+    angle: 0
+  }
+
+  if (gradientString.startsWith('linear-gradient')) {
+    gradientData.type = 'linear'
+    
+    // Extract angle
+    const angleMatch = gradientString.match(/linear-gradient\(([^,]+),/)
+    if (angleMatch) {
+      const direction = angleMatch[1].trim()
+      if (direction.includes('deg')) {
+        gradientData.angle = parseInt(direction.replace('deg', ''))
+      } else if (direction === 'to right') {
+        gradientData.angle = 90
+      } else if (direction === 'to bottom') {
+        gradientData.angle = 180
+      } else if (direction === 'to left') {
+        gradientData.angle = 270
+      } else if (direction === 'to top') {
+        gradientData.angle = 0
+      }
+    }
+    
+    // Extract colors
+    const colorMatches = gradientString.match(/#[0-9a-fA-F]{6}/g)
+    if (colorMatches) {
+      gradientData.colors = colorMatches.map((color, index) => ({
+        color: color,
+        stop: index / (colorMatches.length - 1)
+      }))
+    }
+  } else if (gradientString.startsWith('radial-gradient')) {
+    gradientData.type = 'radial'
+    gradientData.centerX = 0.5
+    gradientData.centerY = 0.5
+    gradientData.radius = 0.5
+    
+    // Extract colors
+    const colorMatches = gradientString.match(/#[0-9a-fA-F]{6}/g)
+    if (colorMatches) {
+      gradientData.colors = colorMatches.map((color, index) => ({
+        color: color,
+        stop: index / (colorMatches.length - 1)
+      }))
+    }
+  }
+
   if (selectedLayer.value && selectedLayer.value.type === 'shape') {
+    // Apply gradient to selected shape layer
     const updates: Partial<Layer> = {
       properties: {
         ...selectedLayer.value.properties,
         fill: {
-          type: gradientData.type || 'linear' as const,
-          colors: gradientData.colors || [],
-          angle: gradientData.angle || 0
+          type: gradientData.type as 'linear' | 'radial',
+          colors: gradientData.colors,
+          angle: gradientData.angle,
+          centerX: gradientData.centerX,
+          centerY: gradientData.centerY,
+          radius: gradientData.radius,
+          opacity: 1
         }
       }
     }
     updateLayerProperties(selectedLayer.value.id, updates)
+  } else {
+    // No layer selected or layer doesn't support gradients - apply to canvas background
+    // For now, extract the first color as background since canvas backgrounds are typically solid
+    if (gradientData.colors.length > 0 && editorSDK.value) {
+      const firstColor = gradientData.colors[0].color
+      editorSDK.value.canvas.setBackgroundColor(firstColor)
+      if (designStore.currentDesign) {
+        designStore.currentDesign.designData.canvas.backgroundColor = firstColor
+        designStore.currentDesign.updatedAt = new Date().toISOString()
+      }
+    }
   }
 }
 
@@ -628,52 +722,17 @@ const handleApplyGradient = (gradientData: any) => {
 
 const handleToolUpdate = (toolType: string, properties: any) => {
   if (selectedLayer.value) {
-    if (toolType === 'text' && selectedLayer.value.type === 'text') {
-      // Map the properties from TextToolbar to layer property paths
-      Object.entries(properties).forEach(([key, value]) => {
-        let updatePath = key;
-        
-        // Map toolbar property names to layer property paths
-        switch (key) {
-          case 'fontFamily':
-            updatePath = 'properties.fontFamily';
-            break;
-          case 'fontSize':
-            updatePath = 'properties.fontSize';
-            break;
-          case 'fontWeight':
-            updatePath = 'properties.fontWeight';
-            break;
-          case 'fontStyle':
-            updatePath = 'properties.fontStyle';
-            break;
-          case 'textDecoration':
-            updatePath = 'properties.textDecoration';
-            break;
-          case 'textAlign':
-            updatePath = 'properties.textAlign';
-            break;
-          case 'color':
-            updatePath = 'properties.fill';
-            break;
-          default:
-            updatePath = `properties.${key}`;
-        }
-        
-        // Update the design store
-        designStore.updateLayerProperty(selectedLayer.value.id, updatePath, value);
-      });
-    } else if (toolType === 'shape' && selectedLayer.value.type === 'shape') {
-      // Similar mapping for shape properties
-      Object.entries(properties).forEach(([key, value]) => {
-        designStore.updateLayerProperty(selectedLayer.value.id, `properties.${key}`, value);
-      });
-    } else if (toolType === 'image' && selectedLayer.value.type === 'image') {
-      // Handle image properties
-      Object.entries(properties).forEach(([key, value]) => {
-        designStore.updateLayerProperty(selectedLayer.value.id, `properties.${key}`, value);
-      });
+    // Build the updates object with the existing layer properties structure
+    const updates: Partial<Layer> = {
+      properties: {
+        ...selectedLayer.value.properties,
+        ...properties
+      }
     }
+    
+    // Use updateLayerProperties instead of direct store updates
+    // This ensures proper visual updates through the LayerManager
+    updateLayerProperties(selectedLayer.value.id, updates)
   }
 }
 

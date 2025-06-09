@@ -417,9 +417,35 @@ const loadPalette = () => {
   showPaletteOptions.value = false
 }
 
-const toggleEyedropper = () => {
-  isEyedropperActive.value = !isEyedropperActive.value
-  // TODO: Implement eyedropper functionality
+const toggleEyedropper = async () => {
+  // Check if EyeDropper API is supported
+  if (!('EyeDropper' in window)) {
+    alert('Eyedropper is not supported in this browser. Please use Chrome, Edge, or other Chromium-based browsers.')
+    return
+  }
+
+  try {
+    isEyedropperActive.value = true
+    
+    // Create a new EyeDropper instance
+    const eyeDropper = new (window as any).EyeDropper()
+    
+    // Start the eyedropper
+    const result = await eyeDropper.open()
+    
+    if (result && result.sRGBHex) {
+      // Set the picked color (just update the color picker, don't apply)
+      currentColor.value = result.sRGBHex
+      rgbColor.value = hexToRgb(result.sRGBHex)
+      addToRecentColors(result.sRGBHex)
+      // Don't emit apply-color automatically - user should click to apply
+    }
+  } catch (error) {
+    // User cancelled or other error
+    console.log('Eyedropper cancelled or failed:', error)
+  } finally {
+    isEyedropperActive.value = false
+  }
 }
 
 const updateGradientPreview = () => {

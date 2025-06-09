@@ -372,6 +372,7 @@ export class LayerManager implements LayerAPI {
   }
 
   private updateKonvaNode(node: Konva.Node, layer: LayerNode): void {
+    // Update basic transform properties
     node.setAttrs({
       x: layer.x,
       y: layer.y,
@@ -382,6 +383,12 @@ export class LayerManager implements LayerAPI {
       visible: layer.visible,
       listening: !layer.locked
     })
+
+    // Delegate to the appropriate renderer for layer-specific property updates
+    const renderer = this.renderers.get(layer.type as LayerType)
+    if (renderer && typeof renderer.update === 'function') {
+      renderer.update(node, layer)
+    }
   }
 
   private getNextZIndex(): number {
