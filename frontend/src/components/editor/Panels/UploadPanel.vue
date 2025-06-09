@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-col h-full">
-    
+    <!-- Header -->
+    <div class="p-4 border-b border-gray-200 bg-white">
+      <h3 class="text-lg font-semibold text-gray-900">Your Uploads</h3>
+      <p class="text-sm text-gray-600 mt-1">Manage and use your uploaded media files</p>
+    </div>
 
     <!-- Hidden file input (always present for programmatic access) -->
     <input
@@ -12,104 +16,43 @@
       class="hidden"
     />
 
-    <!-- Upload Section (only show when no uploads or empty filtered results) -->
-    <div v-if="shouldShowUploadArea" class="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-b border-gray-200">      
-      <!-- Compact Upload Area -->
-      <div 
-        @click="fileInput?.click()"
-        @dragover.prevent="isDragOver = true"
-        @dragleave.prevent="isDragOver = false"
-        @drop.prevent="handleDrop"
-        :class="[
-          'relative border-2 border-dashed rounded-lg p-4 cursor-pointer transition-all text-center group overflow-hidden',
-          isDragOver
-            ? 'border-blue-400 bg-blue-100/50 scale-[1.02] shadow-lg'
-            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-100/30'
-        ]"
-      >
-        <!-- Background gradient effect -->
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-transparent to-indigo-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        
-        <!-- Content -->
-        <div class="relative z-10">
-          <div class="flex items-center justify-center gap-3 mb-2">
-            <!-- Upload icon -->
-            <div class="relative">
-              <div :class="[
-                'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300',
-                isDragOver 
-                  ? 'bg-blue-500 text-white scale-110' 
-                  : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200 group-hover:scale-110'
-              ]">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <!-- Pulse effect -->
-              <div v-if="isDragOver" class="absolute inset-0 w-8 h-8 rounded-lg bg-blue-400 animate-ping opacity-30"></div>
-            </div>
-            
-            <!-- Text content -->
-            <div class="text-left">
-              <p class="text-sm font-semibold text-gray-900">
-                {{ isDragOver ? 'Drop files here!' : 'Upload Files' }}
-              </p>
-              <p class="text-xs text-gray-600">
-                Drag & drop or click to browse
-              </p>
-            </div>
-          </div>
-          
-          <!-- File type badges -->
-          <div class="flex justify-center gap-1.5">
-            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">IMG</span>
-            <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">VID</span>
-            <span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">AUD</span>
-          </div>
-          
-          <!-- Upload limit -->
-          <p class="text-xs text-gray-500 mt-1.5">
-            Up to 10MB each
-          </p>
-        </div>
-        
-        <!-- Animated border effect -->
-        <div v-if="isDragOver" class="absolute inset-0 rounded-lg border-2 border-blue-400 animate-pulse"></div>
-      </div>
-    </div>
-
-    <!-- Search and Filter (only show when there are uploads) -->
-    <div v-if="userMedia.length > 0" class="border-b border-gray-200 bg-white">
-      <!-- Search Bar -->
-      <div class="p-3 pb-0">
+    <!-- Enhanced Search and Upload Section -->
+    <div v-if="userMedia.length > 0" class="p-4 border-b border-gray-200 bg-white">
+      <div class="space-y-3">
+        <!-- Enhanced Search Input -->
         <div class="relative">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search your uploads..."
-            class="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
+            class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+            @keydown.enter="handleSearch"
           />
-          <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <!-- Clear search button -->
           <button
             v-if="searchQuery"
-            @click="searchQuery = ''"
-            class="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors"
+            @click="clearSearch"
+            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-      </div>
 
-      <!-- Upload Button -->
-      <div class="p-3 pt-2">
+        <!-- Search Stats -->
+        <div v-if="searchQuery && !isLoadingUserMedia" class="flex items-center justify-between text-xs text-gray-500">
+          <span>{{ filteredUploads.length }} results for "{{ searchQuery }}"</span>
+          <span v-if="hasMoreUserMedia" class="text-blue-600">+ more available</span>
+        </div>
+
+        <!-- Enhanced Upload Button -->
         <button
           @click="fileInput?.click()"
-          class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+          class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -117,55 +60,67 @@
           <span>Upload More Files</span>
         </button>
       </div>
+    </div>
 
-      <!-- Type Filter Tabs -->
-      <div class="flex">
-        <button
-          v-for="filter in typeFilters"
-          :key="filter.id"
-          @click="selectedTypeFilter = filter.id"
-          :class="[
-            'flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center',
-            selectedTypeFilter === filter.id
-              ? 'text-blue-600 border-blue-600 bg-blue-50/50'
-              : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-          ]"
-        >
-          <component :is="iconComponents[filter.icon as keyof typeof iconComponents]" class="w-4 h-4 mr-2" />
-          {{ filter.label }}
-        </button>
+    <!-- Sticky Type Filter Tabs -->
+    <div v-if="userMedia.length > 0" class="sticky top-0 z-10 bg-white border-b border-gray-200">
+      <div class="px-4 py-3">
+        <div class="flex space-x-1 bg-gray-100 rounded-lg p-1">
+          <button
+            v-for="filter in typeFilters"
+            :key="filter.id"
+            @click="selectedTypeFilter = filter.id"
+            :class="[
+              'flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap text-center',
+              selectedTypeFilter === filter.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            ]"
+          >
+            <component :is="iconComponents[filter.icon as keyof typeof iconComponents]" class="w-4 h-4 mx-auto mb-1" />
+            <span class="block text-xs">{{ filter.label }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Content Area -->
+    <!-- Scrollable Content Area -->
     <div class="flex-1 overflow-y-auto">
-      <!-- Loading State -->
-      <div v-if="isLoadingUserMedia" class="p-4 text-center py-12">
-        <div class="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-          <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+      <!-- Enhanced Loading State -->
+      <div v-if="isLoadingUserMedia && userMedia.length === 0" class="space-y-4">
+        <div class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p class="mt-2 text-sm text-gray-600">Loading your uploads...</p>
         </div>
-        <h3 class="text-base font-medium text-gray-900 mb-1">Loading your uploads...</h3>
-        <p class="text-sm text-gray-500">This might take a moment</p>
+        <!-- Loading skeleton -->
+        <div class="px-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div v-for="i in 6" :key="i" class="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </div>
       </div>
       
-      <!-- Empty State -->
-      <div v-else-if="filteredUploads.length === 0" class="p-4 text-center py-12">
-        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">
-          {{ searchQuery ? 'No uploads found' : 'No uploads yet' }}
+      <!-- Enhanced Empty State -->
+      <div v-else-if="filteredUploads.length === 0 && !isLoadingUserMedia" class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">
+          {{ searchQuery ? 'No uploads found' : userMedia.length === 0 ? 'No uploads yet' : `No ${selectedTypeFilter}s found` }}
         </h3>
-        <p class="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
+        <p class="mt-1 text-sm text-gray-500">
           {{ searchQuery 
-            ? 'Try adjusting your search terms or check your spelling' 
-            : 'Upload your first media files to start building your design library' 
+            ? 'Try adjusting your search terms' 
+            : userMedia.length === 0
+            ? 'Upload your first media files to start building your design library' 
+            : `Upload some ${selectedTypeFilter} files or try a different filter`
           }}
         </p>
-        <div v-if="!searchQuery" class="space-y-2">
+        
+        <!-- Action buttons -->
+        <div class="mt-4 space-y-2">
           <button
+            v-if="!searchQuery && userMedia.length === 0"
             @click="fileInput?.click()"
             class="mx-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
           >
@@ -174,22 +129,41 @@
             </svg>
             <span>Upload Your First File</span>
           </button>
-          <p class="text-xs text-gray-400">
+          <button
+            v-if="searchQuery"
+            @click="clearSearch"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            Clear Search
+          </button>
+          <p v-if="userMedia.length === 0" class="text-xs text-gray-400">
             Drag and drop works too!
           </p>
         </div>
       </div>
       
-      <!-- Upload Grid -->
-      <div v-else class="p-4">
-        <div class="grid grid-cols-2 gap-4">
+      <!-- Enhanced Upload Grid -->
+      <div v-else class="p-4 space-y-4">
+        <!-- Results header -->
+        <div v-if="searchQuery" class="flex items-center justify-between">
+          <h4 class="text-sm font-medium text-gray-900">{{ filteredUploads.length }} {{ selectedTypeFilter }}s</h4>
+          <button
+            @click="clearSearch"
+            class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Clear search
+          </button>
+        </div>
+
+        <!-- Enhanced Grid -->
+        <div class="grid grid-cols-2 gap-3">
           <div
             v-for="file in filteredUploads"
             :key="file.id"
             @click="addMedia(file)"
-            class="relative group cursor-pointer border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all duration-200 bg-white"
+            class="relative group cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-[1.02]"
           >
-            <!-- Media Preview -->
+            <!-- Enhanced Media Preview -->
             <div class="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden">
               <img
                 v-if="file.type === 'image'"
@@ -197,6 +171,7 @@
                 :alt="file.name"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                 loading="lazy"
+                @error="handleImageError"
               />
               <div v-else-if="file.type === 'video'" class="relative w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
                 <div class="absolute inset-0 bg-black/20"></div>
@@ -227,38 +202,43 @@
                 </svg>
               </div>
               
-              <!-- Selection indicator -->
-              <div class="absolute top-2 right-2 w-6 h-6 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+              <!-- Enhanced selection indicator -->
+              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                <div class="bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
               </div>
             </div>
 
-            
-
-            <!-- Hover Overlay -->
-            <div class="absolute inset-0 bg-blue-600/10 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center rounded-xl">
-              <div class="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
-                <p class="text-xs font-medium text-gray-900">Click to add</p>
-              </div>
+            <!-- File info overlay -->
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <p class="text-white text-xs truncate">{{ file.name }}</p>
+              <p v-if="file.size" class="text-white/80 text-xs">{{ formatFileSize(file.size) }}</p>
             </div>
           </div>
         </div>
         
-        <!-- Load More Button -->
-        <div v-if="hasMoreUserMedia && !isLoadingUserMedia" class="mt-6 text-center">
-          <BaseButton
+        <!-- Enhanced Load More Button -->
+        <div v-if="hasMoreUserMedia && !isLoadingUserMedia" class="pt-2">
+          <button
             @click="loadMoreUserMedia"
-            variant="outline"
-            size="md"
-            class="px-6"
+            class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-center space-x-2"
           >
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            Load More Files
-          </BaseButton>
+            <span>Load More Files</span>
+          </button>
+        </div>
+        
+        <!-- Loading more indicator -->
+        <div v-if="isLoadingUserMedia && userMedia.length > 0" class="text-center py-4">
+          <div class="inline-flex items-center space-x-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span class="text-sm text-gray-600">Loading more files...</span>
+          </div>
         </div>
       </div>
     </div>
@@ -267,7 +247,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import BaseButton from '@/components/common/BaseButton.vue'
 import { useUserMedia } from '@/composables/useUserMedia'
 import type { MediaItem } from '@/types'
 import { 
@@ -292,6 +271,7 @@ const fileInput = ref<HTMLInputElement>()
 
 // Search and filter
 const searchQuery = ref('')
+const searchTimeout = ref<NodeJS.Timeout | null>(null)
 const selectedTypeFilter = ref('image')
 const isDragOver = ref(false)
 
@@ -342,10 +322,15 @@ const filteredUploads = computed(() => {
   return filtered
 })
 
-// Show upload area only when there are no uploads at all
-const shouldShowUploadArea = computed(() => {
-  return userMedia.value.length === 0
-})
+// Enhanced search functionality
+const handleSearch = () => {
+  if (!searchQuery.value.trim()) return
+  // The filtering is handled by the computed property, so no additional action needed
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+}
 
 // File upload handling
 const handleFileUpload = async (event: Event) => {
@@ -360,6 +345,23 @@ const handleFileUpload = async (event: Event) => {
     target.value = ''
   } catch (error) {
     console.error('Upload failed:', error)
+  }
+}
+
+// Error handling
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  target.style.display = 'none'
+  const parent = target.parentElement
+  if (parent) {
+    // Show a fallback icon or placeholder
+    parent.innerHTML = `
+      <div class="w-full h-full bg-gray-100 flex items-center justify-center">
+        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+    `
   }
 }
 
@@ -408,11 +410,17 @@ onMounted(() => {
   searchUserMedia('')
 })
 
-// Watch for search changes
-watch([searchQuery, selectedTypeFilter], () => {
-  if (searchQuery.value || selectedTypeFilter.value) {
-    // For filtering, we don't need to make new API calls since we're filtering local data
-    // The computed property will handle the filtering
-  }
+// Enhanced search with debouncing
+watch(searchQuery, (newQuery) => {
+  if (searchTimeout.value) clearTimeout(searchTimeout.value)
+  searchTimeout.value = setTimeout(() => {
+    // The filtering is handled by computed property, no API call needed for local filtering
+    if (newQuery.trim()) handleSearch()
+  }, 500) // 500ms debounce
+})
+
+// Tab switching
+watch([selectedTypeFilter], () => {
+  // Filtering is handled by computed property
 })
 </script>
