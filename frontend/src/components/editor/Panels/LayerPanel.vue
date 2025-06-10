@@ -2,14 +2,6 @@
   <div class="p-4">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold text-gray-900">Layers</h3>
-      <BaseButton
-        variant="ghost"
-        size="xs"
-        @click="$emit('select-all')"
-        title="Select All (Ctrl+A)"
-      >
-        <Square3Stack3DIcon class="w-4 h-4" />
-      </BaseButton>
     </div>
     
     <div v-if="layers.length === 0" class="text-center py-8 text-gray-500">
@@ -100,15 +92,15 @@
           </button>
           
           <!-- More Actions -->
-          <BaseDropdown placement="bottom-end" width="w-48">
+          <BaseDropdown 
+            placement="bottom-end" 
+            width="w-48"
+            triggerClasses="p-1 rounded text-gray-600 hover:text-gray-800 transition-colors"
+          >
             <template #trigger>
-              <button
-                class="p-1 rounded text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+              </svg>
             </template>
             
             <template #default="{ close }">
@@ -183,7 +175,6 @@ const emit = defineEmits<{
   'toggle-lock': [layerId: string]
   'reorder-layers': [layerIds: string[]]
   'update-layer-name': [layerId: string, name: string]
-  'select-all': []
 }>()
 
 // Layer editing

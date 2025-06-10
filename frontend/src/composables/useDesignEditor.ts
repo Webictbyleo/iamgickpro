@@ -118,6 +118,26 @@ export function useDesignEditor() {
     editorSDK.value.on('canvas:changed', () => {
       hasUnsavedChanges.value = true
     })
+
+    // Context menu events
+    editorSDK.value.on('layer:context-menu', (data: any) => {
+      console.log('🎯 Composable: Received layer:context-menu event', {
+        data,
+        hasLayer: !!data.layer,
+        layerName: data.layer?.name || 'NO LAYER',
+        layerId: data.layer?.id || 'NO ID',
+        layerType: data.layer?.type || 'NO TYPE'
+      })
+      // Emit the event to be handled by the UI components
+      // The data contains: { event, layer, position }
+      if (typeof window !== 'undefined') {
+        const customEvent = new CustomEvent('editor:context-menu', { 
+          detail: data 
+        })
+        console.log('🎯 Composable: Dispatching editor:context-menu event with layer:', data.layer?.name || 'NO LAYER')
+        document.dispatchEvent(customEvent)
+      }
+    })
   }
 
   const saveDesign = async () => {

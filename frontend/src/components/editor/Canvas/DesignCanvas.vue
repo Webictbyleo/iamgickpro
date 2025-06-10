@@ -29,12 +29,13 @@
     </div>
     
     <!-- Canvas Container -->
-    <div class="flex-1 overflow-hidden relative min-h-0">
+    <div class="flex-1 overflow-hidden relative min-h-0" @click="handleContainerClick">
       <div class="absolute inset-0 flex items-center justify-center p-8">
         <div
           ref="canvasContainer"
           class="bg-white shadow-lg border relative konva-canvas-container"
           :style="canvasStyle"
+          @click.stop
         >
           <!-- Konva Stage will be mounted here -->
           
@@ -80,11 +81,12 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
 import type { Layer } from '@/types'
 import FloatingContextToolbar from './FloatingContextToolbar.vue'
 
@@ -118,6 +120,9 @@ const emit = defineEmits<{
   'toggle-panel': [panelType: string, data?: any]
   'position-preset': [preset: string]
   'update-layer-opacity': [opacity: number]
+  'layer-context-menu': [event: MouseEvent, layer?: Layer | null]
+  'toggle-visibility': [layerId: string]
+  'clear-selection': []
 }>()
 
 const canvasContainer = ref<HTMLElement>()
@@ -206,5 +211,28 @@ onMounted(async () => {
   } else {
     console.error('DesignCanvas: Container not found!')
   }
+
+  // Add event listeners
+  document.addEventListener('editor:context-menu', handleEditorContextMenu as EventListener)
+})
+
+// Event listeners
+const handleContainerClick = (event: MouseEvent) => {
+  // Clear selection when clicking on the canvas container (outside the canvas)
+  // This provides an easy way to deselect layers
+  emit('clear-selection')
+}
+
+const handleEditorContextMenu = (event: CustomEvent) => {
+  const { layer, position, event: originalEvent } = event.detail
+  console.log('🎯 DesignCanvas: Received context menu event', { layer, position })
+  
+  // Forward the context menu to the parent EditorLayout
+  // Don't show our own context menu, let the parent handle it
+  emit('layer-context-menu', originalEvent, layer)
+}
+
+onUnmounted(() => {
+  document.removeEventListener('editor:context-menu', handleEditorContextMenu as EventListener)
 })
 </script>

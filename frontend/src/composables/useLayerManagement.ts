@@ -77,7 +77,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
             strokeOpacity: 1,
             strokeLineCap: 'round',
             strokeLineJoin: 'round',
-            cornerRadius: properties.cornerRadius || (properties.shapeType === 'rectangle' ? 8 : 0),
+            cornerRadius: properties.cornerRadius || (properties.shapeType === 'rectangle' ? 0 : 0),
             sides: 6,
             points: 5,
             innerRadius: 0.5,

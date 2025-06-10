@@ -202,7 +202,7 @@ const addShape = (shapeType: string) => {
     },
     stroke: '#7C3AED',
     strokeWidth: 2,
-    cornerRadius: shapeType === 'rectangle' ? 8 : 0
+    cornerRadius: 0
   }
 
   emit('add-element', 'shape', shapeProps)

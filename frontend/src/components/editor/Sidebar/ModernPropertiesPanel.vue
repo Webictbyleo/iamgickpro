@@ -77,8 +77,8 @@
             <PropertyColorPicker
               label="Background Color"
               :value="design?.designData.canvas.backgroundColor || '#ffffff'"
-              @update:value="updateBackgroundColor"
-              show-gradients
+              @update="updateBackgroundColor"
+              allow-gradient
             />
           </div>
         </div>
@@ -324,14 +324,16 @@
           <PropertyColorPicker
             label="Fill Color"
             :value="selectedLayer.properties?.fill || '#000000'"
-            @update:value="updateShapeFill"
-            show-gradients
+            @update="updateShapeFill"
+            allow-gradient
+            allow-alpha
           />
 
           <PropertyColorPicker
             label="Stroke Color"
             :value="selectedLayer.properties?.stroke || '#000000'"
-            @update:value="updateShapeStroke"
+            @update="updateShapeStroke"
+            allow-alpha
           />
 
           <PropertyInput
@@ -419,7 +421,8 @@
               <PropertyColorPicker
                 label="Shadow Color"
                 :value="selectedLayer.properties?.shadow?.color || '#000000'"
-                @update:value="updateShadowColor"
+                @update="updateShadowColor"
+                allow-alpha
               />
               
               <div class="grid grid-cols-2 gap-2">

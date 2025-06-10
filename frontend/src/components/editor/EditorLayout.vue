@@ -101,6 +101,7 @@
               @toggle-visibility="toggleLayerVisibility"
               @toggle-lock="toggleLayerLock"
               @reorder-layers="reorderLayers"
+              @update-layer-name="handleUpdateLayerName"
             />
 
             <!-- Contextual Panels -->
@@ -133,6 +134,9 @@
               @toggle-panel="handleTogglePanel"
               @position-preset="handlePositionPreset"
               @update-layer-opacity="handleUpdateLayerOpacity"
+              @layer-context-menu="handleLayerContextMenu"
+              @toggle-visibility="toggleLayerVisibility"
+              @clear-selection="handleClearSelection"
             />
 
             <!-- Zoom Controls -->
@@ -152,11 +156,21 @@
 
       </div>
     </div>
+
+    <!-- Context Menu -->
+    <DesignEditorContextMenu
+      :visible="contextMenu.visible"
+      :position="contextMenu.position"
+      :target-layer="contextMenu.layer"
+      :has-clipboard="hasClipboard"
+      @action="handleContextMenuAction"
+      @close="handleCloseContextMenu"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { Layer, LayerType, ImageLayerProperties } from '@/types'
 
@@ -176,6 +190,7 @@ import AnimationPanel from './Panels/AnimationPanel.vue'
 import ColorsPanel from './Panels/ColorsPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
 import ImageEditingPanel from './Panels/ImageEditingPanel.vue'
+import DesignEditorContextMenu from './ContextMenu/DesignEditorContextMenu.vue'
 
 // Icons
 import { XMarkIcon } from '@heroicons/vue/24/outline'
@@ -262,16 +277,23 @@ useKeyboardShortcuts({
   }
 })
 
-// Initialize with default panel
-onMounted(() => {
-  
-})
 
 // Modern UI State
 const activeTool = ref<'select' | 'text' | 'shape' | 'image' | 'pan' | null>('select')
 const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
+
+// Context Menu State
+const contextMenu = ref({
+  visible: false,
+  position: { x: 0, y: 0 },
+  layer: null as Layer | null
+})
+
+// Clipboard state for copy/paste functionality
+const clipboard = ref<Layer | null>(null)
+const hasClipboard = computed(() => clipboard.value !== null)
 
 // Panel configuration - include all panels that should show in left sidebar
 const leftPanels = ['elements', 'templates', 'media', 'layers', 'animation', 'colors']
@@ -519,7 +541,13 @@ const handleUpdateLayerOpacity = (opacity: number) => {
   editorSDK.value.layers.updateLayer(selectedLayer.value.id, { opacity })
 }
 
-// ...existing code...
+const handleUpdateLayerName = (layerId: string, name: string) => {
+  if (!editorSDK.value) return
+  
+  // Update layer name through the LayerManager
+  updateLayerProperties(layerId, { name })
+}
+
 const handleUpdateProperty = (property: string, value: any) => {
   if (selectedLayer.value) {
     const updates = { [property]: value }
@@ -591,158 +619,272 @@ const handleStopAnimation = () => {
   }
 }
 
-// Colors Panel Event Handlers
-const handleApplyColor = (colorString: string) => {
-  // Parse color string to extract color and opacity
-  let color = colorString
-  let opacity = 1
+// Context Menu Event Handler
+const handleLayerContextMenu = (event: MouseEvent, layer?: Layer | null) => {
+  console.log('🎯 EditorLayout: handleLayerContextMenu called', { 
+    layerName: layer?.name || 'none',
+    layerId: layer?.id || 'none',
+    eventType: event.type,
+    position: { x: event.clientX, y: event.clientY },
+    layerObject: layer,
+    layerType: typeof layer,
+    layerKeys: layer ? Object.keys(layer) : []
+  })
+  
+  // Prevent default browser context menu and stop propagation
+  event.preventDefault()
+  event.stopPropagation()
+  
+  // Use nextTick and a small delay to ensure the right-click event is fully processed
+  nextTick(() => {
+    setTimeout(() => {
+      console.log('🎯 EditorLayout: Setting context menu visible with layer:', layer?.name || 'NO LAYER')
+      console.log('🎯 EditorLayout: Context menu layer object:', layer)
+      // Set context menu state
+      contextMenu.value = {
+        visible: true,
+        position: { x: event.clientX, y: event.clientY },
+        layer: layer || null
+      }
+      console.log('🎯 EditorLayout: Context menu state set:', {
+        visible: contextMenu.value.visible,
+        hasLayer: !!contextMenu.value.layer,
+        layerName: contextMenu.value.layer?.name || 'NO LAYER'
+      })
+    }, 10) // Small delay to ensure event propagation is complete
+  })
+}
 
-  if (colorString.startsWith('rgba')) {
-    // Parse rgba(r, g, b, a) format
-    const match = colorString.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/)
-    if (match) {
-      const r = parseInt(match[1])
-      const g = parseInt(match[2])
-      const b = parseInt(match[3])
-      opacity = parseFloat(match[4])
-      color = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
-    }
-  }
+// Context Menu Handlers
+const handleCloseContextMenu = () => {
+  contextMenu.value.visible = false
+}
 
-  if (selectedLayer.value) {
-    // Apply color to selected layer
-    if (selectedLayer.value.type === 'shape') {
-      const updates: Partial<Layer> = {
-        properties: {
-          ...selectedLayer.value.properties,
-          fill: {
-            type: 'solid' as const,
-            color: color,
-            opacity: opacity
-          }
-        }
+// Unified Context Menu Action Handler
+const handleContextMenuAction = (actionType: string, payload?: any) => {
+  console.log('Context menu action:', actionType, payload)
+  
+  // Close context menu first
+  handleCloseContextMenu()
+  
+  // Handle the action based on type
+  switch (actionType) {
+    case 'copy':
+      handleCopyLayer()
+      break
+    
+    case 'paste':
+      handlePasteLayer()
+      break
+    
+    case 'duplicate':
+      handleContextMenuDuplicate()
+      break
+    
+    case 'delete':
+      handleContextMenuDelete()
+      break
+    
+    case 'bring-to-front':
+      handleBringToFront()
+      break
+    
+    case 'bring-forward':
+      handleBringForward()
+      break
+    
+    case 'send-backward':
+      handleSendBackward()
+      break
+    
+    case 'send-to-back':
+      handleSendToBack()
+      break
+    
+    case 'toggle-lock':
+      handleToggleLock()
+      break
+    
+    case 'toggle-visibility':
+      handleToggleVisibility()
+      break
+    
+    case 'select-all':
+      handleSelectAll()
+      break
+    
+    case 'zoom-to-fit':
+      handleZoomToFit()
+      break
+    
+    case 'reset-zoom':
+      handleResetZoom()
+      break
+    
+    case 'context-action':
+      if (payload) {
+        handleContextAction(payload)
       }
-      updateLayerProperties(selectedLayer.value.id, updates)
-    } else if (selectedLayer.value.type === 'text') {
-      const updates: Partial<Layer> = {
-        properties: {
-          ...selectedLayer.value.properties,
-          color: color
-        }
-      }
-      updateLayerProperties(selectedLayer.value.id, updates)
-    }
-  } else {
-    // No layer selected - apply to canvas background
-    if (editorSDK.value) {
-      editorSDK.value.canvas.setBackgroundColor(color)
-      // Also update the design store background color
-      if (designStore.currentDesign) {
-        designStore.currentDesign.designData.canvas.backgroundColor = color
-        designStore.currentDesign.updatedAt = new Date().toISOString()
-      }
-    }
+      break
+    
+    default:
+      console.warn('Unknown context menu action:', actionType, payload)
   }
 }
 
-const handleApplyGradient = (gradientString: string) => {
-  // Parse CSS gradient string
-  let gradientData: any = {
-    type: 'linear',
-    colors: [],
-    angle: 0
-  }
-
-  if (gradientString.startsWith('linear-gradient')) {
-    gradientData.type = 'linear'
-    
-    // Extract angle
-    const angleMatch = gradientString.match(/linear-gradient\(([^,]+),/)
-    if (angleMatch) {
-      const direction = angleMatch[1].trim()
-      if (direction.includes('deg')) {
-        gradientData.angle = parseInt(direction.replace('deg', ''))
-      } else if (direction === 'to right') {
-        gradientData.angle = 90
-      } else if (direction === 'to bottom') {
-        gradientData.angle = 180
-      } else if (direction === 'to left') {
-        gradientData.angle = 270
-      } else if (direction === 'to top') {
-        gradientData.angle = 0
-      }
-    }
-    
-    // Extract colors
-    const colorMatches = gradientString.match(/#[0-9a-fA-F]{6}/g)
-    if (colorMatches) {
-      gradientData.colors = colorMatches.map((color, index) => ({
-        color: color,
-        stop: index / (colorMatches.length - 1)
-      }))
-    }
-  } else if (gradientString.startsWith('radial-gradient')) {
-    gradientData.type = 'radial'
-    gradientData.centerX = 0.5
-    gradientData.centerY = 0.5
-    gradientData.radius = 0.5
-    
-    // Extract colors
-    const colorMatches = gradientString.match(/#[0-9a-fA-F]{6}/g)
-    if (colorMatches) {
-      gradientData.colors = colorMatches.map((color, index) => ({
-        color: color,
-        stop: index / (colorMatches.length - 1)
-      }))
-    }
-  }
-
-  if (selectedLayer.value && selectedLayer.value.type === 'shape') {
-    // Apply gradient to selected shape layer
-    const updates: Partial<Layer> = {
-      properties: {
-        ...selectedLayer.value.properties,
-        fill: {
-          type: gradientData.type as 'linear' | 'radial',
-          colors: gradientData.colors,
-          angle: gradientData.angle,
-          centerX: gradientData.centerX,
-          centerY: gradientData.centerY,
-          radius: gradientData.radius,
-          opacity: 1
-        }
-      }
-    }
-    updateLayerProperties(selectedLayer.value.id, updates)
-  } else {
-    // No layer selected or layer doesn't support gradients - apply to canvas background
-    // For now, extract the first color as background since canvas backgrounds are typically solid
-    if (gradientData.colors.length > 0 && editorSDK.value) {
-      const firstColor = gradientData.colors[0].color
-      editorSDK.value.canvas.setBackgroundColor(firstColor)
-      if (designStore.currentDesign) {
-        designStore.currentDesign.designData.canvas.backgroundColor = firstColor
-        designStore.currentDesign.updatedAt = new Date().toISOString()
-      }
-    }
+const handleCopyLayer = () => {
+  if (contextMenu.value.layer) {
+    // Create a deep copy of the layer for clipboard
+    clipboard.value = JSON.parse(JSON.stringify(contextMenu.value.layer))
+    console.log('Layer copied to clipboard:', clipboard.value?.id)
   }
 }
 
-
-
-const handleToolUpdate = (toolType: string, properties: any) => {
-  if (selectedLayer.value) {
-    // Build the updates object with the existing layer properties structure
-    const updates: Partial<Layer> = {
-      properties: {
-        ...selectedLayer.value.properties,
-        ...properties
-      }
+const handlePasteLayer = () => {
+  if (clipboard.value && editorSDK.value) {
+    // Create a new layer from clipboard data
+    const newLayer = {
+      ...clipboard.value,
+      id: `layer_${Date.now()}`, // Generate new ID
+      name: `${clipboard.value.name} Copy`,
+      x: clipboard.value.x + 20, // Offset position slightly
+      y: clipboard.value.y + 20
     }
     
-    // Use updateLayerProperties instead of direct store updates
-    // This ensures proper visual updates through the LayerManager
-    updateLayerProperties(selectedLayer.value.id, updates)
+    // Add the new layer through the SDK
+    editorSDK.value.layers.addLayer(newLayer)
+    console.log('Layer pasted from clipboard:', newLayer.id)
+  }
+}
+
+const handleBringToFront = () => {
+  if (contextMenu.value.layer && editorSDK.value) {
+    editorSDK.value.layers.bringToFront(contextMenu.value.layer.id)
+    console.log('Brought layer to front:', contextMenu.value.layer.id)
+  }
+}
+
+const handleBringForward = () => {
+  if (contextMenu.value.layer && editorSDK.value) {
+    editorSDK.value.layers.bringForward(contextMenu.value.layer.id)
+    console.log('Brought layer forward:', contextMenu.value.layer.id)
+  }
+}
+
+const handleSendBackward = () => {
+  if (contextMenu.value.layer && editorSDK.value) {
+    editorSDK.value.layers.sendBackward(contextMenu.value.layer.id)
+    console.log('Sent layer backward:', contextMenu.value.layer.id)
+  }
+}
+
+const handleSendToBack = () => {
+  if (contextMenu.value.layer && editorSDK.value) {
+    editorSDK.value.layers.sendToBack(contextMenu.value.layer.id)
+    console.log('Sent layer to back:', contextMenu.value.layer.id)
+  }
+}
+
+const handleToggleLock = () => {
+  if (contextMenu.value.layer) {
+    toggleLayerLock(contextMenu.value.layer.id)
+    console.log('Toggled layer lock:', contextMenu.value.layer.id)
+  }
+}
+
+const handleToggleVisibility = () => {
+  if (contextMenu.value.layer) {
+    toggleLayerVisibility(contextMenu.value.layer.id)
+    console.log('Toggled layer visibility:', contextMenu.value.layer.id)
+  }
+}
+
+const handleContextMenuDuplicate = () => {
+  if (contextMenu.value.layer && editorSDK.value) {
+    editorSDK.value.layers.duplicateLayer(contextMenu.value.layer.id)
+    console.log('Layer duplicated:', contextMenu.value.layer.id)
+  }
+}
+
+const handleContextMenuDelete = () => {
+  if (contextMenu.value.layer && editorSDK.value) {
+    editorSDK.value.layers.deleteLayer(contextMenu.value.layer.id)
+    console.log('Deleted layer:', contextMenu.value.layer.id)
+  }
+}
+
+// Clear Selection Handler
+const handleClearSelection = () => {
+  if (editorSDK.value) {
+    editorSDK.value.layers.deselectAll()
+  }
+}
+
+// Enhanced Context Menu Event Handlers
+const handleContextAction = (action: string) => {
+  if (!contextMenu.value.layer || !editorSDK.value) return
+  
+  const layer = contextMenu.value.layer
+  
+  switch (action) {
+    case 'edit-text':
+      if (layer.type === 'text') {
+        // Open text editing panel
+        handleTogglePanel('text-editing', layer)
+      }
+      break
+    case 'edit-image':
+      if (layer.type === 'image') {
+        // Open image editing panel
+        handleTogglePanel('image-editing', layer)
+      }
+      break
+    case 'replace-image':
+      if (layer.type === 'image') {
+        // Open media panel to replace image
+        handleTogglePanel('media', { replaceLayer: layer.id })
+      }
+      break
+    case 'edit-shape':
+      if (layer.type === 'shape') {
+        // Open shape properties panel
+        handleTogglePanel('shape-editing', layer)
+      }
+      break
+    case 'ungroup':
+      if (layer.type === 'group') {
+        // Implement ungroup functionality
+        // editorSDK.value.layers.ungroupLayer?.(layer.id)
+        console.log('Ungroup functionality not yet implemented for:', layer.id)
+      }
+      break
+    default:
+      console.log('Context action not implemented:', action)
+  }
+}
+
+const handleSelectAll = () => {
+  if (editorSDK.value) {
+    // Select all layers in the current design
+    const allLayerIds = layers.value.map(layer => layer.id)
+    editorSDK.value.layers.selectLayers(allLayerIds)
+    console.log('Selected all layers:', allLayerIds)
+  }
+}
+
+const handleZoomToFit = () => {
+  if (editorSDK.value) {
+    editorSDK.value.canvas.zoomToFit()
+    zoomLevel.value = editorSDK.value.canvas.getZoom() || 1
+    console.log('Zoomed to fit canvas')
+  }
+}
+
+const handleResetZoom = () => {
+  if (editorSDK.value) {
+    editorSDK.value.canvas.setZoom(1)
+    zoomLevel.value = 1
+    console.log('Reset zoom to 100%')
   }
 }
 
@@ -771,6 +913,118 @@ const handleApplyImageEdit = (updatedProperties: any) => {
   }
   closeContextualPanels()
 }
+
+// Colors Panel Event Handlers
+const handleApplyColor = (colorString: string) => {
+  // Parse color string to extract color and opacity
+  let color = colorString
+  let opacity = 1
+
+  if (colorString.startsWith('rgba')) {
+    // Parse rgba(r, g, b, a) format
+    const match = colorString.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/)
+    if (match) {
+      const r = parseInt(match[1])
+      const g = parseInt(match[2])
+      const b = parseInt(match[3])
+      opacity = parseFloat(match[4])
+      color = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+    }
+  }
+
+  if (selectedLayer.value) {
+    // Apply color to selected layer based on layer type
+    if (selectedLayer.value.type === 'shape') {
+      const updates: Partial<Layer> = {
+        properties: {
+          ...selectedLayer.value.properties,
+          fill: {
+            type: 'solid' as const,
+            color: color,
+            opacity: opacity
+          }
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+    } else if (selectedLayer.value.type === 'text') {
+      const updates: Partial<Layer> = {
+        properties: {
+          ...selectedLayer.value.properties,
+          color: color,
+          opacity: opacity
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+    }
+    console.log('Applied color to layer:', selectedLayer.value.id, color)
+  } else {
+    // Apply to canvas background if no layer selected
+    backgroundColor.value = color
+    console.log('Applied color to canvas background:', color)
+  }
+}
+
+const handleApplyGradient = (gradientString: string) => {
+  if (selectedLayer.value && selectedLayer.value.type === 'shape') {
+    // For shape layers, we need to parse the gradient and create a proper ShapeFillConfig
+    const isLinear = gradientString.includes('linear-gradient')
+    const isRadial = gradientString.includes('radial-gradient')
+    
+    if (isLinear || isRadial) {
+      // Extract colors from gradient string
+      const colorMatches = gradientString.match(/#[0-9a-fA-F]{6}/g) || []
+      const colors = colorMatches.map((color, index) => ({
+        color: color,
+        stop: index / Math.max(1, colorMatches.length - 1)
+      }))
+      
+      const updates: Partial<Layer> = {
+        properties: {
+          ...selectedLayer.value.properties,
+          fill: {
+            type: isLinear ? 'linear' as const : 'radial' as const,
+            colors: colors,
+            angle: isLinear ? 90 : undefined, // Default angle for linear gradients
+            opacity: 1
+          }
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+      console.log('Applied gradient to shape layer:', selectedLayer.value.id, gradientString)
+    }
+  } else if (selectedLayer.value && selectedLayer.value.type === 'text') {
+    // For text layers, gradients might not be supported, apply the first color instead
+    const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
+    if (colorMatch) {
+      handleApplyColor(colorMatch[0])
+    }
+  } else {
+    // Apply gradient to canvas background (use first color)
+    const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
+    if (colorMatch) {
+      backgroundColor.value = colorMatch[0]
+      console.log('Applied gradient color to canvas background:', colorMatch[0])
+    }
+  }
+}
+
+const handleToolUpdate = (toolType: string, properties: any) => {
+  if (selectedLayer.value) {
+    // Build the updates object with the existing layer properties structure
+    const updates: Partial<Layer> = {
+      properties: {
+        ...selectedLayer.value.properties,
+        ...properties
+      }
+    }
+    
+    // Use updateLayerProperties instead of direct store updates
+    // This ensures proper visual updates through the LayerManager
+    updateLayerProperties(selectedLayer.value.id, updates)
+    console.log('Updated layer properties from tool:', selectedLayer.value.id, properties)
+  }
+}
+
 const route = useRoute()
 // Load design when component mounts
 onMounted(async () => {
@@ -817,11 +1071,37 @@ onMounted(async () => {
       // Design is still available locally even if save fails
     }
   }
+  
+  // Add global event listener for context menu
+  document.addEventListener('editor:context-menu', handleEditorContextMenuEvent as EventListener)
 })
+
+// Global context menu event handler
+const handleEditorContextMenuEvent = (event: CustomEvent) => {
+  const { layer, position, event: originalEvent } = event.detail
+  console.log('🎯 EditorLayout: Received global context menu event', { 
+    layer: layer ? {
+      id: layer.id,
+      name: layer.name,
+      type: layer.type
+    } : null, 
+    position,
+    hasLayer: !!layer,
+    layerProps: layer ? Object.keys(layer) : []
+  })
+  
+  // Use a small delay to ensure the right-click event has fully completed
+  nextTick(() => {
+    console.log('🎯 EditorLayout: About to call handleLayerContextMenu with layer:', layer?.name || 'NO LAYER')
+    handleLayerContextMenu(originalEvent, layer)
+  })
+}
 
 // Cleanup on unmount
 onUnmounted(() => {
   cleanup()
+  // Remove event listener
+  document.removeEventListener('editor:context-menu', handleEditorContextMenuEvent as EventListener)
   // Optionally save the design if there are unsaved changes
   if (hasUnsavedChanges.value) {
     saveDesign()

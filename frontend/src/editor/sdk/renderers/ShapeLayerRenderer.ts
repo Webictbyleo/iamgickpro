@@ -321,6 +321,7 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
     
     // Apply layer-level properties
     shape.setAttrs({
+      id: layer.id,
       x: layer.x,
       y: layer.y,
       rotation: layer.rotation || 0,

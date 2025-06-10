@@ -2,7 +2,7 @@
   <div class="relative inline-block text-left" ref="dropdownRef">
     <div>
       <button
-        @click="toggleDropdown"
+        @click.stop="toggleDropdown"
         :class="triggerClasses"
         :aria-expanded="isOpen"
         aria-haspopup="true"

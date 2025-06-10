@@ -103,6 +103,12 @@ export class LayerManager implements LayerAPI {
     return layerNode
   }
 
+  async addLayer(layerData: Partial<Layer>): Promise<LayerNode> {
+    // Determine layer type from layerData or default to 'text'
+    const type = layerData.type || 'text'
+    return this.createLayer(type, layerData)
+  }
+
   async deleteLayer(layerId: string): Promise<void> {
     const layer = this.layers.get(layerId)
     if (!layer) return
@@ -320,6 +326,92 @@ export class LayerManager implements LayerAPI {
     this.emitter.emit('layers:reordered', { layerIds: validLayerIds })
   }
 
+  // ============================================================================
+  // LAYER ORDERING METHODS
+  // ============================================================================
+
+  bringToFront(layerId: string): void {
+    const layer = this.layers.get(layerId)
+    if (!layer) return
+
+    const allLayers = Array.from(this.layers.values()).sort((a, b) => a.zIndex - b.zIndex)
+    const maxZIndex = Math.max(...allLayers.map(l => l.zIndex))
+    
+    layer.zIndex = maxZIndex + 1
+    
+    if (layer.konvaNode) {
+      layer.konvaNode.zIndex(layer.zIndex)
+      layer.konvaNode.moveToTop()
+    }
+    
+    this.mainLayer.batchDraw()
+    this.emitter.emit('layer:moved', { layerId, action: 'bringToFront' })
+  }
+
+  bringForward(layerId: string): void {
+    const layer = this.layers.get(layerId)
+    if (!layer) return
+
+    const allLayers = Array.from(this.layers.values()).sort((a, b) => a.zIndex - b.zIndex)
+    const currentIndex = allLayers.findIndex(l => l.id === layerId)
+    
+    if (currentIndex < allLayers.length - 1) {
+      const nextLayer = allLayers[currentIndex + 1]
+      const tempZIndex = layer.zIndex
+      layer.zIndex = nextLayer.zIndex
+      nextLayer.zIndex = tempZIndex
+      
+      if (layer.konvaNode && nextLayer.konvaNode) {
+        layer.konvaNode.zIndex(layer.zIndex)
+        nextLayer.konvaNode.zIndex(nextLayer.zIndex)
+      }
+      
+      this.mainLayer.batchDraw()
+      this.emitter.emit('layer:moved', { layerId, action: 'bringForward' })
+    }
+  }
+
+  sendBackward(layerId: string): void {
+    const layer = this.layers.get(layerId)
+    if (!layer) return
+
+    const allLayers = Array.from(this.layers.values()).sort((a, b) => a.zIndex - b.zIndex)
+    const currentIndex = allLayers.findIndex(l => l.id === layerId)
+    
+    if (currentIndex > 0) {
+      const prevLayer = allLayers[currentIndex - 1]
+      const tempZIndex = layer.zIndex
+      layer.zIndex = prevLayer.zIndex
+      prevLayer.zIndex = tempZIndex
+      
+      if (layer.konvaNode && prevLayer.konvaNode) {
+        layer.konvaNode.zIndex(layer.zIndex)
+        prevLayer.konvaNode.zIndex(prevLayer.zIndex)
+      }
+      
+      this.mainLayer.batchDraw()
+      this.emitter.emit('layer:moved', { layerId, action: 'sendBackward' })
+    }
+  }
+
+  sendToBack(layerId: string): void {
+    const layer = this.layers.get(layerId)
+    if (!layer) return
+
+    const allLayers = Array.from(this.layers.values()).sort((a, b) => a.zIndex - b.zIndex)
+    const minZIndex = Math.min(...allLayers.map(l => l.zIndex))
+    
+    layer.zIndex = minZIndex - 1
+    
+    if (layer.konvaNode) {
+      layer.konvaNode.zIndex(layer.zIndex)
+      layer.konvaNode.moveToBottom()
+    }
+    
+    this.mainLayer.batchDraw()
+    this.emitter.emit('layer:moved', { layerId, action: 'sendToBack' })
+  }
+
   async clear(): Promise<void> {
     // Clear all layers
     Array.from(this.layers.values()).forEach(layer => {
@@ -447,11 +539,19 @@ export class LayerManager implements LayerAPI {
     const defaultProps = this.getDefaultProperties(type as Layer['type'])
     const mergedProperties = { ...defaultProps, ...data.properties }
     
-    // Get canvas center for better default positioning
-    const canvasWidth = this.stage.width() || 800
-    const canvasHeight = this.stage.height() || 600
-    const defaultX = data.x !== undefined ? data.x : Math.max(50, canvasWidth / 4)
-    const defaultY = data.y !== undefined ? data.y : Math.max(50, canvasHeight / 4)
+    // Get canvas dimensions from stage, but ensure we have proper fallbacks
+    // The stage might not be properly sized during initial load from dashboard
+    const stageWidth = this.stage.width()
+    const stageHeight = this.stage.height()
+    
+    // Use consistent default positioning that works regardless of load timing
+    // Place new layers near the center but offset slightly to avoid overlap
+    const canvasWidth = stageWidth > 0 ? stageWidth : 800
+    const canvasHeight = stageHeight > 0 ? stageHeight : 600
+    
+    // Use center positioning with consistent offset
+    const defaultX = data.x !== undefined ? data.x : (canvasWidth / 2) - 75 // Slightly left of center
+    const defaultY = data.y !== undefined ? data.y : (canvasHeight / 2) - 50 // Slightly above center
     
     const layerNode = {
       id: data.id || `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

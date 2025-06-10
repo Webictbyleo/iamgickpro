@@ -111,6 +111,7 @@ export type PluginCapability = 'text_editing' | 'image_editing' | 'shape_creatio
 export interface LayerAPI {
   // Layer CRUD operations
   createLayer(type: string, data: Partial<Layer>): Promise<LayerNode>
+  addLayer(layerData: Partial<Layer>): Promise<LayerNode>
   deleteLayer(layerId: string): Promise<void>
   updateLayer(layerId: string, updates: Partial<LayerNode>): Promise<void>
   getLayer(layerId: string): LayerNode | null
@@ -124,6 +125,13 @@ export interface LayerAPI {
   moveLayer(layerId: string, newIndex: number): void
   reorderLayers(layerIds: string[]): void
   duplicateLayer(layerId: string): Promise<LayerNode>
+  
+  // Layer ordering methods
+  bringToFront(layerId: string): void
+  bringForward(layerId: string): void
+  sendBackward(layerId: string): void
+  sendToBack(layerId: string): void
+  
   clear(): Promise<void>
 }
 
@@ -191,6 +199,7 @@ export interface EditorEvents {
   'layer:updated': (layer: LayerNode) => void
   'layer:deleted': (layerId: string) => void
   'layer:selected': (layerIds: string[]) => void
+  'layer:context-menu': (data: { event: MouseEvent; layer: LayerNode | null; position: { x: number; y: number } }) => void
   'viewport:changed': (viewport: { zoom: number; panX: number; panY: number }) => void
   'design:loaded': (design: any) => void
 }
