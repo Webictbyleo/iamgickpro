@@ -265,6 +265,9 @@ const {
   cleanCache
 } = usePanelManagement()
 
+// Panel context for context-aware panels
+const panelContext = ref<any>(null)
+
 // Set up keyboard shortcuts
 useKeyboardShortcuts({
   onSave: saveDesign,
@@ -594,6 +597,7 @@ const handleRedo = () => {
 }
 
 const handleAddMedia = (mediaData: any) => {
+  // Add new layer
   addElement('image', mediaData)
 }
 
@@ -634,6 +638,11 @@ const handleLayerContextMenu = (event: MouseEvent, layer?: Layer | null) => {
   // Prevent default browser context menu and stop propagation
   event.preventDefault()
   event.stopPropagation()
+  
+  // Close any existing context menu first to allow switching
+  if (contextMenu.value.visible) {
+    contextMenu.value.visible = false
+  }
   
   // Use nextTick and a small delay to ensure the right-click event is fully processed
   nextTick(() => {
@@ -839,12 +848,6 @@ const handleContextAction = (action: string) => {
         handleTogglePanel('image-editing', layer)
       }
       break
-    case 'replace-image':
-      if (layer.type === 'image') {
-        // Open media panel to replace image
-        handleTogglePanel('media', { replaceLayer: layer.id })
-      }
-      break
     case 'edit-shape':
       if (layer.type === 'shape') {
         // Open shape properties panel
@@ -890,6 +893,9 @@ const handleResetZoom = () => {
 
 // Generic Panel Modal Handlers
 const handleTogglePanel = (panelType: string, data?: any) => {
+  // Clear panel context
+  panelContext.value = null
+  
   // Handle both regular and contextual panels through the smart panel management
   if (isLeftPanel(panelType)) {
     handlePanelChange(panelType)
@@ -899,6 +905,7 @@ const handleTogglePanel = (panelType: string, data?: any) => {
 }
 
 const handleCancelPanelModal = () => {
+  panelContext.value = null
   closeAllPanels()
 }
 

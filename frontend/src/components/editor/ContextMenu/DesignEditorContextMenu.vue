@@ -304,14 +304,14 @@ const getLayerTypeColor = (type: string) => {
 const getContextActions = (layerType: string) => {
   const actions = {
     text: [
-      { key: 'edit-text', label: 'Edit Text', icon: 'PencilIcon' }
+      // Removed 'edit-text' - double-clicking is the primary way to edit text
     ],
     image: [
-      { key: 'edit-image', label: 'Edit Image', icon: 'PhotoIcon' },
-      { key: 'replace-image', label: 'Replace Image', icon: 'DocumentDuplicateIcon' }
+      { key: 'edit-image', label: 'Edit Image', icon: 'PhotoIcon' }
+      // Removed 'replace-image' for now to avoid potential issues
     ],
     shape: [
-      { key: 'edit-shape', label: 'Edit Shape', icon: 'Squares2X2Icon' }
+      // Removed 'edit-shape' - properties panel is the primary way to edit shapes
     ],
     group: [
       { key: 'ungroup', label: 'Ungroup', icon: 'Square2StackIcon' }

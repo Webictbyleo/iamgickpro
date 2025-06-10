@@ -471,6 +471,9 @@ import {
   VideoCameraIcon
 } from '@heroicons/vue/24/outline'
 
+const props = defineProps<{
+}>()
+
 const emit = defineEmits<{
   addMedia: [mediaData: any]
 }>()

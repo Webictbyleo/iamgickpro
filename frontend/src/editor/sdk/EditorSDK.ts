@@ -323,12 +323,6 @@ export class EditorSDK extends EventEmitter {
 
     // Context menu handler for right-click
     this.stage.on('contextmenu', (e) => {
-      console.log('🎯 SDK: Context menu event triggered', {
-        target: e.target.constructor.name,
-        targetId: e.target.id(),
-        position: { x: e.evt.clientX, y: e.evt.clientY }
-      })
-      
       e.evt.preventDefault()
       
       // Get the clicked node and layer
@@ -338,9 +332,7 @@ export class EditorSDK extends EventEmitter {
       // Find the layer data if a layer was clicked
       let layerData = null
       if (clickedLayer && clickedLayer.id()) {
-        console.log('🎯 SDK: Looking for layer with ID:', clickedLayer.id())
         const layerNode = this.layerManager.getLayer(clickedLayer.id())
-        console.log('🎯 SDK: Found layer node:', layerNode ? layerNode.name : 'NOT FOUND')
         
         if (layerNode) {
           // Convert LayerNode to Layer format for compatibility with UI components
@@ -362,11 +354,7 @@ export class EditorSDK extends EventEmitter {
             properties: layerNode.properties
           }
         }
-      } else {
-        console.log('🎯 SDK: No layer clicked (clicked on stage)')
       }
-      
-      console.log('🎯 SDK: Emitting context menu event with layer:', layerData?.name || 'none')
       
       // Emit context menu event with mouse position and layer data
       this.emit('layer:context-menu', {
