@@ -12,20 +12,19 @@
     </div>
 
     <!-- Font Size -->
-    <div class="flex items-center space-x-1">
-      <div class="relative">
-        <input
-          type="number"
-          :value="fontSize"
-          @input="handleFontSizeChange"
-          @blur="handleFontSizeBlur"
-          class="w-16 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          min="8"
-          max="200"
-          step="1"
-        />
-        <span class="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 pointer-events-none">px</span>
-      </div>
+    <div class="flex items-center space-x-1 w-36">
+      <PropertyNumberInput
+        :value="fontSize"
+        @update:value="(value) => $emit('update', { fontSize: value })"
+        @change="(value) => $emit('update', { fontSize: value })"
+        :min="8"
+        :max="200"
+        :step="1"
+        unit="px"
+        :presets="fontSizePresets"
+        input-class="w-16"
+        placeholder="16"
+      />
     </div>
 
     <!-- Font Style Controls -->
@@ -142,6 +141,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue'
+import PropertyNumberInput from '@/components/editor/Properties/PropertyNumberInput.vue'
 import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue'
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue'
 import PropertySlider from '@/components/editor/Properties/PropertySlider.vue'
@@ -212,48 +212,24 @@ const fontOptions = [
   { value: 'Merriweather', label: 'Merriweather' }
 ]
 
+const fontSizePresets = [
+  { label: 'Tiny', value: 8 },
+  { label: 'Small', value: 12 },
+  { label: 'Default', value: 16 },
+  { label: 'Medium', value: 20 },
+  { label: 'Large', value: 24 },
+  { label: 'X-Large', value: 32 },
+  { label: 'XX-Large', value: 48 },
+  { label: 'Huge', value: 64 },
+  { label: 'Display', value: 96 }
+]
+
 const autoResizeOptions = [
   { value: 'none', label: 'None' },
   { value: 'width', label: 'Width' },
   { value: 'height', label: 'Height' },
   { value: 'both', label: 'Both' }
 ]
-
-// Font size controls
-const handleFontSizeChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = parseInt(target.value)
-  if (!isNaN(value) && value >= 8 && value <= 200) {
-    emit('update', { fontSize: value })
-  }
-}
-
-const handleFontSizeBlur = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  let value = parseInt(target.value)
-  
-  // Clamp value between min and max
-  if (isNaN(value) || value < 8) {
-    value = 8
-  } else if (value > 200) {
-    value = 200
-  }
-  
-  target.value = value.toString()
-  emit('update', { fontSize: value })
-}
-
-const increaseFontSize = () => {
-  const currentSize = props.fontSize || 16
-  const newSize = Math.min(200, currentSize + (currentSize < 24 ? 2 : 4))
-  emit('update', { fontSize: newSize })
-}
-
-const decreaseFontSize = () => {
-  const currentSize = props.fontSize || 16
-  const newSize = Math.max(8, currentSize - (currentSize <= 24 ? 2 : 4))
-  emit('update', { fontSize: newSize })
-}
 
 // Auto-resize controls
 const updateAutoResize = (mode: string | number) => {

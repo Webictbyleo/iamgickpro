@@ -1,33 +1,5 @@
 <template>
   <div class="flex items-center space-x-4">
-    <!-- Transparency -->
-    <div class="flex items-center space-x-2">
-      <IconDropdown
-        :icon="TransparencyIcon"
-        text="Transparency"
-        tooltip="Adjust transparency"
-        placement="bottom-start"
-        width="w-64"
-      >
-        <template #default="{ close }">
-          <div class="p-4">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Transparency</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ Math.round((opacity || 1) * 100) }}%</span>
-            </div>
-            <PropertySlider
-              :value="opacity || 1"
-              @update="$emit('update', { opacity: Number($event) })"
-              :min="0"
-              :max="1"
-              :step="0.01"
-              class="w-full"
-            />
-          </div>
-        </template>
-      </IconDropdown>
-    </div>
-
     <!-- Flip Controls -->
     <div class="flex items-center space-x-2">
       
@@ -100,15 +72,12 @@
 </template>
 
 <script setup lang="ts">
-import PropertySlider from '@/components/editor/Properties/PropertySlider.vue'
 import IconDropdown from '@/components/ui/IconDropdown.vue'
-import TransparencyIcon from '@/components/icons/TransparencyIcon.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
 import { AdjustmentsHorizontalIcon, ArrowsRightLeftIcon, ArrowsUpDownIcon } from '@heroicons/vue/24/outline'
 
 interface Props {
   alt?: string
-  opacity?: number
   borderRadius?: number
   objectPosition?: string
   preserveAspectRatio?: boolean
@@ -131,7 +100,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   alt: '',
-  opacity: 1,
   borderRadius: 0,
   objectPosition: 'center',
   preserveAspectRatio: true,

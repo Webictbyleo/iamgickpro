@@ -122,6 +122,7 @@ export interface LayerAPI {
   toggleSelection(layerId: string): void
   deselectAll(): void
   moveLayer(layerId: string, newIndex: number): void
+  reorderLayers(layerIds: string[]): void
   duplicateLayer(layerId: string): Promise<LayerNode>
   clear(): Promise<void>
 }

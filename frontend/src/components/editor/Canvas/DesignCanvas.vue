@@ -23,6 +23,7 @@
           @lock-layer="$emit('lock-layer')"
           @toggle-panel="(panelType, data) => $emit('toggle-panel', panelType, data)"
           @position-preset="(preset) => $emit('position-preset', preset)"
+          @update-layer-opacity="(opacity) => $emit('update-layer-opacity', opacity)"
         />
       </Transition>
     </div>
@@ -116,6 +117,7 @@ const emit = defineEmits<{
   'lock-layer': []
   'toggle-panel': [panelType: string, data?: any]
   'position-preset': [preset: string]
+  'update-layer-opacity': [opacity: number]
 }>()
 
 const canvasContainer = ref<HTMLElement>()

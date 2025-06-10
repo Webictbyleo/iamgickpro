@@ -27,7 +27,7 @@
         :fill="selectedLayer.properties?.fill"
         :stroke="selectedLayer.properties?.stroke"
         :strokeWidth="selectedLayer.properties?.strokeWidth"
-        :borderRadius="selectedLayer.properties?.cornerRadius"
+        :cornerRadius="selectedLayer.properties?.cornerRadius"
         :hasShadow="selectedLayer.properties?.hasShadow"
         @update="(props) => $emit('tool-update', 'shape', props)"
       />
@@ -36,7 +36,6 @@
       <ImageToolbar
         v-else-if="selectedLayer && selectedLayer.type === 'image'"
         :alt="selectedLayer.properties?.alt"
-        :opacity="selectedLayer.properties?.opacity"
         :borderRadius="selectedLayer.properties?.borderRadius"
         :objectPosition="selectedLayer.properties?.objectPosition"
         :preserveAspectRatio="selectedLayer.properties?.preserveAspectRatio"
@@ -193,6 +192,62 @@
           </IconDropdown>
         </div>
 
+        <!-- Transparency Control -->
+        <div class="flex items-center space-x-1 pr-2 mr-2 border-r border-gray-200/60 dark:border-gray-700/60">
+          <IconDropdown
+            :icon="TransparencyIcon"
+            tooltip="Layer transparency"
+            placement="bottom-start"
+            text="Opacity"
+            width="w-48"
+            :showChevron="false"
+            buttonClass="hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400"
+            iconClass="w-3.5 h-3.5"
+          >
+            <template #default="{ close }">
+              <div class="p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Layer Opacity</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ Math.round((selectedLayer.opacity || 1) * 100) }}%</span>
+                </div>
+                
+                <PropertySlider
+                  :value="selectedLayer.opacity || 1"
+                  :min="0"
+                  :max="1"
+                  :step="0.01"
+                  @update="(value: number) => $emit('update-layer-opacity', value)"
+                  class="mb-3"
+                />
+                
+                <!-- Opacity Presets -->
+                <div class="flex flex-wrap gap-1">
+                  <button
+                    v-for="preset in opacityPresets"
+                    :key="preset.value"
+                    @click="() => { 
+                      $emit('update-layer-opacity', preset.value); 
+                      close(); 
+                    }"
+                    :class="[
+                      'px-2 py-1 text-xs rounded border transition-colors',
+                      Math.abs((selectedLayer.opacity || 1) - preset.value) < 0.01
+                        ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-600 dark:text-purple-300'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                    ]"
+                  >
+                    {{ preset.label }}
+                  </button>
+                </div>
+                
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Drag slider or click presets to adjust layer transparency
+                </div>
+              </div>
+            </template>
+          </IconDropdown>
+        </div>
+
         <ModernButton
           variant="ghost"
           size="xs"
@@ -243,8 +298,10 @@ import {
   LockOpenIcon
 } from '@heroicons/vue/24/outline'
 import PositionIcon from '@/components/icons/PositionIcon.vue'
+import TransparencyIcon from '@/components/icons/TransparencyIcon.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
 import IconDropdown from '@/components/ui/IconDropdown.vue'
+import PropertySlider from '@/components/editor/Properties/PropertySlider.vue'
 import TextToolbar from '@/components/editor/Toolbar/TextToolbar.vue'
 import ShapeToolbar from '@/components/editor/Toolbar/ShapeToolbar.vue'
 import ImageToolbar from '@/components/editor/Toolbar/ImageToolbar.vue'
@@ -275,7 +332,17 @@ const emit = defineEmits<{
   'lock-layer': []
   'toggle-panel': [panelType: string, data?: any]
   'position-preset': [preset: string]
+  'update-layer-opacity': [opacity: number]
 }>()
+
+// Opacity presets for quick selection
+const opacityPresets = [
+  { label: '100%', value: 1 },
+  { label: '75%', value: 0.75 },
+  { label: '50%', value: 0.5 },
+  { label: '25%', value: 0.25 },
+  { label: '10%', value: 0.1 }
+]
 
 // Tool-specific options and components - fixed 'shapes' to 'shape'
 const toolOptions = computed((): Record<string, ToolOption> => ({

@@ -132,6 +132,7 @@
               @lock-layer="handleLockSelectedLayer"
               @toggle-panel="handleTogglePanel"
               @position-preset="handlePositionPreset"
+              @update-layer-opacity="handleUpdateLayerOpacity"
             />
 
             <!-- Zoom Controls -->
@@ -507,6 +508,15 @@ const handlePositionPreset = (preset: string) => {
   
   // Update layer position
   editorSDK.value.layers.updateLayer(layer.id, { x, y })
+}
+
+const handleUpdateLayerOpacity = (opacity: number) => {
+  if (!selectedLayer.value || !editorSDK.value) {
+    return
+  }
+  
+  // Update layer opacity directly at the layer level
+  editorSDK.value.layers.updateLayer(selectedLayer.value.id, { opacity })
 }
 
 // ...existing code...

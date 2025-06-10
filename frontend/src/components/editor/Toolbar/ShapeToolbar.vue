@@ -34,26 +34,32 @@
     <!-- Stroke Width -->
     <div class="flex items-center space-x-2">
       <label class="text-sm font-medium text-gray-700">Width:</label>
-      <PropertyInput
+      <PropertyNumberInput
         :value="strokeWidth"
-        type="number"
-        @update="$emit('update', { strokeWidth: Number($event) })"
-        class="w-16"
+        @update:value="(value) => $emit('update', { strokeWidth: value })"
+        @change="(value) => $emit('update', { strokeWidth: value })"
         :min="0"
         :max="20"
+        :step="1"
+        unit="px"
+        input-class="w-16"
+        placeholder="2"
       />
     </div>
 
     <!-- Corner Radius (for rectangles) -->
     <div v-if="shapeType === 'rectangle'" class="flex items-center space-x-2">
       <label class="text-sm font-medium text-gray-700">Radius:</label>
-      <PropertyInput
+      <PropertyNumberInput
         :value="cornerRadius"
-        type="number"
-        @update="$emit('update', { cornerRadius: Number($event) })"
-        class="w-16"
+        @update:value="(value) => $emit('update', { cornerRadius: value })"
+        @change="(value) => $emit('update', { cornerRadius: value })"
         :min="0"
         :max="100"
+        :step="1"
+        unit="px"
+        input-class="w-16"
+        placeholder="0"
       />
     </div>
 
@@ -73,6 +79,7 @@
 <script setup lang="ts">
 import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue'
 import PropertyInput from '@/components/editor/Properties/PropertyInput.vue'
+import PropertyNumberInput from '@/components/editor/Properties/PropertyNumberInput.vue'
 import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue'
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue'
 import ShadowIcon from '@/components/icons/ShadowIcon.vue'

@@ -56,6 +56,67 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
     if (!(node instanceof Konva.Shape)) return
 
     const props = this.getShapeProperties(layer.properties as ShapeLayerProperties)
+    const shapeType = this.sanitizeShapeType(props.shapeType)
+    
+    // Apply shape-specific updates
+    switch (shapeType) {
+      case 'rectangle':
+        if (node instanceof Konva.Rect) {
+          this.updateRectangle(node, layer)
+        }
+        break
+      case 'circle':
+        if (node instanceof Konva.Circle) {
+          this.updateCircle(node, layer)
+        }
+        break
+      case 'ellipse':
+        if (node instanceof Konva.Ellipse) {
+          this.updateEllipse(node, layer)
+        }
+        break
+      case 'triangle':
+      case 'polygon':
+        if (node instanceof Konva.RegularPolygon) {
+          this.updatePolygon(node, layer)
+        }
+        break
+      case 'star':
+        if (node instanceof Konva.Star) {
+          this.updateStar(node, layer)
+        }
+        break
+      case 'line':
+        if (node instanceof Konva.Line) {
+          this.updateLine(node, layer)
+        }
+        break
+      case 'arrow':
+        if (node instanceof Konva.Path) {
+          // For arrow shapes, we need to recreate the path data
+          const arrowHeadSize = Math.min(layer.width, layer.height) * 0.2
+          const bodyHeight = layer.height * 0.4
+          const bodyWidth = layer.width - arrowHeadSize
+          
+          const pathData = [
+            `M 0,${layer.height / 2 - bodyHeight / 2}`,
+            `L ${bodyWidth},${layer.height / 2 - bodyHeight / 2}`,
+            `L ${bodyWidth},0`,
+            `L ${layer.width},${layer.height / 2}`,
+            `L ${bodyWidth},${layer.height}`,
+            `L ${bodyWidth},${layer.height / 2 + bodyHeight / 2}`,
+            `L 0,${layer.height / 2 + bodyHeight / 2}`,
+            'Z'
+          ].join(' ')
+          
+          node.setAttrs({
+            data: pathData
+          })
+        }
+        break
+    }
+    
+    // Apply common properties (fill, stroke, position, etc.)
     this.applyCommonProperties(node, layer, props)
   }
 

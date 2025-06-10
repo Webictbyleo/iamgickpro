@@ -274,6 +274,52 @@ export class LayerManager implements LayerAPI {
     this.emitter.emit('layer:moved', { layerId, newIndex: clampedIndex })
   }
 
+  reorderLayers(layerIds: string[]): void {
+    // Validate that all layer IDs exist
+    const validLayerIds = layerIds.filter(id => this.layers.has(id))
+    if (validLayerIds.length === 0) return
+
+    // Get all layers and create a mapping
+    const allLayers = Array.from(this.layers.values())
+    const reorderedLayers: LayerNode[] = []
+    
+    // Add layers in the new order
+    validLayerIds.forEach(id => {
+      const layer = this.layers.get(id)
+      if (layer) {
+        reorderedLayers.push(layer)
+      }
+    })
+    
+    // Add any remaining layers that weren't in the reorder list
+    allLayers.forEach(layer => {
+      if (!validLayerIds.includes(layer.id)) {
+        reorderedLayers.push(layer)
+      }
+    })
+
+    // Update z-indices first
+    reorderedLayers.forEach((layer, index) => {
+      layer.zIndex = index
+    })
+
+    // Remove all Konva nodes from the layer
+    this.mainLayer.removeChildren()
+
+    // Re-add them in the correct order (bottom to top)
+    reorderedLayers.forEach(layer => {
+      if (layer.konvaNode) {
+        layer.konvaNode.zIndex(layer.zIndex)
+        this.mainLayer.add(layer.konvaNode as Konva.Shape | Konva.Group)
+      }
+    })
+
+    // Force redraw to reflect the new order
+    this.mainLayer.batchDraw()
+
+    this.emitter.emit('layers:reordered', { layerIds: validLayerIds })
+  }
+
   async clear(): Promise<void> {
     // Clear all layers
     Array.from(this.layers.values()).forEach(layer => {

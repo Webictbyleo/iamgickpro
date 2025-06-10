@@ -205,9 +205,9 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     // Update the design store
     designStore.reorderLayers(layerIds)
     
-    // TODO: Update the visual order in the canvas
+    // Update the visual order in the canvas
     if (editorSDK.value) {
-      // editorSDK.value.layers.reorderLayers(layerIds)
+      editorSDK.value.layers.reorderLayers(layerIds)
     }
   }
 

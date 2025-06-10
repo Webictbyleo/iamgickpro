@@ -30,7 +30,8 @@
           'group flex items-center p-2 rounded border transition-colors cursor-pointer',
           isSelected(layer.id)
             ? 'bg-blue-50 border-blue-200'
-            : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+            : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300',
+          draggedLayer?.id === layer.id ? 'opacity-50' : ''
         ]"
         @click="handleLayerClick(layer, $event)"
       >
@@ -103,7 +104,6 @@
             <template #trigger>
               <button
                 class="p-1 rounded text-gray-600 hover:text-gray-800 transition-colors"
-                @click.stop
               >
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
