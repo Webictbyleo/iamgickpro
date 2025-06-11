@@ -67,21 +67,14 @@
 
     <!-- Apply Button -->
     <div class="p-4 border-t bg-gray-50">
-      <div class="flex space-x-2">
-        <button
-          @click="applyChanges"
-          class="flex-1 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-        >
-          Apply Final
-        </button>
-        <button
-          @click="resetToDefaults"
-          class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-        >
-          Reset
-        </button>
-      </div>
-      <p class="text-xs text-gray-500 mt-2 text-center">Changes apply in real-time</p>
+      <button
+        @click="resetToDefaults"
+        class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+      >
+        <ArrowPathIcon class="w-4 h-4 mr-2" />
+        Reset All to Defaults
+      </button>
+      <p class="text-xs text-gray-500 mt-2 text-center">All changes apply in real-time</p>
     </div>
   </div>
 </template>
@@ -109,7 +102,6 @@ const props = defineProps<Props>()
 
 // Define emits
 const emit = defineEmits<{
-  apply: [properties: Partial<ImageLayerProperties>]
   update: [properties: Partial<ImageLayerProperties>]
 }>()
 
@@ -226,10 +218,21 @@ const emitRealTimeUpdate = () => {
 const handlePresetApplication = (preset: any) => {
   currentPreset.value = preset.name
   
-  // Apply all preset values
-  Object.entries(preset.values).forEach(([key, value]) => {
-    updateProperty(key, value)
-  })
+  // Apply all preset values efficiently
+  const presetValues = preset.values
+  
+  // Update all values at once
+  if (presetValues.brightness !== undefined) brightness.value = presetValues.brightness
+  if (presetValues.contrast !== undefined) contrast.value = presetValues.contrast
+  if (presetValues.saturation !== undefined) saturation.value = presetValues.saturation
+  if (presetValues.blur !== undefined) blur.value = presetValues.blur
+  if (presetValues.hue !== undefined) hue.value = presetValues.hue
+  if (presetValues.sepia !== undefined) sepia.value = presetValues.sepia
+  if (presetValues.grayscale !== undefined) grayscale.value = presetValues.grayscale  
+  if (presetValues.invert !== undefined) invert.value = presetValues.invert
+  
+  // Emit single real-time update after all values are set
+  emitRealTimeUpdate()
 }
 
 const resetFilters = () => {
@@ -269,30 +272,5 @@ const resetToDefaults = () => {
   
   // Emit real-time update
   emitRealTimeUpdate()
-}
-
-const applyChanges = () => {
-  const properties: Partial<ImageLayerProperties> = {
-    src: src.value,
-    blur: blur.value,
-    brightness: brightness.value,
-    contrast: contrast.value,
-    saturation: saturation.value,
-    hue: hue.value,
-    sepia: sepia.value,
-    grayscale: grayscale.value,
-    invert: invert.value,
-    borderRadius: borderRadius.value,
-    shadow: shadowEnabled.value ? {
-      enabled: true,
-      offsetX: shadowOffsetX.value,
-      offsetY: shadowOffsetY.value,
-      blur: shadowBlur.value,
-      color: shadowColor.value,
-      opacity: shadowOpacity.value
-    } : undefined
-  }
-  
-  emit('apply', properties)
 }
 </script>

@@ -108,7 +108,6 @@
             <ImageEditingPanel
               v-if="activePanelModal === 'image-editing' && selectedLayer && selectedLayer.type === 'image'"
               :properties="selectedLayer.properties as ImageLayerProperties"
-              @apply="handleApplyImageEdit"
               @update="handleUpdateImageEdit"
             />
           </div>
@@ -911,18 +910,6 @@ const handleTogglePanel = (panelType: string, data?: any) => {
 const handleCancelPanelModal = () => {
   panelContext.value = null
   closeAllPanels()
-}
-
-const handleApplyImageEdit = (updatedProperties: any) => {
-  if (selectedLayer.value && selectedLayer.value.type === 'image') {
-    updateLayerProperties(selectedLayer.value.id, {
-      properties: {
-        ...selectedLayer.value.properties,
-        ...updatedProperties
-      }
-    })
-  }
-  // Don't close panel - keep it open for further adjustments
 }
 
 const handleUpdateImageEdit = (updatedProperties: any) => {

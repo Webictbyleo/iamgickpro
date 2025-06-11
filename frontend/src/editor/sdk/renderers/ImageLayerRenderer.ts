@@ -91,6 +91,9 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       
       this.applyImageTransforms(imageNode, layer, properties)
       
+      // Always clear any existing border radius first, then apply new one if needed
+      this.clearBorderRadius(imageNode)
+      
       // Update filters if present
       if (this.hasImageFilters(properties)) {
         this.applyImageFilters(imageNode, properties)
@@ -301,6 +304,7 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       properties.sepia !== undefined ||
       properties.grayscale !== undefined ||
       properties.invert !== undefined ||
+      properties.borderRadius !== undefined ||
       (properties.shadow && properties.shadow.enabled)
     )
   }
@@ -367,10 +371,65 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       imageNode.shadowOpacity(Math.max(0, Math.min(1, properties.shadow.opacity || 0.5)))
     }
 
+    // 6. Border radius (applied via clipping mask)
+    if (properties.borderRadius !== undefined && properties.borderRadius > 0) {
+      this.applyBorderRadius(imageNode, properties.borderRadius)
+    } else if (properties.borderRadius === 0) {
+      // Clear border radius by removing clipping
+      this.clearBorderRadius(imageNode)
+    }
+
     // Apply all filters and cache for performance
     if (konvaFilters.length > 0) {
       imageNode.filters(konvaFilters)
       imageNode.cache()
+    }
+  }
+
+  private applyBorderRadius(imageNode: Konva.Image, borderRadius: number): void {
+    // Apply border radius by setting clipFunc on the group
+    if (borderRadius > 0) {
+      const group = imageNode.getParent() as Konva.Group
+      if (group) {
+        // Remove any existing clipping first
+        this.clearBorderRadius(imageNode)
+        
+        // Set the clip function on the group
+        group.clipFunc((ctx: any) => {
+          const width = group.width()
+          const height = group.height()
+          ctx.beginPath()
+          // Use roundRect if available, fallback to manual rounded rectangle
+          if (ctx.roundRect) {
+            ctx.roundRect(0, 0, width, height, borderRadius)
+          } else {
+            // Manual rounded rectangle for older browsers
+            ctx.moveTo(borderRadius, 0)
+            ctx.lineTo(width - borderRadius, 0)
+            ctx.quadraticCurveTo(width, 0, width, borderRadius)
+            ctx.lineTo(width, height - borderRadius)
+            ctx.quadraticCurveTo(width, height, width - borderRadius, height)
+            ctx.lineTo(borderRadius, height)
+            ctx.quadraticCurveTo(0, height, 0, height - borderRadius)
+            ctx.lineTo(0, borderRadius)
+            ctx.quadraticCurveTo(0, 0, borderRadius, 0)
+          }
+          ctx.closePath()
+        })
+        
+        // Mark that border radius is applied for cleanup
+        group.setAttr('hasBorderRadius', true)
+      }
+    }
+  }
+
+  private clearBorderRadius(imageNode: Konva.Image): void {
+    // Clear border radius by removing the clipping
+    const group = imageNode.getParent() as Konva.Group
+    if (group && group.getAttr('hasBorderRadius')) {
+      // Remove the clip function
+      group.clipFunc(null)
+      group.setAttr('hasBorderRadius', false)
     }
   }
 
