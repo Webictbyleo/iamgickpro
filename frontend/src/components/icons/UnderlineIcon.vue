@@ -8,7 +8,7 @@
     :class="className"
   >
     <path 
-      d="M6 19v2h12v-2H6zM6 3v2h12V3H6zm0 14h12v-2H6v2z" 
+      d="M6 4v7c0 3.314 2.686 6 6 6s6-2.686 6-6V4h-3v7c0 1.657-1.343 3-3 3s-3-1.343-3-3V4H6zm-2 16h16v2H4v-2z" 
       :fill="fill"
     />
   </svg>

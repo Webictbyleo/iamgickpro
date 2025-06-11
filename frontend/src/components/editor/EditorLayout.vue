@@ -167,12 +167,15 @@
       @close="handleCloseContextMenu"
     />
   </div>
+  <!-- Toast Notifications -->
+      <ToastNotifications />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { Layer, LayerType, ImageLayerProperties } from '@/types'
+import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 
 // Modern Component imports
 import ModernSidebar from './Sidebar/ModernSidebar.vue'

@@ -1,13 +1,15 @@
 <template>
   <div class="flex items-center space-x-4">
-    <!-- Font Family -->
-    <div>
-      <PropertyDropdown
+    <!-- Font Family with enhanced width and styling -->
+    <div class="w-56">
+      <FontSelector
         :value="fontFamily"
-        :options="fontOptions"
-        @update="$emit('update', { fontFamily: String($event) })"
-        class="w-36"
-        :show-dropdown-icon="false"
+        @update="handleFontChange"
+        @font-loaded="handleFontLoaded"
+        @font-error="handleFontError"
+        :preview-text="'AaBbCc'"
+        placeholder="Choose font family"
+        :max-display-fonts="30"
       />
     </div>
 
@@ -34,23 +36,21 @@
         @update="$emit('update', { fontWeight: $event ? 'bold' : 'normal' })"
         tooltip="Bold (Ctrl+B)"
       >
-        <BoldIcon class="w-4 h-4" />
+        <BoldIcon class="w-5 h-5" />
       </PropertyToggle>
-      
       <PropertyToggle
         :active="fontStyle === 'italic'"
         @update="$emit('update', { fontStyle: $event ? 'italic' : 'normal' })"
         tooltip="Italic (Ctrl+I)"
       >
-        <ItalicIcon class="w-4 h-4" />
+        <ItalicIcon class="w-5 h-5" />
       </PropertyToggle>
-      
       <PropertyToggle
         :active="textDecoration === 'underline'"
         @update="$emit('update', { textDecoration: $event ? 'underline' : 'none' })"
         tooltip="Underline (Ctrl+U)"
       >
-        <UnderlineIcon class="w-4 h-4" />
+        <UnderlineIcon class="w-5 h-5" />
       </PropertyToggle>
     </div>
 
@@ -63,7 +63,6 @@
       >
         <AlignLeftIcon class="w-4 h-4" />
       </PropertyToggle>
-      
       <PropertyToggle
         :active="textAlign === 'center'"
         @update="$emit('update', { textAlign: 'center' })"
@@ -71,7 +70,6 @@
       >
         <AlignCenterIcon class="w-4 h-4" />
       </PropertyToggle>
-      
       <PropertyToggle
         :active="textAlign === 'right'"
         @update="$emit('update', { textAlign: 'right' })"
@@ -94,10 +92,10 @@
     <div class="relative">
       <button
         @click="showAdvancedControls = !showAdvancedControls"
-        class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border"
+        class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border flex items-center"
         title="Spacing"
       >
-        Aa
+        <SpacingIcon class="w-5 h-5" />
       </button>
       <div v-if="showAdvancedControls" class="absolute top-full left-0 mt-1 p-3 bg-white border rounded shadow-lg z-10 min-w-48">
         <div class="space-y-3">
@@ -112,10 +110,9 @@
                 :step="0.1"
                 @update="$emit('update', { lineHeight: $event })"
               />
-              
             </div>
           </div>
-          
+
           <!-- Letter Spacing -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">Letter Spacing:</label>
@@ -126,21 +123,18 @@
                 :max="10"
                 :step="0.1"
                 @update="$emit('update', { letterSpacing: $event })"
-              
               />
-              
             </div>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue'
+import FontSelector from '@/components/editor/Properties/FontSelector.vue'
 import PropertyNumberInput from '@/components/editor/Properties/PropertyNumberInput.vue'
 import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue'
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue'
@@ -151,8 +145,8 @@ import UnderlineIcon from '@/components/icons/UnderlineIcon.vue'
 import AlignLeftIcon from '@/components/icons/AlignLeftIcon.vue'
 import AlignCenterIcon from '@/components/icons/AlignCenterIcon.vue'
 import AlignRightIcon from '@/components/icons/AlignRightIcon.vue'
-import ChevronUpIcon from '@/components/icons/ChevronUpIcon.vue'
-import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import SpacingIcon from '@/components/icons/SpacingIcon.vue'
+import { useNotifications } from '@/composables/useNotifications'
 
 interface AutoResize {
   enabled: boolean
@@ -195,22 +189,22 @@ const emit = defineEmits<{
 // Advanced controls toggle state
 const showAdvancedControls = ref(false)
 
-const fontOptions = [
-  { value: 'Inter', label: 'Inter' },
-  { value: 'Arial', label: 'Arial' },
-  { value: 'Helvetica', label: 'Helvetica' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Roboto', label: 'Roboto' },
-  { value: 'Open Sans', label: 'Open Sans' },
-  { value: 'Lato', label: 'Lato' },
-  { value: 'Montserrat', label: 'Montserrat' },
-  { value: 'Poppins', label: 'Poppins' },
-  { value: 'Playfair Display', label: 'Playfair Display' },
-  { value: 'Source Sans Pro', label: 'Source Sans Pro' },
-  { value: 'Oswald', label: 'Oswald' },
-  { value: 'Merriweather', label: 'Merriweather' }
-]
+// Notifications
+const { error } = useNotifications()
+
+// Font event handlers
+const handleFontChange = (fontFamily: string) => {
+  emit('update', { fontFamily })
+}
+
+const handleFontLoaded = (fontFamily: string) => {
+  // Font loading is now handled internally by TextLayerRenderer
+  // No external events needed - text reflow happens automatically
+}
+
+const handleFontError = (fontFamily: string, err: Error) => {
+  error('Font Load Error', `Failed to load ${fontFamily}. Using fallback font.`)
+}
 
 const fontSizePresets = [
   { label: 'Tiny', value: 8 },

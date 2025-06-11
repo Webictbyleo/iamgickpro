@@ -165,13 +165,6 @@
             <div class="border-t border-gray-100 dark:border-gray-600"></div>
             <div class="py-1">
               <ContextMenuItem
-                icon="Square2StackIcon"
-                label="Select All"
-                shortcut="Ctrl+A"
-                @click="handleAction('select-all')"
-              />
-              
-              <ContextMenuItem
                 icon="MagnifyingGlassIcon"
                 label="Zoom to Fit"
                 @click="handleAction('zoom-to-fit')"

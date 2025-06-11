@@ -1,10 +1,11 @@
 import Konva from 'konva'
 import type { KonvaLayerRenderer, LayerNode } from '../types'
 import type { Layer, TextLayerProperties, AutoResizeConfig } from '../../../types'
+import { FontManager } from '../../../services/FontManager'
 
 /**
  * Text Layer Renderer - Enhanced for modern text editing experience
- * Features: Inline editing, real-time preview, better text handling
+ * Features: Inline editing, real-time preview, better text handling, automatic font loading and reflow
  * Matches backend TextLayerRenderer properties and validation
  */
 export class TextLayerRenderer implements KonvaLayerRenderer {
@@ -12,6 +13,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
   private textInput: HTMLTextAreaElement | null = null
   private editStartText: string = ''
   private eventEmitter?: any // Will be injected for communication
+  private fontLoadingHandlers = new Map<string, () => void>() // Track font loading callbacks
   canRender(layer: Layer): boolean {
     return layer.type === 'text'
   }
@@ -53,6 +55,9 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     this.applyTextEffects(textNode, props)
     this.setupTextInteractions(textNode, layerData)
     
+    // Handle font loading and reflow
+    this.handleFontLoading(textNode, layerData, props.fontFamily)
+    
     return textNode
   }
 
@@ -87,10 +92,107 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       
       // Re-setup interactions (they may have been lost during update)
       this.setupTextInteractions(node, layerData)
+      
+      // Handle font loading and reflow for font changes
+      this.handleFontLoading(node, layerData, props.fontFamily)
     }
   }
 
+  /**
+   * Handle font loading and text reflow internally
+   * This method ensures fonts are loaded and triggers reflow when font changes occur
+   */
+  private async handleFontLoading(textNode: Konva.Text, layerData: LayerNode, fontFamily: string): Promise<void> {
+    // Skip if font is already loaded
+    if (FontManager.isFontLoaded(fontFamily)) {
+      this.reflowTextTransformations(textNode, layerData)
+      return
+    }
+
+    // Clean up any previous font loading handler for this layer
+    const existingHandler = this.fontLoadingHandlers.get(layerData.id)
+    if (existingHandler) {
+      existingHandler()
+      this.fontLoadingHandlers.delete(layerData.id)
+    }
+
+    try {
+      // Load font with default options
+      await FontManager.loadFont(fontFamily, {
+        weights: ['400', '700'],
+        styles: ['normal', 'italic'],
+        display: 'swap'
+      })
+
+      // Font loaded successfully - trigger reflow
+      this.reflowTextTransformations(textNode, layerData)
+      
+    } catch (error) {
+      console.warn(`Failed to load font ${fontFamily} for text layer ${layerData.id}:`, error)
+      // Use fallback font and still trigger reflow
+      const fallbackFont = FontManager.getFontWithFallbacks(fontFamily)
+      textNode.fontFamily(fallbackFont)
+      this.reflowTextTransformations(textNode, layerData)
+    }
+  }
+
+  /**
+   * Trigger text reflow and transformation handle updates
+   * This method handles the text layout recalculation when fonts change
+   */
+  private reflowTextTransformations(textNode: Konva.Text, layerData: LayerNode): void {
+    // Force text node to recalculate dimensions with new font
+    textNode.text(textNode.text()) // Trigger internal text measurement update
+    
+    // Get the text's new natural height after font load
+    const newHeight = textNode.height()
+    
+    // Update layer data with new natural height
+    layerData.height = newHeight
+    
+    // Fire transform-related events to update transformation handles
+    if (this.eventEmitter) {
+      // Emit layer:updated (not layer:update) to properly trigger store and UI updates
+      this.eventEmitter.emit('layer:updated', { 
+        id: layerData.id,
+        type: layerData.type,
+        name: layerData.name,
+        visible: layerData.visible,
+        locked: layerData.locked,
+        opacity: layerData.opacity,
+        x: layerData.x,
+        y: layerData.y,
+        width: layerData.width,
+        height: newHeight, // Use the new calculated height
+        rotation: layerData.rotation,
+        scaleX: layerData.scaleX,
+        scaleY: layerData.scaleY,
+        zIndex: layerData.zIndex,
+        properties: layerData.properties
+      })
+      
+      // Also emit a specific event to refresh transformation handles
+      this.eventEmitter.emit('text:reflow', { 
+        layerId: layerData.id,
+        newHeight: newHeight,
+        reason: 'font-change'
+      })
+    }
+
+    // Force layer redraw
+    textNode.getLayer()?.batchDraw()
+  }
+
   destroy(node: Konva.Node): void {
+    // Clean up any font loading handlers
+    if (node.id()) {
+      const handler = this.fontLoadingHandlers.get(node.id())
+      if (handler) {
+        handler()
+        this.fontLoadingHandlers.delete(node.id())
+      }
+    }
+    
     node.destroy()
   }
 

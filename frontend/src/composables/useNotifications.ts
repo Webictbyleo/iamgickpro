@@ -49,7 +49,7 @@ export const useNotifications = () => {
   }
   
   const error = (title: string, message: string, options?: Partial<Notification>) => {
-    return addNotification({ type: 'error', title, message, persistent: true, ...options })
+    return addNotification({ type: 'error', title, message, persistent: false, ...options })
   }
   
   const warning = (title: string, message: string, options?: Partial<Notification>) => {

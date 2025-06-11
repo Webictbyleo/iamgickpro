@@ -26,6 +26,7 @@ export class TransformManager {
   ) {
     this.setupUILayer()
     this.setupTransformer()
+    this.setupEventListeners()
   }
 
   // ============================================================================
@@ -668,6 +669,47 @@ export class TransformManager {
     this.uiLayer?.add(this.transformer)
   }
 
+  private setupEventListeners(): void {
+    // Listen for text reflow events to refresh transformation handles
+    this.emitter.on('text:reflow', this.handleTextReflow.bind(this))
+
+    // Listen for layer updates that might require transformer refresh
+    this.emitter.on('layer:updated', this.handleLayerUpdated.bind(this))
+  }
+
+  private handleTextReflow(data: { layerId: string; newHeight: number; reason: string }): void {
+    // Find the layer that was reflowed
+    const layer = this.selectedLayers.find(l => l.id === data.layerId)
+    if (!layer) return
+
+    // Update the layer height with the new calculated height
+    layer.height = data.newHeight
+
+    // If this layer is selected, refresh the transformer
+    if (this.selectedLayers.some(l => l.id === data.layerId)) {
+      // Force transformer to recalculate its bounds
+      this.updateTransformer()
+      
+      // Force UI layer redraw to show updated handles
+      this.uiLayer?.batchDraw()
+    }
+  }
+
+  private handleLayerUpdated(layer: any): void {
+    // Find if this is one of our selected layers
+    const selectedLayer = this.selectedLayers.find(l => l.id === layer.id)
+    if (!selectedLayer) return
+
+    // Update the layer data
+    Object.assign(selectedLayer, layer)
+
+    // If it's a text layer that might have height changes, refresh transformer
+    if (selectedLayer.type === 'text') {
+      this.updateTransformer()
+      this.uiLayer?.batchDraw()
+    }
+  }
+
   private emitSelectionChange(): void {
     const selectedLayerData = this.selectedLayers.map(layer => this.layerNodeToLayer(layer))
     this.emitter.emit('selection:changed', this.selectedLayers.map(layer => layer.id))
@@ -761,6 +803,10 @@ export class TransformManager {
   }
 
   destroy(): void {
+    // Clean up event listeners
+    this.emitter.off('text:reflow', this.handleTextReflow)
+    this.emitter.off('layer:updated', this.handleLayerUpdated)
+
     // Clean up node transform and drag handlers
     this.selectedLayers.forEach(layer => {
       if (layer.konvaNode) {
