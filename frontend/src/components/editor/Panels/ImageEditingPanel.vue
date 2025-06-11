@@ -67,12 +67,21 @@
 
     <!-- Apply Button -->
     <div class="p-4 border-t bg-gray-50">
-      <button
-        @click="applyChanges"
-        class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-      >
-        Apply Changes
-      </button>
+      <div class="flex space-x-2">
+        <button
+          @click="applyChanges"
+          class="flex-1 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Apply Final
+        </button>
+        <button
+          @click="resetToDefaults"
+          class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Reset
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 mt-2 text-center">Changes apply in real-time</p>
     </div>
   </div>
 </template>
@@ -101,6 +110,7 @@ const props = defineProps<Props>()
 // Define emits
 const emit = defineEmits<{
   apply: [properties: Partial<ImageLayerProperties>]
+  update: [properties: Partial<ImageLayerProperties>]
 }>()
 
 // Reactive properties (removed unused properties: alt, quality, flipX, flipY, preserveAspectRatio)
@@ -183,6 +193,34 @@ const updateProperty = (key: string, value: any) => {
   if (key !== 'shadowEnabled') {
     currentPreset.value = 'Custom'
   }
+  
+  // Emit real-time update to apply changes immediately
+  emitRealTimeUpdate()
+}
+
+const emitRealTimeUpdate = () => {
+  const properties: Partial<ImageLayerProperties> = {
+    src: src.value,
+    blur: blur.value,
+    brightness: brightness.value,
+    contrast: contrast.value,
+    saturation: saturation.value,
+    hue: hue.value,
+    sepia: sepia.value,
+    grayscale: grayscale.value,
+    invert: invert.value,
+    borderRadius: borderRadius.value,
+    shadow: shadowEnabled.value ? {
+      enabled: true,
+      offsetX: shadowOffsetX.value,
+      offsetY: shadowOffsetY.value,
+      blur: shadowBlur.value,
+      color: shadowColor.value,
+      opacity: shadowOpacity.value
+    } : undefined
+  }
+  
+  emit('update', properties)
 }
 
 const handlePresetApplication = (preset: any) => {
@@ -205,6 +243,9 @@ const resetFilters = () => {
   grayscale.value = 0
   invert.value = 0
   currentPreset.value = 'Original'
+  
+  // Emit real-time update
+  emitRealTimeUpdate()
 }
 
 const resetShadow = () => {
@@ -215,6 +256,9 @@ const resetShadow = () => {
   shadowBlur.value = 5
   shadowColor.value = '#000000'
   shadowOpacity.value = 0.5
+  
+  // Emit real-time update
+  emitRealTimeUpdate()
 }
 
 const resetToDefaults = () => {
@@ -222,6 +266,9 @@ const resetToDefaults = () => {
   resetFilters()
   resetShadow()
   borderRadius.value = 0
+  
+  // Emit real-time update
+  emitRealTimeUpdate()
 }
 
 const applyChanges = () => {

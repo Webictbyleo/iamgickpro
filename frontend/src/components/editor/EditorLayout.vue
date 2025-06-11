@@ -109,6 +109,7 @@
               v-if="activePanelModal === 'image-editing' && selectedLayer && selectedLayer.type === 'image'"
               :properties="selectedLayer.properties as ImageLayerProperties"
               @apply="handleApplyImageEdit"
+              @update="handleUpdateImageEdit"
             />
           </div>
         </div>
@@ -921,7 +922,18 @@ const handleApplyImageEdit = (updatedProperties: any) => {
       }
     })
   }
-  closeContextualPanels()
+  // Don't close panel - keep it open for further adjustments
+}
+
+const handleUpdateImageEdit = (updatedProperties: any) => {
+  if (selectedLayer.value && selectedLayer.value.type === 'image') {
+    updateLayerProperties(selectedLayer.value.id, {
+      properties: {
+        ...selectedLayer.value.properties,
+        ...updatedProperties
+      }
+    })
+  }
 }
 
 // Colors Panel Event Handlers
