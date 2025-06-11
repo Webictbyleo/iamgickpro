@@ -248,7 +248,7 @@ export interface ShapeEffectConfig {
 
 // Shape layer properties matching backend ShapeLayerProperties
 export interface ShapeLayerProperties extends BaseLayerProperties {
-  shapeType: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow'
+  shapeType: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow' | 'heart'
   fill: ShapeFillConfig
   stroke: string
   strokeWidth: number

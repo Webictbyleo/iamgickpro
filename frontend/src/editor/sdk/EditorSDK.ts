@@ -28,6 +28,12 @@ export class EditorSDK extends EventEmitter {
   private pluginManager: PluginManager
   private transformManager: TransformManager
   
+  // History Management
+  private history: Array<{ action: string, data: any, timestamp: number }> = []
+  private currentHistoryIndex: number = -1
+  private maxHistorySize: number = 50
+  private isUndoRedoInProgress: boolean = false
+  
   private state: EditorState = {
     selectedLayers: [],
     zoom: 1,
@@ -89,6 +95,9 @@ export class EditorSDK extends EventEmitter {
     
     // Connect LayerManager with TransformManager for transformation handling
     this.layerManager.setTransformManager(this.transformManager)
+    
+    // Connect LayerManager with history system
+    this.layerManager.setHistoryManager(this)
   }
 
   // ============================================================================
@@ -489,13 +498,109 @@ export class EditorSDK extends EventEmitter {
     this.layerManager.selectLayers(layerIds)
   }
 
-  private undo(): void {
-    // TODO: Implement undo functionality
-    console.log('Undo - to be implemented')
+  // ============================================================================
+  // PUBLIC UNDO/REDO METHODS
+  // ============================================================================
+
+  undo(): void {
+    if (this.currentHistoryIndex <= 0 || this.isUndoRedoInProgress) return
+    
+    this.isUndoRedoInProgress = true
+    
+    try {
+      this.currentHistoryIndex--
+      const previousState = this.history[this.currentHistoryIndex]
+      
+      console.log('Undo: Reverting to state', previousState)
+      this.applyHistoryState(previousState)
+      
+      this.emitHistoryChanged()
+    } catch (error) {
+      console.error('Undo failed:', error)
+    } finally {
+      this.isUndoRedoInProgress = false
+    }
   }
 
-  private redo(): void {
-    // TODO: Implement redo functionality
-    console.log('Redo - to be implemented')
+  redo(): void {
+    if (this.currentHistoryIndex >= this.history.length - 1 || this.isUndoRedoInProgress) return
+    
+    this.isUndoRedoInProgress = true
+    
+    try {
+      this.currentHistoryIndex++
+      const nextState = this.history[this.currentHistoryIndex]
+      
+      console.log('Redo: Applying state', nextState)
+      this.applyHistoryState(nextState)
+      
+      this.emitHistoryChanged()
+    } catch (error) {
+      console.error('Redo failed:', error)
+    } finally {
+      this.isUndoRedoInProgress = false
+    }
+  }
+  
+  // ============================================================================
+  // HISTORY MANAGEMENT
+  // ============================================================================
+  
+  private addToHistory(action: string, data: any): void {
+    if (this.isUndoRedoInProgress) return
+    
+    // Remove any future history if we're not at the end
+    if (this.currentHistoryIndex < this.history.length - 1) {
+      this.history = this.history.slice(0, this.currentHistoryIndex + 1)
+    }
+    
+    // Add new state
+    this.history.push({
+      action,
+      data: JSON.parse(JSON.stringify(data)), // Deep clone
+      timestamp: Date.now()
+    })
+    
+    // Limit history size
+    if (this.history.length > this.maxHistorySize) {
+      this.history.shift()
+    } else {
+      this.currentHistoryIndex++
+    }
+    
+    this.emitHistoryChanged()
+  }
+  
+  private applyHistoryState(state: { action: string, data: any, timestamp: number }): void {
+    switch (state.action) {
+      case 'layer_create':
+        this.layerManager.deleteLayer(state.data.layer.id, true) // Silent delete
+        break
+      case 'layer_delete':
+        this.layerManager.createLayer(state.data.layer.type, state.data.layer, true) // Silent create
+        break
+      case 'layer_update':
+        this.layerManager.updateLayer(state.data.layerId, state.data.previousData, true) // Silent update
+        break
+      case 'layers_reorder':
+        // Restore previous layer order
+        this.layerManager.reorderLayers(state.data.previousOrder, true) // Silent reorder
+        break
+      default:
+        console.warn('Unknown history action:', state.action)
+    }
+  }
+  
+  private emitHistoryChanged(): void {
+    this.emit('history:changed', {
+      canUndo: this.currentHistoryIndex > 0,
+      canRedo: this.currentHistoryIndex < this.history.length - 1,
+      currentIndex: this.currentHistoryIndex,
+      totalStates: this.history.length
+    })
+  }
+  
+  private saveCurrentState(action: string, data: any): void {
+    this.addToHistory(action, data)
   }
 }

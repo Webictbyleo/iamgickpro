@@ -17,11 +17,15 @@
         <!-- Design Name -->
         <div class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-600 hover:border-violet-300 dark:hover:border-violet-500 transition-all duration-200 shadow-sm hover:shadow-md group">
           <input
+            ref="designNameInput"
             :value="designName"
             @input="updateDesignName"
-            @blur="$emit('save')"
+            @focus="handleDesignNameFocus"
+            @blur="handleDesignNameBlur"
+            @keydown.enter="handleDesignNameEnter"
+            @keydown.escape="handleDesignNameEscape"
             class="text-sm font-medium bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-600 rounded-lg px-2 py-1 min-w-0 max-w-xs truncate transition-all duration-200 group-hover:bg-white dark:group-hover:bg-gray-600"
-            placeholder="Untitled Design"
+            :placeholder="designName || 'Untitled Design'"
           />
         </div>
       </div>
@@ -111,6 +115,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import ExportDropdown from './ExportDropdown.vue'
 import ResizeDropdown from './ResizeDropdown.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
@@ -149,9 +154,39 @@ const emit = defineEmits<{
   'custom-resize': []
 }>()
 
+const designNameInput = ref<HTMLInputElement>()
+const originalDesignName = ref<string>('')
+
 const updateDesignName = (event: Event) => {
   const target = event.target as HTMLInputElement
   emit('update:designName', target.value)
+}
+
+const handleDesignNameFocus = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  originalDesignName.value = target.value
+  // Select all text when focused for easy editing
+  setTimeout(() => {
+    target.select()
+  }, 0)
+}
+
+const handleDesignNameBlur = () => {
+  emit('save')
+}
+
+const handleDesignNameEnter = (event: KeyboardEvent) => {
+  const target = event.target as HTMLInputElement
+  target.blur()
+  emit('save')
+}
+
+const handleDesignNameEscape = (event: KeyboardEvent) => {
+  const target = event.target as HTMLInputElement
+  // Restore original value and blur
+  target.value = originalDesignName.value
+  emit('update:designName', originalDesignName.value)
+  target.blur()
 }
 
 const handleExport = (format: string) => {

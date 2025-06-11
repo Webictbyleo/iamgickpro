@@ -21,6 +21,7 @@
         :selected-layer="selectedLayer"
         @save="handleSave"
         @export="handleExport"
+        @resize="handleResize"
         @undo="handleUndo"
         @redo="handleRedo"
         @tool-change="handleToolChange"
@@ -166,6 +167,14 @@
       @action="handleContextMenuAction"
       @close="handleCloseContextMenu"
     />
+
+    <!-- Export Modal -->
+    <DesignExportModal
+      :is-open="exportModal.isOpen"
+      :design="exportModal.design"
+      @close="exportModal.isOpen = false"
+      @exported="handleExportCompleted"
+    />
   </div>
   <!-- Toast Notifications -->
       <ToastNotifications />
@@ -176,6 +185,7 @@ import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 
 import { useDesignStore } from '@/stores/design'
 import type { Layer, LayerType, ImageLayerProperties } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
+import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
 // Modern Component imports
 import ModernSidebar from './Sidebar/ModernSidebar.vue'
@@ -295,6 +305,12 @@ const contextMenu = ref({
   visible: false,
   position: { x: 0, y: 0 },
   layer: null as Layer | null
+})
+
+// Export Modal State
+const exportModal = ref({
+  isOpen: false,
+  design: null as any | null
 })
 
 // Clipboard state for copy/paste functionality
@@ -588,7 +604,28 @@ const handleSave = () => {
 }
 
 const handleExport = (format: string) => {
-  exportDesign(format)
+  // Create a design object compatible with the DesignExportModal
+  if (designStore.currentDesign) {
+    exportModal.value.design = {
+      id: designStore.currentDesign.id,
+      title: designStore.currentDesign.name || 'Untitled Design',
+      description: designStore.currentDesign.description || '',
+      thumbnail: designStore.currentDesign.thumbnail,
+      created_at: designStore.currentDesign.createdAt || new Date().toISOString(),
+      author: 'Current User', // Could be from auth store
+      width: canvasWidth.value,
+      height: canvasHeight.value,
+      hasAnimation: false, // TODO: Check if design has animations
+      isVideo: false, // TODO: Check if design has video elements
+      duration: 0 // TODO: Get actual duration if animated
+    }
+    exportModal.value.isOpen = true
+  }
+}
+
+const handleExportCompleted = (url: string, filename: string) => {
+  console.log('Export completed:', { url, filename })
+  // TODO: Handle completed export (download, notifications, etc.)
 }
 
 const handleUndo = () => {
@@ -597,6 +634,19 @@ const handleUndo = () => {
 
 const handleRedo = () => {
   redo()
+}
+
+const handleResize = (width: number, height: number) => {
+  // Update design dimensions
+  canvasWidth.value = width
+  canvasHeight.value = height
+  
+  // Update the canvas size in the SDK
+  if (editorSDK.value) {
+    editorSDK.value.canvas.setSize(width, height)
+  }
+  
+  console.log('Canvas resized to:', width, 'x', height)
 }
 
 const handleAddMedia = (mediaData: any) => {

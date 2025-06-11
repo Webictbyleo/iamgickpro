@@ -19,6 +19,7 @@ export class LayerManager implements LayerAPI {
   private renderers: Map<LayerType, KonvaLayerRenderer> = new Map()
   private mainLayer!: Konva.Layer
   private transformManager: any = null // Will be injected from EditorSDK
+  private historyManager: any = null // Will be injected from EditorSDK
 
   constructor(
     private stage: Konva.Stage,
@@ -33,11 +34,15 @@ export class LayerManager implements LayerAPI {
     this.transformManager = transformManager
   }
 
+  setHistoryManager(historyManager: any): void {
+    this.historyManager = historyManager
+  }
+
   // ============================================================================
   // LAYER CRUD OPERATIONS
   // ============================================================================
 
-  async createLayer(type: string, data: Partial<Layer>): Promise<LayerNode> {
+  async createLayer(type: string, data: Partial<Layer>, silent: boolean = false): Promise<LayerNode> {
     console.log('LayerManager: Creating layer', { type, data })
     
     const layerNode = this.createLayerNode(type, data)
@@ -81,6 +86,13 @@ export class LayerManager implements LayerAPI {
     // Force redraw
     this.mainLayer.batchDraw()
     
+    // Add to history for undo/redo
+    if (!silent && this.historyManager) {
+      this.historyManager.addToHistory('layer_create', {
+        layer: { ...layerNode }
+      })
+    }
+    
     // Emit creation event    
     this.emitter.emit('layer:created', {
       id: layerNode.id,
@@ -109,9 +121,12 @@ export class LayerManager implements LayerAPI {
     return this.createLayer(type, layerData)
   }
 
-  async deleteLayer(layerId: string): Promise<void> {
+  async deleteLayer(layerId: string, silent: boolean = false): Promise<void> {
     const layer = this.layers.get(layerId)
     if (!layer) return
+
+    // Store layer data for history before deletion
+    const layerDataForHistory = { ...layer }
 
     // Remove from selection if selected
     const selectedIndex = this.state.selectedLayers.indexOf(layerId)
@@ -134,14 +149,26 @@ export class LayerManager implements LayerAPI {
     // Force redraw to reflect the deletion
     this.mainLayer.batchDraw()
     
-    this.emitter.emit('layer:deleted', layerId)
+    // Add to history for undo/redo
+    if (!silent && this.historyManager) {
+      this.historyManager.addToHistory('layer_delete', {
+        layer: layerDataForHistory
+      })
+    }
+    
+    if (!silent) {
+      this.emitter.emit('layer:deleted', layerId)
+    }
   }
 
-  async updateLayer(layerId: string, updates: Partial<LayerNode>): Promise<void> {
+  async updateLayer(layerId: string, updates: Partial<LayerNode>, silent: boolean = false): Promise<void> {
     const layer = this.layers.get(layerId)
     if (!layer) {
       throw new Error(`Layer ${layerId} not found`)
     }
+
+    // Store previous data for history
+    const previousData = { ...layer }
 
     // Update layer properties
     Object.assign(layer, updates)
@@ -154,26 +181,37 @@ export class LayerManager implements LayerAPI {
     // Force redraw to reflect the updates
     this.mainLayer.batchDraw()
 
-    // Convert LayerNode to Layer for the event
-    const layerData: Layer = {
-      id: layer.id,
-      type: layer.type as LayerTypeImport,
-      name: layer.name,
-      visible: layer.visible,
-      locked: layer.locked,
-      opacity: layer.opacity,
-      x: layer.x,
-      y: layer.y,
-      width: layer.width,
-      height: layer.height,
-      rotation: layer.rotation,
-      scaleX: layer.scaleX,
-      scaleY: layer.scaleY,
-      zIndex: layer.zIndex,
-      properties: layer.properties
+    // Add to history for undo/redo
+    if (!silent && this.historyManager) {
+      this.historyManager.addToHistory('layer_update', {
+        layerId,
+        previousData,
+        newData: { ...layer }
+      })
     }
 
-    this.emitter.emit('layer:updated', layerData)
+    if (!silent) {
+      // Convert LayerNode to Layer for the event
+      const layerData: Layer = {
+        id: layer.id,
+        type: layer.type as LayerTypeImport,
+        name: layer.name,
+        visible: layer.visible,
+        locked: layer.locked,
+        opacity: layer.opacity,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        rotation: layer.rotation,
+        scaleX: layer.scaleX,
+        scaleY: layer.scaleY,
+        zIndex: layer.zIndex,
+        properties: layer.properties
+      }
+
+      this.emitter.emit('layer:updated', layerData)
+    }
   }
 
   async duplicateLayer(layerId: string): Promise<LayerNode> {
@@ -280,10 +318,15 @@ export class LayerManager implements LayerAPI {
     this.emitter.emit('layer:moved', { layerId, newIndex: clampedIndex })
   }
 
-  reorderLayers(layerIds: string[]): void {
+  reorderLayers(layerIds: string[], silent: boolean = false): void {
     // Validate that all layer IDs exist
     const validLayerIds = layerIds.filter(id => this.layers.has(id))
     if (validLayerIds.length === 0) return
+
+    // Store previous order for history
+    const previousOrder = Array.from(this.layers.values())
+      .sort((a, b) => a.zIndex - b.zIndex)
+      .map(layer => layer.id)
 
     // Get all layers and create a mapping
     const allLayers = Array.from(this.layers.values())
@@ -323,7 +366,17 @@ export class LayerManager implements LayerAPI {
     // Force redraw to reflect the new order
     this.mainLayer.batchDraw()
 
-    this.emitter.emit('layers:reordered', { layerIds: validLayerIds })
+    // Add to history for undo/redo
+    if (!silent && this.historyManager) {
+      this.historyManager.addToHistory('layers_reorder', {
+        previousOrder,
+        newOrder: validLayerIds
+      })
+    }
+
+    if (!silent) {
+      this.emitter.emit('layers:reordered', { layerIds: validLayerIds })
+    }
   }
 
   // ============================================================================
@@ -507,6 +560,9 @@ export class LayerManager implements LayerAPI {
     this.renderers.set('image', new ImageLayerRenderer())
     this.renderers.set('shape', new ShapeLayerRenderer())
     this.renderers.set('group', new GroupLayerRenderer())
+
+    // Set up text editing event handlers
+    this.emitter.on('layer:update-properties', this.handleLayerPropertyUpdate.bind(this))
   }
 
   private updateKonvaNode(node: Konva.Node, layer: LayerNode): void {
@@ -527,6 +583,60 @@ export class LayerManager implements LayerAPI {
     if (renderer && typeof renderer.update === 'function') {
       renderer.update(node, layer)
     }
+  }
+
+  /**
+   * Handle layer property updates from inline text editing
+   */
+  private async handleLayerPropertyUpdate(data: { layerId: string; properties: any }): Promise<void> {
+    const { layerId, properties } = data
+    const layer = this.layers.get(layerId)
+    
+    if (!layer) {
+      console.warn(`Layer ${layerId} not found for property update`)
+      return
+    }
+
+    // Update layer properties
+    Object.assign(layer.properties, properties)
+
+    // Update Konva node if it exists
+    if (layer.konvaNode) {
+      this.updateKonvaNode(layer.konvaNode, layer)
+    }
+    
+    // Force redraw to reflect the updates
+    this.mainLayer.batchDraw()
+
+    // Add to history for undo/redo
+    if (this.historyManager) {
+      this.historyManager.addToHistory('layer_update', {
+        layerId,
+        previousData: { ...layer },
+        newData: { ...layer, properties: { ...layer.properties, ...properties } }
+      })
+    }
+
+    // Emit layer updated event
+    const layerData: Layer = {
+      id: layer.id,
+      type: layer.type as LayerTypeImport,
+      name: layer.name,
+      visible: layer.visible,
+      locked: layer.locked,
+      opacity: layer.opacity,
+      x: layer.x,
+      y: layer.y,
+      width: layer.width,
+      height: layer.height,
+      rotation: layer.rotation,
+      scaleX: layer.scaleX,
+      scaleY: layer.scaleY,
+      zIndex: layer.zIndex,
+      properties: layer.properties
+    }
+
+    this.emitter.emit('layer:updated', layerData)
   }
 
   private getNextZIndex(): number {

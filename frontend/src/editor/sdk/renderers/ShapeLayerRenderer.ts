@@ -42,6 +42,9 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
       case 'arrow':
         shape = this.createArrow(layer, props)
         break
+      case 'heart':
+        shape = this.createHeart(layer, props)
+        break
       default:
         shape = this.createRectangle(layer, props)
     }
@@ -94,7 +97,7 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
       case 'arrow':
         if (node instanceof Konva.Path) {
           // For arrow shapes, we need to recreate the path data
-          const arrowHeadSize = Math.min(layer.width, layer.height) * 0.2
+          const arrowHeadSize = Math.min(layer.width, layer.height) * 0.3
           const bodyHeight = layer.height * 0.4
           const bodyWidth = layer.width - arrowHeadSize
           
@@ -110,7 +113,34 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
           ].join(' ')
           
           node.setAttrs({
-            data: pathData
+            data: pathData,
+            x: 0, // Reset to 0 since path coordinates are absolute
+            y: 0  // Reset to 0 since path coordinates are absolute
+          })
+        }
+        break
+      case 'heart':
+        if (node instanceof Konva.Path) {
+          // For heart shapes, recreate the path data
+          const width = layer.width
+          const height = layer.height
+          const scale = Math.min(width, height) / 100
+          
+          const pathData = [
+            `M ${50 * scale},${30 * scale}`,
+            `C ${50 * scale},${27 * scale} ${46 * scale},${25 * scale} ${42 * scale},${25 * scale}`,
+            `C ${35 * scale},${25 * scale} ${25 * scale},${30 * scale} ${25 * scale},${40 * scale}`,
+            `C ${25 * scale},${55 * scale} ${50 * scale},${80 * scale} ${50 * scale},${80 * scale}`,
+            `C ${50 * scale},${80 * scale} ${75 * scale},${55 * scale} ${75 * scale},${40 * scale}`,
+            `C ${75 * scale},${30 * scale} ${65 * scale},${25 * scale} ${58 * scale},${25 * scale}`,
+            `C ${54 * scale},${25 * scale} ${50 * scale},${27 * scale} ${50 * scale},${30 * scale}`,
+            'Z'
+          ].join(' ')
+          
+          node.setAttrs({
+            data: pathData,
+            x: layer.x + (width - 100 * scale) / 2,
+            y: layer.y + (height - 80 * scale) / 2
           })
         }
         break
@@ -181,7 +211,7 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
    */
   private sanitizeShapeType(shapeType: string): ShapeLayerProperties['shapeType'] {
     const validTypes: ShapeLayerProperties['shapeType'][] = [
-      'rectangle', 'circle', 'ellipse', 'triangle', 'polygon', 'star', 'line', 'arrow'
+      'rectangle', 'circle', 'ellipse', 'triangle', 'polygon', 'star', 'line', 'arrow', 'heart'
     ]
     return validTypes.includes(shapeType as any) ? shapeType as ShapeLayerProperties['shapeType'] : 'rectangle'
   }
@@ -218,12 +248,15 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
   }
 
   private createCircle(layer: LayerNode, props: ShapeLayerProperties): Konva.Circle {
+    // Use the smaller dimension to maintain aspect ratio
     const radius = Math.min(layer.width, layer.height) / 2
     return new Konva.Circle({
       x: layer.x + layer.width / 2,
       y: layer.y + layer.height / 2,
       radius: radius,
-      draggable: true
+      draggable: true,
+      // Lock aspect ratio for circles
+      keepRatio: true
     })
   }
 
@@ -271,7 +304,8 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
   }
 
   private createLine(layer: LayerNode, props: ShapeLayerProperties): Konva.Line {
-    const points = [props.x1, props.y1, props.x2, props.y2]
+    // Create line from left to right by default
+    const points = [0, layer.height / 2, layer.width, layer.height / 2]
     return new Konva.Line({
       x: layer.x,
       y: layer.y,
@@ -281,8 +315,8 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
   }
 
   private createArrow(layer: LayerNode, props: ShapeLayerProperties): Konva.Path {
-    // Create arrow shape using path
-    const arrowHeadSize = Math.min(layer.width, layer.height) * 0.2
+    // Create arrow shape using path - fix scaling issues
+    const arrowHeadSize = Math.min(layer.width, layer.height) * 0.3
     const bodyHeight = layer.height * 0.4
     const bodyWidth = layer.width - arrowHeadSize
     
@@ -298,8 +332,34 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
     ].join(' ')
 
     return new Konva.Path({
-      x: layer.x,
-      y: layer.y,
+      x: 0, // Set to 0 since path coordinates are absolute
+      y: 0, // Set to 0 since path coordinates are absolute  
+      data: pathData,
+      draggable: true
+    })
+  }
+
+  private createHeart(layer: LayerNode, props: ShapeLayerProperties): Konva.Path {
+    // Create heart shape using SVG path
+    const width = layer.width
+    const height = layer.height
+    const scale = Math.min(width, height) / 100 // Scale factor based on 100x100 base
+    
+    // Heart path coordinates (scaled)
+    const pathData = [
+      `M ${50 * scale},${30 * scale}`,
+      `C ${50 * scale},${27 * scale} ${46 * scale},${25 * scale} ${42 * scale},${25 * scale}`,
+      `C ${35 * scale},${25 * scale} ${25 * scale},${30 * scale} ${25 * scale},${40 * scale}`,
+      `C ${25 * scale},${55 * scale} ${50 * scale},${80 * scale} ${50 * scale},${80 * scale}`,
+      `C ${50 * scale},${80 * scale} ${75 * scale},${55 * scale} ${75 * scale},${40 * scale}`,
+      `C ${75 * scale},${30 * scale} ${65 * scale},${25 * scale} ${58 * scale},${25 * scale}`,
+      `C ${54 * scale},${25 * scale} ${50 * scale},${27 * scale} ${50 * scale},${30 * scale}`,
+      'Z'
+    ].join(' ')
+
+    return new Konva.Path({
+      x: layer.x + (width - 100 * scale) / 2, // Center the heart
+      y: layer.y + (height - 80 * scale) / 2, // Center the heart
       data: pathData,
       draggable: true
     })
@@ -319,18 +379,39 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
       lineJoin: props.strokeLineJoin
     })
     
-    // Apply layer-level properties
-    shape.setAttrs({
+    // Apply layer-level properties - handle positioning differently for different shapes
+    const baseAttrs = {
       id: layer.id,
-      x: layer.x,
-      y: layer.y,
       rotation: layer.rotation || 0,
       scaleX: layer.scaleX || 1,
       scaleY: layer.scaleY || 1,
       opacity: layer.opacity || 1,
       visible: layer.visible !== false,
       listening: !layer.locked
-    })
+    }
+    
+    // For shapes that use center positioning (circle, star, polygon, triangle)
+    if (['circle', 'star', 'polygon', 'triangle', 'ellipse'].includes(props.shapeType)) {
+      shape.setAttrs({
+        ...baseAttrs,
+        x: layer.x + layer.width / 2,
+        y: layer.y + layer.height / 2
+      })
+    } else if (props.shapeType === 'arrow' || props.shapeType === 'heart') {
+      // For path-based shapes, position is handled in the path creation
+      shape.setAttrs({
+        ...baseAttrs,
+        x: layer.x,
+        y: layer.y
+      })
+    } else {
+      // For rectangle, line, and other shapes
+      shape.setAttrs({
+        ...baseAttrs,
+        x: layer.x,
+        y: layer.y
+      })
+    }
     
     // Apply shadow if present
     if (props.shadow) {
@@ -447,11 +528,14 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
   }
 
   private updateCircle(circle: Konva.Circle, layer: LayerNode): void {
+    // Always maintain aspect ratio for circles
     const radius = Math.min(layer.width, layer.height) / 2
     circle.setAttrs({
       x: layer.x + layer.width / 2,
       y: layer.y + layer.height / 2,
-      radius: radius
+      radius: radius,
+      scaleX: 1, // Reset scale to prevent distortion
+      scaleY: 1  // Reset scale to prevent distortion
     })
   }
 
@@ -466,11 +550,15 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
 
   private updatePolygon(polygon: Konva.RegularPolygon, layer: LayerNode): void {
     const sides = layer.properties.sides || (layer.properties.shapeType === 'triangle' ? 3 : 6)
+    // Prevent distortion during scaling
+    const radius = Math.min(layer.width, layer.height) / 2
     polygon.setAttrs({
       x: layer.x + layer.width / 2,
       y: layer.y + layer.height / 2,
       sides: sides,
-      radius: Math.min(layer.width, layer.height) / 2
+      radius: radius,
+      scaleX: layer.width / layer.height, // Adjust scale to fit bounds
+      scaleY: 1
     })
   }
 
@@ -484,14 +572,19 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
       y: layer.y + layer.height / 2,
       numPoints: points,
       innerRadius: outerRadius * innerRadius,
-      outerRadius: outerRadius
+      outerRadius: outerRadius,
+      scaleX: layer.width / layer.height, // Adjust scale to fit bounds
+      scaleY: 1
     })
   }
 
   private updateLine(line: Konva.Line, layer: LayerNode): void {
-    const points = layer.properties.points || [0, 0, layer.width, layer.height]
+    // Create horizontal line from left to right
+    const points = [0, layer.height / 2, layer.width, layer.height / 2]
     line.setAttrs({
-      points: points
+      points: points,
+      x: layer.x,
+      y: layer.y
     })
   }
 

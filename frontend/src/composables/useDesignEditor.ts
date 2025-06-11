@@ -165,14 +165,12 @@ export function useDesignEditor() {
 
   const undo = () => {
     if (!editorSDK.value || !canUndo.value) return
-    // TODO: Implement undo in EditorSDK
-    console.log('Undo operation')
+    editorSDK.value.undo()
   }
 
   const redo = () => {
     if (!editorSDK.value || !canRedo.value) return
-    // TODO: Implement redo in EditorSDK
-    console.log('Redo operation')
+    editorSDK.value.redo()
   }
 
   const startAutoSave = () => {

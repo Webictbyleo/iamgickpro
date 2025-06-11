@@ -1,15 +1,11 @@
 <template>
   <div class="flex items-center space-x-4">
-    <!-- Shape Type -->
+    <!-- Shape Type Display -->
     <div class="flex items-center space-x-2">
       <label class="text-sm font-medium text-gray-700 min-w-max">Shape:</label>
-      <PropertyDropdown
-        :value="shapeType"
-        :options="shapeOptions"
-        @update="$emit('update', { shapeType: String($event) })"
-        class="w-32"
-        :show-dropdown-icon="false"
-      />
+      <span class="px-3 py-1 text-sm bg-gray-100 rounded-md border min-w-[100px] text-gray-800 font-medium">
+        {{ getShapeLabel(shapeType) }}
+      </span>
     </div>
 
     <!-- Fill Color -->
@@ -63,16 +59,7 @@
       />
     </div>
 
-    <!-- Shadow Toggle -->
-    <div class="flex items-center space-x-2">
-      <PropertyToggle
-        :active="hasShadow"
-        @update="$emit('update', { hasShadow: $event })"
-        tooltip="Add Shadow"
-      >
-        <ShadowIcon class="w-4 h-4" />
-      </PropertyToggle>
-    </div>
+    <!-- Shadow Toggle Removed - Effects now handled through separate panels -->
   </div>
 </template>
 
@@ -80,9 +67,7 @@
 import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue'
 import PropertyInput from '@/components/editor/Properties/PropertyInput.vue'
 import PropertyNumberInput from '@/components/editor/Properties/PropertyNumberInput.vue'
-import PropertyToggle from '@/components/editor/Properties/PropertyToggle.vue'
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue'
-import ShadowIcon from '@/components/icons/ShadowIcon.vue'
 import type { ShapeFillConfig } from '@/types'
 
 interface Props {
@@ -91,7 +76,6 @@ interface Props {
   stroke?: string | ShapeFillConfig
   strokeWidth?: number
   cornerRadius?: number
-  hasShadow?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -99,13 +83,28 @@ const props = withDefaults(defineProps<Props>(), {
   fill: '#3498db',
   stroke: '#2980b9',
   strokeWidth: 2,
-  cornerRadius: 0,
-  hasShadow: false
+  cornerRadius: 0
 })
 
 const emit = defineEmits<{
   update: [properties: Partial<Props>]
 }>()
+
+// Get human-readable shape label
+function getShapeLabel(shapeType: string): string {
+  const shapeLabels: Record<string, string> = {
+    rectangle: 'Rectangle',
+    circle: 'Circle',
+    ellipse: 'Ellipse',
+    triangle: 'Triangle',
+    line: 'Line',
+    arrow: 'Arrow',
+    star: 'Star',
+    polygon: 'Polygon',
+    heart: 'Heart'
+  }
+  return shapeLabels[shapeType] || 'Unknown'
+}
 
 // Helper functions to convert between ShapeFillConfig and string values
 function getFillColorString(fill: string | ShapeFillConfig | undefined): string {
@@ -196,15 +195,4 @@ function parseGradientString(gradientStr: string) {
     }
   }
 }
-
-const shapeOptions = [
-  { value: 'rectangle', label: 'Rectangle' },
-  { value: 'circle', label: 'Circle' },
-  { value: 'triangle', label: 'Triangle' },
-  { value: 'line', label: 'Line' },
-  { value: 'arrow', label: 'Arrow' },
-  { value: 'star', label: 'Star' },
-  { value: 'polygon', label: 'Polygon' },
-  { value: 'heart', label: 'Heart' }
-]
 </script>

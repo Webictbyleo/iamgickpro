@@ -272,7 +272,12 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       }
     })
 
-
+    textNode.on('dragend', () => {
+      const container = textNode.getStage()?.container()
+      if (container) {
+        container.style.cursor = 'text'
+      }
+    })
 
     // Enhanced hover states
     textNode.on('mouseenter', () => {
@@ -308,12 +313,226 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
         this.eventEmitter.emit('layer:select', { layerId: layerData.id })
       }
     })
+
+    // Double-click handling for inline editing
+    textNode.on('dblclick dbltap', (e) => {
+      e.cancelBubble = true
+      if (!layerData.locked && this.editingLayer !== layerData.id) {
+        this.startInlineEditing(textNode, layerData)
+      }
+    })
   }
 
-  
+  /**
+   * Start inline text editing with proper transform/scale support
+   */
+  private startInlineEditing(textNode: Konva.Text, layerData: LayerNode): void {
+    if (this.editingLayer) {
+      this.stopEditing()
+    }
 
+    this.editingLayer = layerData.id
+    this.editStartText = textNode.text()
 
- 
+    // Hide the text node during editing
+    textNode.visible(false)
+    textNode.getLayer()?.batchDraw()
+
+    // Create textarea for editing
+    this.createTextEditor(textNode, layerData)
+
+    // Emit editing started event
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('text:editing:started', { layerId: layerData.id })
+    }
+  }
+
+  /**
+   * Create textarea editor positioned over the text node
+   */
+  private createTextEditor(textNode: Konva.Text, layerData: LayerNode): void {
+    const stage = textNode.getStage()
+    if (!stage) return
+
+    // Get stage container and position
+    const container = stage.container()
+    const containerRect = container.getBoundingClientRect()
+    
+    // Calculate text position in screen coordinates
+    const transform = textNode.getAbsoluteTransform()
+    const pos = transform.point({ x: 0, y: 0 })
+    const scale = textNode.getAbsoluteScale()
+
+    // Create textarea
+    this.textInput = document.createElement('textarea')
+    this.textInput.value = textNode.text()
+    
+    // Position and style the textarea to match the text
+    const computedFontSize = textNode.fontSize() * scale.x
+    const computedWidth = textNode.width() * scale.x
+    
+    Object.assign(this.textInput.style, {
+      position: 'absolute',
+      top: `${containerRect.top + pos.y}px`,
+      left: `${containerRect.left + pos.x}px`,
+      width: `${Math.max(computedWidth, 100)}px`,
+      minHeight: `${computedFontSize * 1.2}px`,
+      fontSize: `${computedFontSize}px`,
+      fontFamily: textNode.fontFamily(),
+      fontWeight: textNode.fontStyle().includes('bold') ? 'bold' : 'normal',
+      fontStyle: textNode.fontStyle().includes('italic') ? 'italic' : 'normal',
+      color: textNode.fill(),
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      border: '2px solid #3b82f6',
+      borderRadius: '4px',
+      padding: '4px 8px',
+      outline: 'none',
+      resize: 'none',
+      overflow: 'hidden',
+      zIndex: '1000',
+      textAlign: textNode.align() as any,
+      lineHeight: `${textNode.lineHeight()}`,
+      letterSpacing: `${textNode.letterSpacing()}px`,
+      wordWrap: 'break-word',
+      whiteSpace: 'pre-wrap'
+    })
+
+    // Auto-resize textarea
+    this.textInput.addEventListener('input', this.handleTextareaResize.bind(this))
+    
+    // Handle editing events
+    this.textInput.addEventListener('blur', this.handleTextEditingEnd.bind(this))
+    this.textInput.addEventListener('keydown', this.handleTextEditingKeydown.bind(this))
+
+    // Add to page and focus
+    document.body.appendChild(this.textInput)
+    this.textInput.focus()
+    this.textInput.select()
+
+    // Initial resize
+    this.handleTextareaResize()
+  }
+
+  /**
+   * Auto-resize textarea to fit content
+   */
+  private handleTextareaResize(): void {
+    if (!this.textInput) return
+    
+    this.textInput.style.height = 'auto'
+    this.textInput.style.height = `${Math.max(this.textInput.scrollHeight, 30)}px`
+  }
+
+  /**
+   * Handle keydown events during text editing
+   */
+  private handleTextEditingKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      this.cancelTextEditing()
+    } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault()
+      this.finishTextEditing()
+    }
+    // Allow other keys for normal editing
+  }
+
+  /**
+   * Handle end of text editing (blur event)
+   */
+  private handleTextEditingEnd(): void {
+    this.finishTextEditing()
+  }
+
+  /**
+   * Finish text editing and apply changes
+   */
+  private finishTextEditing(): void {
+    if (!this.textInput || !this.editingLayer) return
+
+    const newText = this.textInput.value
+    const layerId = this.editingLayer
+
+    // Clean up editor
+    this.cleanupTextEditor()
+
+    // Update the text layer
+    if (this.eventEmitter && newText !== this.editStartText) {
+      this.eventEmitter.emit('layer:update-properties', {
+        layerId,
+        properties: { text: newText }
+      })
+    }
+
+    // Emit editing finished event
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('text:editing:finished', { 
+        layerId, 
+        changed: newText !== this.editStartText 
+      })
+    }
+
+    this.resetEditingState()
+  }
+
+  /**
+   * Cancel text editing and restore original text
+   */
+  private cancelTextEditing(): void {
+    if (!this.editingLayer) return
+
+    const layerId = this.editingLayer
+
+    // Clean up editor
+    this.cleanupTextEditor()
+
+    // Emit editing cancelled event
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('text:editing:cancelled', { layerId })
+    }
+
+    this.resetEditingState()
+  }
+
+  /**
+   * Clean up the text editor DOM element
+   */
+  private cleanupTextEditor(): void {
+    if (this.textInput) {
+      this.textInput.removeEventListener('input', this.handleTextareaResize.bind(this))
+      this.textInput.removeEventListener('blur', this.handleTextEditingEnd.bind(this))
+      this.textInput.removeEventListener('keydown', this.handleTextEditingKeydown.bind(this))
+      
+      if (this.textInput.parentNode) {
+        this.textInput.parentNode.removeChild(this.textInput)
+      }
+      this.textInput = null
+    }
+  }
+
+  /**
+   * Reset editing state and show text node
+   */
+  private resetEditingState(): void {
+    if (this.editingLayer) {
+      // Find and show the text node
+      const stage = document.querySelector('canvas')?.closest('.konva-stage')
+      if (stage) {
+        const konvaStage = (stage as any).__konvaStage as Konva.Stage
+        if (konvaStage) {
+          const textNode = konvaStage.findOne(`#${this.editingLayer}`) as Konva.Text
+          if (textNode) {
+            textNode.visible(true)
+            textNode.strokeEnabled(false)
+            textNode.getLayer()?.batchDraw()
+          }
+        }
+      }
+    }
+
+    this.editingLayer = null
+    this.editStartText = ''
+  }
 
   /**
    * Check if a layer is currently being edited

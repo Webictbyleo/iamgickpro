@@ -148,12 +148,15 @@ export class TransformManager {
     const layerTypes = this.selectedLayers.map(layer => layer.type)
     const allText = layerTypes.every(type => type === 'text')
     const allImages = layerTypes.every(type => type === 'image')
+    const allShapes = layerTypes.every(type => type === 'shape')
     const mixed = layerTypes.length > 1 && new Set(layerTypes).size > 1
 
     if (allText) {
       this.configureTextTransformer()
     } else if (allImages) {
       this.configureImageTransformer()
+    } else if (allShapes) {
+      this.configureShapeTransformer()
     } else if (mixed) {
       this.configureMixedTransformer()
     } else {
@@ -260,6 +263,63 @@ export class TransformManager {
     })
   }
 
+  private configureShapeTransformer(): void {
+    if (!this.transformer || this.selectedLayers.length === 0) return
+
+    // Check if all selected shapes should maintain aspect ratio
+    const aspectRatioShapes = ['circle', 'heart', 'star', 'polygon', 'triangle']
+    const shapeTypes = this.selectedLayers.map(layer => 
+      layer.properties?.shapeType || 'rectangle'
+    )
+    const shouldMaintainAspectRatio = shapeTypes.some(shapeType => 
+      aspectRatioShapes.includes(shapeType)
+    )
+
+    if (shouldMaintainAspectRatio) {
+      // Configure transformer to maintain aspect ratio for proportional shapes
+      this.transformer.setAttrs({
+        enabledAnchors: [
+          'top-left', 'top-right', 'bottom-left', 'bottom-right' // Only corner handles
+        ],
+        keepRatio: true, // This maintains proportions during scaling
+        rotateEnabled: true,
+        borderEnabled: true,
+        anchorSize: 8,
+        boundBoxFunc: (oldBox: Box, newBox: Box) => {
+          const minSize = 20
+          
+          // Ensure minimum size is maintained
+          if (newBox.width < minSize || newBox.height < minSize) {
+            const scale = Math.max(minSize / newBox.width, minSize / newBox.height)
+            newBox.width = Math.max(minSize, newBox.width * scale)
+            newBox.height = Math.max(minSize, newBox.height * scale)
+          }
+          
+          return newBox
+        }
+      })
+    } else {
+      // For rectangular shapes and lines, allow free transformation
+      this.transformer.setAttrs({
+        enabledAnchors: [
+          'top-left', 'top-center', 'top-right',
+          'middle-left', 'middle-right',
+          'bottom-left', 'bottom-center', 'bottom-right'
+        ],
+        keepRatio: false,
+        rotateEnabled: true,
+        borderEnabled: true,
+        anchorSize: 8,
+        boundBoxFunc: (oldBox: Box, newBox: Box) => {
+          const minSize = 20
+          newBox.width = Math.max(minSize, newBox.width)
+          newBox.height = Math.max(minSize, newBox.height)
+          return newBox
+        }
+      })
+    }
+  }
+
   private setupTransformEventHandlers(): void {
     if (!this.transformer) return
 
@@ -285,7 +345,7 @@ export class TransformManager {
   }
 
   private handleTransform(): void {
-    // Handle real-time transformations for images and text
+    // Handle real-time transformations for images, text, and shapes
     this.selectedLayers.forEach(layer => {
       if (!layer.konvaNode) return
 
@@ -293,6 +353,8 @@ export class TransformManager {
         this.handleImageTransformRealtime(layer)
       } else if (layer.type === 'text') {
         this.handleTextTransformRealtime(layer)
+      } else if (layer.type === 'shape') {
+        this.handleShapeTransformRealtime(layer)
       }
     })
   }
@@ -369,6 +431,95 @@ export class TransformManager {
       // For corner handles, we let the scale happen normally for uniform scaling
       // The final scale will be applied in handleTextTransform during transformend
     }
+  }
+
+  private handleShapeTransformRealtime(layer: LayerNode): void {
+    // Handle real-time shape transformation during transform event
+    if (!layer.konvaNode || layer.type !== 'shape') return
+
+    const shapeNode = layer.konvaNode as Konva.Shape
+    const shapeType = layer.properties?.shapeType || 'rectangle'
+    
+    // For path-based shapes (arrow, heart), handle real-time path regeneration
+    if (['arrow', 'heart'].includes(shapeType) && shapeNode instanceof Konva.Path) {
+      const scaleX = shapeNode.scaleX()
+      const scaleY = shapeNode.scaleY()
+      
+      if (scaleX !== 1 || scaleY !== 1) {
+        // Calculate new dimensions
+        const newWidth = layer.width * Math.abs(scaleX)
+        const newHeight = layer.height * Math.abs(scaleY)
+        
+        // Update layer dimensions first
+        layer.width = newWidth
+        layer.height = newHeight
+        
+        // Regenerate path with new dimensions
+        this.regeneratePathForShape(shapeNode, shapeType, newWidth, newHeight)
+        
+        // Reset scale
+        shapeNode.setAttrs({
+          scaleX: 1,
+          scaleY: 1
+        })
+      }
+    }
+  }
+
+  private regeneratePathForShape(shapeNode: Konva.Path, shapeType: string, width: number, height: number): void {
+    // Generate SVG path data for specific shape types with given dimensions
+    let pathData = ''
+
+    switch (shapeType) {
+      case 'heart':
+        pathData = this.generateHeartPath(width, height)
+        break
+      case 'arrow':
+        pathData = this.generateArrowPath(width, height)
+        break
+      default:
+        console.warn(`regeneratePathForShape: Unsupported shape type: ${shapeType}`)
+        return
+    }
+
+    // Update the path node with new path data
+    shapeNode.setAttrs({
+      data: pathData,
+      width: width,
+      height: height
+    })
+  }
+
+  private generateHeartPath(width: number, height: number): string {
+    // Generate heart shape SVG path scaled to given dimensions
+    const w = width
+    const h = height
+    const centerX = w / 2
+    const topY = h * 0.3
+    
+    // Heart shape path using cubic bezier curves
+    return `M ${centerX} ${h * 0.9} 
+            C ${centerX} ${h * 0.65}, ${w * 0.1} ${topY}, ${centerX} ${topY}
+            C ${w * 0.9} ${topY}, ${centerX} ${h * 0.65}, ${centerX} ${h * 0.9} Z`
+  }
+
+  private generateArrowPath(width: number, height: number): string {
+    // Generate arrow shape SVG path scaled to given dimensions
+    const w = width
+    const h = height
+    const shaftWidth = h * 0.3
+    const headWidth = h * 0.8
+    const headLength = w * 0.3
+    
+    // Arrow shape path
+    return `M 0 ${(h - shaftWidth) / 2}
+            L ${w - headLength} ${(h - shaftWidth) / 2}
+            L ${w - headLength} ${(h - headWidth) / 2}
+            L ${w} ${h / 2}
+            L ${w - headLength} ${(h + headWidth) / 2}
+            L ${w - headLength} ${(h + shaftWidth) / 2}
+            L 0 ${(h + shaftWidth) / 2}
+            Z`
   }
 
   private handleTransformEnd(): void {
