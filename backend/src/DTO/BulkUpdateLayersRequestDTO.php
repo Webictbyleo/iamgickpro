@@ -29,41 +29,9 @@ final readonly class BulkUpdateLayersRequestDTO
          * 
          * @var LayerUpdate[] $layers Array of typed layer update objects
          */
-        
+        #[Assert\Type(type: 'array', message: 'Layers must be an array')]
+        #[Assert\Valid]
         public array $layers,
     ) {
-    }
-
-    /**
-     * Converts the typed LayerUpdate objects to legacy array format.
-     * 
-     * This method provides backward compatibility with existing code
-     * that expects array-based layer update data.
-     * 
-     * @return array<int, array{id: int, updates: array<string, mixed>}>
-     */
-    public function getLayersArray(): array
-    {
-        return array_map(
-            fn(LayerUpdate $layerUpdate) => $layerUpdate->toArray(),
-            $this->layers
-        );
-    }
-
-    /**
-     * Creates LayerUpdate objects from array data.
-     * 
-     * This factory method allows creating typed LayerUpdate objects
-     * from legacy array-based input data.
-     * 
-     * @param array<int, array{id: int, updates: array<string, mixed>}> $layersData
-     * @return LayerUpdate[]
-     */
-    public static function createLayerUpdatesFromArray(array $layersData): array
-    {
-        return array_map(
-            fn(array $layerData) => LayerUpdate::fromArray($layerData),
-            $layersData
-        );
     }
 }

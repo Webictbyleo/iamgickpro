@@ -19,7 +19,7 @@ class ProjectResponseDTO extends BaseResponseDTO
         public readonly ?int $totalPages = null,
         ?\DateTimeImmutable $timestamp = null
     ) {
-        parent::__construct($success, $message, $timestamp);
+        parent::__construct($message, $success, $timestamp?->format('c'));
     }
 
     public function toArray(): array

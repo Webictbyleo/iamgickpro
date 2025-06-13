@@ -1,10 +1,14 @@
 <template>
   <div class="space-y-6">
+    <!-- Header -->
     <div class="flex items-center justify-between" v-if="title">
-      <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900">{{ title }}</h2>
+        <p v-if="subtitle" class="text-sm text-gray-600 mt-1">{{ subtitle }}</p>
+      </div>
       <button
         v-if="showViewAll"
-        class="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors"
+        class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
         @click="$emit('viewAll')"
       >
         View all
@@ -12,43 +16,52 @@
       </button>
     </div>
     
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+    <!-- Templates Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
       <div
         v-for="template in templates"
         :key="template.id"
         class="group cursor-pointer"
-        @click="$emit('select', template)"
+        @click="handleTemplateClick(template)"
       >
-        <div class="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden mb-3 shadow-sm hover:shadow-md transition-all duration-200">
-          <img
-            v-if="template.thumbnail"
-            :src="template.thumbnail"
-            :alt="template.title"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center">
-            <component :is="icons.template" class="w-8 h-8 text-gray-400" />
+        <!-- Template Card - Simplified and focused on thumbnail -->
+        <div class="relative">
+          <!-- Template Thumbnail - Main Focus -->
+          <div class="relative aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
+            <img
+              v-if="template.thumbnail || template.thumbnailUrl"
+              :src="template.thumbnail || template.thumbnailUrl"
+              :alt="template.title"
+              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+              <component :is="icons.template" class="w-8 h-8 text-gray-400" />
+            </div>
+            
+            <!-- Minimal Premium Badge -->
+            <div v-if="template.isPremium" class="absolute top-2 right-2">
+              <div class="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
+                <component :is="icons.sparkle" class="w-3 h-3 text-white" />
+              </div>
+            </div>
           </div>
           
-          <!-- Premium badge -->
-          <div v-if="template.isPremium" class="absolute top-3 right-3">
-            <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-400 text-white shadow-sm">
-              <component :is="icons.sparkle" class="w-3 h-3 mr-1" />
-              Pro
-            </span>
+          <!-- Minimal Template Info -->
+          <div class="mt-3 space-y-1">
+            <h3 class="text-sm font-medium text-gray-900 truncate group-hover:text-gray-600 transition-colors">
+              {{ template.title || template.name }}
+            </h3>
+            
+            <!-- Simple Category -->
+            <p class="text-xs text-gray-500 capitalize">{{ template.category }}</p>
+            
+            <!-- Optional Rating (only if notable) -->
+            <div v-if="template.rating >= 4.0" class="flex items-center space-x-1">
+              <component :is="icons.star" class="w-3 h-3 text-yellow-400" />
+              <span class="text-xs text-gray-600">{{ template.rating.toFixed(1) }}</span>
+            </div>
           </div>
-          
-          <!-- Hover overlay -->
-          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-            <button class="px-4 py-2 bg-white/90 backdrop-blur-sm text-gray-900 font-semibold rounded-xl shadow-lg hover:bg-white transition-all duration-200 transform hover:scale-105">
-              Use Template
-            </button>
-          </div>
-        </div>
-        
-        <div class="space-y-1">
-          <h3 class="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{{ template.title }}</h3>
-          <p class="text-xs text-gray-500">{{ template.category }}</p>
         </div>
       </div>
 
@@ -59,21 +72,31 @@
         :key="`loading-${i}`"
         class="animate-pulse"
       >
-        <div class="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl mb-3 shadow-sm"></div>
-        <div class="space-y-2">
-          <div class="h-4 bg-gray-200 rounded-lg w-4/5"></div>
-          <div class="h-3 bg-gray-200 rounded-lg w-2/3"></div>
+        <div class="aspect-[3/4] bg-gray-200 rounded-xl"></div>
+        <div class="mt-3 space-y-2">
+          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div class="h-3 bg-gray-200 rounded w-1/2"></div>
         </div>
       </div>
     </div>
 
     <!-- Empty State -->
-    <div v-if="!loading && templates.length === 0" class="text-center py-16 bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl border border-gray-100">
-      <div class="w-20 h-20 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-        <component :is="icons.template" class="w-10 h-10 text-purple-600" />
+    <div v-if="!loading && templates.length === 0" class="text-center py-20">
+      <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <component :is="icons.template" class="w-8 h-8 text-gray-400" />
       </div>
-      <h3 class="text-xl font-semibold text-gray-900 mb-3">No templates available</h3>
-      <p class="text-gray-600 max-w-sm mx-auto">Check back later for new professional templates to get you started quickly</p>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">No templates found</h3>
+      <p class="text-gray-500 max-w-sm mx-auto mb-6">
+        {{ emptyStateMessage || "Try adjusting your search or explore our template categories" }}
+      </p>
+      <button
+        v-if="showCreateButton"
+        @click="$emit('createNew')"
+        class="inline-flex items-center px-4 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+      >
+        <component :is="icons.plus" class="w-4 h-4 mr-2" />
+        Create New Design
+      </button>
     </div>
   </div>
 </template>
@@ -81,27 +104,48 @@
 <script setup lang="ts">
 import { ArrowRightIcon } from '@heroicons/vue/24/outline'
 import type { Template } from '@/types'
-import { useIcons } from '@/composables/useIcons'
+import { useIcons } from '@/composables/useIconsNew'
 
 const icons = useIcons()
 
 interface Props {
   title?: string
+  subtitle?: string
   templates: Template[]
   loading?: boolean
   loadingCount?: number
   showViewAll?: boolean
+  emptyStateMessage?: string
+  showCreateButton?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   title: '',
+  subtitle: '',
   loading: false,
-  loadingCount: 6,
-  showViewAll: true
+  loadingCount: 8,
+  showViewAll: true,
+  emptyStateMessage: '',
+  showCreateButton: false
 })
 
-defineEmits<{
+const emit = defineEmits<{
   select: [template: Template]
   viewAll: []
+  createNew: []
 }>()
+
+// Methods
+const handleTemplateClick = (template: Template) => {
+  emit('select', template)
+}
+
+const formatUsageCount = (count: number): string => {
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(1) + 'M'
+  } else if (count >= 1000) {
+    return (count / 1000).toFixed(1) + 'K'
+  }
+  return count.toString()
+}
 </script>

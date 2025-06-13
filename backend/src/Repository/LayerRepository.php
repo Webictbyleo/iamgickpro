@@ -455,27 +455,29 @@ class LayerRepository extends ServiceEntityRepository
      * Create a duplicate of an existing layer.
      * 
      * Creates a complete copy of a layer with all its properties, placing it
-     * at the top of the layer stack with a slight positional offset. The
+     * at the top of the layer stack with a customizable positional offset. The
      * duplicate includes all layer properties, animations, and masks.
      * 
      * @param Layer $layer The layer to duplicate
+     * @param string $newName The name for the duplicated layer
+     * @param int $offsetX X offset for the duplicate position
+     * @param int $offsetY Y offset for the duplicate position
      * @return Layer The newly created duplicate layer
      */
-    public function duplicateLayer(Layer $layer): Layer
+    public function duplicateLayer(Layer $layer, string $newName, int $offsetX = 10, int $offsetY = 10): Layer
     {
         $design = $layer->getDesign();
         $maxZIndex = $this->getMaxZIndex($design);
 
-        $duplicate = new Layer(
-            $design,
-            $layer->getType(),
-            $layer->getName() . ' Copy'
-        );
+        $duplicate = new Layer();
+        $duplicate->setDesign($design);
+        $duplicate->setType($layer->getType());
+        $duplicate->setName($newName);
 
-        // Copy transform with slight offset
+        // Copy transform with custom offset
         $transform = $layer->getTransform();
-        $transform['x'] = ($transform['x'] ?? 0) + 10;
-        $transform['y'] = ($transform['y'] ?? 0) + 10;
+        $transform['x'] = ($transform['x'] ?? 0) + $offsetX;
+        $transform['y'] = ($transform['y'] ?? 0) + $offsetY;
         $duplicate->setTransform($transform);
 
         // Copy other properties
@@ -497,5 +499,94 @@ class LayerRepository extends ServiceEntityRepository
         $this->getEntityManager()->flush();
 
         return $duplicate;
+    }
+
+    /**
+     * Move a layer up one position in z-index
+     * 
+     * @param Layer $layer The layer to move up
+     */
+    public function moveLayerUp(Layer $layer): void
+    {
+        $design = $layer->getDesign();
+        $currentZIndex = $layer->getZIndex();
+        
+        $higherLayer = $this->createQueryBuilder('l')
+            ->where('l.design = :design')
+            ->andWhere('l.zIndex > :zIndex')
+            ->setParameter('design', $design)
+            ->setParameter('zIndex', $currentZIndex)
+            ->orderBy('l.zIndex', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($higherLayer) {
+            $higherZIndex = $higherLayer->getZIndex();
+            $higherLayer->setZIndex($currentZIndex);
+            $layer->setZIndex($higherZIndex);
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    /**
+     * Move a layer down one position in z-index
+     * 
+     * @param Layer $layer The layer to move down
+     */
+    public function moveLayerDown(Layer $layer): void
+    {
+        $design = $layer->getDesign();
+        $currentZIndex = $layer->getZIndex();
+        
+        $lowerLayer = $this->createQueryBuilder('l')
+            ->where('l.design = :design')
+            ->andWhere('l.zIndex < :zIndex')
+            ->setParameter('design', $design)
+            ->setParameter('zIndex', $currentZIndex)
+            ->orderBy('l.zIndex', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($lowerLayer) {
+            $lowerZIndex = $lowerLayer->getZIndex();
+            $lowerLayer->setZIndex($currentZIndex);
+            $layer->setZIndex($lowerZIndex);
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    /**
+     * Move a layer to the top (highest z-index)
+     * 
+     * @param Layer $layer The layer to move to top
+     */
+    public function moveLayerToTop(Layer $layer): void
+    {
+        $design = $layer->getDesign();
+        $maxZIndex = $this->getMaxZIndex($design);
+        $this->moveLayerToIndex($layer, $maxZIndex + 1);
+    }
+
+    /**
+     * Move a layer to the bottom (lowest z-index)
+     * 
+     * @param Layer $layer The layer to move to bottom
+     */
+    public function moveLayerToBottom(Layer $layer): void
+    {
+        $this->moveLayerToIndex($layer, 0);
+    }
+
+    /**
+     * Move a layer to a specific z-index (alias for moveLayerToIndex)
+     * 
+     * @param Layer $layer The layer to move
+     * @param int $targetZIndex The target z-index
+     */
+    public function moveLayerToZIndex(Layer $layer, int $targetZIndex): void
+    {
+        $this->moveLayerToIndex($layer, $targetZIndex);
     }
 }

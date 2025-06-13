@@ -64,6 +64,14 @@ final readonly class LayerUpdate
         public ?bool $locked = null,
 
         /**
+         * Layer opacity (0.0 to 1.0, where 1.0 is fully opaque)
+         * @var float|null $opacity
+         */
+        #[Assert\Type(type: 'float', message: 'Opacity must be a number')]
+        #[Assert\Range(min: 0.0, max: 1.0, notInRangeMessage: 'Opacity must be between 0.0 and 1.0')]
+        public ?float $opacity = null,
+
+        /**
          * ID of the parent layer for grouping (null for root-level layers)
          * @var string|null $parentLayerId
          */
@@ -81,6 +89,7 @@ final readonly class LayerUpdate
             'zIndex' => $this->zIndex,
             'visible' => $this->visible,
             'locked' => $this->locked,
+            'opacity' => $this->opacity,
             'parentLayerId' => $this->parentLayerId,
         ], fn($value) => $value !== null);
     }
@@ -107,6 +116,7 @@ final readonly class LayerUpdate
             zIndex: isset($data['zIndex']) ? (int)$data['zIndex'] : null,
             visible: isset($data['visible']) ? (bool)$data['visible'] : null,
             locked: isset($data['locked']) ? (bool)$data['locked'] : null,
+            opacity: isset($data['opacity']) ? (float)$data['opacity'] : null,
             parentLayerId: $data['parentLayerId'] ?? null,
         );
     }
@@ -122,6 +132,7 @@ final readonly class LayerUpdate
                $this->zIndex !== null ||
                $this->visible !== null ||
                $this->locked !== null ||
+               $this->opacity !== null ||
                $this->parentLayerId !== null;
     }
 }

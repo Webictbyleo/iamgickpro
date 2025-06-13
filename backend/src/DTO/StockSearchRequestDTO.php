@@ -31,7 +31,7 @@ readonly class StockSearchRequestDTO
             minMessage: 'Query must be at least {{ limit }} character long',
             maxMessage: 'Query cannot be longer than {{ limit }} characters'
         )]
-        public string $query,
+        public ?string $query = null,
 
         /**
          * Page number for stock media results pagination.

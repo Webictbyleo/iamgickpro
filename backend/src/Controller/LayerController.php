@@ -152,6 +152,134 @@ class LayerController extends AbstractController
     }
 
     /**
+     * Bulk update multiple layers
+     * 
+     * Updates multiple layers in a single operation for performance efficiency.
+     * Processes each layer individually with proper validation and permission checks.
+     * Returns detailed results including successful updates and any failures.
+     * 
+     * @param BulkUpdateLayersRequestDTO $dto Bulk update data including:
+     *                                       - layers: Array of layer update objects, each containing:
+     *                                         - id: Layer ID to update (required)
+     *                                         - properties: Properties to update
+     *                                         - position: New position coordinates
+     *                                         - dimensions: New dimensions
+     *                                         - visible: Visibility state
+     *                                         - locked: Lock state
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Bulk operation results with success/failure details or error response
+     */
+    #[Route('/bulk-update', name: 'bulk_update', methods: ['PUT'])]
+    public function bulkUpdate(BulkUpdateLayersRequestDTO $dto): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            $updatedLayers = [];
+            $errors = [];
+
+            foreach ($dto->layers as $layerUpdate) {
+                $layer = $this->layerRepository->find($layerUpdate->id);
+                if (!$layer) {
+                    $errors[] = "Layer with ID {$layerUpdate->id} not found";
+                    continue;
+                }
+
+                // Check if user owns this layer
+                $design = $layer->getDesign();
+                if ($design->getProject()->getUser() !== $user) {
+                    $errors[] = "Access denied for layer {$layerUpdate->id}";
+                    continue;
+                }
+
+                // Update layer properties using the LayerUpdate object
+                if ($layerUpdate->name !== null) {
+                    $layer->setName($layerUpdate->name);
+                }
+                if ($layerUpdate->opacity !== null) {
+                    $layer->setOpacity($layerUpdate->opacity);
+                }
+                if ($layerUpdate->visible !== null) {
+                    $layer->setVisible($layerUpdate->visible);
+                }
+                if ($layerUpdate->locked !== null) {
+                    $layer->setLocked($layerUpdate->locked);
+                }
+                if ($layerUpdate->zIndex !== null) {
+                    $layer->setZIndex($layerUpdate->zIndex);
+                }
+
+                // Update transform properties if provided
+                if ($layerUpdate->transform !== null) {
+                    $currentTransform = $layer->getTransform();
+                    $newTransform = [
+                        'x' => $layerUpdate->transform->x,
+                        'y' => $layerUpdate->transform->y,
+                        'width' => $layerUpdate->transform->width,
+                        'height' => $layerUpdate->transform->height,
+                        'rotation' => $layerUpdate->transform->rotation,
+                        'scaleX' => $layerUpdate->transform->scaleX,
+                        'scaleY' => $layerUpdate->transform->scaleY,
+                        'skewX' => $layerUpdate->transform->skewX ?? $currentTransform['skewX'] ?? 0,
+                        'skewY' => $layerUpdate->transform->skewY ?? $currentTransform['skewY'] ?? 0,
+                        'opacity' => $currentTransform['opacity'] ?? 1,
+                    ];
+                    $layer->setTransform($newTransform);
+                }
+
+                // Update properties if provided
+                if ($layerUpdate->properties !== null) {
+                    $layer->setProperties($layerUpdate->properties->toArray());
+                }
+
+                // Update parent layer if provided
+                if ($layerUpdate->parentLayerId !== null) {
+                    $parent = $this->layerRepository->findOneBy(['uuid' => $layerUpdate->parentLayerId]);
+                    if ($parent && $parent->getDesign() === $design) {
+                        $layer->setParent($parent);
+                    }
+                }
+
+                $validationErrors = $this->validator->validate($layer);
+                if (count($validationErrors) > 0) {
+                    foreach ($validationErrors as $error) {
+                        $errors[] = "Layer {$layerUpdate->id}: " . $error->getMessage();
+                    }
+                    continue;
+                }
+
+                $updatedLayers[] = $layer->getId();
+            }
+
+            if (!empty($errors)) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Some layers could not be updated',
+                    $errors
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+
+            $this->entityManager->flush();
+
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                'Layers updated successfully',
+                ['updatedLayers' => $updatedLayers]
+            );
+            return $this->successResponse($successResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to update layers',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Get details of a specific layer
      * 
      * Returns comprehensive information about a single layer including all properties,
@@ -161,7 +289,7 @@ class LayerController extends AbstractController
      * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Layer details or error response
      */
     #[Route('/{id}', name: 'show', methods: ['GET'])]
-    public function show(int $id): JsonResponse
+    public function show(string $id): JsonResponse
     {
         try {
             $user = $this->getUser();
@@ -170,7 +298,8 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $layer = $this->layerRepository->find($id);
+            $layerId = (int)$id;
+            $layer = $this->layerRepository->find($layerId);
             if (!$layer) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -220,7 +349,7 @@ class LayerController extends AbstractController
      * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Updated layer data or error response
      */
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update(int $id, UpdateLayerRequestDTO $dto): JsonResponse
+    public function update(string $id, UpdateLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
@@ -229,7 +358,8 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $layer = $this->layerRepository->find($id);
+            $layerId = (int)$id;
+            $layer = $this->layerRepository->find($layerId);
             if (!$layer) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -322,7 +452,7 @@ class LayerController extends AbstractController
      * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success confirmation or error response
      */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
-    public function delete(int $id): JsonResponse
+    public function delete(string $id): JsonResponse
     {
         try {
             $user = $this->getUser();
@@ -331,7 +461,8 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $layer = $this->layerRepository->find($id);
+            $layerId = (int)$id;
+            $layer = $this->layerRepository->find($layerId);
             if (!$layer) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -373,7 +504,7 @@ class LayerController extends AbstractController
      * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Duplicated layer data or error response
      */
     #[Route('/{id}/duplicate', name: 'duplicate', methods: ['POST'])]
-    public function duplicate(int $id, DuplicateLayerRequestDTO $dto): JsonResponse
+    public function duplicate(string $id, DuplicateLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
@@ -382,7 +513,8 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $originalLayer = $this->layerRepository->find($id);
+            $layerId = (int)$id;
+            $originalLayer = $this->layerRepository->find($layerId);
             if (!$originalLayer) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -431,7 +563,7 @@ class LayerController extends AbstractController
      * @return JsonResponse<LayerResponseDTO|ErrorResponseDTO> Updated layer with new position or error response
      */
     #[Route('/{id}/move', name: 'move', methods: ['PUT'])]
-    public function move(int $id, MoveLayerRequestDTO $dto): JsonResponse
+    public function move(string $id, MoveLayerRequestDTO $dto): JsonResponse
     {
         try {
             $user = $this->getUser();
@@ -440,7 +572,8 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $layer = $this->layerRepository->find($id);
+            $layerId = (int)$id;
+            $layer = $this->layerRepository->find($layerId);
             if (!$layer) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -497,100 +630,4 @@ class LayerController extends AbstractController
         }
     }
 
-    /**
-     * Bulk update multiple layers
-     * 
-     * Updates multiple layers in a single operation for performance efficiency.
-     * Processes each layer individually with proper validation and permission checks.
-     * Returns detailed results including successful updates and any failures.
-     * 
-     * @param BulkUpdateLayersRequestDTO $dto Bulk update data including:
-     *                                       - layers: Array of layer update objects, each containing:
-     *                                         - id: Layer ID to update (required)
-     *                                         - properties: Properties to update
-     *                                         - position: New position coordinates
-     *                                         - dimensions: New dimensions
-     *                                         - visible: Visibility state
-     *                                         - locked: Lock state
-     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Bulk operation results with success/failure details or error response
-     */
-    #[Route('/bulk-update', name: 'bulk_update', methods: ['PUT'])]
-    public function bulkUpdate(BulkUpdateLayersRequestDTO $dto): JsonResponse
-    {
-        try {
-            $user = $this->getUser();
-            if (!$user instanceof User) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            $updatedLayers = [];
-            $errors = [];
-
-            foreach ($dto->layers as $layerData) {
-                if (!isset($layerData['id'])) {
-                    $errors[] = 'Layer ID is required for each layer';
-                    continue;
-                }
-
-                $layer = $this->layerRepository->find($layerData['id']);
-                if (!$layer) {
-                    $errors[] = "Layer with ID {$layerData['id']} not found";
-                    continue;
-                }
-
-                // Check if user owns this layer
-                $design = $layer->getDesign();
-                if ($design->getProject()->getUser() !== $user) {
-                    $errors[] = "Access denied for layer {$layerData['id']}";
-                    continue;
-                }
-
-                // Update layer properties from the updates array
-                if (isset($layerData['updates']) && is_array($layerData['updates'])) {
-                    foreach (['name', 'x', 'y', 'width', 'height', 'rotation', 'scaleX', 'scaleY', 'opacity', 'visible', 'locked', 'zIndex', 'data', 'animations', 'mask'] as $property) {
-                        if (isset($layerData['updates'][$property])) {
-                            $setter = 'set' . ucfirst($property);
-                            if (method_exists($layer, $setter)) {
-                                $layer->$setter($layerData['updates'][$property]);
-                            }
-                        }
-                    }
-                }
-
-                $validationErrors = $this->validator->validate($layer);
-                if (count($validationErrors) > 0) {
-                    foreach ($validationErrors as $error) {
-                        $errors[] = "Layer {$layerData['id']}: " . $error->getMessage();
-                    }
-                    continue;
-                }
-
-                $updatedLayers[] = $layer->getId();
-            }
-
-            if (!empty($errors)) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Some layers could not be updated',
-                    $errors
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->flush();
-
-            $successResponse = $this->responseDTOFactory->createSuccessResponse(
-                'Layers updated successfully',
-                ['updatedLayers' => $updatedLayers]
-            );
-            return $this->successResponse($successResponse);
-
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to update layers',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
 }

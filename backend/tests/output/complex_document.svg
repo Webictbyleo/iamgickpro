@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="800" viewBox="0 0 1200 800">
   <rect width="100%" height="100%" fill="#f8f9fa"/>
-  <g id="layer-" transform="translate(146, 193) rotate(0, 43.5, 22) scale(1, 1)">
-    <text x="0" y="22" font-family="Arial, sans-serif" font-size="32" font-weight="bold" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Document Title</text>
+  <g id="layer-" transform="translate(26, 89) rotate(0, 42, 47) scale(1, 1)">
+    <text x="0" y="47" font-family="Arial, sans-serif" font-size="32" font-weight="bold" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#000000" letter-spacing="0">Document Title</text>
   </g>
-  <g id="layer-" transform="translate(135, 186) rotate(0, 45, 40) scale(1, 1)">
-    <rect x="0" y="0" width="90" height="80" rx="8" ry="8" fill="#cccccc" data-layer-type="shape"/>
+  <g id="layer-" transform="translate(50, 102) rotate(0, 47.5, 43.5) scale(1, 1)">
+    <rect x="0" y="0" width="95" height="87" rx="8" ry="8" fill="#cccccc" data-layer-type="shape"/>
   </g>
-  <g id="layer-" transform="translate(135, 155) rotate(0, 60, 29) scale(1, 1)">
-    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="120" height="58" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
+  <g id="layer-" transform="translate(102, 171) rotate(0, 69, 38.5) scale(1, 1)">
+    <image xmlns="http://www.w3.org/1999/xlink" x="0" y="0" width="138" height="77" xlink:href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzMzOThmZiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" data-layer-type="image"/>
   </g>
-  <g id="layer-" transform="translate(162, 69) rotate(0, 43.5, 27) scale(1, 1)">
-    <circle cx="43.5" cy="27" r="27" fill="#cccccc" data-layer-type="shape"/>
+  <g id="layer-" transform="translate(166, 192) rotate(0, 52.5, 45) scale(1, 1)">
+    <circle cx="52.5" cy="45" r="45" fill="#cccccc" data-layer-type="shape"/>
   </g>
-  <g id="layer-" transform="translate(66, 88) rotate(0, 55.5, 26) scale(1, 1)">
-    <text x="0" y="26" font-family="Arial, sans-serif" font-size="18" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#6c757d" letter-spacing="0">Subtitle</text>
+  <g id="layer-" transform="translate(63, 28) rotate(0, 35, 26.5) scale(1, 1)">
+    <text x="0" y="26.5" font-family="Arial, sans-serif" font-size="18" font-weight="normal" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="#6c757d" letter-spacing="0">Subtitle</text>
   </g>
 </svg>

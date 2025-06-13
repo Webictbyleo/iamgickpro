@@ -56,7 +56,7 @@ class TemplateController extends AbstractController
      * 
      * Returns a paginated list of templates with optional category filtering.
      * Includes template metadata, thumbnail images, and usage statistics.
-     * Both public templates and user-created templates are included in results.
+     * Access is restricted based on user subscription tier.
      * 
      * @param Request $request HTTP request containing query parameters:
      *                        - page: Page number (default: 1, min: 1)
@@ -65,6 +65,7 @@ class TemplateController extends AbstractController
      * @return JsonResponse<TemplateResponseDTO|ErrorResponseDTO> Paginated template list or error response
      */
     #[Route('', name: 'list', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function list(Request $request): JsonResponse
     {
         try {
@@ -77,14 +78,14 @@ class TemplateController extends AbstractController
                 $templates = $this->templateRepository->findByCategory($category, $limit, $offset);
                 $total = $this->templateRepository->countTemplatesByCategory($category);
             } else {
-                // If no category, find all public templates
+                // If no category, find all public and active templates
                 $templates = $this->templateRepository->findBy(
-                    ['isPublic' => true, 'deletedAt' => null],
+                    ['isPublic' => true, 'is_active' => true, 'deletedAt' => null],
                     ['usage_count' => 'DESC'],
                     $limit,
                     $offset
                 );
-                $total = $this->templateRepository->countPublicTemplates();
+                $total = $this->templateRepository->count(['isPublic' => true, 'is_active' => true, 'deletedAt' => null]);
             }
 
             $templateResponse = $this->responseDTOFactory->createTemplateListResponse(
@@ -106,20 +107,163 @@ class TemplateController extends AbstractController
     }
 
     /**
+     * Search templates with advanced filtering
+     * 
+     * Performs comprehensive template search with support for text queries,
+     * category filtering, and tag-based search. Returns paginated results
+     * sorted by relevance and usage popularity. Requires authentication.
+     * 
+     * @param SearchTemplateRequestDTO $dto Search parameters including:
+     *                                     - q: Search query for name/description/tags
+     *                                     - category: Category filter
+     *                                     - page: Page number for pagination
+     *                                     - limit: Number of results per page
+     * @return JsonResponse<TemplateSearchResponseDTO|ErrorResponseDTO> Search results or error response
+     */
+    #[Route('/search', name: 'search', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function search(SearchTemplateRequestDTO $dto): JsonResponse
+    {
+        try {
+            $offset = ($dto->page - 1) * $dto->limit;
+            $query = $dto->q ?? '';
+            $category = $dto->category;
+
+            // Use manual query building since repository method has different signature
+            $qb = $this->templateRepository->createQueryBuilder('t')
+                ->andWhere('t.isPublic = :public')
+                ->andWhere('t.is_active = :active')
+                ->andWhere('t.deletedAt IS NULL')
+                ->setParameter('public', true)
+                ->setParameter('active', true);
+
+            if ($query) {
+                $qb->andWhere('t.name LIKE :query OR t.description LIKE :query OR t.tags LIKE :queryTag')
+                   ->setParameter('query', '%' . $query . '%')
+                   ->setParameter('queryTag', '%"' . $query . '"%');
+            }
+
+            if ($category) {
+                $qb->andWhere('t.category = :category')
+                   ->setParameter('category', $category);
+            }
+
+            $templates = $qb->orderBy('t.usage_count', 'DESC')
+                            ->setMaxResults($dto->limit)
+                            ->setFirstResult($offset)
+                            ->getQuery()
+                            ->getResult();
+
+            // Count total results
+            $totalQb = $this->templateRepository->createQueryBuilder('t')
+                ->select('COUNT(t.id)')
+                ->andWhere('t.isPublic = :public')
+                ->andWhere('t.is_active = :active')
+                ->andWhere('t.deletedAt IS NULL')
+                ->setParameter('public', true)
+                ->setParameter('active', true);
+
+            if ($query) {
+                $totalQb->andWhere('t.name LIKE :query OR t.description LIKE :query OR t.tags LIKE :queryTag')
+                        ->setParameter('query', '%' . $query . '%')
+                        ->setParameter('queryTag', '%"' . $query . '"%');
+            }
+
+            if ($category) {
+                $totalQb->andWhere('t.category = :category')
+                        ->setParameter('category', $category);
+            }
+
+            $total = (int) $totalQb->getQuery()->getSingleScalarResult();
+
+            // Convert templates to response data array
+            $templateData = array_map(function ($template) {
+                return [
+                    'id' => $template->getId(),
+                    'uuid' => $template->getUuid(),
+                    'name' => $template->getName(),
+                    'description' => $template->getDescription(),
+                    'category' => $template->getCategory(),
+                    'tags' => $template->getTags(),
+                    'thumbnailUrl' => $template->getThumbnailUrl(),
+                    'previewUrl' => $template->getPreviewUrl(),
+                    'width' => $template->getWidth(),
+                    'height' => $template->getHeight(),
+                    'isPremium' => $template->isPremium(),
+                    'isActive' => $template->isIsActive(),
+                    'rating' => (float) $template->getRating(),
+                    'ratingCount' => $template->getRatingCount(),
+                    'usageCount' => $template->getUsageCount(),
+                    'createdAt' => $template->getCreatedAt()?->format('c'),
+                    'updatedAt' => $template->getUpdatedAt()?->format('c'),
+                ];
+            }, $templates);
+
+            $searchResponse = $this->responseDTOFactory->createTemplateSearchResponse(
+                $templateData,
+                $dto->page,
+                $dto->limit,
+                $total,
+                $query ? "Search results for: {$query}" : 'Template search results'
+            );
+            return $this->templateSearchResponse($searchResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to search templates',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get available template categories
+     * 
+     * Returns a list of all available template categories for filtering
+     * and organization purposes. Categories help users find relevant templates
+     * for their specific design needs and use cases. Requires authentication.
+     * 
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> List of template categories or error response
+     */
+    #[Route('/categories', name: 'categories', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function getCategories(): JsonResponse
+    {
+        try {
+            $categories = $this->templateRepository->findAllCategories();
+
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                'Categories retrieved successfully',
+                ['categories' => $categories]
+            );
+            return $this->successResponse($successResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch categories',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Get details of a specific template
      * 
      * Returns comprehensive template information including design data, metadata,
      * and usage statistics. Automatically increments the view count for analytics.
-     * Only returns active templates that are publicly available.
+     * Access restricted to authenticated users with appropriate subscription.
      * 
      * @param string $uuid The template UUID to retrieve
      * @return JsonResponse<TemplateResponseDTO|ErrorResponseDTO> Template details or error response
      */
     #[Route('/{uuid}', name: 'show', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function show(string $uuid): JsonResponse
     {
         try {
-            $template = $this->templateRepository->findOneBy(['uuid' => $uuid, 'isActive' => true]);
+            $template = $this->templateRepository->findOneBy(['uuid' => $uuid, 'is_active' => true]);
             if (!$template) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Template not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -222,112 +366,6 @@ class TemplateController extends AbstractController
     }
 
     /**
-     * Search templates with advanced filtering
-     * 
-     * Performs comprehensive template search with support for text queries,
-     * category filtering, and tag-based search. Returns paginated results
-     * sorted by relevance and usage popularity.
-     * 
-     * @param SearchTemplateRequestDTO $dto Search parameters including:
-     *                                     - q: Search query for name/description/tags
-     *                                     - category: Category filter
-     *                                     - page: Page number for pagination
-     *                                     - limit: Number of results per page
-     * @return JsonResponse<TemplateSearchResponseDTO|ErrorResponseDTO> Search results or error response
-     */
-    #[Route('/search', name: 'search', methods: ['GET'])]
-    public function search(SearchTemplateRequestDTO $dto): JsonResponse
-    {
-        try {
-            $offset = ($dto->page - 1) * $dto->limit;
-            $query = $dto->q ?? '';
-            $category = $dto->category;
-
-            // Use manual query building since repository method has different signature
-            $qb = $this->templateRepository->createQueryBuilder('t')
-                ->andWhere('t.isPublic = :public')
-                ->andWhere('t.deletedAt IS NULL')
-                ->setParameter('public', true);
-
-            if ($query) {
-                $qb->andWhere('t.name LIKE :query OR t.description LIKE :query OR JSON_CONTAINS(t.tags, :queryJson)')
-                   ->setParameter('query', '%' . $query . '%')
-                   ->setParameter('queryJson', json_encode($query));
-            }
-
-            if ($category) {
-                $qb->andWhere('t.category = :category')
-                   ->setParameter('category', $category);
-            }
-
-            $templates = $qb->orderBy('t.usage_count', 'DESC')
-                            ->setMaxResults($dto->limit)
-                            ->setFirstResult($offset)
-                            ->getQuery()
-                            ->getResult();
-
-            // Count total results
-            $totalQb = $this->templateRepository->createQueryBuilder('t')
-                ->select('COUNT(t.id)')
-                ->andWhere('t.isPublic = :public')
-                ->andWhere('t.deletedAt IS NULL')
-                ->setParameter('public', true);
-
-            if ($query) {
-                $totalQb->andWhere('t.name LIKE :query OR t.description LIKE :query OR JSON_CONTAINS(t.tags, :queryJson)')
-                        ->setParameter('query', '%' . $query . '%')
-                        ->setParameter('queryJson', json_encode($query));
-            }
-
-            if ($category) {
-                $totalQb->andWhere('t.category = :category')
-                        ->setParameter('category', $category);
-            }
-
-            $total = (int) $totalQb->getQuery()->getSingleScalarResult();
-
-            // Convert templates to response data array
-            $templateData = array_map(function ($template) {
-                return [
-                    'id' => $template->getId(),
-                    'uuid' => $template->getUuid(),
-                    'name' => $template->getName(),
-                    'description' => $template->getDescription(),
-                    'category' => $template->getCategory(),
-                    'tags' => $template->getTags(),
-                    'thumbnailUrl' => $template->getThumbnailUrl(),
-                    'previewUrl' => $template->getPreviewUrl(),
-                    'width' => $template->getWidth(),
-                    'height' => $template->getHeight(),
-                    'isPremium' => $template->isPremium(),
-                    'isActive' => $template->isIsActive(),
-                    'rating' => (float) $template->getRating(),
-                    'ratingCount' => $template->getRatingCount(),
-                    'usageCount' => $template->getUsageCount(),
-                    'createdAt' => $template->getCreatedAt()?->format('c'),
-                    'updatedAt' => $template->getUpdatedAt()?->format('c'),
-                ];
-            }, $templates);
-
-            $searchResponse = $this->responseDTOFactory->createTemplateSearchResponse(
-                $templateData,
-                $dto->page,
-                $dto->limit,
-                $total,
-                $query ? "Search results for: {$query}" : 'Template search results'
-            );
-            return $this->templateSearchResponse($searchResponse);
-
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to search templates',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
      * Use a template to create a new design
      * 
      * Creates a new design project based on the specified template.
@@ -348,7 +386,7 @@ class TemplateController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $template = $this->templateRepository->findOneBy(['uuid' => $uuid, 'isActive' => true]);
+            $template = $this->templateRepository->findOneBy(['uuid' => $uuid, 'is_active' => true]);
             if (!$template) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Template not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -427,36 +465,6 @@ class TemplateController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to use template',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Get available template categories
-     * 
-     * Returns a list of all available template categories for filtering
-     * and organization purposes. Categories help users find relevant templates
-     * for their specific design needs and use cases.
-     * 
-     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> List of template categories or error response
-     */
-    #[Route('/categories', name: 'categories', methods: ['GET'])]
-    public function getCategories(): JsonResponse
-    {
-        try {
-            $categories = $this->templateRepository->findAllCategories();
-
-            $successResponse = $this->responseDTOFactory->createSuccessResponse(
-                'Categories retrieved successfully',
-                ['categories' => $categories]
-            );
-            return $this->successResponse($successResponse);
-
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to fetch categories',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);

@@ -96,6 +96,60 @@ class PluginController extends AbstractController
     }
 
     /**
+     * Get available plugin categories
+     * 
+     * Returns a list of all available plugin categories for filtering
+     * and classification purposes.
+     * 
+     * @return JsonResponse List of plugin categories
+     */
+    #[Route('/categories', name: 'categories', methods: ['GET'])]
+    public function categories(): JsonResponse
+    {
+        try {
+            $categories = $this->pluginRepository->getCategories();
+            
+            return new JsonResponse(['categories' => $categories]);
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to retrieve plugin categories'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Get current user's plugins
+     * 
+     * Returns paginated list of plugins created by the authenticated user,
+     * including all statuses (pending, approved, rejected).
+     * 
+     * @param Request $request HTTP request containing pagination parameters
+     * @return JsonResponse List of user's plugins with pagination metadata
+     */
+    #[Route('/my-plugins', name: 'my_plugins', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function myPlugins(Request $request): JsonResponse
+    {
+        try {
+            $page = max(1, (int) $request->query->get('page', 1));
+            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
+
+            $plugins = $this->pluginRepository->findByUser($this->getUser(), $page, $limit);
+            $total = $this->pluginRepository->countByUser($this->getUser());
+
+            return $this->pluginResponse(
+                $this->responseDTOFactory->createPluginListResponse($plugins, $page, $limit, $total)
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to retrieve your plugins'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
      * Retrieve detailed information about a specific plugin
      * 
      * Returns comprehensive plugin details including manifest, permissions,
@@ -145,15 +199,26 @@ class PluginController extends AbstractController
         try {
             $user = $this->getUser();
 
+            // Generate identifier from plugin name (simple slug)
+            $identifier = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', trim($dto->name)));
+            $identifier = trim($identifier, '-');
+            
+            // Get entry point from manifest
+            $entryPoint = $dto->manifest['main'] ?? 'index.js';
+            // For API-created plugins, we'll use a placeholder URL since there's no actual file
+            $entryPointUrl = 'https://placeholder.com/plugins/' . $identifier . '/' . $entryPoint;
+
             $plugin = new Plugin();
             $plugin->setName($dto->name);
             $plugin->setDescription($dto->description);
+            $plugin->setIdentifier($identifier); // Set required identifier
             $plugin->setCategories($dto->categories);
             $plugin->setVersion($dto->version);
             $plugin->setUser($user);
             $plugin->setStatus('pending');
             $plugin->setPermissions($dto->permissions);
             $plugin->setManifest($dto->manifest);
+            $plugin->setEntryPoint($entryPointUrl); // Set required entry_point
 
             $errors = $this->validator->validate($plugin);
             if (count($errors) > 0) {
@@ -476,60 +541,6 @@ class PluginController extends AbstractController
         } catch (\Exception $e) {
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse('Failed to reject plugin'),
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * Get available plugin categories
-     * 
-     * Returns a list of all available plugin categories for filtering
-     * and classification purposes.
-     * 
-     * @return JsonResponse List of plugin categories
-     */
-    #[Route('/categories', name: 'categories', methods: ['GET'])]
-    public function categories(): JsonResponse
-    {
-        try {
-            $categories = $this->pluginRepository->getCategories();
-            
-            return new JsonResponse(['categories' => $categories]);
-        } catch (\Exception $e) {
-            return $this->errorResponse(
-                $this->responseDTOFactory->createErrorResponse('Failed to retrieve plugin categories'),
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * Get current user's plugins
-     * 
-     * Returns paginated list of plugins created by the authenticated user,
-     * including all statuses (pending, approved, rejected).
-     * 
-     * @param Request $request HTTP request containing pagination parameters
-     * @return JsonResponse List of user's plugins with pagination metadata
-     */
-    #[Route('/my-plugins', name: 'my_plugins', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function myPlugins(Request $request): JsonResponse
-    {
-        try {
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-
-            $plugins = $this->pluginRepository->findByUser($this->getUser(), $page, $limit);
-            $total = $this->pluginRepository->countByUser($this->getUser());
-
-            return $this->pluginResponse(
-                $this->responseDTOFactory->createPluginListResponse($plugins, $page, $limit, $total)
-            );
-        } catch (\Exception $e) {
-            return $this->errorResponse(
-                $this->responseDTOFactory->createErrorResponse('Failed to retrieve your plugins'),
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }

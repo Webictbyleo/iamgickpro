@@ -84,6 +84,12 @@ class RequestDTOResolver implements ValueResolverInterface
             
         } catch (\Symfony\Component\Serializer\Exception\NotEncodableValueException $e) {
             throw new BadRequestHttpException('Invalid JSON format');
+        } catch (\Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException $e) {
+            throw new BadRequestHttpException('Missing required fields: ' . $e->getMessage());
+        } catch (\Symfony\Component\Serializer\Exception\NotNormalizableValueException $e) {
+            throw new BadRequestHttpException('Invalid field type: ' . $e->getMessage());
+        } catch (\Symfony\Component\Serializer\Exception\ExceptionInterface $e) {
+            throw new BadRequestHttpException('Request validation failed: ' . $e->getMessage());
         }
     }
 

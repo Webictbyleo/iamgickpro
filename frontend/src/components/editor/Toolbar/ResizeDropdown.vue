@@ -187,6 +187,7 @@ import {
   LinkSlashIcon
 } from '@heroicons/vue/24/outline'
 import NestedDropdownView from '@/components/ui/NestedDropdownView.vue'
+import { useDesignStore } from '@/stores/design';
 
 const emit = defineEmits<{
   resize: [width: number, height: number]
@@ -208,10 +209,10 @@ const moreSizes = [
   { name: 'A4 Document', width: 2480, height: 3508 },
   { name: 'Letter Size', width: 2550, height: 3300 }
 ]
-
+const designStore = useDesignStore()
 // Custom size state
-const customWidth = ref<number>(1080)
-const customHeight = ref<number>(1080)
+const customWidth = ref<number>(designStore.currentDesign?.width || 1080)
+const customHeight = ref<number>(designStore.currentDesign?.height || 1080)
 const aspectRatioLocked = ref(false)
 const originalAspectRatio = ref<number>(1)
 

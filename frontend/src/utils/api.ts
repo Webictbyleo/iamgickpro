@@ -48,7 +48,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Unauthorized - redirect to login
       localStorage.removeItem('auth_token')
-      window.location.href = '/login'
+      const currentPath = window.location.pathname + window.location.search
+      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
     }
     return Promise.reject(error)
   }

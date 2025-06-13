@@ -49,11 +49,7 @@
           >
             <component :is="icons.design" class="w-5 h-5 mr-3 transition-colors" />
             <span>My Designs</span>
-            <div class="ml-auto">
-              <span class="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                {{ designCount }}
-              </span>
-            </div>
+            
           </router-link>
 
           <!-- Templates -->
@@ -143,43 +139,6 @@
             </div>
           </router-link>
         </nav>
-
-        <!-- Recent Projects Section -->
-        <div class="space-y-3">
-          <div class="flex items-center justify-between px-3">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Projects</h3>
-            <button class="text-gray-400 hover:text-gray-600 transition-colors">
-              <component :is="icons.plus" class="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div v-if="!recentProjects || recentProjects.length === 0" class="px-3 py-2">
-            <div class="text-center">
-              <component :is="icons.folder" class="w-6 h-6 mx-auto text-gray-300 mb-1" />
-              <p class="text-xs text-gray-500">No recent projects</p>
-              <button class="text-xs text-violet-600 hover:text-violet-700 font-medium mt-1">
-                Create your first design
-              </button>
-            </div>
-          </div>
-          
-          <div v-else class="space-y-1">
-            <router-link
-              v-for="project in recentProjects.slice(0, 3)"
-              :key="project.id"
-              :to="`/editor/${project.id}`"
-              class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 group"
-            >
-              <div class="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center mr-3 group-hover:from-violet-100 group-hover:to-purple-100 transition-all duration-200">
-                <component :is="icons.document" class="w-4 h-4 text-gray-500 group-hover:text-violet-600" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="truncate font-medium">{{ project.name }}</p>
-                <p class="text-xs text-gray-400">{{ formatDate(project.updatedAt) }}</p>
-              </div>
-            </router-link>
-          </div>
-        </div>
       </div>
       </div>
 
@@ -285,11 +244,9 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useExportsStore } from '@/stores/exports'
 import { useIcons } from '@/composables/useIcons'
-import type { Design } from '@/types'
 
 interface Props {
   sidebarOpen?: boolean
-  recentProjects?: Design[]
 }
 
 defineProps<Props>()
@@ -320,10 +277,7 @@ const userInitials = computed(() => {
   return 'DU'
 })
 
-const designCount = computed(() => {
-  // This would come from a designs store in real implementation
-  return 12
-})
+
 
 const hasActiveJobs = computed(() => exportsStore.hasActiveJobs)
 const activeJobsCount = computed(() => 

@@ -287,7 +287,7 @@ class SearchController extends AbstractController
                 $this->responseDTOFactory->createSearchSuggestionResponse(
                     $suggestions,
                     $query,
-                    $limit
+                    'Search suggestions retrieved successfully'
                 )
             );
         } catch (\Exception $e) {

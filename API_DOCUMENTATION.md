@@ -4,7 +4,7 @@ Comprehensive API for the modern web-based design platform
 
 **Version:** 1.0.0
 
-**Generated on:** 2025-06-08 15:59:00
+**Generated on:** 2025-06-13 00:28:17
 **Generator:** Enhanced API Documentation Generator v2.0
 **Symfony Version:** 7.0.10
 **PHP Version:** 8.4.7
@@ -42,6 +42,7 @@ Comprehensive API for the modern web-based design platform
 - [MediaController](#mediacontroller) *(10 routes)*
 - [PluginController](#plugincontroller) *(12 routes)*
 - [ProjectController](#projectcontroller) *(8 routes)*
+- [PublicMediaController](#publicmediacontroller) *(1 routes)*
 - [SearchController](#searchcontroller) *(5 routes)*
 - [TemplateController](#templatecontroller) *(6 routes)*
 - [UserController](#usercontroller) *(8 routes)*
@@ -1409,7 +1410,7 @@ interface UpdateDesignThumbnailRequestDTO {
   /**
    * URL of the new thumbnail image. Must be a valid URL pointing to an image file that will serve as ...
    * @validation NotBlank=message: 'Thumbnail URL is required'
-   * @validation Url=message: 'Thumbnail must be a valid URL'
+   * @validation Regex=pattern: '/^=https?:\/\/.*\.=jpg|jpeg|png|gif|webp|svg=\?.*?$|=data:image\/=jpeg|jpg|png|gif|webp|svg\+xml;base64 [A-Za-z0-9+\/=]+$/i'  message: 'Thumbnail must be a valid URL or data URL pointing to an image'
    */
   thumbnail: string;
 
@@ -2101,6 +2102,8 @@ update includes the layer ID and the specific changes to apply.
 interface BulkUpdateLayersRequestDTO {
   /**
    * Array of layer updates to perform in batch. Each LayerUpdate contains: - id: The unique identifie...
+   * @validation Type=type: 'array'  message: 'Layers must be an array'
+   * @validation Valid
    */
   layers: {
     id: number;
@@ -2161,6 +2164,7 @@ interface BulkUpdateLayersRequestDTO {
     zIndex?: number | null;
     visible?: boolean | null;
     locked?: boolean | null;
+    opacity?: number | null;
     parentLayerId?: string | null;
   }[];
 
@@ -2226,7 +2230,7 @@ position, styling, and metadata. Validates access permissions through design own
 
 #### Parameters
 
-- **id** (int)
+- **id** (string)
 
 #### Response
 
@@ -2255,7 +2259,7 @@ Users can only update layers in designs they own.
 
 #### Parameters
 
-- **id** (int)
+- **id** (string)
 
 #### Request Body
 
@@ -2430,7 +2434,7 @@ Users can only delete layers in designs they own.
 
 #### Parameters
 
-- **id** (int)
+- **id** (string)
 
 #### Response
 
@@ -2457,7 +2461,7 @@ assigned a new z-index to appear on top. Maintains all layer relationships.
 
 #### Parameters
 
-- **id** (int)
+- **id** (string)
 
 #### Request Body
 
@@ -2548,7 +2552,7 @@ Automatically adjusts other layers' z-indexes to maintain proper ordering.
 
 #### Parameters
 
-- **id** (int)
+- **id** (string)
 
 #### Request Body
 
@@ -3282,7 +3286,7 @@ interface StockSearchRequestDTO {
    * @validation NotBlank=message: 'Query is required for stock search'
    * @validation Length=min: 1  max: 255  minMessage: 'Query must be at least {{ limit }} character long'  maxMessage: 'Query cannot be longer than {{ limit }} characters'
    */
-  query: string;
+  query?: string;
 
   /**
    * Page number for stock media results pagination. Specifies which page of stock media results to re...
@@ -3312,7 +3316,7 @@ interface StockSearchRequestDTO {
 async function exampleGetRequest() {
   const url = 'https://example.com/api/media/stock/search';
   const requestData = {
-        "query": "example_string",
+        "query": null,
         "page": 25,
         "limit": 20,
         "type": "example_type"
@@ -3520,10 +3524,9 @@ interface UpdateMediaRequestDTO {
   description?: string;
 
   /**
-   * Updated organizational tags for the media. If provided, replaces the current tag set. Each tag mu...
-   * @validation Valid
+   * Updated organizational tags for the media. If provided, replaces the current tag set. Can be eith...
    */
-  tags?: Tag[] | null;
+  tags?: Tag[] | string[] | null;
 
   /**
    * Updated technical metadata for the media file. If provided, replaces or merges with current metad...
@@ -4608,7 +4611,6 @@ create new projects based on existing templates.
 interface DuplicateProjectRequestDTO {
   /**
    * Display name for the duplicated project. The name given to the new project copy. Must be between ...
-   * @validation NotBlank=message: 'Project name is required'
    * @validation Length=min: 1  max: 255  minMessage: 'Project name must be at least {{ limit }} characters long'  maxMessage: 'Project name cannot be longer than {{ limit }} characters'
    */
   name?: string;
@@ -4697,6 +4699,31 @@ Updates the project's visibility and sharing settings.
     "timestamp": "example_string"
 }
 ```
+
+---
+
+## PublicMediaController
+
+*1 route*
+
+Public Media Controller
+
+Handles public media operations that don't require authentication.
+This includes media proxy functionality for external stock media URLs.
+
+<!-- Route 1 -->
+### GET /api/media/proxy/{encodedUrl}
+
+Proxy external media URLs (for stock media with authentication requirements)
+
+This endpoint acts as a proxy for external media URLs that require authentication
+or have CORS restrictions. It handles the authentication on the server side
+and streams the content to the client. This endpoint is publicly accessible
+since it serves stock media content.
+
+#### Parameters
+
+- **encodedUrl** (string)
 
 ---
 
@@ -4874,11 +4901,13 @@ Templates serve as starting points for new design projects.
 <!-- Route 1 -->
 ### GET /api/templates
 
+**Security:** IsGranted
+
 List available templates with filtering and pagination
 
 Returns a paginated list of templates with optional category filtering.
 Includes template metadata, thumbnail images, and usage statistics.
-Both public templates and user-created templates are included in results.
+Access is restricted based on user subscription tier.
 
 #### Response
 
@@ -5072,11 +5101,13 @@ async function examplePostRequest() {
 <!-- Route 3 -->
 ### GET /api/templates/categories
 
+**Security:** IsGranted
+
 Get available template categories
 
 Returns a list of all available template categories for filtering
 and organization purposes. Categories help users find relevant templates
-for their specific design needs and use cases.
+for their specific design needs and use cases. Requires authentication.
 
 #### Response
 
@@ -5095,11 +5126,13 @@ for their specific design needs and use cases.
 <!-- Route 4 -->
 ### GET /api/templates/search
 
+**Security:** IsGranted
+
 Search templates with advanced filtering
 
 Performs comprehensive template search with support for text queries,
 category filtering, and tag-based search. Returns paginated results
-sorted by relevance and usage popularity.
+sorted by relevance and usage popularity. Requires authentication.
 
 #### Request Body
 
@@ -5136,6 +5169,7 @@ async function exampleGetRequest() {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer YOUR_JWT_TOKEN', // This endpoint requires authentication
       },
     });
 
@@ -5175,11 +5209,13 @@ async function exampleGetRequest() {
 <!-- Route 5 -->
 ### GET /api/templates/{uuid}
 
+**Security:** IsGranted
+
 Get details of a specific template
 
 Returns comprehensive template information including design data, metadata,
 and usage statistics. Automatically increments the view count for analytics.
-Only returns active templates that are publicly available.
+Access restricted to authenticated users with appropriate subscription.
 
 #### Parameters
 

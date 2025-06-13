@@ -88,9 +88,7 @@ export class LayerManager implements LayerAPI {
     
     // Add to history for undo/redo
     if (!silent && this.historyManager) {
-      this.historyManager.addToHistory('layer_create', {
-        layer: { ...layerNode }
-      })
+      this.historyManager.addCreateLayerCommand(layerNode)
     }
     
     // Emit creation event    
@@ -151,9 +149,7 @@ export class LayerManager implements LayerAPI {
     
     // Add to history for undo/redo
     if (!silent && this.historyManager) {
-      this.historyManager.addToHistory('layer_delete', {
-        layer: layerDataForHistory
-      })
+      this.historyManager.addDeleteLayerCommand(layerDataForHistory)
     }
     
     if (!silent) {
@@ -183,11 +179,7 @@ export class LayerManager implements LayerAPI {
 
     // Add to history for undo/redo
     if (!silent && this.historyManager) {
-      this.historyManager.addToHistory('layer_update', {
-        layerId,
-        previousData,
-        newData: { ...layer }
-      })
+      this.historyManager.addUpdateLayerCommand(layerId, previousData, layer)
     }
 
     if (!silent) {
@@ -368,10 +360,7 @@ export class LayerManager implements LayerAPI {
 
     // Add to history for undo/redo
     if (!silent && this.historyManager) {
-      this.historyManager.addToHistory('layers_reorder', {
-        previousOrder,
-        newOrder: validLayerIds
-      })
+      this.historyManager.addReorderLayersCommand(previousOrder, validLayerIds)
     }
 
     if (!silent) {
@@ -610,11 +599,9 @@ export class LayerManager implements LayerAPI {
 
     // Add to history for undo/redo
     if (this.historyManager) {
-      this.historyManager.addToHistory('layer_update', {
-        layerId,
-        previousData: { ...layer },
-        newData: { ...layer, properties: { ...layer.properties, ...properties } }
-      })
+      const previousData = { ...layer }
+      const newData = { ...layer, properties: { ...layer.properties, ...properties } }
+      this.historyManager.addUpdateLayerCommand(layerId, previousData, newData)
     }
 
     // Emit layer updated event

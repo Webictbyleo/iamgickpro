@@ -58,10 +58,6 @@ export const useDesignStore = defineStore('design', () => {
       title: 'Untitled Design', // Add missing title property
       width,
       height,
-      dimensions: { // Add missing dimensions property
-        width,
-        height
-      },
       userId: authStore.user?.id || '1',
       isPublic: false,
       createdAt: new Date().toISOString(),
@@ -92,8 +88,8 @@ export const useDesignStore = defineStore('design', () => {
       designToSave.updatedAt = new Date().toISOString()
       
       let response: { data?: ApiResponse<Design> }
-      
-      if (designToSave.id.startsWith('design_')) {
+      console.log(designToSave)
+      if (designToSave.id.toString().startsWith('design_')) {
         // New design - create it
         const createRequest: CreateDesignRequest = {
           name: designToSave.name,
@@ -267,8 +263,8 @@ export const useDesignStore = defineStore('design', () => {
       
       const response = await designAPI.getDesigns()
       
-      if (response.data?.data?.designs) {
-        designs.value = response.data.data.designs
+      if (response.data?.data) {
+        designs.value = response.data.data
         return { success: true }
       }
       

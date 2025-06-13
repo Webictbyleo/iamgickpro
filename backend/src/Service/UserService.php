@@ -156,10 +156,18 @@ readonly class UserService
 
         // Add media files data
         foreach ($user->getMediaFiles() as $media) {
+            // Extract filename from URL path
+            $url = $media->getUrl();
+            $filename = $url ? basename(parse_url($url, PHP_URL_PATH)) : '';
+            
+            // Get original name from metadata if available, otherwise use name
+            $metadata = $media->getMetadata();
+            $originalName = $metadata['original_filename'] ?? $media->getName();
+            
             $userData['mediaFiles'][] = [
                 'id' => $media->getId(),
-                'filename' => $media->getFilename(),
-                'originalName' => $media->getOriginalName(),
+                'filename' => $filename,
+                'originalName' => $originalName,
                 'mimeType' => $media->getMimeType(),
                 'size' => $media->getSize(),
                 'createdAt' => $media->getCreatedAt()->format('c'),

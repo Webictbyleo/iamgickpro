@@ -365,8 +365,8 @@ class ResponseDTOFactory
         }
 
         return new ExportJobResponseDTO(
-            success: true,
             message: $message ?: 'Export job retrieved successfully',
+            success: true,
             job: $data
         );
     }
@@ -385,8 +385,8 @@ class ResponseDTOFactory
         }, $exportJobs);
 
         return new ExportJobResponseDTO(
-            success: true,
             message: $message ?: 'Export jobs retrieved successfully',
+            success: true,
             jobs: $jobsData,
             total: $total,
             page: $page,
@@ -431,8 +431,8 @@ class ResponseDTOFactory
         }
 
         return new PluginResponseDTO(
-            success: true,
             message: $message,
+            success: true,
             plugin: $pluginData
         );
     }
@@ -469,8 +469,8 @@ class ResponseDTOFactory
         }, $plugins);
 
         return new PluginResponseDTO(
-            success: true,
             message: $message,
+            success: true,
             plugins: $pluginsData,
             total: $total,
             page: $page,

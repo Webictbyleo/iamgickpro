@@ -115,7 +115,7 @@
         </div>
 
         <!-- Canvas Area -->
-        <div class="flex-1 bg-gray-100 dark:bg-gray-800 relative flex flex-col min-w-0 h-full">
+        <div ref="canvasViewportElement" class="flex-1 bg-gray-100 dark:bg-gray-800 relative flex flex-col min-w-0 h-full">
 
           <!-- Canvas -->
           <div class="flex-1 relative min-h-0">
@@ -299,6 +299,38 @@ const activeTool = ref<'select' | 'text' | 'shape' | 'image' | 'pan' | null>('se
 const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
+const canvasViewportElement = ref<HTMLElement>()
+
+// Update canvas container dimensions based on actual viewport
+const updateCanvasViewportDimensions = () => {
+  if (canvasViewportElement.value) {
+    const rect = canvasViewportElement.value.getBoundingClientRect()
+    canvasContainerWidth.value = rect.width
+    canvasContainerHeight.value = rect.height
+  }
+}
+
+// Watch for window resize and panel changes
+onMounted(() => {
+  updateCanvasViewportDimensions()
+  window.addEventListener('resize', updateCanvasViewportDimensions)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateCanvasViewportDimensions)
+})
+
+// Update dimensions when panels change
+watch([activePanel, activePanelModal], () => {
+  nextTick(() => {
+    updateCanvasViewportDimensions()
+    
+    // Auto-fit to screen when panels change (viewport size changes)
+    setTimeout(() => {
+      autoFitToScreen()
+    }, 200) // Slightly longer delay for panel animations
+  })
+})
 
 // Context Menu State
 const contextMenu = ref({
@@ -420,6 +452,9 @@ const handleSidebarAction = (action: string) => {
 
 const handleCanvasReady = (container: HTMLElement) => {
   initializeEditor(container)
+  
+  // Auto-fit to screen after editor initialization
+  autoFitToScreen()
 }
 
 const handleAddElement = (type: LayerType, properties: any) => {
@@ -455,6 +490,9 @@ const handleUseTemplate = async (template: any) => {
       // Load the template data into the editor
       await editorSDK.value.loadDesign(newDesign)
       closeAllPanels() // Close panels using new panel management
+      
+      // Auto-fit to screen after template is applied
+      autoFitToScreen()
     } else {
       console.error('Failed to create design from template:', result.error)
     }
@@ -591,35 +629,69 @@ const handlePanToCenter = () => {
 }
 
 const handleFitToScreen = () => {
-  // Use zoomToFit method from editorSDK
-  if (editorSDK.value) {
-    editorSDK.value.canvas.zoomToFit()
+  // First, ensure viewport dimensions are up to date
+  updateCanvasViewportDimensions()
+  
+  // Use zoomToFit method from editorSDK with proper viewport dimensions
+  if (editorSDK.value && canvasViewportElement.value) {
+    // Get the actual viewport dimensions
+    const rect = canvasViewportElement.value.getBoundingClientRect()
+    let viewportWidth = rect.width
+    let viewportHeight = rect.height
+    
+    // Only account for zoom controls (positioned at bottom-right)
+    // Reduce width by 100px for zoom controls, height by 50px
+    const zoomControlAdjustment = { width: 100, height: 50 }
+    
+    viewportWidth = Math.max(viewportWidth - zoomControlAdjustment.width, 400)
+    viewportHeight = Math.max(viewportHeight - zoomControlAdjustment.height, 300)
+    
+    console.log('🎯 Fit to screen:', { 
+      originalDimensions: { width: rect.width, height: rect.height },
+      adjustedDimensions: { width: viewportWidth, height: viewportHeight },
+      canvasSize: { width: canvasWidth.value, height: canvasHeight.value },
+      ratio: { 
+        widthRatio: viewportWidth / canvasWidth.value, 
+        heightRatio: viewportHeight / canvasHeight.value 
+      }
+    })
+    
+    // Call fitCanvasToViewport with the adjusted viewport dimensions
+    editorSDK.value.canvas.fitCanvasToViewport(viewportWidth, viewportHeight)
     zoomLevel.value = editorSDK.value.canvas.getZoom() || 1
-    console.log('Canvas zoomed to fit screen:', zoomLevel.value)
   }
+}
+
+// Auto-fit to screen utility function
+const autoFitToScreen = () => {
+  // Use nextTick to ensure DOM is updated and viewport dimensions are correct
+  nextTick(() => {
+    setTimeout(() => {
+      handleFitToScreen()
+    }, 100) // Small delay to ensure all layout changes are complete
+  })
 }
 
 const handleSave = () => {
   saveDesign()
 }
 
-const handleExport = (format: string) => {
-  // Create a design object compatible with the DesignExportModal
-  if (designStore.currentDesign) {
-    exportModal.value.design = {
-      id: designStore.currentDesign.id,
-      title: designStore.currentDesign.name || 'Untitled Design',
-      description: designStore.currentDesign.description || '',
-      thumbnail: designStore.currentDesign.thumbnail,
-      created_at: designStore.currentDesign.createdAt || new Date().toISOString(),
-      author: 'Current User', // Could be from auth store
-      width: canvasWidth.value,
-      height: canvasHeight.value,
-      hasAnimation: false, // TODO: Check if design has animations
-      isVideo: false, // TODO: Check if design has video elements
-      duration: 0 // TODO: Get actual duration if animated
-    }
-    exportModal.value.isOpen = true
+const handleExport = async (format: string) => {
+  if (!editorSDK.value) {
+    console.error('EditorSDK not available for export')
+    return
+  }
+
+  try {
+    const designName = designStore.currentDesign?.name || 'design'
+    const filename = `${designName}.${format}`
+    
+    console.log(`Exporting design as ${format}...`)
+    await editorSDK.value.downloadAsImage(format as 'png' | 'jpeg' | 'webp', filename)
+    console.log(`Export completed: ${filename}`)
+  } catch (error) {
+    console.error('Export failed:', error)
+    // TODO: Show error notification to user
   }
 }
 
@@ -647,6 +719,9 @@ const handleResize = (width: number, height: number) => {
   }
   
   console.log('Canvas resized to:', width, 'x', height)
+  
+  // Auto-fit to screen after resize
+  autoFitToScreen()
 }
 
 const handleAddMedia = (mediaData: any) => {
@@ -1125,14 +1200,23 @@ onMounted(async () => {
     // Save the new design to the backend
     try {
       await designStore.saveDesign(newDesign)
+      
+      // Auto-fit to screen after new design creation
+      autoFitToScreen()
     } catch (error) {
       console.error('Failed to save new design:', error)
       // Design is still available locally even if save fails
+      
+      // Still auto-fit even if save fails
+      autoFitToScreen()
     }
   }
   
   // Add global event listener for context menu
   document.addEventListener('editor:context-menu', handleEditorContextMenuEvent as EventListener)
+  
+  // Add global event listener for auto-fit requests
+  document.addEventListener('editor:auto-fit-request', handleAutoFitRequest as EventListener)
 })
 
 // Global context menu event handler
@@ -1156,11 +1240,20 @@ const handleEditorContextMenuEvent = (event: CustomEvent) => {
   })
 }
 
+// Global auto-fit request event handler
+const handleAutoFitRequest = (event: CustomEvent) => {
+  const { reason, design } = event.detail
+  
+  // Auto-fit to screen with appropriate reason
+  autoFitToScreen()
+}
+
 // Cleanup on unmount
 onUnmounted(() => {
   cleanup()
-  // Remove event listener
+  // Remove event listeners
   document.removeEventListener('editor:context-menu', handleEditorContextMenuEvent as EventListener)
+  document.removeEventListener('editor:auto-fit-request', handleAutoFitRequest as EventListener)
   // Optionally save the design if there are unsaved changes
   if (hasUnsavedChanges.value) {
     saveDesign()

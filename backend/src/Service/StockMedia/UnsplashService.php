@@ -85,6 +85,7 @@ class UnsplashService implements StockMediaServiceInterface
 
             foreach ($photos as $photo) {
                 $transformedPhoto = $this->transformPhotoData($photo);
+                
                 if ($transformedPhoto !== null) {
                     $results['items'][] = $transformedPhoto;
                 }
@@ -144,16 +145,16 @@ class UnsplashService implements StockMediaServiceInterface
                 ]);
                 return null;
             }
-
+            
             // Extract and sanitize URLs
             $regularUrl = $this->responseValidator->validateUrl(
                 $this->responseValidator->extractStringField($urls, 'regular', '')
             );
             $thumbnailUrl = $this->responseValidator->validateUrl(
-                $this->responseValidator->extractStringField($urls, 'small', $regularUrl)
+                $this->responseValidator->extractStringField($urls, 'thumb', $regularUrl)
             );
             $previewUrl = $this->responseValidator->validateUrl(
-                $this->responseValidator->extractStringField($urls, 'thumb', $thumbnailUrl)
+                $this->responseValidator->extractStringField($urls, 'small', $thumbnailUrl)
             );
 
             if (!$regularUrl) {
@@ -209,7 +210,7 @@ class UnsplashService implements StockMediaServiceInterface
 
             // Clean and deduplicate tags
             $tags = array_unique(array_filter($tags, fn($tag) => strlen($tag) > 1 && strlen($tag) < 30));
-
+            
             return [
                 'id' => $id,
                 'name' => $altDescription ?: $description ?: "Photo by {$userName}",

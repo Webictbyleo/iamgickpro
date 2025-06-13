@@ -15,7 +15,7 @@ export default defineConfig({
     host: true,
     proxy: {
       // Proxy media file serving to backend
-      '/media': {
+      '/media/': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,

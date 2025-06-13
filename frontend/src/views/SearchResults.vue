@@ -574,52 +574,46 @@ const performSearch = async () => {
       sort: sortBy.value !== 'relevance' ? (sortBy.value as 'newest' | 'popular' | 'name') : undefined,
     }
     
-    let response: any
+    let response;
     
     // Determine search type and call appropriate endpoint based on active filters
     if (activeFilters.value.length === 1) {
       if (activeFilters.value.includes('template')) {
         response = await searchAPI.searchTemplates(searchParams)
-        if (response.data.success) {
-          searchResults.value = response.data.data.templates.map((template: any) => ({
-            ...template,
-            type: 'template',
-            title: template.name,
-            created_at: template.created_at || template.updatedAt
-          }))
-          totalResults.value = response.data.data.total
-          totalPages.value = response.data.data.totalPages
-        }
+        searchResults.value = response.data.templates.map((template: any) => ({
+          ...template,
+          type: 'template',
+          title: template.name,
+          created_at: template.created_at || template.updatedAt
+        }))
+        totalResults.value = response.data.pagination.total
+        totalPages.value = response.data.pagination.totalPages
       } else if (activeFilters.value.includes('media')) {
         response = await searchAPI.searchMedia(searchParams)
-        if (response.data.success) {
-          searchResults.value = response.data.data.media.map((media: MediaSearchItem) => ({
-            id: String(media.id), // Convert to string to match SearchResult type
-            type: 'media',
-            title: media.name,
-            url: media.url,
-            thumbnail: media.thumbnail_url || undefined,
-            created_at: media.created_at || new Date().toISOString(),
-            description: media.tags?.join(', '),
-            isVideo: media.mime_type.startsWith('video/'),
-            size: media.size
-          }))
-          totalResults.value = response.data.data.pagination.total
-          totalPages.value = response.data.data.pagination.totalPages
-        }
+        searchResults.value = response.data.media.map((media: MediaSearchItem) => ({
+          id: String(media.id), // Convert to string to match SearchResult type
+          type: 'media',
+          title: media.name,
+          url: media.url,
+          thumbnail: media.thumbnail_url || undefined,
+          created_at: media.created_at || new Date().toISOString(),
+          description: media.tags?.join(', '),
+          isVideo: media.mime_type.startsWith('video/'),
+          size: media.size
+        }))
+        totalResults.value = response.data.pagination.total
+        totalPages.value = response.data.pagination.totalPages
       } else if (activeFilters.value.includes('design')) {
         // Map to projects search since designs are stored as projects
         response = await searchAPI.searchProjects(searchParams)
-        if (response.data.success) {
-          searchResults.value = response.data.data.projects.map((project: any) => ({
-            ...project,
-            type: 'design',
-            title: project.name,
-            created_at: project.created_at || project.updatedAt
-          }))
-          totalResults.value = response.data.data.total
-          totalPages.value = response.data.data.totalPages
-        }
+        searchResults.value = response.data.projects.map((project: any) => ({
+          ...project,
+          type: 'design',
+          title: project.name,
+          created_at: project.created_at || project.updatedAt
+        }))
+        totalResults.value = response.data.pagination.total
+        totalPages.value = response.data.pagination.totalPages
       } else {
         // For other filters (like export), fall back to global search
         response = await searchAPI.unifiedSearch({
@@ -627,11 +621,13 @@ const performSearch = async () => {
           type: 'all',
           filters: activeFilters.value
         })
-        if (response.data.success) {
-          searchResults.value = response.data.data.results
-          totalResults.value = response.data.data.total
-          totalPages.value = response.data.data.totalPages
-        }
+        searchResults.value = response.data.results.map((item: any) => ({
+          ...item,
+          title: item.name,
+          created_at: item.created_at || item.updatedAt
+        }))
+        totalResults.value = response.data.pagination.total
+        totalPages.value = response.data.pagination.totalPages
       }
     } else {
       // Use global search for multiple filters or no filters
@@ -640,16 +636,16 @@ const performSearch = async () => {
         type: 'all',
         filters: activeFilters.value.length > 0 ? activeFilters.value : undefined
       })
-      if (response.data.success) {
-        searchResults.value = response.data.data.results
-        totalResults.value = response.data.data.total
-        totalPages.value = response.data.data.totalPages
-      }
+      searchResults.value = response.data.results.map((item: any) => ({
+        ...item,
+        title: item.name,
+        created_at: item.created_at || item.updatedAt
+      }))
+      totalResults.value = response.data.pagination.total
+      totalPages.value = response.data.pagination.totalPages
     }
     
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Search failed')
-    }
+   
     
     // Update filter counts based on search results
     contentFilters.value.forEach(filter => {

@@ -41,6 +41,8 @@ debug_*.json
 
 # Test files
 test_*.php
+*test**.php
+/**.json
 test_*.txt
 test_*.log
 test_*.svg
@@ -65,3 +67,8 @@ shape_test_output.txt
 # User-specific files
 /public/uploads/**
 /public/temp/
+
+# Log files
+/logs/*.log
+/logs/*.txt
+/**.log

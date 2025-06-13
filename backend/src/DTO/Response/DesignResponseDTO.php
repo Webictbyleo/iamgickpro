@@ -87,7 +87,7 @@ class DesignResponseDTO extends BaseResponseDTO
         public readonly ?int $totalPages = null,
         ?\DateTimeImmutable $timestamp = null
     ) {
-        parent::__construct($success, $message, $timestamp);
+        parent::__construct($message, $success, $timestamp);
     }
 
     /**
@@ -141,12 +141,12 @@ class DesignResponseDTO extends BaseResponseDTO
         $data = parent::toArray();
         
         if ($this->design !== null) {
-            $data['data']['design'] = $this->design;
+            $data['data'] = $this->design;
         }
         
         if ($this->designs !== null) {
-            $data['data']['designs'] = $this->designs;
-            $data['data']['pagination'] = [
+            $data['data'] = $this->designs;
+            $data['pagination'] = [
                 'total' => $this->total,
                 'page' => $this->page,
                 'totalPages' => $this->totalPages,

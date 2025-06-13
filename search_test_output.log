@@ -1,0 +1,312 @@
+🔍 Testing Search Endpoints...
+==================================
+📡 Step 1: Authenticating...
+Login response: {"success":true,"message":"Login successful","timestamp":"2025-06-12T22:52:36+00:00","token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NDk3Njg3NTYsImV4cCI6MTc0OTg1NTE1Niwicm9sZXMiOlsiUk9MRV9VU0VSIl0sImVtYWlsIjoiam9obmRvZUBleGFtcGxlLmNvbSJ9.Gn6ijukifwyNEu6jrzWo1SnnKmUB9ZcET1LcgTWiGVsWsCRD3gVlASJk5Za2ZniRZBuOOkXA3Hu2vMWP36-hb3ezQaS7em5w5gP9-mXoo4eK1jNF9loENtTXaYSChNSCRY0R_s8-PTNnXkklEt10hqcSRAhHODt3Den0oeJlYNU9XiO5-fL6II5x5t5sqs09NJ7wfRov8PCdZajeBFIUkA0HIf93xB5ntlvQBTyzq7-gXa8XqbDIUzV5FuHYgaZVSWLJrswhuVeD1ZReRZQR8rLtIu1KA5UBZhrAU18SJm_jtVcLDZcqT_2pg6YMiVnDcaT7rzh3r1nI3do3yd-VxEdPe_Od5C9QWF9XwIDx54jm5wzkWFC52HA_AZD27s16F0n1Bx2iB1mdoMYLgERWE-BJ41KSOrRNhrkh_YEQ83JE9JWGXOY1jiXFNhpAlIwqGsqFzjmXSlehH3hiJowpWycojfgKk_jnAlV7dGOO0Pm9Qjy2mrecXqHQe7IUS6l-tFRg4Oofp4dIb3zoc__LO30g3PKnm10l90WYJqUFIusvmJos89_Y9Hlv0pNSAhde1jP2hDXiL-fpPEt5skXy6KNA5IImkmlAv5XBMu2KBqe68prIlfdtiAOyg6sltv-aJGfBC1md_kYCa2hmGLOmbeVtGRGNY675wHGT-MvdLUI","user":{"id":"4","email":"johndoe@example.com","firstName":"Test","lastName":"User Updated","username":"0fe2bc2b-df65-4254-bf3e-606911b57df1","roles":["ROLE_USER"],"avatar":null,"plan":"free"}}
+✅ Authentication successful
+Token: eyJ0eXAiOiJKV1QiLCJh...
+
+📖 Step 2: Testing Global Search...
+Global Search Response:
+{
+  "results": [
+    {
+      "id": 76,
+      "name": "Test Template 2025-06-12 12:08:35 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T12:08:36+00:00",
+      "type": "project",
+      "result_type": "project"
+    },
+    {
+      "id": 75,
+      "name": "Test Template 2025-06-12 12:05:51 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T12:05:51+00:00",
+      "type": "project",
+      "result_type": "project"
+    },
+    {
+      "id": 23,
+      "name": "Test Template 2025-06-12 12:08:35",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template",
+      "result_type": "template"
+    },
+    {
+      "id": 22,
+      "name": "Test Template 2025-06-12 12:05:51",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template",
+      "result_type": "template"
+    },
+    {
+      "id": 30,
+      "name": "Copy of Test Image Upload",
+      "type": "media",
+      "mime_type": "image/png",
+      "size": 70,
+      "url": "/media/test-image-684afe1112371.png",
+      "thumbnail_url": "/thumbnails/thumb_2b6fc8d0-dc51-484d-9e26-00340afcff2c.jpg",
+      "tags": [],
+      "created_at": "2025-06-12 16:19:29",
+      "result_type": "media"
+    }
+  ],
+  "query": "test",
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 75,
+    "totalPages": 15
+  },
+  "message": "Global search completed successfully"
+}
+
+📄 Step 3: Testing Template Search...
+Template Search Response:
+{
+  "templates": [
+    {
+      "id": 23,
+      "name": "Test Template 2025-06-12 12:08:35",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template"
+    },
+    {
+      "id": 22,
+      "name": "Test Template 2025-06-12 12:05:51",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template"
+    },
+    {
+      "id": 21,
+      "name": "Test Template 2025-06-12 12:05:04",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template"
+    },
+    {
+      "id": 10,
+      "name": "Test Template 2025-06-12 11:54:55",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template"
+    },
+    {
+      "id": 8,
+      "name": "Test Template 2025-06-12 11:33:07",
+      "description": "A test template for automated testing",
+      "thumbnail_url": "https://example.com/thumb.jpg",
+      "category": "social-media",
+      "tags": [
+        "test",
+        "automation"
+      ],
+      "is_premium": false,
+      "type": "template"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 21,
+    "totalPages": 5
+  },
+  "message": "Template search completed successfully"
+}
+
+🖼️ Step 4: Testing Media Search...
+Media Search Response:
+{
+  "media": [
+    {
+      "id": 30,
+      "name": "Copy of Test Image Upload",
+      "type": "media",
+      "mime_type": "image/png",
+      "size": 70,
+      "url": "/media/test-image-684afe1112371.png",
+      "thumbnail_url": "/thumbnails/thumb_2b6fc8d0-dc51-484d-9e26-00340afcff2c.jpg",
+      "tags": [],
+      "created_at": "2025-06-12 16:19:29"
+    },
+    {
+      "id": 27,
+      "name": "Copy of Test Image Upload",
+      "type": "media",
+      "mime_type": "image/png",
+      "size": 70,
+      "url": "/media/test-image-684afd6836ab6.png",
+      "thumbnail_url": "/thumbnails/thumb_29dcdb93-a827-4a10-be18-61a71c7a8552.jpg",
+      "tags": [],
+      "created_at": "2025-06-12 16:16:40"
+    },
+    {
+      "id": 24,
+      "name": "Copy of Test Image Upload",
+      "type": "media",
+      "mime_type": "image/png",
+      "size": 70,
+      "url": "/media/test-image-684afd3a5e85a.png",
+      "thumbnail_url": "/thumbnails/thumb_4f106ca6-655b-426f-bdf4-880266e73b41.jpg",
+      "tags": [],
+      "created_at": "2025-06-12 16:15:54"
+    },
+    {
+      "id": 21,
+      "name": "Copy of Test Image Upload",
+      "type": "media",
+      "mime_type": "image/png",
+      "size": 70,
+      "url": "/media/test-image-684afd29d4f17.png",
+      "thumbnail_url": "/thumbnails/thumb_a7e41cd1-4d63-485a-83cf-4033beb22d4e.jpg",
+      "tags": [],
+      "created_at": "2025-06-12 16:15:38"
+    },
+    {
+      "id": 18,
+      "name": "Copy of Test Image Upload V6",
+      "type": "media",
+      "mime_type": "image/png",
+      "size": 70,
+      "url": "/media/test-image-684afb8edea42.png",
+      "thumbnail_url": "/thumbnails/thumb_579d9fdb-6b94-4b5d-b63d-2ea77b37a46d.jpg",
+      "tags": [],
+      "created_at": "2025-06-12 16:08:47"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 10,
+    "totalPages": 2
+  },
+  "message": "Media search completed successfully"
+}
+
+📂 Step 5: Testing Project Search...
+Project Search Response:
+{
+  "projects": [
+    {
+      "id": 76,
+      "name": "Test Template 2025-06-12 12:08:35 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T12:08:36+00:00",
+      "type": "project"
+    },
+    {
+      "id": 75,
+      "name": "Test Template 2025-06-12 12:05:51 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T12:05:51+00:00",
+      "type": "project"
+    },
+    {
+      "id": 74,
+      "name": "Test Template 2025-06-12 12:05:04 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T12:05:05+00:00",
+      "type": "project"
+    },
+    {
+      "id": 73,
+      "name": "Test Template 2025-06-12 11:54:55 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T11:54:56+00:00",
+      "type": "project"
+    },
+    {
+      "id": 72,
+      "name": "Test Template 2025-06-12 11:33:07 - Project",
+      "description": "Project created from template",
+      "thumbnail": null,
+      "updatedAt": "2025-06-12T11:33:07+00:00",
+      "type": "project"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 44,
+    "totalPages": 9
+  },
+  "message": "Project search completed successfully"
+}
+
+💡 Step 6: Testing Search Suggestions...
+Search Suggestions Response:
+{
+  "suggestions": [
+    {
+      "text": "<script>alert(\"XSS\")</script>Test Project",
+      "type": "project"
+    },
+    {
+      "text": "<script>alert(\"XSS\")</script>Test Project",
+      "type": "project"
+    },
+    {
+      "text": "Test Project 1749722250",
+      "type": "project"
+    },
+    {
+      "text": "Layer Test Project 1749722520",
+      "type": "project"
+    },
+    {
+      "text": "Layer Test Project 1749722634",
+      "type": "project"
+    }
+  ],
+  "query": "te",
+  "message": "Search suggestions retrieved successfully"
+}
+
+✅ Search endpoint testing completed!

@@ -25,7 +25,6 @@ readonly class DuplicateProjectRequestDTO
          * project list. If null, a default name will be generated
          * based on the original project name with a copy suffix.
          */
-        #[Assert\NotBlank(message: 'Project name is required')]
         #[Assert\Length(
             min: 1,
             max: 255,

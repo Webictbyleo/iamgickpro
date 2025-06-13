@@ -96,7 +96,17 @@ class DesignController extends AbstractController
             }
 
             $designResponses = array_map(
-                fn(Design $design) => $this->responseDTOFactory->createDesignResponse($design),
+                fn(Design $design) => array(
+                    'id' => $design->getId(),
+                    'name' => $design->getName(),
+                    'title' => $design->getName(),
+                    'description' => $design->getTitle(), // Assuming title field stores description
+                    'thumbnail' => $design->getThumbnail(),
+                    'width' => $design->getCanvasWidth(),
+                    'height' => $design->getCanvasHeight(),
+                    'createdAt' => $design->getCreatedAt()->format('c'),
+                    'updatedAt' => $design->getUpdatedAt()->format('c'),
+                ),
                 $designs
             );
 
@@ -107,7 +117,7 @@ class DesignController extends AbstractController
                 $total,
                 'Designs retrieved successfully'
             );
-
+            
             return $this->paginatedResponse($paginatedResponse);
 
         } catch (\Exception $e) {
@@ -147,11 +157,27 @@ class DesignController extends AbstractController
             }
 
             // Validate project access if project ID is provided
+            $project = null;
             if ($dto->hasProjectId()) {
                 $project = $this->projectRepository->find($dto->projectId);
                 if (!$project || $project->getUser() !== $user) {
                     $errorResponse = $this->responseDTOFactory->createErrorResponse('Project not found or access denied');
                     return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
+                }
+            } else {
+                // If no project is provided, try to get user's first project or create a default one
+                $userProjects = $this->projectRepository->findBy(['user' => $user], ['createdAt' => 'ASC'], 1);
+                if (!empty($userProjects)) {
+                    $project = $userProjects[0];
+                } else {
+                    // Create a default project for the user
+                    $project = new Project();
+                    $project->setTitle('My First Project');
+                    $project->setName('My First Project');
+                    $project->setDescription('Default project created automatically');
+                    $project->setUser($user);
+                    $this->entityManager->persist($project);
+                    $this->entityManager->flush(); // Flush to get the project ID
                 }
             }
 
@@ -168,9 +194,8 @@ class DesignController extends AbstractController
                 $design->setTitle($dto->description); // Assuming title field stores description
             }
 
-            if ($dto->hasProjectId()) {
-                $design->setProject($project);
-            }
+            // Always set a project (required by database constraints)
+            $design->setProject($project);
 
             // Validate design
             $errors = $this->validator->validate($design);
@@ -201,6 +226,73 @@ class DesignController extends AbstractController
                 'error' => 'Failed to create design',
                 'message' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Search designs
+     * 
+     * Performs a comprehensive search across designs accessible to the authenticated user.
+     * Searches in design names, descriptions, and associated project information.
+     * 
+     * @param Request $request HTTP request with search parameters:
+     *                        - q: Search query term (required)
+     *                        - page: Page number (default: 1, min: 1)
+     *                        - limit: Items per page (default: 20, max: 100)
+     *                        - project_id: Filter by specific project (optional)
+     *                        - sort: Sort field (relevance, name, created_at, updated_at)
+     *                        - order: Sort direction (asc, desc)
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Search results or error response
+     */
+    #[Route('/search', name: 'search', methods: ['GET'])]
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            $query = $request->query->get('q');
+            if (!$query) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Search query is required');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+
+            $page = max(1, (int) $request->query->get('page', 1));
+            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
+            $offset = ($page - 1) * $limit;
+
+            $designs = $this->designRepository->searchByName($query, $limit, $offset);
+
+            // Filter designs the user has access to
+            $accessibleDesigns = array_filter($designs, function(Design $design) use ($user) {
+                $project = $design->getProject();
+                return $project->getUser() === $user || $project->getIsPublic();
+            });
+
+            $designResponses = array_map(
+                fn(Design $design) => $this->responseDTOFactory->createDesignResponse($design),
+                $accessibleDesigns
+            );
+
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $designResponses,
+                $page,
+                $limit,
+                count($accessibleDesigns),
+                'Search results retrieved successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to search designs',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -513,73 +605,6 @@ class DesignController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to update thumbnail',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Search designs
-     * 
-     * Performs a comprehensive search across designs accessible to the authenticated user.
-     * Searches in design names, descriptions, and associated project information.
-     * 
-     * @param Request $request HTTP request with search parameters:
-     *                        - q: Search query term (required)
-     *                        - page: Page number (default: 1, min: 1)
-     *                        - limit: Items per page (default: 20, max: 100)
-     *                        - project_id: Filter by specific project (optional)
-     *                        - sort: Sort field (relevance, name, created_at, updated_at)
-     *                        - order: Sort direction (asc, desc)
-     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Search results or error response
-     */
-    #[Route('/search', name: 'search', methods: ['GET'])]
-    public function search(Request $request): JsonResponse
-    {
-        try {
-            $user = $this->getUser();
-            if (!$user instanceof User) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            $query = $request->query->get('q');
-            if (!$query) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Search query is required');
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $page = max(1, (int) $request->query->get('page', 1));
-            $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-            $offset = ($page - 1) * $limit;
-
-            $designs = $this->designRepository->searchByName($query, $limit, $offset);
-
-            // Filter designs the user has access to
-            $accessibleDesigns = array_filter($designs, function(Design $design) use ($user) {
-                $project = $design->getProject();
-                return $project->getUser() === $user || $project->getIsPublic();
-            });
-
-            $designResponses = array_map(
-                fn(Design $design) => $this->responseDTOFactory->createDesignResponse($design),
-                $accessibleDesigns
-            );
-
-            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
-                $designResponses,
-                $page,
-                $limit,
-                count($accessibleDesigns),
-                'Search results retrieved successfully'
-            );
-
-            return $this->paginatedResponse($paginatedResponse);
-
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to search designs',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);

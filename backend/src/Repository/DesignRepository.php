@@ -364,4 +364,64 @@ class DesignRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Search designs by name across all public designs and user's designs.
+     * 
+     * Performs a case-insensitive search on design names. Searches across
+     * all public designs and the user's own designs, with proper access control.
+     * 
+     * @param string $query The search query to match against design names
+     * @param int $limit Maximum number of results to return (default: 20)
+     * @param int $offset Number of results to skip for pagination (default: 0)
+     * @return Design[] Array of Design entities matching the search criteria
+     */
+    public function searchByName(string $query, int $limit = 20, int $offset = 0): array
+    {
+        return $this->createQueryBuilder('d')
+            ->join('d.project', 'p')
+            ->andWhere('d.name LIKE :query')
+            ->andWhere('d.deletedAt IS NULL')
+            ->andWhere('p.deletedAt IS NULL')
+            ->setParameter('query', '%' . $query . '%')
+            ->orderBy('d.updatedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Duplicate a design by creating a copy with a new name and project.
+     * 
+     * Creates an exact copy of the given design including all its data,
+     * layers, and properties, but assigns it to a different project and name.
+     * 
+     * @param Design $originalDesign The design to duplicate
+     * @param Project $targetProject The project to assign the duplicated design to
+     * @param string $newName The name for the duplicated design
+     * @return Design The newly created duplicated design
+     */
+    public function duplicateDesign(Design $originalDesign, Project $targetProject, string $newName): Design
+    {
+        $duplicatedDesign = new Design();
+        $duplicatedDesign->setName($newName);
+        $duplicatedDesign->setDescription($originalDesign->getDescription());
+        $duplicatedDesign->setProject($targetProject);
+        $duplicatedDesign->setWidth($originalDesign->getWidth());
+        $duplicatedDesign->setHeight($originalDesign->getHeight());
+        $duplicatedDesign->setData($originalDesign->getData());
+        $duplicatedDesign->setBackground($originalDesign->getBackground());
+        $duplicatedDesign->setHasAnimation($originalDesign->getHasAnimation());
+        $duplicatedDesign->setFps($originalDesign->getFps());
+        $duplicatedDesign->setDuration($originalDesign->getDuration());
+        
+        // UUID is automatically generated in constructor - no need to set it manually
+        
+        // Persist the new design
+        $this->getEntityManager()->persist($duplicatedDesign);
+        $this->getEntityManager()->flush();
+        
+        return $duplicatedDesign;
+    }
 }

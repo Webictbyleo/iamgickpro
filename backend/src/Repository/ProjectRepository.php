@@ -32,17 +32,43 @@ class ProjectRepository extends ServiceEntityRepository
      * projects. Results are ordered by most recently updated.
      * 
      * @param User $user The user whose projects to retrieve
+     * @param int $limit Maximum number of results to return (default: 0 for no limit)
+     * @param int $offset Number of results to skip for pagination (default: 0)
+     * @param string $sortBy Field to sort by (default: 'updated')
+     * @param string $sortOrder Sort direction (default: 'desc')
      * @return Project[] Array of Project entities belonging to the user
      */
-    public function findByUser(User $user): array
+    public function findByUser(User $user, int $limit = 0, int $offset = 0, string $sortBy = 'updated', string $sortOrder = 'desc'): array
     {
-        return $this->createQueryBuilder('p')
+        $qb = $this->createQueryBuilder('p')
             ->andWhere('p.user = :user')
-            ->andWhere('p.deletedAt IS NULL')
-            ->setParameter('user', $user)
-            ->orderBy('p.updatedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->setParameter('user', $user);
+
+        // Sort by field
+        switch ($sortBy) {
+            case 'name':
+                $qb->orderBy('p.title', $sortOrder);
+                break;
+            case 'created_at':
+            case 'created':
+                $qb->orderBy('p.createdAt', $sortOrder);
+                break;
+            case 'updated_at':
+            case 'updated':
+            default:
+                $qb->orderBy('p.updatedAt', $sortOrder);
+                break;
+        }
+
+        if ($limit > 0) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset > 0) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -58,7 +84,6 @@ class ProjectRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->andWhere('p.uuid = :uuid')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('uuid', $uuid)
             ->getQuery()
             ->getOneOrNullResult();
@@ -80,11 +105,63 @@ class ProjectRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('p')
             ->andWhere('p.user = :user')
             ->andWhere('p.uuid = :uuid')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->setParameter('uuid', $uuid)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Search projects by name - compatible method for controller
+     * 
+     * @param string $search The search query
+     * @param int $limit Maximum number of results to return (default: 20)
+     * @param int $offset Number of results to skip for pagination (default: 0)
+     * @return Project[] Array of Project entities matching the search criteria
+     */
+    public function searchByName(string $search, int $limit = 20, int $offset = 0): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.title LIKE :search OR p.description LIKE :search')
+            ->setParameter('search', '%' . $search . '%')
+            ->orderBy('p.updatedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find projects by specific tags - compatible with controller usage
+     * 
+     * Retrieves projects that contain any of the specified tags.
+     * Uses LIKE operations for database compatibility.
+     * 
+     * @param array $tags Array of tags that projects should contain
+     * @param int $limit Maximum number of results to return (default: 20)
+     * @param int $offset Number of results to skip for pagination (default: 0)
+     * @return Project[] Array of Project entities containing specified tags
+     */
+    public function findByTags(array $tags, int $limit = 20, int $offset = 0): array
+    {
+        $qb = $this->createQueryBuilder('p');
+
+        // Build tag conditions using LIKE for compatibility
+        $tagConditions = [];
+        foreach ($tags as $index => $tag) {
+            $tagConditions[] = "p.tags LIKE :tag_{$index}";
+            $qb->setParameter("tag_{$index}", '%"' . $tag . '"%');
+        }
+
+        if (!empty($tagConditions)) {
+            $qb->andWhere(implode(' OR ', $tagConditions));
+        }
+
+        return $qb->orderBy('p.updatedAt', 'DESC')
+                  ->setMaxResults($limit)
+                  ->setFirstResult($offset)
+                  ->getQuery()
+                  ->getResult();
     }
 
     /**
@@ -94,7 +171,7 @@ class ProjectRepository extends ServiceEntityRepository
      * Supports pagination for large result sets. Used for the public gallery
      * and template browsing features.
      * 
-     * @param string|null $search Optional search query for title/description
+     * @param string|null $search Optional search query for name/description
      * @param array|null $tags Optional array of tags to filter by
      * @param int $limit Maximum number of results to return (default: 20)
      * @param int $offset Number of results to skip for pagination (default: 0)
@@ -104,7 +181,6 @@ class ProjectRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('p')
             ->andWhere('p.isPublic = :public')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('public', true);
 
         if ($search) {
@@ -113,8 +189,15 @@ class ProjectRepository extends ServiceEntityRepository
         }
 
         if ($tags) {
-            $qb->andWhere('JSON_OVERLAPS(p.tags, :tags) = 1')
-               ->setParameter('tags', json_encode($tags));
+            // Use compatible tag search for all databases
+            $tagConditions = [];
+            foreach ($tags as $index => $tag) {
+                $tagConditions[] = "p.tags LIKE :tag_{$index}";
+                $qb->setParameter("tag_{$index}", '%"' . $tag . '"%');
+            }
+            if (!empty($tagConditions)) {
+                $qb->andWhere(implode(' OR ', $tagConditions));
+            }
         }
 
         return $qb->orderBy('p.updatedAt', 'DESC')
@@ -139,7 +222,6 @@ class ProjectRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->andWhere('p.user = :user')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->orderBy('p.updatedAt', 'DESC')
             ->setMaxResults($limit)
@@ -162,8 +244,7 @@ class ProjectRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->andWhere('p.user = :user')
-            ->andWhere('p.name LIKE :query OR p.description LIKE :query')
-            ->andWhere('p.deletedAt IS NULL')
+            ->andWhere('p.title LIKE :query OR p.description LIKE :query')
             ->setParameter('user', $user)
             ->setParameter('query', '%' . $query . '%')
             ->orderBy('p.updatedAt', 'DESC')
@@ -187,7 +268,6 @@ class ProjectRepository extends ServiceEntityRepository
             ->select('p', 'COUNT(d.id) as designsCount')
             ->leftJoin('p.designs', 'd')
             ->andWhere('p.user = :user')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->groupBy('p.id')
             ->orderBy('p.updatedAt', 'DESC')
@@ -209,7 +289,6 @@ class ProjectRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->andWhere('p.user = :user')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->getQuery()
             ->getSingleScalarResult();
@@ -228,7 +307,6 @@ class ProjectRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->andWhere('p.isPublic = :public')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('public', true)
             ->getQuery()
             ->getSingleScalarResult();
@@ -249,7 +327,6 @@ class ProjectRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('p')
             ->andWhere('p.updatedAt >= :start')
             ->andWhere('p.updatedAt <= :end')
-            ->andWhere('p.deletedAt IS NULL')
             ->setParameter('start', $start)
             ->setParameter('end', $end)
             ->orderBy('p.updatedAt', 'DESC')
@@ -258,67 +335,79 @@ class ProjectRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find projects by specific tags.
+     * Duplicate a project for a user
      * 
-     * Retrieves public projects that contain all of the specified tags.
-     * Uses JSON operations to search within the tags array field.
+     * Creates a complete copy of a project including all its properties
+     * but assigns it to the specified user as the new owner.
      * 
-     * @param array $tags Array of tags that projects must contain
-     * @param int $limit Maximum number of results to return (default: 20)
-     * @return Project[] Array of Project entities containing all specified tags
+     * @param Project $originalProject The project to duplicate
+     * @param User $newOwner The user who will own the duplicated project
+     * @param string $newName The name for the duplicated project
+     * @return Project The newly created duplicated project
      */
-    public function findByTags(array $tags, int $limit = 20): array
+    public function duplicateProject(Project $originalProject, User $newOwner, string $newName): Project
     {
-        $qb = $this->createQueryBuilder('p')
-            ->andWhere('p.deletedAt IS NULL')
-            ->andWhere('p.isPublic = :public')
-            ->setParameter('public', true);
+        $duplicatedProject = new Project();
+        $duplicatedProject->setTitle($newName);  // Use setTitle which syncs with name
+        $duplicatedProject->setDescription($originalProject->getDescription());
+        $duplicatedProject->setUser($newOwner);
+        $duplicatedProject->setIsPublic(false); // Always private initially
+        $duplicatedProject->setTags($originalProject->getTags());
+        $duplicatedProject->setThumbnail($originalProject->getThumbnail());
 
-        foreach ($tags as $index => $tag) {
-            $qb->andWhere("JSON_CONTAINS(p.tags, :tag_{$index}) = 1")
-               ->setParameter("tag_{$index}", json_encode($tag));
-        }
+        $this->getEntityManager()->persist($duplicatedProject);
+        $this->getEntityManager()->flush();
 
-        return $qb->orderBy('p.updatedAt', 'DESC')
-                  ->setMaxResults($limit)
-                  ->getQuery()
-                  ->getResult();
+        return $duplicatedProject;
     }
 
     /**
      * Find the most popular tags across all public projects.
      * 
      * Analyzes all public projects to determine the most frequently used tags.
-     * Uses native SQL with JSON functions to extract and count individual tags
-     * from the JSON tags field. Returns tag names with their usage counts.
+     * Uses simple string operations for database compatibility.
      * 
      * @param int $limit Maximum number of popular tags to return (default: 20)
      * @return array Array of tags with 'tag' and 'count' fields, ordered by popularity
      */
     public function findMostPopularTags(int $limit = 20): array
     {
-        $sql = "
-            SELECT tag, COUNT(*) as count
-            FROM (
-                SELECT JSON_UNQUOTE(JSON_EXTRACT(tags, CONCAT('$[', numbers.n, ']'))) as tag
-                FROM projects p
-                CROSS JOIN (
-                    SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 
-                    UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9
-                ) numbers
-                WHERE p.deleted_at IS NULL 
-                AND p.is_public = 1
-                AND JSON_EXTRACT(p.tags, CONCAT('$[', numbers.n, ']')) IS NOT NULL
-            ) tags_extracted
-            WHERE tag IS NOT NULL AND tag != 'null'
-            GROUP BY tag
-            ORDER BY count DESC
-            LIMIT :limit
-        ";
+        // Get all public projects with tags
+        $projects = $this->createQueryBuilder('p')
+            ->select('p.tags')
+            ->andWhere('p.isPublic = :public')
+            ->andWhere('p.tags IS NOT NULL')
+            ->setParameter('public', true)
+            ->getQuery()
+            ->getResult();
 
-        $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->bindValue('limit', $limit, 'integer');
-        
-        return $stmt->executeQuery()->fetchAllAssociative();
+        $tagCounts = [];
+        foreach ($projects as $project) {
+            $tags = $project['tags'];
+            if (is_string($tags)) {
+                $decodedTags = json_decode($tags, true);
+                if (is_array($decodedTags)) {
+                    foreach ($decodedTags as $tag) {
+                        if (is_string($tag) && trim($tag) !== '') {
+                            $tagCounts[$tag] = ($tagCounts[$tag] ?? 0) + 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by count and limit results
+        arsort($tagCounts);
+        $result = [];
+        $count = 0;
+        foreach ($tagCounts as $tag => $tagCount) {
+            if ($count >= $limit) {
+                break;
+            }
+            $result[] = ['tag' => $tag, 'count' => $tagCount];
+            $count++;
+        }
+
+        return $result;
     }
 }

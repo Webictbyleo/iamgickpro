@@ -17,12 +17,20 @@ export class CanvasManager implements CanvasAPI {
   private guidesVisible = false
   private gridSize = 20
   private backgroundColor: string = '#ffffff'
+  
+  // Store original design canvas dimensions (independent of stage scaling)
+  private originalCanvasWidth: number
+  private originalCanvasHeight: number
 
   constructor(
     private stage: Konva.Stage,
     private state: EditorState,
     private eventEmitter: EventEmitter
   ) {
+    // Store original canvas dimensions
+    this.originalCanvasWidth = this.stage.width()
+    this.originalCanvasHeight = this.stage.height()
+    
     this.setupCanvas()
     this.setupEventHandlers()
   }
@@ -34,6 +42,10 @@ export class CanvasManager implements CanvasAPI {
   setSize(width: number, height: number): void {
     this.stage.width(width)
     this.stage.height(height)
+    
+    // Update original canvas dimensions when size is explicitly changed
+    this.originalCanvasWidth = width
+    this.originalCanvasHeight = height
     
     // Update background if it exists
     if (this.backgroundRect) {
@@ -47,8 +59,8 @@ export class CanvasManager implements CanvasAPI {
 
   getSize(): { width: number, height: number } {
     return {
-      width: this.stage.width(),
-      height: this.stage.height()
+      width: this.originalCanvasWidth,
+      height: this.originalCanvasHeight
     }
   }
 
@@ -74,9 +86,93 @@ export class CanvasManager implements CanvasAPI {
   // ============================================================================
 
   zoomToFit(): void {
+    this.fitCanvasToViewport()
+  }
+
+  /**
+   * Fit the entire canvas to the available viewport space with provided dimensions
+   */
+  fitCanvasToViewport(viewportWidth?: number, viewportHeight?: number): void {
+    const container = this.stage.container()
+    if (!container) return
+
+    let availableWidth: number
+    let availableHeight: number
+
+    if (viewportWidth && viewportHeight) {
+      // Use provided viewport dimensions (from EditorLayout)
+      availableWidth = viewportWidth
+      availableHeight = viewportHeight
+    } else {
+      // Fallback: try to get dimensions from container
+      const viewportContainer = container.parentElement
+      if (!viewportContainer) return
+
+      const viewportRect = viewportContainer.getBoundingClientRect()
+      availableWidth = viewportRect.width
+      availableHeight = viewportRect.height
+    }
+    
+    // Use the original design canvas size (not current stage size)
+    const canvasWidth = this.originalCanvasWidth
+    const canvasHeight = this.originalCanvasHeight
+    
+    // Add minimal padding around the canvas for breathing room
+    const padding = 10 // 10px padding on all sides (reduced from 20px for large canvases)
+    const targetWidth = Math.max(availableWidth - padding * 2, 200) // Minimum 200px
+    const targetHeight = Math.max(availableHeight - padding * 2, 150) // Minimum 150px
+    
+    // Calculate scale to fit the entire canvas in viewport
+    const scaleX = targetWidth / canvasWidth
+    const scaleY = targetHeight / canvasHeight
+    const scale = Math.min(scaleX, scaleY) // Allow scaling down below 100% for large canvases
+    
+    console.log('🔍 CanvasManager fitCanvasToViewport:', {
+      availableViewport: { width: availableWidth, height: availableHeight },
+      canvasSize: { width: canvasWidth, height: canvasHeight },
+      targetSize: { width: targetWidth, height: targetHeight },
+      scaleCalculations: { scaleX, scaleY, finalScale: scale },
+      padding,
+      willScaleDown: scale < 1
+    })
+    
+    // Center the canvas in the viewport
+    const scaledCanvasWidth = canvasWidth * scale
+    const scaledCanvasHeight = canvasHeight * scale
+    
+    // Calculate center position with proper padding consideration
+    const x = (availableWidth - scaledCanvasWidth) / 2
+    const y = (availableHeight - scaledCanvasHeight) / 2
+    
+    console.log('🔍 CanvasManager positioning:', {
+      scaledCanvasSize: { width: scaledCanvasWidth, height: scaledCanvasHeight },
+      calculatedPosition: { x, y },
+      finalScale: scale
+    })
+    
+    this.stage.scale({ x: scale, y: scale })
+    this.stage.position({ x, y })
+    
+    // Update state
+    this.state.zoom = scale
+    this.state.panX = x
+    this.state.panY = y
+    
+    // Emit viewport change event
+    this.eventEmitter.emit('viewport:changed', { 
+      zoom: scale, 
+      panX: x, 
+      panY: y 
+    })
+  }
+
+  /**
+   * Zoom to fit content (existing behavior)
+   */
+  zoomToFitContent(): void {
     const padding = 50
-    const stageWidth = this.stage.width()
-    const stageHeight = this.stage.height()
+    const stageWidth = this.originalCanvasWidth
+    const stageHeight = this.originalCanvasHeight
     
     // Get bounds of all visible layers
     const bounds = this.getContentBounds()
@@ -102,20 +198,12 @@ export class CanvasManager implements CanvasAPI {
     this.stage.scale({ x: scale, y: scale })
     this.stage.position({ x, y })
     
-    // Update state to maintain consistency with setZoom method
+    // Update state
     this.state.zoom = scale
     this.state.panX = x
     this.state.panY = y
     
-    // Emit viewport change event for consistency
-    this.eventEmitter.emit('viewport:changed', { 
-      zoom: scale, 
-      panX: x, 
-      panY: y 
-    })
-    this.state.panX = x
-    this.state.panY = y
-    
+    // Emit viewport change event
     this.eventEmitter.emit('viewport:changed', { 
       zoom: scale, 
       panX: x, 

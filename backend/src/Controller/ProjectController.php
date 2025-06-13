@@ -91,7 +91,7 @@ class ProjectController extends AbstractController
                 $total = count($this->projectRepository->findByTags($tagArray));
             } else {
                 $projects = $this->projectRepository->findByUser($user, $limit, $offset, $sortBy, $sortOrder);
-                $total = count($this->projectRepository->findByUser($user));
+                $total = $this->projectRepository->countUserProjects($user);
             }
 
             $projectResponses = array_map(
@@ -180,6 +180,79 @@ class ProjectController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to create project',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * List public projects
+     * 
+     * Returns a paginated list of publicly shared projects from all users.
+     * Supports search, filtering, and sorting functionality for project discovery.
+     * 
+     * @param SearchProjectsRequestDTO $dto Search and filter parameters including:
+     *                                     - page: Page number (default: 1, min: 1)
+     *                                     - limit: Items per page (default: 20, max: 100)
+     *                                     - search: Search term for project name/description
+     *                                     - tags: Array of tags to filter by
+     *                                     - sort: Sort field (name, created_at, updated_at, views)
+     *                                     - order: Sort direction (asc, desc)
+     *                                     - category: Project category filter
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Paginated list of public projects or error response
+     */
+    #[Route('/public', name: 'public', methods: ['GET'])]
+    public function publicProjects(SearchProjectsRequestDTO $dto): JsonResponse
+    {
+        try {
+            $offset = $dto->getOffset();
+            $tagArray = $dto->getTagsArray();
+
+            if ($dto->search) {
+                $projects = $this->projectRepository->findPublicProjects($dto->search, null, $dto->limit, $offset);
+                $total = count($this->projectRepository->findPublicProjects($dto->search));
+            } elseif ($tagArray) {
+                $projects = $this->projectRepository->findPublicProjects(null, $tagArray, $dto->limit, $offset);
+                $total = count($this->projectRepository->findPublicProjects(null, $tagArray));
+            } else {
+                $projects = $this->projectRepository->findPublicProjects(null, null, $dto->limit, $offset);
+                $total = count($this->projectRepository->findPublicProjects());
+            }
+
+            $projectDTOs = array_map(function (Project $project) {
+                return [
+                    'id' => $project->getId(),
+                    'name' => $project->getName(),
+                    'description' => $project->getDescription(),
+                    'tags' => $project->getTags(),
+                    'isPublic' => $project->getIsPublic(),
+                    'createdAt' => $project->getCreatedAt()->format('c'),
+                    'updatedAt' => $project->getUpdatedAt()?->format('c'),
+                    'designCount' => count($project->getDesigns()),
+                    'thumbnail' => $project->getThumbnail(),
+                    'user' => [
+                        'id' => $project->getUser()->getId(),
+                        'name' => $project->getUser()->getName(),
+                        'username' => $project->getUser()->getUsername(),
+                        'avatar' => $project->getUser()->getAvatar(),
+                    ],
+                ];
+            }, $projects);
+
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $projectDTOs,
+                $dto->page,
+                $dto->limit,
+                $total,
+                'Public projects retrieved successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to fetch public projects',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -424,79 +497,6 @@ class ProjectController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to duplicate project',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * List public projects
-     * 
-     * Returns a paginated list of publicly shared projects from all users.
-     * Supports search, filtering, and sorting functionality for project discovery.
-     * 
-     * @param SearchProjectsRequestDTO $dto Search and filter parameters including:
-     *                                     - page: Page number (default: 1, min: 1)
-     *                                     - limit: Items per page (default: 20, max: 100)
-     *                                     - search: Search term for project name/description
-     *                                     - tags: Array of tags to filter by
-     *                                     - sort: Sort field (name, created_at, updated_at, views)
-     *                                     - order: Sort direction (asc, desc)
-     *                                     - category: Project category filter
-     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Paginated list of public projects or error response
-     */
-    #[Route('/public', name: 'public', methods: ['GET'])]
-    public function publicProjects(SearchProjectsRequestDTO $dto): JsonResponse
-    {
-        try {
-            $offset = $dto->getOffset();
-            $tagArray = $dto->getTagsArray();
-
-            if ($dto->search) {
-                $projects = $this->projectRepository->findPublicProjects($dto->search, null, $dto->limit, $offset);
-                $total = count($this->projectRepository->findPublicProjects($dto->search));
-            } elseif ($tagArray) {
-                $projects = $this->projectRepository->findPublicProjects(null, $tagArray, $dto->limit, $offset);
-                $total = count($this->projectRepository->findPublicProjects(null, $tagArray));
-            } else {
-                $projects = $this->projectRepository->findPublicProjects(null, null, $dto->limit, $offset);
-                $total = count($this->projectRepository->findPublicProjects());
-            }
-
-            $projectDTOs = array_map(function (Project $project) {
-                return [
-                    'id' => $project->getId(),
-                    'name' => $project->getName(),
-                    'description' => $project->getDescription(),
-                    'tags' => $project->getTags(),
-                    'isPublic' => $project->getIsPublic(),
-                    'createdAt' => $project->getCreatedAt()->format('c'),
-                    'updatedAt' => $project->getUpdatedAt()?->format('c'),
-                    'designCount' => count($project->getDesigns()),
-                    'thumbnail' => $project->getThumbnail(),
-                    'user' => [
-                        'id' => $project->getUser()->getId(),
-                        'name' => $project->getUser()->getName(),
-                        'username' => $project->getUser()->getUsername(),
-                        'avatar' => $project->getUser()->getAvatar(),
-                    ],
-                ];
-            }, $projects);
-
-            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
-                $projectDTOs,
-                $dto->page,
-                $dto->limit,
-                $total,
-                'Public projects retrieved successfully'
-            );
-
-            return $this->paginatedResponse($paginatedResponse);
-
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to fetch public projects',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);

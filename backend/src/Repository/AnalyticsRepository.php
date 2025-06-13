@@ -142,11 +142,11 @@ class AnalyticsRepository extends ServiceEntityRepository
         $metricsSQL = "
             SELECT 
                 d.id,
-                d.name,
+                d.title as name,
                 d.created_at,
                 d.updated_at,
-                COALESCE(d.view_count, 0) as views,
-                COALESCE(d.share_count, 0) as shares,
+                0 as views,  -- placeholder since view_count column doesn't exist
+                0 as shares, -- placeholder since share_count column doesn't exist  
                 (SELECT COUNT(*) FROM export_jobs ej WHERE ej.design_id = d.id) as total_exports,
                 (SELECT COUNT(*) FROM export_jobs ej WHERE ej.design_id = d.id AND ej.status = 'completed') as completed_exports,
                 TIMESTAMPDIFF(HOUR, d.created_at, d.updated_at) as total_edit_time
@@ -366,10 +366,10 @@ class AnalyticsRepository extends ServiceEntityRepository
             FROM templates t
             WHERE t.is_public = 1 AND t.deleted_at IS NULL
             ORDER BY t.usage_count DESC
-            LIMIT :limit
+            LIMIT " . $limit . "
         ";
 
-        $popularTemplates = $conn->executeQuery($popularSQL, ['limit' => $limit])->fetchAllAssociative();
+        $popularTemplates = $conn->executeQuery($popularSQL)->fetchAllAssociative();
 
         // Category breakdown
         $categorySQL = "
@@ -474,6 +474,356 @@ class AnalyticsRepository extends ServiceEntityRepository
         return [
             'activity_patterns' => $activityPatterns,
             'feature_usage' => $featureUsage
+        ];
+    }
+
+    /**
+     * Get platform trends and growth metrics
+     * 
+     * Analyzes platform-wide trends including:
+     * - User growth and retention patterns
+     * - Content creation trends
+     * - Feature adoption rates
+     * - Platform health metrics
+     *
+     * @param \DateTimeInterface $startDate Start date for trend analysis
+     * @param \DateTimeInterface $endDate End date for trend analysis
+     * @return array Platform trends with growth metrics
+     */
+    public function getPlatformTrends(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // User growth trends
+        $userGrowthSQL = "
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as new_users,
+                COUNT(CASE WHEN email_verified = 1 THEN 1 END) as verified_users
+            FROM users 
+            WHERE created_at BETWEEN ? AND ?
+            AND deleted_at IS NULL
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ";
+
+        $userGrowth = $conn->executeQuery($userGrowthSQL, [
+            $startDate->format('Y-m-d H:i:s'),
+            $endDate->format('Y-m-d H:i:s')
+        ])->fetchAllAssociative();
+
+        // Content creation trends
+        $contentSQL = "
+            SELECT 
+                DATE(d.created_at) as date,
+                COUNT(d.id) as designs_created,
+                COUNT(p.id) as projects_created
+            FROM designs d
+            INNER JOIN projects p ON d.project_id = p.id
+            WHERE d.created_at BETWEEN ? AND ?
+            AND d.deleted_at IS NULL
+            GROUP BY DATE(d.created_at)
+            ORDER BY date ASC
+        ";
+
+        $contentTrends = $conn->executeQuery($contentSQL, [
+            $startDate->format('Y-m-d H:i:s'),
+            $endDate->format('Y-m-d H:i:s')
+        ])->fetchAllAssociative();
+
+        // Export activity trends
+        $exportSQL = "
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as total_exports,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_exports
+            FROM export_jobs 
+            WHERE created_at BETWEEN ? AND ?
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ";
+
+        $exportTrends = $conn->executeQuery($exportSQL, [
+            $startDate->format('Y-m-d H:i:s'),
+            $endDate->format('Y-m-d H:i:s')
+        ])->fetchAllAssociative();
+
+        return [
+            'user_growth' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'new_users' => (int) $row['new_users'],
+                    'verified_users' => (int) $row['verified_users']
+                ];
+            }, $userGrowth),
+            'content_trends' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'designs_created' => (int) $row['designs_created'],
+                    'projects_created' => (int) $row['projects_created']
+                ];
+            }, $contentTrends),
+            'export_trends' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'total_exports' => (int) $row['total_exports'],
+                    'successful_exports' => (int) $row['successful_exports'],
+                    'success_rate' => $row['total_exports'] > 0 
+                        ? round(((int) $row['successful_exports'] / (int) $row['total_exports']) * 100, 1)
+                        : 0
+                ];
+            }, $exportTrends)
+        ];
+    }
+
+    /**
+     * Get platform statistics for a specific time period
+     * 
+     * Returns aggregated platform statistics including:
+     * - User counts and activity metrics
+     * - Content creation statistics
+     * - Export and usage metrics
+     * - System performance indicators
+     *
+     * @param \DateTimeInterface $startDate Start date for statistics
+     * @param \DateTimeInterface $endDate End date for statistics
+     * @return array Platform statistics for the time period
+     */
+    public function getPlatformStats(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // User statistics
+        $userStats = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as total_users,
+                COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END) as new_users,
+                COUNT(CASE WHEN last_login_at BETWEEN ? AND ? THEN 1 END) as active_users
+            FROM users 
+            WHERE deleted_at IS NULL",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAssociative();
+
+        // Content statistics
+        $contentStats = $conn->executeQuery(
+            "SELECT 
+                COUNT(d.id) as designs_created,
+                COUNT(p.id) as projects_created
+            FROM designs d
+            INNER JOIN projects p ON d.project_id = p.id
+            WHERE d.created_at BETWEEN ? AND ?
+            AND d.deleted_at IS NULL",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAssociative();
+
+        // Export statistics
+        $exportStats = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as total_exports,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_exports
+            FROM export_jobs 
+            WHERE created_at BETWEEN ? AND ?",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAssociative();
+
+        return [
+            'users' => [
+                'total' => (int) $userStats['total_users'],
+                'new' => (int) $userStats['new_users'],
+                'active' => (int) $userStats['active_users']
+            ],
+            'content' => [
+                'designs_created' => (int) $contentStats['designs_created'],
+                'projects_created' => (int) $contentStats['projects_created']
+            ],
+            'exports' => [
+                'total' => (int) $exportStats['total_exports'],
+                'successful' => (int) $exportStats['successful_exports'],
+                'success_rate' => $exportStats['total_exports'] > 0 
+                    ? round(((int) $exportStats['successful_exports'] / (int) $exportStats['total_exports']) * 100, 1)
+                    : 0
+            ]
+        ];
+    }
+
+    /**
+     * Get feature usage trends over time
+     * 
+     * Analyzes how different platform features are being used over time:
+     * - Design creation patterns
+     * - Export usage trends
+     * - Template usage patterns
+     * - User engagement trends
+     *
+     * @param \DateTimeInterface $startDate Start date for trend analysis
+     * @param \DateTimeInterface $endDate End date for trend analysis
+     * @return array Feature usage trends by feature type and date
+     */
+    public function getFeatureUsageTrends(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // Design creation trends
+        $designTrends = $conn->executeQuery(
+            "SELECT 
+                DATE(d.created_at) as date,
+                COUNT(d.id) as usage_count,
+                'designs' as feature_type
+            FROM designs d
+            INNER JOIN projects p ON d.project_id = p.id
+            WHERE d.created_at BETWEEN ? AND ?
+            AND d.deleted_at IS NULL
+            GROUP BY DATE(d.created_at)
+            ORDER BY date ASC",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAllAssociative();
+
+        // Export usage trends
+        $exportTrends = $conn->executeQuery(
+            "SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as usage_count,
+                'exports' as feature_type
+            FROM export_jobs 
+            WHERE created_at BETWEEN ? AND ?
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAllAssociative();
+
+        // Template usage trends (based on creation of designs from templates)
+        $templateTrends = $conn->executeQuery(
+            "SELECT 
+                DATE(d.created_at) as date,
+                COUNT(d.id) as usage_count,
+                'templates' as feature_type
+            FROM designs d
+            INNER JOIN projects p ON d.project_id = p.id
+            WHERE d.created_at BETWEEN ? AND ?
+            AND d.deleted_at IS NULL
+            AND JSON_EXTRACT(d.data, '$.templateId') IS NOT NULL
+            GROUP BY DATE(d.created_at)
+            ORDER BY date ASC",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAllAssociative();
+
+        return [
+            'design_creation' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'count' => (int) $row['usage_count'],
+                    'feature' => $row['feature_type']
+                ];
+            }, $designTrends),
+            'export_usage' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'count' => (int) $row['usage_count'],
+                    'feature' => $row['feature_type']
+                ];
+            }, $exportTrends),
+            'template_usage' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'count' => (int) $row['usage_count'],
+                    'feature' => $row['feature_type']
+                ];
+            }, $templateTrends)
+        ];
+    }
+
+    /**
+     * Get popular categories for platform trends
+     * 
+     * Analyzes category popularity based on usage and creation within date range
+     *
+     * @param \DateTimeInterface $startDate Start date for analysis
+     * @param \DateTimeInterface $endDate End date for analysis
+     * @return array Popular categories data
+     */
+    public function getPopularCategories(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // Get popular template categories (designs don't have categories in the current schema)
+        $templateCategoriesSQL = "
+            SELECT 
+                'template' as type,
+                COALESCE(t.category, 'uncategorized') as category,
+                COUNT(*) as count,
+                SUM(COALESCE(t.usage_count, 0)) as total_usage,
+                AVG(CASE WHEN t.created_at BETWEEN :start_date AND :end_date THEN 1.0 ELSE 0.0 END) as trend_score
+            FROM templates t
+            WHERE t.is_public = 1 AND t.deleted_at IS NULL
+            GROUP BY t.category
+            ORDER BY total_usage DESC, trend_score DESC
+            LIMIT 10
+        ";
+
+        // Get design statistics (without categories since they don't exist in schema)
+        $designStatsSQL = "
+            SELECT 
+                'design' as type,
+                'all_designs' as category,
+                COUNT(*) as count,
+                AVG(CASE WHEN d.created_at BETWEEN :start_date AND :end_date THEN 1.0 ELSE 0.0 END) as trend_score
+            FROM designs d
+            WHERE d.deleted_at IS NULL
+        ";
+
+        $params = [
+            'start_date' => $startDate->format('Y-m-d H:i:s'),
+            'end_date' => $endDate->format('Y-m-d H:i:s')
+        ];
+
+        $templateCategories = $conn->executeQuery($templateCategoriesSQL, $params)->fetchAllAssociative();
+        $designStats = $conn->executeQuery($designStatsSQL, $params)->fetchAllAssociative();
+
+        // Format template categories
+        $formattedTemplates = array_map(function($row) {
+            return [
+                'category' => $row['category'],
+                'type' => 'template',
+                'count' => (int) $row['count'],
+                'usage_count' => (int) $row['total_usage'],
+                'trend_score' => round((float) $row['trend_score'], 2)
+            ];
+        }, $templateCategories);
+
+        // Format design stats (single entry since no categories)
+        $formattedDesigns = array_map(function($row) {
+            return [
+                'category' => $row['category'],
+                'type' => 'design',
+                'count' => (int) $row['count'],
+                'trend_score' => round((float) $row['trend_score'], 2)
+            ];
+        }, $designStats);
+
+        return [
+            'design_categories' => $formattedDesigns,
+            'template_categories' => $formattedTemplates,
+            'combined' => array_merge($formattedDesigns, $formattedTemplates)
         ];
     }
 }

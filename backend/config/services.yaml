@@ -100,6 +100,11 @@ services:
         tags:
             - { name: controller.argument_value_resolver }
 
+    # Custom normalizer for Tag value objects
+    App\Serializer\Normalizer\TagNormalizer:
+        tags:
+            - { name: serializer.normalizer }
+
     # Video Analysis Service Configuration
     App\Service\VideoAnalysisService:
         arguments:

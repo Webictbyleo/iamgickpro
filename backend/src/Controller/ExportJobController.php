@@ -95,6 +95,83 @@ class ExportJobController extends AbstractController
     }
 
     /**
+     * Get export job statistics for authenticated user
+     * 
+     * Returns comprehensive statistics about the user's export job usage,
+     * including totals by status, format breakdown, and success rate.
+     * 
+     * @return JsonResponse<array|ErrorResponseDTO> Export job statistics or error response
+     */
+    #[Route('/stats', name: 'stats', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function stats(): JsonResponse
+    {
+        try {
+            $stats = $this->exportJobRepository->getUserStats($this->getUser());
+
+            $statsData = [
+                'total_jobs' => $stats['total'],
+                'completed_jobs' => $stats['completed'],
+                'failed_jobs' => $stats['failed'],
+                'pending_jobs' => $stats['pending'],
+                'processing_jobs' => $stats['processing'],
+                'format_breakdown' => $stats['by_format'],
+                'success_rate' => $stats['total'] > 0 ? round(($stats['completed'] / $stats['total']) * 100, 2) : 0,
+            ];
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Export job statistics retrieved successfully',
+                'data' => $statsData,
+                'timestamp' => (new \DateTimeImmutable())->format('c')
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to retrieve export job statistics'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Get export job queue status (Admin only)
+     * 
+     * Returns system-wide export job queue statistics and health information.
+     * Includes pending/processing job counts, average processing times, and queue health metrics.
+     * Only accessible to users with ROLE_ADMIN.
+     * 
+     * @return JsonResponse<array|ErrorResponseDTO> Queue status information or error response
+     */
+    #[Route('/queue-status', name: 'queue_status', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function queueStatus(): JsonResponse
+    {
+        try {
+            $queueStats = $this->exportJobRepository->getQueueStats();
+
+            $queueData = [
+                'pending_jobs' => $queueStats['pending'],
+                'processing_jobs' => $queueStats['processing'],
+                'failed_jobs' => $queueStats['failed'],
+                'avg_processing_time' => $queueStats['avg_processing_time'],
+                'queue_health' => $queueStats['queue_health'],
+            ];
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Queue status retrieved successfully',
+                'data' => $queueData,
+                'timestamp' => (new \DateTimeImmutable())->format('c')
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to retrieve queue status'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
      * Get details of a specific export job
      * 
      * Returns detailed information about a single export job.
@@ -446,73 +523,6 @@ class ExportJobController extends AbstractController
         } catch (\Exception $e) {
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse('Failed to download export file'),
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * Get export job statistics for authenticated user
-     * 
-     * Returns comprehensive statistics about the user's export job usage,
-     * including totals by status, format breakdown, and success rate.
-     * 
-     * @return JsonResponse<array|ErrorResponseDTO> Export job statistics or error response
-     */
-    #[Route('/stats', name: 'stats', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function stats(): JsonResponse
-    {
-        try {
-            $stats = $this->exportJobRepository->getUserStats($this->getUser());
-
-            $response = [
-                'total_jobs' => $stats['total'],
-                'completed_jobs' => $stats['completed'],
-                'failed_jobs' => $stats['failed'],
-                'pending_jobs' => $stats['pending'],
-                'processing_jobs' => $stats['processing'],
-                'format_breakdown' => $stats['by_format'],
-                'success_rate' => $stats['total'] > 0 ? round(($stats['completed'] / $stats['total']) * 100, 2) : 0,
-            ];
-
-            return new JsonResponse($response);
-        } catch (\Exception $e) {
-            return $this->errorResponse(
-                $this->responseDTOFactory->createErrorResponse('Failed to retrieve export job statistics'),
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * Get export job queue status (Admin only)
-     * 
-     * Returns system-wide export job queue statistics and health information.
-     * Includes pending/processing job counts, average processing times, and queue health metrics.
-     * Only accessible to users with ROLE_ADMIN.
-     * 
-     * @return JsonResponse<array|ErrorResponseDTO> Queue status information or error response
-     */
-    #[Route('/queue-status', name: 'queue_status', methods: ['GET'])]
-    #[IsGranted('ROLE_ADMIN')]
-    public function queueStatus(): JsonResponse
-    {
-        try {
-            $queueStats = $this->exportJobRepository->getQueueStats();
-
-            $response = [
-                'pending_jobs' => $queueStats['pending'],
-                'processing_jobs' => $queueStats['processing'],
-                'failed_jobs' => $queueStats['failed'],
-                'avg_processing_time' => $queueStats['avg_processing_time'],
-                'queue_health' => $queueStats['queue_health'],
-            ];
-
-            return new JsonResponse($response);
-        } catch (\Exception $e) {
-            return $this->errorResponse(
-                $this->responseDTOFactory->createErrorResponse('Failed to retrieve queue status'),
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }

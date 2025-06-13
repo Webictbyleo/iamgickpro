@@ -1,0 +1,35 @@
+🎬 Testing Video Thumbnail Generation (Direct FFmpeg Test)
+=======================================================
+
+📹 Found 2 video file(s):
+   - Website-signup-button-68461d3e95891.mp4
+   - Website-signup-button-68461e61a0f63.mp4
+
+🧪 Testing with: Website-signup-button-68461d3e95891.mp4
+   File size: 562.97 KB
+   Full path: /var/www/html/iamgickpro/backend/public/uploads/media/Website-signup-button-68461d3e95891.mp4
+
+🔄 Generating GIF thumbnail...
+   Output: /var/www/html/iamgickpro/backend/public/uploads/thumbnails/test_video_thumb.gif
+
+⏱️  Processing time: 0.64 seconds
+
+✅ GIF thumbnail generated successfully!
+   📁 Path: /var/www/html/iamgickpro/backend/public/uploads/thumbnails/test_video_thumb.gif
+   📏 Size: 28.3 KB
+   🎭 MIME type: image/gif
+   ✅ Valid GIF file confirmed
+   📊 Metadata:
+      duration: 3
+      fps: 10
+      width: 300
+      height: 300
+      file_size: 28980
+
+📊 Summary:
+   Video file: Website-signup-button-68461d3e95891.mp4
+   Thumbnail path: /var/www/html/iamgickpro/backend/public/uploads/thumbnails/test_video_thumb.gif
+   Success: Yes
+   Processing time: 0.64s
+
+🎉 Test completed!

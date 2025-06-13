@@ -30,8 +30,8 @@ final readonly class ExportJobListRequestDTO
     public static function fromRequest(\Symfony\Component\HttpFoundation\Request $request): self
     {
         return new self(
-            page: max(1, (int) $request->query->get('page', 1)),
-            limit: min(50, max(1, (int) $request->query->get('limit', 20))),
+            page: (int) $request->query->get('page', 1),
+            limit: (int) $request->query->get('limit', 20),
             status: $request->query->get('status'),
             format: $request->query->get('format'),
         );

@@ -52,7 +52,6 @@ class Media
 
     #[ORM\Column(type: Types::STRING, length: 500)]
     #[Assert\NotBlank]
-    #[Assert\Url]
     #[Groups(['media:read', 'media:admin'])]
     private ?string $url = null;
 

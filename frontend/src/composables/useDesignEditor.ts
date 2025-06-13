@@ -110,6 +110,7 @@ export function useDesignEditor() {
 
     // History events
     editorSDK.value.on('history:changed', (historyState: any) => {
+      console.log('🎯 Event received: history:changed', historyState)
       canUndo.value = historyState.canUndo
       canRedo.value = historyState.canRedo
     })
@@ -117,6 +118,17 @@ export function useDesignEditor() {
     // Canvas events
     editorSDK.value.on('canvas:changed', () => {
       hasUnsavedChanges.value = true
+    })
+
+    // Design events
+    editorSDK.value.on('design:loaded', (design: any) => {
+      // Emit a custom event to trigger auto-fit in EditorLayout
+      if (typeof window !== 'undefined') {
+        const autoFitEvent = new CustomEvent('editor:auto-fit-request', { 
+          detail: { reason: 'design-loaded', design } 
+        })
+        document.dispatchEvent(autoFitEvent)
+      }
     })
 
     // Context menu events

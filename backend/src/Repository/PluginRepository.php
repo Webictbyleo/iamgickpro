@@ -537,8 +537,8 @@ class PluginRepository extends ServiceEntityRepository
             ->leftJoin('p.user', 'u');
 
         if (isset($filters['category']) && $filters['category']) {
-            $qb->andWhere('JSON_CONTAINS(p.categories, :category) = 1')
-               ->setParameter('category', json_encode($filters['category']));
+            $qb->andWhere('p.categories LIKE :category')
+               ->setParameter('category', '%"' . $filters['category'] . '"%');
         }
 
         if (isset($filters['search']) && $filters['search']) {
@@ -598,8 +598,8 @@ class PluginRepository extends ServiceEntityRepository
             ->select('COUNT(p.id)');
 
         if (isset($filters['category']) && $filters['category']) {
-            $qb->andWhere('JSON_CONTAINS(p.categories, :category) = 1')
-               ->setParameter('category', json_encode($filters['category']));
+            $qb->andWhere('p.categories LIKE :category')
+               ->setParameter('category', '%"' . $filters['category'] . '"%');
         }
 
         if (isset($filters['search']) && $filters['search']) {

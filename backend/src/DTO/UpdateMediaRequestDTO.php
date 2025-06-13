@@ -39,13 +39,13 @@ class UpdateMediaRequestDTO
         /**
          * Updated organizational tags for the media.
          * 
-         * If provided, replaces the current tag set. Each tag must be
-         * 1-50 characters and contain only alphanumeric characters,
-         * spaces, hyphens, and underscores. Null indicates no change.
+         * If provided, replaces the current tag set. Can be either:
+         * - Array of Tag value objects
+         * - Array of strings (will be converted to Tag objects)
+         * - Null indicates no change
          * 
-         * @var Tag[]|null $tags Array of validated tag objects or null
+         * @var Tag[]|string[]|null $tags Array of tag objects/strings or null
          */
-        #[Assert\Valid]
         public readonly ?array $tags = null,
 
         /**

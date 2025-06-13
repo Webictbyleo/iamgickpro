@@ -199,6 +199,58 @@ class MediaController extends AbstractController
     }
 
     /**
+     * Search media files
+     * 
+     * Performs advanced search across user's media library with filtering and sorting.
+     * Supports full-text search on filenames, descriptions, and tags.
+     * Returns paginated results with comprehensive media metadata.
+     * 
+     * @param SearchMediaRequestDTO $dto Search parameters including:
+     *                                  - search: Search term for filename/description/tags
+     *                                  - type: Media type filter (image, video, audio, document)
+     *                                  - format: File format filter (jpg, png, mp4, etc.)
+     *                                  - page: Page number (default: 1, min: 1)
+     *                                  - limit: Items per page (default: 20, max: 100)
+     *                                  - sort: Sort field (name, size, created_at, updated_at)
+     *                                  - order: Sort direction (asc, desc)
+     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Filtered and sorted media results or error response
+     */
+    #[Route('/search', name: 'search', methods: ['GET'])]
+    public function search(SearchMediaRequestDTO $dto): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            $filters = $dto->getFilters();
+            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
+            $total = $this->mediaRepository->countByFilters($filters, $dto->search);
+
+            $mediaData = array_map(fn(Media $mediaItem) => $mediaItem->toArray(), $media);
+
+            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
+                $mediaData,
+                $dto->page,
+                $dto->limit,
+                $total,
+                'Media search completed successfully'
+            );
+
+            return $this->paginatedResponse($paginatedResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to search media',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Get details of a specific media file
      * 
      * Returns detailed information about a single media file including metadata.
@@ -466,58 +518,6 @@ class MediaController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to delete media',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Search media files
-     * 
-     * Performs advanced search across user's media library with filtering and sorting.
-     * Supports full-text search on filenames, descriptions, and tags.
-     * Returns paginated results with comprehensive media metadata.
-     * 
-     * @param SearchMediaRequestDTO $dto Search parameters including:
-     *                                  - search: Search term for filename/description/tags
-     *                                  - type: Media type filter (image, video, audio, document)
-     *                                  - format: File format filter (jpg, png, mp4, etc.)
-     *                                  - page: Page number (default: 1, min: 1)
-     *                                  - limit: Items per page (default: 20, max: 100)
-     *                                  - sort: Sort field (name, size, created_at, updated_at)
-     *                                  - order: Sort direction (asc, desc)
-     * @return JsonResponse<PaginatedResponseDTO|ErrorResponseDTO> Filtered and sorted media results or error response
-     */
-    #[Route('/search', name: 'search', methods: ['GET'])]
-    public function search(SearchMediaRequestDTO $dto): JsonResponse
-    {
-        try {
-            $user = $this->getUser();
-            if (!$user instanceof User) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            $filters = $dto->getFilters();
-            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
-            $total = $this->mediaRepository->countByFilters($filters, $dto->search);
-
-            $mediaData = array_map(fn(Media $mediaItem) => $mediaItem->toArray(), $media);
-
-            $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
-                $mediaData,
-                $dto->page,
-                $dto->limit,
-                $total,
-                'Media search completed successfully'
-            );
-
-            return $this->paginatedResponse($paginatedResponse);
-
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to search media',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);

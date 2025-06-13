@@ -424,31 +424,53 @@ class ExportJobRepository extends ServiceEntityRepository
     /**
      * Get processing time statistics
      * 
-     * Analyzes processing times for completed export jobs grouped by format.
-     * Provides average, minimum, and maximum processing times to help with
-     * performance optimization and capacity planning.
+     * Analyzes processing times for completed export jobs. Can be filtered by user
+     * or return global statistics. Provides performance metrics for analytics.
      *
-     * @return array Processing time statistics including avg, min, max times by format
+     * @param User|null $user Optional user to filter by
+     * @return array Processing time statistics
      */
-    public function getProcessingTimeStats(): array
+    public function getProcessingTimeStats(?User $user = null): array
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $sql = '
-            SELECT 
-                format,
-                AVG(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as avg_time,
-                MIN(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as min_time,
-                MAX(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as max_time,
-                COUNT(*) as sample_count
-            FROM export_job 
-            WHERE status = "completed" 
-            AND started_at IS NOT NULL 
-            AND completed_at IS NOT NULL
-            GROUP BY format
-        ';
+        if ($user) {
+            // User-specific statistics
+            $stats = $conn->executeQuery(
+                "SELECT 
+                    AVG(CASE WHEN processing_time_ms IS NOT NULL THEN processing_time_ms ELSE NULL END) as avg_processing_time,
+                    MIN(CASE WHEN processing_time_ms IS NOT NULL THEN processing_time_ms ELSE NULL END) as fastest,
+                    MAX(CASE WHEN processing_time_ms IS NOT NULL THEN processing_time_ms ELSE NULL END) as slowest,
+                    COUNT(CASE WHEN processing_time_ms IS NOT NULL THEN 1 ELSE NULL END) as sample_count
+                FROM export_jobs 
+                WHERE user_id = ? AND status = 'completed'",
+                [$user->getId()]
+            )->fetchAssociative();
 
-        return $conn->executeQuery($sql)->fetchAllAssociative();
+            return [
+                'avg_processing_time' => $stats['avg_processing_time'] ? round((float) $stats['avg_processing_time']) : 0,
+                'fastest' => (int) ($stats['fastest'] ?? 0),
+                'slowest' => (int) ($stats['slowest'] ?? 0),
+                'sample_count' => (int) ($stats['sample_count'] ?? 0)
+            ];
+        } else {
+            // Global statistics by format
+            $sql = '
+                SELECT 
+                    format,
+                    AVG(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as avg_time,
+                    MIN(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as min_time,
+                    MAX(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as max_time,
+                    COUNT(*) as sample_count
+                FROM export_jobs 
+                WHERE status = "completed" 
+                AND started_at IS NOT NULL 
+                AND completed_at IS NOT NULL
+                GROUP BY format
+            ';
+
+            return $conn->executeQuery($sql)->fetchAllAssociative();
+        }
     }
 
     /**
@@ -746,5 +768,124 @@ class ExportJobRepository extends ServiceEntityRepository
             'avg_processing_time' => $result['avg_processing_time'] ? round((float) $result['avg_processing_time']) : null,
             'queue_health' => $result['queue_health'],
         ];
+    }
+
+    /**
+     * Get export statistics for a user with date range
+     * 
+     * Provides export statistics for analytics including timeline data,
+     * success rates, and format breakdown within a specific date range.
+     *
+     * @param User $user The user to generate statistics for
+     * @param \DateTimeInterface|null $startDate Start date for filtering (optional)
+     * @param \DateTimeInterface|null $endDate End date for filtering (optional)
+     * @return array Export statistics with timeline and breakdown data
+     */
+    public function getExportStatsForUser(User $user, ?\DateTimeInterface $startDate = null, ?\DateTimeInterface $endDate = null): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $userId = $user->getId();
+        
+        $params = [$userId];
+        $whereClause = "WHERE user_id = ?";
+        
+        if ($startDate) {
+            $whereClause .= " AND created_at >= ?";
+            $params[] = $startDate->format('Y-m-d H:i:s');
+        }
+        
+        if ($endDate) {
+            $whereClause .= " AND created_at <= ?";
+            $params[] = $endDate->format('Y-m-d H:i:s');
+        }
+
+        // Get overall statistics
+        $overallStats = $conn->executeQuery(
+            "SELECT 
+                COUNT(*) as total_exports,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_exports,
+                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_exports
+            FROM export_jobs 
+            $whereClause",
+            $params
+        )->fetchAssociative();
+
+        // Get timeline data (last 30 days if no date range specified)
+        $timelineParams = [$userId];
+        $timelineWhere = "WHERE user_id = ?";
+        
+        if (!$startDate && !$endDate) {
+            $timelineWhere .= " AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        } elseif ($startDate) {
+            $timelineWhere .= " AND created_at >= ?";
+            $timelineParams[] = $startDate->format('Y-m-d H:i:s');
+            if ($endDate) {
+                $timelineWhere .= " AND created_at <= ?";
+                $timelineParams[] = $endDate->format('Y-m-d H:i:s');
+            }
+        }
+
+        $timeline = $conn->executeQuery(
+            "SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as count,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed
+            FROM export_jobs 
+            $timelineWhere
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC",
+            $timelineParams
+        )->fetchAllAssociative();
+
+        return [
+            'total_exports' => (int) $overallStats['total_exports'],
+            'successful_exports' => (int) $overallStats['successful_exports'],
+            'failed_exports' => (int) $overallStats['failed_exports'],
+            'timeline' => array_map(function($row) {
+                return [
+                    'date' => $row['date'],
+                    'count' => (int) $row['count'],
+                    'completed' => (int) $row['completed'],
+                    'failed' => (int) $row['failed']
+                ];
+            }, $timeline)
+        ];
+    }
+
+    /**
+     * Get format breakdown statistics for a user
+     * 
+     * Returns the distribution of export formats used by a specific user.
+     * Used for analytics and usage pattern analysis.
+     *
+     * @param User $user The user to analyze
+     * @return array Format breakdown with counts for each format
+     */
+    public function getFormatBreakdownForUser(User $user): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        
+        $formatStats = $conn->executeQuery(
+            "SELECT 
+                format,
+                COUNT(*) as count,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
+            FROM export_jobs 
+            WHERE user_id = ?
+            GROUP BY format
+            ORDER BY count DESC",
+            [$user->getId()]
+        )->fetchAllAssociative();
+
+        $breakdown = [];
+        foreach ($formatStats as $stat) {
+            $breakdown[$stat['format']] = [
+                'total' => (int) $stat['count'],
+                'completed' => (int) $stat['completed']
+            ];
+        }
+
+        return $breakdown;
     }
 }

@@ -22,7 +22,7 @@ class AnalyticsRequestDTO
         #[Assert\DateTime]
         public readonly ?\DateTimeInterface $endDate = null,
 
-        #[Assert\Choice(['day', 'week', 'month', 'quarter', 'year'])]
+        #[Assert\Choice(['day', 'week', 'month', 'quarter', 'year', '7d', '30d', '90d', '1y'])]
         public readonly ?string $period = null,
 
         #[Assert\Choice(['designs', 'exports', 'templates', 'projects', 'users', 'storage'])]

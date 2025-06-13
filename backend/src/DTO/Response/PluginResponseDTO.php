@@ -10,8 +10,8 @@ namespace App\DTO\Response;
 class PluginResponseDTO extends BaseResponseDTO
 {
     public function __construct(
-        bool $success,
         string $message,
+        bool $success,
         public readonly ?array $plugin = null,
         public readonly ?array $plugins = null,
         public readonly ?int $total = null,
@@ -19,7 +19,7 @@ class PluginResponseDTO extends BaseResponseDTO
         public readonly ?int $totalPages = null,
         ?\DateTimeImmutable $timestamp = null
     ) {
-        parent::__construct($success, $message, $timestamp);
+        parent::__construct($message, $success, $timestamp);
     }
 
     public function toArray(): array

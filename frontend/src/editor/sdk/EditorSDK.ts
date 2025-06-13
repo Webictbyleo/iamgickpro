@@ -15,6 +15,7 @@ import { CanvasManager } from './CanvasManager'
 import { AnimationManager } from './AnimationManager'
 import { PluginManager } from './PluginManager'
 import { TransformManager } from './TransformManager'
+import { HistoryManager } from './HistoryManager'
 import type { Layer, Design, LayerType } from '../../types'
 
 /**
@@ -27,12 +28,7 @@ export class EditorSDK extends EventEmitter {
   private animationManager: AnimationManager
   private pluginManager: PluginManager
   private transformManager: TransformManager
-  
-  // History Management
-  private history: Array<{ action: string, data: any, timestamp: number }> = []
-  private currentHistoryIndex: number = -1
-  private maxHistorySize: number = 50
-  private isUndoRedoInProgress: boolean = false
+  private historyManager: HistoryManager
   
   private state: EditorState = {
     selectedLayers: [],
@@ -77,6 +73,7 @@ export class EditorSDK extends EventEmitter {
     this.animationManager = new AnimationManager(this.state, this)
     this.pluginManager = new PluginManager(this.state, this)
     this.transformManager = new TransformManager(this.stage, this)
+    this.historyManager = new HistoryManager(null, this) // Will be set in connectManagers
     
     // Connect managers
     this.connectManagers()
@@ -96,8 +93,12 @@ export class EditorSDK extends EventEmitter {
     // Connect LayerManager with TransformManager for transformation handling
     this.layerManager.setTransformManager(this.transformManager)
     
-    // Connect LayerManager with history system
-    this.layerManager.setHistoryManager(this)
+    // Connect LayerManager with HistoryManager
+    this.historyManager = new HistoryManager(this.layerManager, this)
+    this.layerManager.setHistoryManager(this.historyManager)
+    
+    // Connect TransformManager with HistoryManager for transform capture
+    this.transformManager.setHistoryManager(this.historyManager)
   }
 
   // ============================================================================
@@ -116,6 +117,20 @@ export class EditorSDK extends EventEmitter {
    */
   get canvas(): CanvasAPI {
     return this.canvasManager
+  }
+
+  /**
+   * History management API
+   */
+  get history() {
+    return {
+      undo: () => this.undo(),
+      redo: () => this.redo(),
+      canUndo: () => this.canUndo(),
+      canRedo: () => this.canRedo(),
+      clear: () => this.historyManager.clear(),
+      getState: () => this.historyManager.getState()
+    }
   }
 
   /**
@@ -277,6 +292,63 @@ export class EditorSDK extends EventEmitter {
   }
 
   /**
+   * Export design as image in specified format
+   */
+  async exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): Promise<string> {
+    try {
+      // Get the stage
+      const stage = this.stage
+      
+      // Temporarily hide UI elements (transformer, etc.)
+      const uiLayers = stage.find('.ui-layer')
+      uiLayers.forEach(node => node.hide())
+      
+      // Export the stage as image
+      const dataURL = stage.toDataURL({
+        mimeType: format === 'jpeg' ? 'image/jpeg' : `image/${format}`,
+        quality: quality,
+        pixelRatio: 2 // Higher resolution export
+      })
+      
+      // Restore UI elements
+      uiLayers.forEach(node => node.show())
+      
+      return dataURL
+    } catch (error) {
+      console.error('Export as image failed:', error)
+      throw new Error(`Failed to export as ${format}: ${error}`)
+    }
+  }
+
+  /**
+   * Download design as image file
+   */
+  async downloadAsImage(
+    format: 'png' | 'jpeg' | 'webp' = 'png', 
+    filename?: string, 
+    quality: number = 1
+  ): Promise<void> {
+    try {
+      const dataURL = await this.exportAsImage(format, quality)
+      
+      // Create download link
+      const link = document.createElement('a')
+      link.download = filename || `design.${format}`
+      link.href = dataURL
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      console.log(`Design downloaded as ${link.download}`)
+    } catch (error) {
+      console.error('Download failed:', error)
+      throw error
+    }
+  }
+
+  /**
    * Destroy the editor and clean up resources
    */
   destroy(): void {
@@ -285,6 +357,7 @@ export class EditorSDK extends EventEmitter {
     this.animationManager.destroy()
     this.pluginManager.destroy()
     this.transformManager.destroy()
+    this.historyManager.destroy()
     this.stage.destroy()
     this.removeAllListeners()
   }
@@ -408,6 +481,11 @@ export class EditorSDK extends EventEmitter {
       this.updateViewport()
     })
 
+    // Forward history events from HistoryManager
+    this.historyManager.on('history:changed', (historyState: any) => {
+      this.emit('history:changed', historyState)
+    })
+
     // Keyboard shortcuts
     window.addEventListener('keydown', this.handleKeyboard.bind(this))
   }
@@ -503,104 +581,70 @@ export class EditorSDK extends EventEmitter {
   // ============================================================================
 
   undo(): void {
-    if (this.currentHistoryIndex <= 0 || this.isUndoRedoInProgress) return
-    
-    this.isUndoRedoInProgress = true
-    
+    if (!this.historyManager.canUndo()) {
+      console.warn('Cannot undo: no commands available')
+      return
+    }
+
     try {
-      this.currentHistoryIndex--
-      const previousState = this.history[this.currentHistoryIndex]
+      console.log('EditorSDK: Initiating undo')
+      const success = this.historyManager.undo()
       
-      console.log('Undo: Reverting to state', previousState)
-      this.applyHistoryState(previousState)
-      
-      this.emitHistoryChanged()
+      if (success) {
+        console.log('EditorSDK: Undo completed successfully')
+      } else {
+        console.warn('EditorSDK: Undo failed')
+      }
     } catch (error) {
-      console.error('Undo failed:', error)
-    } finally {
-      this.isUndoRedoInProgress = false
+      console.error('EditorSDK: Undo error:', error)
     }
   }
 
   redo(): void {
-    if (this.currentHistoryIndex >= this.history.length - 1 || this.isUndoRedoInProgress) return
-    
-    this.isUndoRedoInProgress = true
-    
+    if (!this.historyManager.canRedo()) {
+      console.warn('Cannot redo: no commands available')
+      return
+    }
+
     try {
-      this.currentHistoryIndex++
-      const nextState = this.history[this.currentHistoryIndex]
+      console.log('EditorSDK: Initiating redo')
+      const success = this.historyManager.redo()
       
-      console.log('Redo: Applying state', nextState)
-      this.applyHistoryState(nextState)
-      
-      this.emitHistoryChanged()
+      if (success) {
+        console.log('EditorSDK: Redo completed successfully')
+      } else {
+        console.warn('EditorSDK: Redo failed')
+      }
     } catch (error) {
-      console.error('Redo failed:', error)
-    } finally {
-      this.isUndoRedoInProgress = false
+      console.error('EditorSDK: Redo error:', error)
     }
   }
-  
-  // ============================================================================
-  // HISTORY MANAGEMENT
-  // ============================================================================
-  
-  private addToHistory(action: string, data: any): void {
-    if (this.isUndoRedoInProgress) return
-    
-    // Remove any future history if we're not at the end
-    if (this.currentHistoryIndex < this.history.length - 1) {
-      this.history = this.history.slice(0, this.currentHistoryIndex + 1)
-    }
-    
-    // Add new state
-    this.history.push({
-      action,
-      data: JSON.parse(JSON.stringify(data)), // Deep clone
-      timestamp: Date.now()
-    })
-    
-    // Limit history size
-    if (this.history.length > this.maxHistorySize) {
-      this.history.shift()
-    } else {
-      this.currentHistoryIndex++
-    }
-    
-    this.emitHistoryChanged()
+
+  /**
+   * Check if undo is available
+   */
+  canUndo(): boolean {
+    return this.historyManager.canUndo()
   }
-  
-  private applyHistoryState(state: { action: string, data: any, timestamp: number }): void {
-    switch (state.action) {
-      case 'layer_create':
-        this.layerManager.deleteLayer(state.data.layer.id, true) // Silent delete
-        break
-      case 'layer_delete':
-        this.layerManager.createLayer(state.data.layer.type, state.data.layer, true) // Silent create
-        break
-      case 'layer_update':
-        this.layerManager.updateLayer(state.data.layerId, state.data.previousData, true) // Silent update
-        break
-      case 'layers_reorder':
-        // Restore previous layer order
-        this.layerManager.reorderLayers(state.data.previousOrder, true) // Silent reorder
-        break
-      default:
-        console.warn('Unknown history action:', state.action)
-    }
+
+  /**
+   * Check if redo is available
+   */
+  canRedo(): boolean {
+    return this.historyManager.canRedo()
   }
-  
-  private emitHistoryChanged(): void {
-    this.emit('history:changed', {
-      canUndo: this.currentHistoryIndex > 0,
-      canRedo: this.currentHistoryIndex < this.history.length - 1,
-      currentIndex: this.currentHistoryIndex,
-      totalStates: this.history.length
-    })
+
+  /**
+   * Get current history state for UI updates
+   */
+  getHistoryState() {
+    return this.historyManager.getState()
   }
-  
-  private saveCurrentState(action: string, data: any): void {
-    this.addToHistory(action, data)
+
+  /**
+   * Clear all history
+   */
+  clearHistory(): void {
+    this.historyManager.clear()
   }
 }

@@ -78,11 +78,11 @@ class AuthController extends AbstractController
 
             $user = new User();
             $user->setEmail($dto->email);
-            $user->setFirstName($dto->firstName);
-            $user->setLastName($dto->lastName);
+            $user->setFirstName($this->sanitizeInput($dto->firstName));
+            $user->setLastName($this->sanitizeInput($dto->lastName));
             
             if ($dto->username) {
-                $user->setUsername($dto->username);
+                $user->setUsername(trim($dto->username)); // Username doesn't need HTML sanitization
             }
             
             $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->password);
@@ -248,25 +248,27 @@ class AuthController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
-            // Update allowed fields
+            // Update allowed fields with sanitization
             if ($dto->firstName !== null) {
-                $user->setFirstName($dto->firstName);
+                $user->setFirstName($this->sanitizeInput($dto->firstName));
             }
 
             if ($dto->lastName !== null) {
-                $user->setLastName($dto->lastName);
+                $user->setLastName($this->sanitizeInput($dto->lastName));
             }
 
             if ($dto->username !== null) {
+                // Username doesn't need HTML sanitization, but validate format
+                $sanitizedUsername = trim($dto->username);
                 // Check if username is already taken
-                $existingUser = $this->userRepository->findOneBy(['username' => $dto->username]);
+                $existingUser = $this->userRepository->findOneBy(['username' => $sanitizedUsername]);
                 if ($existingUser && $existingUser->getId() !== $user->getId()) {
                     $errorResponse = $this->responseDTOFactory->createErrorResponse(
                         'Username is already taken'
                     );
                     return $this->errorResponse($errorResponse, Response::HTTP_CONFLICT);
                 }
-                $user->setUsername($dto->username);
+                $user->setUsername($sanitizedUsername);
             }
 
             if ($dto->avatar !== null) {
@@ -399,5 +401,19 @@ class AuthController extends AbstractController
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Sanitize user input to prevent XSS attacks
+     */
+    private function sanitizeInput(string $input): string
+    {
+        // Remove HTML tags and encode special characters
+        $sanitized = strip_tags(trim($input));
+        
+        // Additional encoding for special characters
+        $sanitized = htmlspecialchars($sanitized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        return $sanitized;
     }
 }

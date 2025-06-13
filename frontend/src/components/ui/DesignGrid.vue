@@ -19,7 +19,7 @@
       
       <div class="text-center relative z-10 px-4 py-2">
         <!-- Enhanced icon container -->
-        <div class="w-16 h-16 bg-white/80 backdrop-blur-sm group-hover:bg-white group-hover:shadow-lg group-hover:shadow-violet-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+        <div class="w-16 h-16 bg-white/80  group-hover:bg-white group-hover:shadow-lg group-hover:shadow-violet-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1">
           <div class="relative">
             <component :is="icons.plus" class="w-8 h-8 text-violet-600 group-hover:text-violet-700 transition-all duration-300 group-hover:rotate-90" />
             <!-- Rotating ring -->
@@ -38,7 +38,7 @@
           
           <!-- Action hint -->
           <div class="mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-150 transform translate-y-1 group-hover:translate-y-0">
-            <div class="inline-flex items-center text-xs text-violet-500 bg-white/60 backdrop-blur-sm px-2 py-1 rounded-full border border-violet-200/50">
+            <div class="inline-flex items-center text-xs text-violet-500 bg-white/60  px-2 py-1 rounded-full border border-violet-200/50">
               <span class="mr-1">✨</span>
               Click to begin
             </div>
@@ -60,6 +60,10 @@
       @edit="$emit('edit', design)"
       @duplicate="$emit('duplicate', design)"
       @delete="$emit('delete', design)"
+      @preview="$emit('preview', design)"
+      @share="$emit('share', design)"
+      @rename="$emit('rename', design)"
+      @download="$emit('download', design)"
     />
 
     <!-- Loading Cards -->
@@ -123,5 +127,9 @@ defineEmits<{
   edit: [design: Design]
   duplicate: [design: Design]
   delete: [design: Design]
+  preview: [design: Design]
+  share: [design: Design]
+  rename: [design: Design]
+  download: [design: Design]
 }>()
 </script>

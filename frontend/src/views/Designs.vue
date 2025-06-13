@@ -95,7 +95,7 @@
             
             <div class="ml-4 flex-1">
               <h3 class="font-semibold text-gray-900">{{ design.title }}</h3>
-              <p class="text-sm text-gray-500">{{ design.dimensions.width }}×{{ design.dimensions.height }}</p>
+              <p class="text-sm text-gray-500">{{ design.width }}×{{ design.height }}</p>
               <p class="text-sm text-gray-500">Updated {{ formatDate(design.updatedAt) }}</p>
             </div>
             

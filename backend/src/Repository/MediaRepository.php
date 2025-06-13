@@ -702,4 +702,46 @@ class MediaRepository extends ServiceEntityRepository
         
         return $duplicateGroups;
     }
+
+    /**
+     * Duplicate a media file for a user.
+     * 
+     * Creates a copy of an existing media file with all properties copied except
+     * UUID, timestamps, and user ownership. Used for creating personal copies
+     * of accessible media files.
+     * 
+     * @param Media $originalMedia The media item to duplicate
+     * @param User $user The user who will own the duplicate
+     * @param string|null $customName Optional custom name for the duplicate
+     * @return Media The newly created duplicate media entity
+     */
+    public function duplicateMedia(Media $originalMedia, User $user, ?string $customName = null): Media
+    {
+        $entityManager = $this->getEntityManager();
+        
+        $duplicate = new Media();
+        $duplicate->setName($customName ?? 'Copy of ' . $originalMedia->getName())
+                  ->setType($originalMedia->getType())
+                  ->setMimeType($originalMedia->getMimeType())
+                  ->setSize($originalMedia->getSize())
+                  ->setUrl($originalMedia->getUrl())
+                  ->setThumbnailUrl($originalMedia->getThumbnailUrl())
+                  ->setWidth($originalMedia->getWidth())
+                  ->setHeight($originalMedia->getHeight())
+                  ->setDuration($originalMedia->getDuration())
+                  ->setSource($originalMedia->getSource())
+                  ->setSourceId($originalMedia->getSourceId())
+                  ->setMetadata($originalMedia->getMetadata() ?? [])
+                  ->setTags($originalMedia->getTags())
+                  ->setAttribution($originalMedia->getAttribution())
+                  ->setLicense($originalMedia->getLicense())
+                  ->setIsPremium($originalMedia->isIsPremium())
+                  ->setIsActive($originalMedia->isIsActive())
+                  ->setUser($user);
+
+        $entityManager->persist($duplicate);
+        $entityManager->flush();
+        
+        return $duplicate;
+    }
 }

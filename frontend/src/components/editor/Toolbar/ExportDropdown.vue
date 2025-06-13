@@ -147,7 +147,7 @@
                 </div>
               </div>
 
-              <div v-if="selectedFormat !== 'svg'">
+              <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Scale ({{ exportScale }}x)
                 </label>
@@ -225,8 +225,6 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import {
   ChevronDownIcon,
   PhotoIcon,
-  DocumentIcon,
-  CodeBracketIcon,
   FilmIcon,
   Cog6ToothIcon
 } from '@heroicons/vue/24/outline'
@@ -284,18 +282,6 @@ const hasAnimations = computed(() => {
 // Base formats that are always available
 const baseFormats = [
   { 
-    value: 'svg', 
-    label: 'SVG Vector', 
-    extension: '.svg',
-    icon: CodeBracketIcon
-  },
-  { 
-    value: 'pdf', 
-    label: 'PDF Document', 
-    extension: '.pdf',
-    icon: DocumentIcon
-  },
-  { 
     value: 'webp', 
     label: 'WebP Modern', 
     extension: '.webp',
@@ -336,8 +322,6 @@ const advancedFormats = computed(() => {
   const formats = [
     { value: 'png', label: 'PNG - High Quality' },
     { value: 'jpg', label: 'JPG - Smaller Size' },
-    { value: 'svg', label: 'SVG - Vector' },
-    { value: 'pdf', label: 'PDF - Document' },
     { value: 'webp', label: 'WebP - Modern' }
   ]
   

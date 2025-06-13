@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="300" viewBox="0 0 400 300">
   <defs>
-    <linearGradient id="gradient-6840b8729b1f5-0c6f5090b14aa10537fe6f595df85569" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="gradient-684a83ab7636a-0c6f5090b14aa10537fe6f595df85569" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#ff0000"/>
       <stop offset="33%" stop-color="#00ff00"/>
       <stop offset="66%" stop-color="#0000ff"/>
@@ -8,7 +8,7 @@
     </linearGradient>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <g id="layer-" transform="translate(94, 70) rotate(0, 49, 44.5) scale(1, 1)" data-layer-id="">
-    <rect x="0" y="0" width="98" height="89" fill="url(#gradient-6840b8729b1f5-0c6f5090b14aa10537fe6f595df85569)" data-layer-type="shape"/>
+  <g id="layer-" transform="translate(13, 70) rotate(0, 55, 30) scale(1, 1)" data-layer-id="">
+    <rect x="0" y="0" width="110" height="60" fill="url(#gradient-684a83ab7636a-0c6f5090b14aa10537fe6f595df85569)" data-layer-type="shape"/>
   </g>
 </svg>

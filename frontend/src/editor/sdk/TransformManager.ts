@@ -19,6 +19,8 @@ export class TransformManager {
   private transformer: Konva.Transformer | null = null
   private uiLayer: Konva.Layer | null = null
   private selectedLayers: LayerNode[] = []
+  private historyManager: any = null
+  private transformStartStates: Map<string, Partial<LayerNode>> = new Map()
 
   constructor(
     private stage: Konva.Stage,
@@ -27,6 +29,13 @@ export class TransformManager {
     this.setupUILayer()
     this.setupTransformer()
     this.setupEventListeners()
+  }
+
+  /**
+   * Set the history manager for transform capture
+   */
+  setHistoryManager(historyManager: any): void {
+    this.historyManager = historyManager
   }
 
   // ============================================================================
@@ -324,8 +333,14 @@ export class TransformManager {
     if (!this.transformer) return
 
     // Remove existing handlers
+    this.transformer.off('transformstart.transform-manager')
     this.transformer.off('transform.transform-manager')
     this.transformer.off('transformend.transform-manager')
+
+    // Add transform start handler to capture initial state
+    this.transformer.on('transformstart.transform-manager', () => {
+      this.handleTransformStart()
+    })
 
     // Add transform handler for real-time updates (especially for images)
     this.transformer.on('transform.transform-manager', () => {
@@ -342,6 +357,34 @@ export class TransformManager {
     
     // Add drag handlers for each selected node
     this.addNodeDragHandlers()
+  }
+
+  private handleTransformStart(): void {
+    // Capture initial transform state for history
+    this.transformStartStates.clear()
+    
+    // Disable command merging for discrete transform operations
+    if (this.historyManager && typeof this.historyManager.disableMergingTemporarily === 'function') {
+      this.historyManager.disableMergingTemporarily(2000) // 2 seconds
+    }
+    
+    this.selectedLayers.forEach(layer => {
+      if (!layer.konvaNode) return
+      
+      // Capture the current state before transformation
+      const currentState = {
+        id: layer.id,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        rotation: layer.rotation,
+        scaleX: layer.scaleX || 1,
+        scaleY: layer.scaleY || 1
+      }
+      
+      this.transformStartStates.set(layer.id, currentState)
+    })
   }
 
   private handleTransform(): void {
@@ -561,6 +604,43 @@ export class TransformManager {
       // Emit update event
       this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
     })
+
+    // Capture final state and add to history if history manager is available
+    if (this.historyManager && this.transformStartStates.size > 0) {
+      this.selectedLayers.forEach(layer => {
+        const initialState = this.transformStartStates.get(layer.id)
+        if (initialState) {
+          const finalState = {
+            id: layer.id,
+            x: layer.x,
+            y: layer.y,
+            width: layer.width,
+            height: layer.height,
+            rotation: layer.rotation,
+            scaleX: layer.scaleX || 1,
+            scaleY: layer.scaleY || 1
+          }
+          
+          // Only add to history if something actually changed
+          const hasChanged = (
+            initialState.x !== finalState.x ||
+            initialState.y !== finalState.y ||
+            initialState.width !== finalState.width ||
+            initialState.height !== finalState.height ||
+            initialState.rotation !== finalState.rotation ||
+            initialState.scaleX !== finalState.scaleX ||
+            initialState.scaleY !== finalState.scaleY
+          )
+          
+          if (hasChanged) {
+            this.historyManager.addTransformLayerCommand(layer.id, initialState, finalState)
+          }
+        }
+      })
+      
+      // Clear transform states
+      this.transformStartStates.clear()
+    }
 
     this.stage.batchDraw()
   }
@@ -902,6 +982,16 @@ export class TransformManager {
         if (container) {
           container.style.cursor = 'grabbing'
         }
+        
+        // Capture initial position for history
+        if (this.historyManager) {
+          const initialState = {
+            id: layer.id,
+            x: layer.x,
+            y: layer.y
+          }
+          this.transformStartStates.set(layer.id, initialState)
+        }
       })
 
       // Add drag end handler
@@ -913,8 +1003,25 @@ export class TransformManager {
         
         // Update layer position from node
         if (layer.konvaNode) {
+          const oldX = layer.x
+          const oldY = layer.y
+          
           layer.x = layer.konvaNode.x()
           layer.y = layer.konvaNode.y()
+          
+          // Add to history if history manager is available and position changed
+          if (this.historyManager) {
+            const initialState = this.transformStartStates.get(layer.id)
+            if (initialState && (initialState.x !== layer.x || initialState.y !== layer.y)) {
+              const finalState = {
+                id: layer.id,
+                x: layer.x,
+                y: layer.y
+              }
+              this.historyManager.addTransformLayerCommand(layer.id, initialState, finalState)
+            }
+            this.transformStartStates.delete(layer.id)
+          }
           
           // Emit layer update event to sync with store
           this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))

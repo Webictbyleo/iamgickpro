@@ -101,10 +101,6 @@ export interface Design {
   thumbnail?: string
   width: number
   height: number
-  dimensions: {
-    width: number
-    height: number
-  }
   userId: string
   projectId?: string
   isPublic: boolean
@@ -583,10 +579,12 @@ export interface MediaSearchItem {
 export interface GlobalSearchResponseData {
   results: GlobalSearchItem[]
   query: string
-  page: number
-  limit: number
-  total: number
-  totalPages: number
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
   message: string
 }
 
@@ -633,24 +631,58 @@ export interface SearchSuggestionResponseData {
 }
 
 // Unified search response types for different search endpoints
-export interface GlobalSearchApiResponse extends BaseApiResponse {
-  data: GlobalSearchResponseData
+export interface GlobalSearchApiResponse {
+  results: GlobalSearchItem[]
+  query: string
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
 }
 
-export interface ProjectSearchApiResponse extends BaseApiResponse {
-  data: ProjectSearchResponseData
+export interface ProjectSearchApiResponse {
+  projects: ProjectSearchItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
 }
 
-export interface TemplateSearchApiResponse extends BaseApiResponse {
-  data: TemplateSearchResponseData
+export interface TemplateSearchApiResponse {
+  templates: TemplateSearchItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
 }
 
-export interface MediaSearchApiResponse extends BaseApiResponse {
-  data: MediaSearchResponseData
+export interface MediaSearchApiResponse {
+  media: MediaSearchItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  message: string
 }
 
-export interface SearchSuggestionApiResponse extends BaseApiResponse {
-  data: SearchSuggestionResponseData
+export interface SearchSuggestionApiResponse {
+  suggestions: Array<{
+    text: string
+    type: string
+  }>
+  query: string
+  message: string
 }
 
 // Legacy unified response for backward compatibility
@@ -777,13 +809,11 @@ export interface DesignApiResponse extends BaseApiResponse {
  * Designs paginated response
  */
 export interface DesignsApiResponse extends BaseApiResponse {
-  data: {
-    designs: Design[]
-    pagination: {
-      total: number
-      page: number
-      totalPages: number
-    }
+  data: Design[]
+  pagination: {
+    total: number
+    page: number
+    totalPages: number
   }
 }
 

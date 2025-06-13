@@ -149,6 +149,7 @@ export interface CanvasAPI {
   // Viewport control
   centerView(): void
   zoomToFit(): void
+  fitCanvasToViewport(viewportWidth?: number, viewportHeight?: number): void
   resetZoom(): void
   setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void
   getZoom(): number

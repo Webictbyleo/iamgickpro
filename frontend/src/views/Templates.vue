@@ -38,11 +38,15 @@
       <!-- Templates Grid -->
       <TemplateGrid
         title=""
+        subtitle="Discover professional templates to jumpstart your creative projects"
         :templates="templates"
         :loading="isLoading"
         :loading-count="8"
         :show-view-all="false"
+        :empty-state-message="'Try adjusting your search criteria or browse our featured templates'"
+        :show-create-button="true"
         @select="handleTemplateSelected"
+        @createNew="handleCreateNew"
       />
     </div>
   </AppLayout>
@@ -176,5 +180,10 @@ const handleTemplateSelected = async (template: Template) => {
       console.error('Fallback creation also failed:', fallbackError)
     }
   }
+}
+
+const handleCreateNew = () => {
+  // Navigate to create new design page
+  router.push('/editor')
 }
 </script>
