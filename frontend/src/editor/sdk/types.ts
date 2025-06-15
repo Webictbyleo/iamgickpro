@@ -145,7 +145,9 @@ export interface CanvasAPI {
   setSize(width: number, height: number): void
   getSize(): { width: number; height: number }
   setBackgroundColor(color: string): void
+  setBackground(background: any): void
   getBackgroundColor(): string
+  getBackground(): any
   
   // Viewport control
   centerView(): void

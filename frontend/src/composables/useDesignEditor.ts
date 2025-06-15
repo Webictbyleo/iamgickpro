@@ -13,6 +13,7 @@ export function useDesignEditor() {
   const editorSDK = ref<EditorSDK | null>(null)
   const isInitializing = ref(false)
   const hasUnsavedChanges = ref(false)
+  const saveError = ref(false)
   const canUndo = ref(false)
   const canRedo = ref(false)
 
@@ -93,6 +94,7 @@ export function useDesignEditor() {
         // Normal layer creation - persist to backend
         designStore.addLayer(layer)
         hasUnsavedChanges.value = true
+        saveError.value = false // Clear previous save errors
         console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)
       } else {
         // During design loading - skip persistence to avoid circular saves
@@ -107,6 +109,7 @@ export function useDesignEditor() {
       if (!editorSDK.value?.isLoading()) {
         designStore.updateLayer(layer.id, layer, { skipPersistence: false })
         hasUnsavedChanges.value = true
+        saveError.value = false // Clear previous save errors
         console.log('📦 Layer updated in store with backend persistence')
       } else {
         console.log('📦 Layer updated during loading (ignored to prevent circular saves)')
@@ -119,6 +122,7 @@ export function useDesignEditor() {
       if (!editorSDK.value?.isLoading()) {
         designStore.removeLayer(layerId)
         hasUnsavedChanges.value = true
+        saveError.value = false // Clear previous save errors
       }
     })
 
@@ -194,10 +198,17 @@ export function useDesignEditor() {
     if (!designStore.currentDesign) return
     
     try {
-      await designStore.saveDesign()
-      hasUnsavedChanges.value = false
+      saveError.value = false
+      const result = await designStore.saveDesign()
+      if (result.success) {
+        hasUnsavedChanges.value = false
+      } else {
+        saveError.value = true
+        throw new Error(result.error || 'Save failed')
+      }
     } catch (error) {
       console.error('Failed to save design:', error)
+      saveError.value = true
       throw error
     }
   }
@@ -288,6 +299,7 @@ export function useDesignEditor() {
     editorSDK: computed(() => editorSDK.value) as ComputedRef<EditorSDK | null>,
     isInitializing: computed(() => isInitializing.value),
     hasUnsavedChanges: computed(() => hasUnsavedChanges.value),
+    saveError: computed(() => saveError.value),
     canUndo: computed(() => canUndo.value),
     canRedo: computed(() => canRedo.value),
     initializeEditor,

@@ -105,6 +105,17 @@
               @update-layer-name="handleUpdateLayerName"
             />
 
+            <!-- Design Properties Panel -->
+            <DesignPropertiesPanel
+              v-if="activePanel === 'properties'"
+              :canvas-width="canvasWidth"
+              :canvas-height="canvasHeight"
+              :background-color="backgroundColor"
+              @update:canvas-width="handleCanvasWidthUpdate"
+              @update:canvas-height="handleCanvasHeightUpdate"
+              @update:background-color="handleBackgroundUpdate"
+            />
+
             <!-- Contextual Panels -->
             <ImageEditingPanel
               v-if="activePanelModal === 'image-editing' && selectedLayer && selectedLayer.type === 'image'"
@@ -182,7 +193,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType, ImageLayerProperties, Design } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
@@ -200,6 +211,7 @@ import LayerPanel from './Panels/LayerPanel.vue'
 import MediaPanel from './Panels/MediaPanel.vue'
 import AnimationPanel from './Panels/AnimationPanel.vue'
 import ColorsPanel from './Panels/ColorsPanel.vue'
+import DesignPropertiesPanel from './Panels/DesignPropertiesPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
 import ImageEditingPanel from './Panels/ImageEditingPanel.vue'
 import DesignEditorContextMenu from './ContextMenu/DesignEditorContextMenu.vue'
@@ -219,9 +231,20 @@ const route = useRoute()
 const router = useRouter()
 
 // Create helper methods for design updates
-const updateDesignBackground = (backgroundColor: string) => {
+const updateDesignBackground = (background: string | DesignBackground) => {
   if (designStore.currentDesign) {
-    designStore.currentDesign.data.backgroundColor = backgroundColor
+    if (typeof background === 'string') {
+      // Legacy string format
+      designStore.currentDesign.data.backgroundColor = background
+      designStore.currentDesign.data.background = { type: 'solid', color: background }
+    } else {
+      // New DesignBackground format
+      designStore.currentDesign.data.background = background
+      // Keep legacy field for backward compatibility
+      if (background.type === 'solid') {
+        designStore.currentDesign.data.backgroundColor = background.color
+      }
+    }
     designStore.currentDesign.updatedAt = new Date().toISOString()
   }
 }
@@ -238,6 +261,7 @@ const {
   canUndo,
   canRedo,
   hasUnsavedChanges,
+  saveError,
   initializeEditor,
   loadDesign,
   saveDesign,
@@ -306,8 +330,8 @@ const designCanvasRef = ref<InstanceType<typeof DesignCanvas>>()
 
 // Update canvas container dimensions based on actual viewport
 const updateCanvasViewportDimensions = () => {
-  if (canvasViewportElement.value) {
-    const rect = canvasViewportElement.value.getBoundingClientRect()
+  if (designCanvasRef.value && designCanvasRef.value.canvasContainer && designCanvasRef.value.canvasContainer.parentElement) {
+    const rect = designCanvasRef.value.canvasContainer.parentElement.getBoundingClientRect()
     canvasContainerWidth.value = rect.width
     canvasContainerHeight.value = rect.height
   }
@@ -324,14 +348,24 @@ onUnmounted(() => {
 })
 
 // Update dimensions when panels change
-watch([activePanel, activePanelModal], () => {
+watch([activePanel, activePanelModal], (newValues, oldValues) => {
   nextTick(() => {
     updateCanvasViewportDimensions()
     
-    // Auto-fit to screen when panels change (viewport size changes)
-    setTimeout(() => {
-      autoFitToScreen()
-    }, 200) // Slightly longer delay for panel animations
+    // Only auto-fit to screen when panels open/close, not when switching between panels
+    const [newActivePanel, newActivePanelModal] = newValues || [null, null]
+    const [oldActivePanel, oldActivePanelModal] = oldValues || [null, null]
+    
+    // Check if panel opened or closed (not just switched)
+    const wasPanelOpen = !!oldActivePanel || !!oldActivePanelModal
+    const isPanelOpen = !!newActivePanel || !!newActivePanelModal
+    
+    // Only trigger fit-to-screen if panel state changed (opened or closed)
+    if (wasPanelOpen !== isPanelOpen) {
+      setTimeout(() => {
+        autoFitToScreen()
+      }, 200) // Slightly longer delay for panel animations
+    }
   })
 })
 
@@ -366,9 +400,10 @@ const designName = computed({
 })
 
 const saveStatus = computed(() => {
-  if (designStore.isLoading) return 'Saving...'
-  if (hasUnsavedChanges.value) return 'Unsaved changes'
-  return 'All changes saved'
+  if (saveError.value) return 'error'
+  if (designStore.isLoading) return 'saving'
+  if (hasUnsavedChanges.value) return 'unsaved'
+  return 'saved'
 })
 
 const canvasWidth = computed({
@@ -388,10 +423,33 @@ const canvasHeight = computed({
 })
 
 const backgroundColor = computed({
-  get: () => designStore.currentDesign?.data?.backgroundColor || '#ffffff',
-  set: (value: string) => {
+  get: () => {
+    const currentDesign = designStore.currentDesign
+    if (!currentDesign) return '#ffffff'
+    
+    // Check new background format first
+    if (currentDesign.data.background) {
+      return currentDesign.data.background
+    }
+    
+    // Fall back to legacy backgroundColor field
+    return currentDesign.data.backgroundColor || '#ffffff'
+  },
+  set: (value: string | DesignBackground) => {
+    console.log('🔍 EditorLayout: backgroundColor setter called with:', value)
+    console.log('🔍 EditorLayout: Value type:', typeof value)
+    console.log('🔍 EditorLayout: Value stringified:', JSON.stringify(value, null, 2))
+    
     updateDesignBackground(value)
-    editorSDK.value?.canvas.setBackgroundColor(value)
+    // Update canvas background
+    if (typeof value === 'string') {
+      console.log('🔍 EditorLayout: Calling setBackgroundColor with string:', value)
+      editorSDK.value?.canvas.setBackgroundColor(value)
+    } else {
+      console.log('🔍 EditorLayout: Calling setBackground with object:', value)
+      editorSDK.value?.canvas.setBackground(value)
+    }
+    console.log('🔍 EditorLayout: Background update completed')
   }
 })
 
@@ -573,7 +631,7 @@ const handlePositionPreset = (preset: string) => {
   if (!selectedLayer.value || !editorSDK.value) return
 
   // Use the proper TransformManager API for position presets
-  // This ensures layers are positioned correctly considering viewport transforms
+  // The EditorSDK handles canvas dimensions internally
   editorSDK.value.transform.applyPositionPreset(preset)
 }
 
@@ -652,8 +710,13 @@ const autoFitToScreen = () => {
   })
 }
 
-const handleSave = () => {
-  saveDesign()
+const handleSave = async () => {
+  try {
+    await saveDesign()
+  } catch (error) {
+    console.error('Save failed:', error)
+    // Error handling is already done in saveDesign function
+  }
 }
 
 const handleExport = async (format: string) => {
@@ -729,6 +792,21 @@ const handleStopAnimation = () => {
   if (editorSDK.value) {
     editorSDK.value.animation.stop()
   }
+}
+
+// Property panel event handlers
+const handleCanvasWidthUpdate = (width: number) => {
+  updateDesignSize(width, canvasHeight.value)
+  editorSDK.value?.canvas.setSize(width, canvasHeight.value)
+}
+
+const handleCanvasHeightUpdate = (height: number) => {
+  updateDesignSize(canvasWidth.value, height)
+  editorSDK.value?.canvas.setSize(canvasWidth.value, height)
+}
+
+const handleBackgroundUpdate = (background: string | DesignBackground) => {
+  backgroundColor.value = background
 }
 
 // Context Menu Event Handler
@@ -1075,8 +1153,11 @@ const handleApplyColor = (colorString: string) => {
     }
     console.log('Applied color to layer:', selectedLayer.value.id, color)
   } else {
-    // Apply to canvas background if no layer selected
-    backgroundColor.value = color
+    // Apply to canvas background if no layer selected using new DesignBackground format
+    backgroundColor.value = {
+      type: 'solid',
+      color: color
+    }
     console.log('Applied color to canvas background:', color)
   }
 }
@@ -1116,11 +1197,75 @@ const handleApplyGradient = (gradientString: string) => {
       handleApplyColor(colorMatch[0])
     }
   } else {
-    // Apply gradient to canvas background (use first color)
-    const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
-    if (colorMatch) {
-      backgroundColor.value = colorMatch[0]
-      console.log('Applied gradient color to canvas background:', colorMatch[0])
+    // Apply gradient to canvas background using new DesignBackground format
+    const isLinear = gradientString.includes('linear-gradient')
+    const isRadial = gradientString.includes('radial-gradient')
+    
+    if (isLinear || isRadial) {
+      // Enhanced color extraction with stop positions
+      const colorStopRegex = /#[0-9a-fA-F]{6}\s*(?:(\d+)%)?/g
+      const colorMatches = Array.from(gradientString.matchAll(colorStopRegex))
+      
+      const colors = colorMatches.map((match, index) => ({
+        color: match[0].replace(/\s*\d+%/, ''), // Remove percentage from color
+        stop: match[1] ? parseInt(match[1]) / 100 : index / Math.max(1, colorMatches.length - 1)
+      }))
+      
+      // Parse gradient properties
+      let angle = 0
+      let centerX = 0.5
+      let centerY = 0.5
+      let radius = 0.7
+      
+      if (isLinear) {
+        // Parse angle from linear gradient
+        const angleMatch = gradientString.match(/(\d+)deg/)
+        if (angleMatch) {
+          angle = parseInt(angleMatch[1])
+        } else {
+          // Convert direction to angle
+          if (gradientString.includes('to right')) angle = 90
+          else if (gradientString.includes('to bottom')) angle = 180
+          else if (gradientString.includes('to left')) angle = 270
+          else if (gradientString.includes('to top')) angle = 0
+          else if (gradientString.includes('to bottom right')) angle = 135
+          else if (gradientString.includes('to bottom left')) angle = 225
+        }
+      } else {
+        // Parse radial gradient center position
+        const centerMatch = gradientString.match(/circle at (\d+)% (\d+)%/)
+        if (centerMatch) {
+          centerX = parseInt(centerMatch[1]) / 100
+          centerY = parseInt(centerMatch[2]) / 100
+        }
+      }
+      
+      const gradientBackground: DesignBackground = {
+        type: isLinear ? 'linear' : 'radial',
+        gradient: {
+          colors: colors,
+          ...(isLinear ? { angle } : {
+            centerX,
+            centerY,
+            radius
+          })
+        }
+      }
+      
+      backgroundColor.value = gradientBackground
+      console.log('🔍 EditorLayout: handleApplyGradient - Applied gradient to canvas background:', gradientBackground)
+      console.log('🔍 EditorLayout: handleApplyGradient - Original gradient string:', gradientString)
+      console.log('🔍 EditorLayout: handleApplyGradient - Parsed gradient config:', JSON.stringify(gradientBackground, null, 2))
+    } else {
+      // Fallback to single color if gradient parsing fails
+      const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
+      if (colorMatch) {
+        backgroundColor.value = {
+          type: 'solid',
+          color: colorMatch[0]
+        }
+        console.log('Applied gradient color to canvas background:', colorMatch[0])
+      }
     }
   }
 }

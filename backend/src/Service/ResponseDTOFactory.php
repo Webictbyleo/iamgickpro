@@ -137,7 +137,6 @@ class ResponseDTOFactory
             'data' => $design->getData(),
             'width' => $design->getWidth(),
             'height' => $design->getHeight(),
-            'background' => $design->getBackground(),
             'thumbnail' => $design->getThumbnail(),
             'hasAnimation' => $design->getHasAnimation(),
             'fps' => $design->getFps(),

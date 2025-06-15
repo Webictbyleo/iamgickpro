@@ -240,9 +240,20 @@ export class EditorSDK extends EventEmitter {
         }
       }
       
-      // Set background color from design data
-      const backgroundColor = design.data.backgroundColor || '#ffffff'
-      this.canvasManager.setBackgroundColor(backgroundColor)
+      // Set background from design data - support both new and legacy formats
+      if (design.data.background) {
+        // New DesignBackground format
+        console.log('EditorSDK: Loading background from new format:', design.data.background)
+        this.canvasManager.setBackground(design.data.background)
+      } else if (design.data.backgroundColor) {
+        // Legacy string format
+        console.log('EditorSDK: Loading background from legacy format:', design.data.backgroundColor)
+        this.canvasManager.setBackgroundColor(design.data.backgroundColor)
+      } else {
+        // Default background
+        console.log('EditorSDK: No background found, using default white')
+        this.canvasManager.setBackgroundColor('#ffffff')
+      }
       
       // Load layers - check both direct layers array and legacy data structure
       let layersToLoad: Layer[] = []
@@ -306,10 +317,13 @@ export class EditorSDK extends EventEmitter {
   exportDesign(): DesignData {
     const layers = this.layerManager.getAllLayers()
     const canvasSize = this.canvasManager.getSize()
+    const background = this.canvasManager.getBackground()
     const backgroundColor = this.canvasManager.getBackgroundColor()
     
     return {
-      backgroundColor,
+      // Support both new and legacy background formats
+      background,
+      backgroundColor, // Keep for backward compatibility
       animationSettings: {},
       customProperties: {},
       globalStyles: {},
@@ -333,26 +347,98 @@ export class EditorSDK extends EventEmitter {
    */
   async exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): Promise<string> {
     try {
+      console.log('🔍 EditorSDK: Starting export as image...')
+      
       // Get the stage
       const stage = this.stage
       
-      // Temporarily hide UI elements (transformer, etc.)
-      const uiLayers = stage.find('.ui-layer')
-      uiLayers.forEach(node => node.hide())
+      // Store current stage transform
+      const currentZoom = stage.scaleX()
+      const currentX = stage.x()
+      const currentY = stage.y()
       
-      // Export the stage as image
-      const dataURL = stage.toDataURL({
-        mimeType: format === 'jpeg' ? 'image/jpeg' : `image/${format}`,
-        quality: quality,
-        pixelRatio: 2 // Higher resolution export
+      console.log('🔍 EditorSDK: Current stage transform:', { zoom: currentZoom, x: currentX, y: currentY })
+      
+      // Get the original design dimensions
+      const canvasSize = this.canvas.getSize()
+      const designWidth = canvasSize.width
+      const designHeight = canvasSize.height
+      
+      console.log('🔍 EditorSDK: Canvas size:', { width: designWidth, height: designHeight })
+      
+      // Temporarily hide UI elements (transformer, guides, etc.)
+      const uiElements = stage.find('.ui-layer, .guides-layer, .transformer, .selection-rect')
+      uiElements.forEach(node => node.hide())
+      
+      // Create a temporary stage for export to avoid modifying the main stage
+      const exportStage = new Konva.Stage({
+        container: document.createElement('div'),
+        width: designWidth,
+        height: designHeight
       })
       
+      console.log('🔍 EditorSDK: Created export stage:', { width: designWidth, height: designHeight })
+      
+      // Clone the background layer
+      const backgroundLayer = stage.findOne('#canvas-background-layer')
+      if (backgroundLayer) {
+        const clonedBackground = backgroundLayer.clone()
+        
+        // Reset background layer positioning for export
+        const backgroundRect = clonedBackground.findOne('.canvas-background')
+        if (backgroundRect) {
+          backgroundRect.setAttrs({
+            x: 0,
+            y: 0,
+            width: designWidth,
+            height: designHeight
+          })
+          console.log('🔍 EditorSDK: Reset background rect for export')
+        }
+        
+        exportStage.add(clonedBackground)
+        console.log('🔍 EditorSDK: Added background layer to export stage')
+      }
+      
+      // Clone the main content layer
+      const mainLayer = this.layerManager.getMainLayer()
+      if (mainLayer) {
+        const clonedMainLayer = mainLayer.clone()
+        
+        // Reset any transformations that might have been applied to the main layer
+        clonedMainLayer.setAttrs({
+          x: 0,
+          y: 0,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0
+        })
+        
+        exportStage.add(clonedMainLayer)
+        console.log('🔍 EditorSDK: Added main layer to export stage')
+      }
+      
+      // Force draw the export stage
+      exportStage.draw()
+      
+      // Export the temporary stage
+      const dataURL = exportStage.toDataURL({
+        mimeType: format === 'jpeg' ? 'image/jpeg' : `image/${format}`,
+        quality: quality,
+        pixelRatio: 2 // Higher pixel ratio for better quality
+      })
+      
+      console.log('🔍 EditorSDK: Export completed successfully')
+      
+      // Clean up the temporary stage
+      exportStage.destroy()
+      
       // Restore UI elements
-      uiLayers.forEach(node => node.show())
+      uiElements.forEach(node => node.show())
       
       return dataURL
     } catch (error) {
-      console.error('Export as image failed:', error)
+      console.error('🔍 EditorSDK: Export as image failed:', error)
       throw new Error(`Failed to export as ${format}: ${error}`)
     }
   }

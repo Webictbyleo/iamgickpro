@@ -222,6 +222,9 @@ export class LayerManager implements LayerAPI {
     if (this.transformManager) {
       this.transformManager.selectLayer(layer)
     }
+    
+    // Emit selection change event
+    this.emitSelectionChange()
   }
 
   selectLayers(layerIds: number[]): void {
@@ -233,6 +236,9 @@ export class LayerManager implements LayerAPI {
       const layers = this.state.selectedLayers.map(id => this.layers.get(id)).filter(Boolean) as LayerNode[]
       this.transformManager.selectLayers(layers)
     }
+    
+    // Emit selection change event
+    this.emitSelectionChange()
   }
 
   toggleSelection(layerId: number): void {
@@ -258,6 +264,9 @@ export class LayerManager implements LayerAPI {
     if (this.transformManager) {
       this.transformManager.deselectAll()
     }
+    
+    // Emit selection change event
+    this.emitSelectionChange()
   }
 
   getLayer(layerId: number): LayerNode | null {

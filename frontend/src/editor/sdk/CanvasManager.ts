@@ -19,6 +19,7 @@ export class CanvasManager implements CanvasAPI {
   private guidesVisible = false
   private gridSize = 20
   private backgroundColor: string = '#ffffff'
+  private backgroundConfig: any = null // Store full background configuration
   private layerManager: LayerManager | null = null
   
   // Store original design canvas dimensions (independent of stage scaling)
@@ -95,12 +96,39 @@ export class CanvasManager implements CanvasAPI {
 
   setBackgroundColor(color: string): void {
     this.backgroundColor = color
+    this.backgroundConfig = { type: 'solid', color }
     this.createBackground()
     this.updateViewport() // Use updateViewport() instead of updateBackground() to ensure proper positioning
   }
 
+  setBackground(background: any): void {
+    console.log('🔍 CanvasManager: setBackground called with:', background)
+    console.log('🔍 CanvasManager: Background type:', typeof background)
+    console.log('🔍 CanvasManager: Background stringified:', JSON.stringify(background, null, 2))
+    
+    this.backgroundConfig = background
+    // For backward compatibility with solid colors
+    if (background?.type === 'solid' && background?.color) {
+      this.backgroundColor = background.color
+    } else if (typeof background === 'string') {
+      this.backgroundColor = background
+      this.backgroundConfig = { type: 'solid', color: background }
+    }
+    console.log('🔍 CanvasManager: Updated backgroundConfig:', this.backgroundConfig)
+    console.log('🔍 CanvasManager: Current backgroundColor:', this.backgroundColor)
+    
+    this.createBackground()
+    this.updateViewport()
+    
+    console.log('🔍 CanvasManager: Background update complete')
+  }
+
   getBackgroundColor(): string {
     return this.backgroundColor
+  }
+
+  getBackground(): any {
+    return this.backgroundConfig || { type: 'solid', color: this.backgroundColor }
   }
 
   // ============================================================================
@@ -134,67 +162,53 @@ export class CanvasManager implements CanvasAPI {
       availableWidth = viewportRect.width
       availableHeight = viewportRect.height
     }
-    
-    // Use the original design canvas size (not current stage size)
+
     const canvasWidth = this.originalCanvasWidth
     const canvasHeight = this.originalCanvasHeight
-    
-    // Add minimal padding around the canvas for breathing room
-    const padding = 50 // Reduced padding to maximize canvas usage
-    const targetWidth = Math.max(availableWidth - padding * 2, 200) // Minimum 200px
-    const targetHeight = Math.max(availableHeight - padding * 2, 150) // Minimum 150px
-    
-    // Calculate scale to fit the entire canvas in viewport
+
+    // Only apply padding if canvas is larger than viewport (so it doesn't touch edges)
+    let padding = 0
+    if (canvasWidth > availableWidth || canvasHeight > availableHeight) {
+      padding = 20 // breathing room only if canvas is bigger
+    }
+    const targetWidth = availableWidth - padding * 2
+    const targetHeight = availableHeight - padding * 2
+
+    // Calculate scale using CSS object-fit: contain logic
     const scaleX = targetWidth / canvasWidth
     const scaleY = targetHeight / canvasHeight
     let scale = Math.min(scaleX, scaleY)
-    
-    // Allow scaling up to a reasonable maximum (3x)
-    scale = Math.min(scale, 3)
-    
-    // Ensure minimum scale for very large canvases
-    scale = Math.max(scale, 0.1)
-    
-    console.log('🔍 CanvasManager fitCanvasToViewport:', {
-      availableViewport: { width: availableWidth, height: availableHeight },
-      canvasSize: { width: canvasWidth, height: canvasHeight },
-      targetSize: { width: targetWidth, height: targetHeight },
-      scaleCalculations: { scaleX, scaleY, finalScale: scale },
-      padding,
-      willScale: scale < 1 ? 'down' : scale > 1 ? 'up' : 'same'
-    })
-    
+    scale = Math.max(scale, 0.01)
+    scale = Math.min(scale, 10)
+
     // Center the canvas in the viewport
     const scaledCanvasWidth = canvasWidth * scale
     const scaledCanvasHeight = canvasHeight * scale
-    
-    // Calculate center position with proper padding consideration
     const x = (availableWidth - scaledCanvasWidth) / 2
     const y = (availableHeight - scaledCanvasHeight) / 2
-    
-    console.log('🔍 CanvasManager positioning:', {
-      scaledCanvasSize: { width: scaledCanvasWidth, height: scaledCanvasHeight },
-      calculatedPosition: { x, y },
-      finalScale: scale
+
+    console.log('🔍 CanvasManager fitCanvasToViewport (CONTAIN mode):', {
+      availableViewport: { width: availableWidth, height: availableHeight },
+      canvasSize: { width: canvasWidth, height: canvasHeight },
+      padding,
+      targetSize: { width: targetWidth, height: targetHeight },
+      scaleCalculations: { scaleX, scaleY, finalScale: scale },
+      scaleLimits: { min: 0.01, max: 10 },
+      fitMode: 'contain - canvas will fit entirely within viewport',
+      willScale: scale < 1 ? 'down' : scale > 1 ? 'up' : 'same'
     })
-    
+
     this.stage.scale({ x: scale, y: scale })
     this.stage.position({ x, y })
-    
-    // Update state
     this.state.zoom = scale
     this.state.panX = x
     this.state.panY = y
-    
-    // Update background for viewport changes
     this.updateViewport()
-    
-    // Emit viewport change event only if not loading a design
     if (!this.state.isLoadingDesign) {
-      this.eventEmitter.emit('viewport:changed', { 
-        zoom: scale, 
-        panX: x, 
-        panY: y 
+      this.eventEmitter.emit('viewport:changed', {
+        zoom: scale,
+        panX: x,
+        panY: y
       })
     }
   }
@@ -519,22 +533,136 @@ export class CanvasManager implements CanvasAPI {
         y: 0,
         width: this.originalCanvasWidth,
         height: this.originalCanvasHeight,
-        fill: this.backgroundColor,
         listening: false, // Don't interfere with interactions
         name: 'canvas-background',
       })
       
       this.backgroundLayer.add(this.backgroundRect)
       console.log('🔍 CanvasManager: Created background rectangle')
-    } else {
-      // Update existing background
-      this.backgroundRect.fill(this.backgroundColor)
+    }
+    
+    // Apply background fill based on configuration
+    this.applyBackgroundFill()
+    
+    // Force redraw
+    this.backgroundLayer.batchDraw()
+  }
+
+  private applyBackgroundFill(): void {
+    if (!this.backgroundRect || !this.backgroundLayer) {
+      console.log('🔍 CanvasManager: applyBackgroundFill - missing backgroundRect or backgroundLayer')
+      return
+    }
+
+    const config = this.backgroundConfig || { type: 'solid', color: this.backgroundColor }
+    console.log('🔍 CanvasManager: Applying background fill with config:', config)
+    console.log('🔍 CanvasManager: BackgroundRect dimensions:', { 
+      width: this.backgroundRect.width(), 
+      height: this.backgroundRect.height(),
+      x: this.backgroundRect.x(),
+      y: this.backgroundRect.y()
+    })
+
+    if (config.type === 'solid' || !config.type) {
+      // Solid color background
+      console.log('🔍 CanvasManager: Applying solid color:', config.color || this.backgroundColor)
+      this.backgroundRect.fill(config.color || this.backgroundColor)
+      this.backgroundRect.fillLinearGradientStartPoint(undefined)
+      this.backgroundRect.fillLinearGradientEndPoint(undefined)
+      this.backgroundRect.fillRadialGradientStartPoint(undefined)
+      this.backgroundRect.fillRadialGradientEndPoint(undefined)
+      console.log('🔍 CanvasManager: Solid color applied, fill:', this.backgroundRect.fill())
+    } else if (config.type === 'linear' && config.gradient) {
+      // Linear gradient background
+      console.log('🔍 CanvasManager: Applying linear gradient:', config.gradient)
+      const gradient = config.gradient
+      const angle = gradient.angle || 0
       
+      // Use current background rectangle dimensions instead of original canvas size
+      const width = this.backgroundRect.width()
+      const height = this.backgroundRect.height()
+      const rectX = this.backgroundRect.x()
+      const rectY = this.backgroundRect.y()
+      
+      console.log('🔍 CanvasManager: Background rect dimensions for gradient:', { width, height, x: rectX, y: rectY })
+      console.log('🔍 CanvasManager: Gradient angle:', angle)
+      console.log('🔍 CanvasManager: Gradient colors:', gradient.colors)
+      
+      // Convert angle to start/end points relative to background rectangle
+      const radians = (angle * Math.PI) / 180
+      const length = Math.sqrt(width * width + height * height)
+      const centerX = width / 2
+      const centerY = height / 2
+      const startX = centerX - (Math.cos(radians) * length) / 2
+      const startY = centerY - (Math.sin(radians) * length) / 2
+      const endX = centerX + (Math.cos(radians) * length) / 2
+      const endY = centerY + (Math.sin(radians) * length) / 2
+      
+      console.log('🔍 CanvasManager: Gradient points (relative to rect):', { startX, startY, endX, endY })
+      
+      // Build color stops array
+      const colorStops: (number | string)[] = []
+      gradient.colors.forEach((stop: { color: string; stop: number }) => {
+        colorStops.push(stop.stop, stop.color)
+      })
+      
+      console.log('🔍 CanvasManager: Color stops array:', colorStops)
+      
+      this.backgroundRect.fill(undefined)
+      this.backgroundRect.fillLinearGradientStartPoint({ x: startX, y: startY })
+      this.backgroundRect.fillLinearGradientEndPoint({ x: endX, y: endY })
+      this.backgroundRect.fillLinearGradientColorStops(colorStops)
+      
+      // Clear radial gradient properties
+      this.backgroundRect.fillRadialGradientStartPoint(undefined)
+      this.backgroundRect.fillRadialGradientEndPoint(undefined)
+      
+      console.log('🔍 CanvasManager: Linear gradient applied')
+      console.log('🔍 CanvasManager: fillLinearGradientStartPoint:', this.backgroundRect.fillLinearGradientStartPoint())
+      console.log('🔍 CanvasManager: fillLinearGradientEndPoint:', this.backgroundRect.fillLinearGradientEndPoint())
+      console.log('🔍 CanvasManager: fillLinearGradientColorStops:', this.backgroundRect.fillLinearGradientColorStops())
+    } else if (config.type === 'radial' && config.gradient) {
+      // Radial gradient background
+      console.log('🔍 CanvasManager: Applying radial gradient:', config.gradient)
+      const gradient = config.gradient
+      
+      // Use current background rectangle dimensions instead of original canvas size
+      const width = this.backgroundRect.width()
+      const height = this.backgroundRect.height()
+      const centerX = (gradient.centerX || 0.5) * width
+      const centerY = (gradient.centerY || 0.5) * height
+      const radius = (gradient.radius || 0.7) * Math.max(width, height) / 2
+      
+      console.log('🔍 CanvasManager: Radial gradient params (relative to rect):', { centerX, centerY, radius })
+      
+      // Build color stops array
+      const colorStops: (number | string)[] = []
+      gradient.colors.forEach((stop: { color: string; stop: number }) => {
+        colorStops.push(stop.stop, stop.color)
+      })
+      
+      console.log('🔍 CanvasManager: Radial color stops:', colorStops)
+      
+      this.backgroundRect.fill(undefined)
+      this.backgroundRect.fillRadialGradientStartPoint({ x: centerX, y: centerY })
+      this.backgroundRect.fillRadialGradientEndPoint({ x: centerX, y: centerY })
+      this.backgroundRect.fillRadialGradientStartRadius(0)
+      this.backgroundRect.fillRadialGradientEndRadius(radius)
+      this.backgroundRect.fillRadialGradientColorStops(colorStops)
+      
+      // Clear linear gradient properties
+      this.backgroundRect.fillLinearGradientStartPoint(undefined)
+      this.backgroundRect.fillLinearGradientEndPoint(undefined)
+      
+      console.log('🔍 CanvasManager: Radial gradient applied')
+    } else {
+      console.log('🔍 CanvasManager: Unknown background config type:', config.type)
     }
     
     // Ensure background layer is at the bottom
     this.backgroundLayer.moveToBottom()
     this.backgroundLayer.batchDraw()
+    console.log('🔍 CanvasManager: Background layer redrawn and moved to bottom')
   }
 
   private setupEventHandlers(): void {
@@ -817,14 +945,18 @@ export class CanvasManager implements CanvasAPI {
     const visibleWidth = containerWidth / scale
     const visibleHeight = containerHeight / scale
     
-    // Update background rectangle to fill the entire visible area
+    // Update background rectangle position and size only - preserve fill properties
     this.backgroundRect.setAttrs({
       x: visibleX,
       y: visibleY,
       width: visibleWidth,
-      height: visibleHeight,
-      fill: this.backgroundColor
+      height: visibleHeight
+      // Don't set fill here - it would override gradients!
     })
+    
+    // Re-apply the background fill to ensure gradients are preserved
+    this.applyBackgroundFill()
+    
     this.layerManager?.getMainLayer().batchDraw()
     this.backgroundRect.cache() // Cache for performance
     // Force redraw of background layer

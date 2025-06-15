@@ -115,7 +115,8 @@ export interface Design {
 
 export interface DesignData {
   animationSettings?: Record<string, any> // Animation settings for the design
-  backgroundColor?: string // Background color for the design
+  backgroundColor?: string // Background color for the design (legacy)
+  background?: DesignBackground // New background configuration supporting gradients
   customProperties?: Record<string, any> // Custom properties for the design
   globalStyles?: Record<string, any> // Global styles for the design
   gridSettings?: {
@@ -131,6 +132,18 @@ export interface DesignData {
     panY: number // Vertical pan offset
   }
 
+}
+
+export interface DesignBackground {
+  type: 'solid' | 'linear' | 'radial'
+  color?: string // For solid backgrounds
+  gradient?: {
+    colors: Array<{ color: string; stop: number }> // Color stops for gradients
+    angle?: number // For linear gradients (in degrees)
+    centerX?: number // For radial gradients (0-1)
+    centerY?: number // For radial gradients (0-1)
+    radius?: number // For radial gradients (0-1)
+  }
 }
 
 export interface CanvasSettings {

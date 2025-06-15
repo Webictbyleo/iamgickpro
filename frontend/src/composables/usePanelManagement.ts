@@ -21,7 +21,7 @@ export interface PanelState {
  */
 export function usePanelManagement() {
   // Regular panels that appear in the left sidebar
-  const leftPanels = ['elements', 'templates', 'uploads', 'media', 'layers', 'animation', 'colors']
+  const leftPanels = ['elements', 'templates', 'uploads', 'media', 'layers', 'properties', 'animation', 'colors']
   
   // State
   const activePanel = ref<string | null>('elements')
@@ -43,6 +43,7 @@ export function usePanelManagement() {
       'uploads': 'Uploads',
       'media': 'Media',
       'layers': 'Layers',
+      'properties': 'Properties',
       'animation': 'Animation',
       'colors': 'Colors',
       'image-editing': 'Image Settings',

@@ -29,7 +29,7 @@
     </div>
     
     <!-- Canvas Container -->
-    <div class="flex-1 overflow-hidden relative min-h-0" @click="handleContainerClick">
+    <div class="flex-1 overflow-auto relative min-h-0" @click="handleContainerClick">
       <div class="absolute inset-0 flex items-center justify-center p-8">
         <div
           ref="canvasContainer"
@@ -141,8 +141,6 @@ const canvasStyle = computed(() => {
     height: scaledHeight + 'px',
     minWidth: scaledWidth + 'px',
     minHeight: scaledHeight + 'px',
-    transform: `scale(${props.zoomLevel})`,
-    transformOrigin: 'center center'
   }
 })
 

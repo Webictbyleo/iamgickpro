@@ -182,45 +182,139 @@
       </div>
 
       <!-- Gradient Builder -->
-      <div v-if="showGradientBuilder" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">From</label>
-            <input
-              v-model="gradientColors.from"
-              type="color"
-              class="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              @input="updateGradientPreview"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">To</label>
-            <input
-              v-model="gradientColors.to"
-              type="color"
-              class="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              @input="updateGradientPreview"
-            />
+      <div v-if="showGradientBuilder" class="space-y-4">
+        <!-- Gradient Type Selector -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Gradient Type</label>
+          <div class="flex space-x-1 p-1 bg-gray-100 rounded-lg">
+            <button
+              @click="gradientType = 'linear'"
+              :class="[
+                'flex-1 py-1 px-2 text-xs font-medium rounded-md transition-colors',
+                gradientType === 'linear'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              ]"
+            >
+              Linear
+            </button>
+            <button
+              @click="gradientType = 'radial'"
+              :class="[
+                'flex-1 py-1 px-2 text-xs font-medium rounded-md transition-colors',
+                gradientType === 'radial'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              ]"
+            >
+              Radial
+            </button>
           </div>
         </div>
 
-        <!-- Gradient Direction -->
+        <!-- Gradient Colors -->
         <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">Direction</label>
-          <select
-            v-model="gradientDirection"
-            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            @change="updateGradientPreview"
-          >
-            <option value="to right">Left to Right</option>
-            <option value="to bottom">Top to Bottom</option>
-            <option value="to bottom right">Diagonal ↘</option>
-            <option value="to bottom left">Diagonal ↙</option>
-            <option value="45deg">45°</option>
-            <option value="90deg">90°</option>
-            <option value="135deg">135°</option>
-            <option value="180deg">180°</option>
-          </select>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Colors</label>
+          <div class="space-y-2">
+            <div
+              v-for="(colorStop, index) in gradientStops"
+              :key="index"
+              class="flex items-center space-x-2"
+            >
+              <input
+                :value="colorStop.color"
+                @input="updateGradientStop(index, 'color', ($event.target as HTMLInputElement).value)"
+                type="color"
+                class="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+              />
+              <input
+                :value="Math.round(colorStop.stop * 100)"
+                @input="updateGradientStop(index, 'stop', parseInt(($event.target as HTMLInputElement).value) / 100)"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <span class="text-xs text-gray-500 w-8">{{ Math.round(colorStop.stop * 100) }}%</span>
+              <button
+                v-if="gradientStops.length > 2"
+                @click="removeGradientStop(index)"
+                class="w-6 h-6 text-red-500 hover:text-red-700 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            <button
+              v-if="gradientStops.length < 5"
+              @click="addGradientStop"
+              class="w-full py-1 text-xs text-blue-600 hover:text-blue-800 border border-dashed border-gray-300 rounded transition-colors"
+            >
+              + Add Color
+            </button>
+          </div>
+        </div>
+
+        <!-- Linear Gradient Controls -->
+        <div v-if="gradientType === 'linear'">
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            Angle: {{ gradientAngle }}°
+          </label>
+          <input
+            :value="gradientAngle"
+            @input="gradientAngle = parseInt(($event.target as HTMLInputElement).value)"
+            type="range"
+            min="0"
+            max="360"
+            step="1"
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+
+        <!-- Radial Gradient Controls -->
+        <div v-if="gradientType === 'radial'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Center X</label>
+              <input
+                :value="Math.round(radialCenterX * 100)"
+                @input="radialCenterX = parseInt(($event.target as HTMLInputElement).value) / 100"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div class="text-xs text-gray-500 text-center mt-1">{{ Math.round(radialCenterX * 100) }}%</div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Center Y</label>
+              <input
+                :value="Math.round(radialCenterY * 100)"
+                @input="radialCenterY = parseInt(($event.target as HTMLInputElement).value) / 100"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div class="text-xs text-gray-500 text-center mt-1">{{ Math.round(radialCenterY * 100) }}%</div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Radius: {{ Math.round(radialRadius * 100) }}%
+            </label>
+            <input
+              :value="Math.round(radialRadius * 100)"
+              @input="radialRadius = parseInt(($event.target as HTMLInputElement).value) / 100"
+              type="range"
+              min="10"
+              max="150"
+              step="1"
+              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
         </div>
 
         <!-- Gradient Preview -->
@@ -231,7 +325,7 @@
 
         <!-- Apply Gradient Button -->
         <button
-          @click="applyGradient"
+          @click="applyCustomGradient"
           class="w-full px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors"
         >
           Apply Gradient
@@ -239,12 +333,12 @@
       </div>
 
       <!-- Preset Gradients -->
-      <div class="grid grid-cols-4 gap-2">
+      <div class="grid grid-cols-3 gap-2">
         <button
           v-for="(gradient, index) in presetGradients"
           :key="index"
           @click="applyPresetGradient(gradient)"
-          class="w-full h-8 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors shadow-sm hover:shadow-md cursor-pointer"
+          class="w-full h-10 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors shadow-sm hover:shadow-md cursor-pointer"
           :style="{ background: gradient.css }"
           :title="gradient.name"
         ></button>
@@ -290,6 +384,17 @@ const recentColors = ref<string[]>([])
 
 // Gradient state
 const showGradientBuilder = ref(false)
+const gradientType = ref<'linear' | 'radial'>('linear')
+const gradientStops = ref<Array<{ color: string; stop: number }>>([
+  { color: '#3B82F6', stop: 0 },
+  { color: '#8B5CF6', stop: 1 }
+])
+const gradientAngle = ref(90)
+const radialCenterX = ref(0.5)
+const radialCenterY = ref(0.5)
+const radialRadius = ref(0.7)
+
+// Legacy gradient state for backward compatibility
 const gradientColors = ref<GradientColors>({
   from: '#3B82F6',
   to: '#8B5CF6'
@@ -333,14 +438,27 @@ const colorPalettes: Record<string, string[]> = {
 
 // Preset gradients
 const presetGradients: PresetGradient[] = [
-  { name: 'Ocean', css: 'linear-gradient(to right, #667eea, #764ba2)' },
-  { name: 'Sunset', css: 'linear-gradient(to right, #ff7e5f, #feb47b)' },
-  { name: 'Purple', css: 'linear-gradient(to right, #667eea, #764ba2)' },
-  { name: 'Green', css: 'linear-gradient(to right, #11998e, #38ef7d)' },
-  { name: 'Blue', css: 'linear-gradient(to right, #2196F3, #21CBF3)' },
-  { name: 'Pink', css: 'linear-gradient(to right, #ff9a9e, #fecfef)' },
-  { name: 'Orange', css: 'linear-gradient(to right, #fa709a, #fee140)' },
-  { name: 'Mint', css: 'linear-gradient(to right, #a8edea, #fed6e3)' }
+  // Linear gradients
+  { name: 'Ocean Breeze', css: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)' },
+  { name: 'Sunset Glow', css: 'linear-gradient(90deg, #ff7e5f 0%, #feb47b 100%)' },
+  { name: 'Purple Dreams', css: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%)' },
+  { name: 'Forest Fresh', css: 'linear-gradient(90deg, #11998e 0%, #38ef7d 100%)' },
+  { name: 'Arctic Blue', css: 'linear-gradient(90deg, #2196F3 0%, #21CBF3 100%)' },
+  { name: 'Rose Gold', css: 'linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%)' },
+  { name: 'Citrus Burst', css: 'linear-gradient(90deg, #fa709a 0%, #fee140 100%)' },
+  { name: 'Mint Fresh', css: 'linear-gradient(90deg, #a8edea 0%, #fed6e3 100%)' },
+  
+  // Diagonal gradients
+  { name: 'Electric Violet', css: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { name: 'Fire Sunset', css: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  { name: 'Cool Sky', css: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { name: 'Green Paradise', css: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  
+  // Radial gradients
+  { name: 'Radial Sunset', css: 'radial-gradient(circle at 50% 50%, #ff7e5f 0%, #feb47b 70%)' },
+  { name: 'Radial Ocean', css: 'radial-gradient(circle at 50% 50%, #667eea 0%, #764ba2 70%)' },
+  { name: 'Radial Purple', css: 'radial-gradient(circle at 50% 50%, #8B5CF6 0%, #EC4899 70%)' },
+  { name: 'Radial Mint', css: 'radial-gradient(circle at 50% 50%, #a8edea 0%, #fed6e3 70%)' }
 ]
 
 // Computed properties
@@ -349,6 +467,21 @@ const currentPalette = computed(() => {
 })
 
 const currentGradient = computed(() => {
+  if (gradientType.value === 'linear') {
+    const colorStops = gradientStops.value
+      .map(stop => `${stop.color} ${Math.round(stop.stop * 100)}%`)
+      .join(', ')
+    return `linear-gradient(${gradientAngle.value}deg, ${colorStops})`
+  } else {
+    const colorStops = gradientStops.value
+      .map(stop => `${stop.color} ${Math.round(stop.stop * 100)}%`)
+      .join(', ')
+    return `radial-gradient(circle at ${Math.round(radialCenterX.value * 100)}% ${Math.round(radialCenterY.value * 100)}%, ${colorStops})`
+  }
+})
+
+// Legacy gradient for backward compatibility
+const legacyGradient = computed(() => {
   return `linear-gradient(${gradientDirection.value}, ${gradientColors.value.from}, ${gradientColors.value.to})`
 })
 
@@ -458,6 +591,56 @@ const applyGradient = () => {
 
 const applyPresetGradient = (gradient: PresetGradient) => {
   emit('apply-gradient', gradient.css)
+}
+
+// Enhanced gradient builder methods
+const updateGradientStop = (index: number, property: 'color' | 'stop', value: string | number) => {
+  if (property === 'color') {
+    gradientStops.value[index].color = value as string
+  } else {
+    gradientStops.value[index].stop = value as number
+  }
+  // Sort gradient stops by position
+  gradientStops.value.sort((a, b) => a.stop - b.stop)
+}
+
+const addGradientStop = () => {
+  const stops = gradientStops.value
+  // Add new stop at the midpoint between last two stops
+  const lastStop = stops[stops.length - 1]?.stop || 1
+  const secondLastStop = stops[stops.length - 2]?.stop || 0
+  const newStop = (lastStop + secondLastStop) / 2
+  
+  gradientStops.value.push({
+    color: '#808080',
+    stop: newStop
+  })
+  
+  // Sort by stop position
+  gradientStops.value.sort((a, b) => a.stop - b.stop)
+}
+
+const removeGradientStop = (index: number) => {
+  if (gradientStops.value.length > 2) {
+    gradientStops.value.splice(index, 1)
+  }
+}
+
+const applyCustomGradient = () => {
+  // Create a gradient string that can be parsed by the enhanced handler
+  if (gradientType.value === 'linear') {
+    const colorStops = gradientStops.value
+      .map(stop => `${stop.color} ${Math.round(stop.stop * 100)}%`)
+      .join(', ')
+    const gradientString = `linear-gradient(${gradientAngle.value}deg, ${colorStops})`
+    emit('apply-gradient', gradientString)
+  } else {
+    const colorStops = gradientStops.value
+      .map(stop => `${stop.color} ${Math.round(stop.stop * 100)}%`)
+      .join(', ')
+    const gradientString = `radial-gradient(circle at ${Math.round(radialCenterX.value * 100)}% ${Math.round(radialCenterY.value * 100)}%, ${colorStops})`
+    emit('apply-gradient', gradientString)
+  }
 }
 
 // Watch for color changes and update RGB
