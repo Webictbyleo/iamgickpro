@@ -559,8 +559,7 @@ export class CanvasManager implements CanvasAPI {
     } else {
       // Update existing background
       this.backgroundRect.fill(this.backgroundColor)
-      this.backgroundRect.width(this.originalCanvasWidth)
-      this.backgroundRect.height(this.originalCanvasHeight)
+      
     }
     
     // Ensure background layer is at the bottom
