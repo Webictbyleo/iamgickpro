@@ -128,7 +128,7 @@ class ResponseDTOFactory
     /**
      * Create design response from Design entity
      */
-    public function createDesignResponse(Design $design, string $message = 'Design retrieved successfully'): DesignResponseDTO
+    public function createDesignResponse(Design $design, string $message = 'Design retrieved successfully', bool $includeLayers = false): DesignResponseDTO
     {
         $designData = [
             'id' => $design->getId(),
@@ -146,6 +146,44 @@ class ResponseDTOFactory
             'createdAt' => $design->getCreatedAt()->format('c'),
             'updatedAt' => $design->getUpdatedAt()?->format('c')
         ];
+
+        // Include layers if requested
+        if ($includeLayers) {
+            $layersData = [];
+            foreach ($design->getLayers() as $layer) {
+                $layersData[] = [
+                    'id' => $layer->getId(),
+                    'uuid' => $layer->getUuid(),
+                    'name' => $layer->getName(),
+                    'type' => $layer->getType(),
+                    'properties' => $layer->getProperties(),
+                    'transform' => $layer->getTransform(),
+                    'zIndex' => $layer->getZIndex(),
+                    'visible' => $layer->isVisible(),
+                    'locked' => $layer->isLocked(),
+                    'opacity' => $layer->getOpacity(),
+                    'animations' => $layer->getAnimations(),
+                    'mask' => $layer->getMask(),
+                    'parent' => $layer->getParent() ? [
+                        'id' => $layer->getParent()->getId(),
+                        'uuid' => $layer->getParent()->getUuid(),
+                        'name' => $layer->getParent()->getName(),
+                    ] : null,
+                    'children' => $layer->getChildren()->map(function (Layer $child) {
+                        return [
+                            'id' => $child->getId(),
+                            'uuid' => $child->getUuid(),
+                            'name' => $child->getName(),
+                            'type' => $child->getType(),
+                            'zIndex' => $child->getZIndex(),
+                        ];
+                    })->toArray(),
+                    'createdAt' => $layer->getCreatedAt()->format('c'),
+                    'updatedAt' => $layer->getUpdatedAt()?->format('c'),
+                ];
+            }
+            $designData['layers'] = $layersData;
+        }
 
         return new DesignResponseDTO(
             success: true,

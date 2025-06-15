@@ -33,17 +33,12 @@
       <div class="absolute inset-0 flex items-center justify-center p-8">
         <div
           ref="canvasContainer"
-          class="bg-white shadow-lg border relative konva-canvas-container"
+          class="shadow-lg border relative konva-canvas-container"
           :style="canvasStyle"
           @click.stop
         >
           <!-- Konva Stage will be mounted here -->
-          
-          <!-- Canvas Background -->
-          <div
-            class="absolute inset-0"
-            :style="{ backgroundColor }"
-          />
+         
           
           <!-- Grid overlay (optional) -->
           <div
@@ -93,7 +88,6 @@ import FloatingContextToolbar from './FloatingContextToolbar.vue'
 interface Props {
   width: number
   height: number
-  backgroundColor: string
   zoomLevel?: number
   showGrid?: boolean
   showRulers?: boolean
@@ -112,7 +106,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  canvasReady: [container: HTMLElement]
   'tool-update': [tool: string, data: any]
   'duplicate-layer': []
   'delete-layer': []
@@ -121,11 +114,16 @@ const emit = defineEmits<{
   'position-preset': [preset: string]
   'update-layer-opacity': [opacity: number]
   'layer-context-menu': [event: MouseEvent, layer?: Layer | null]
-  'toggle-visibility': [layerId: string]
+  'toggle-visibility': [layerId: number]
   'clear-selection': []
 }>()
 
 const canvasContainer = ref<HTMLElement>()
+
+// Expose the canvas container for parent component access
+defineExpose({
+  canvasContainer
+})
 
 // Floating toolbar position
 const floatingToolbarPosition = computed(() => ({
@@ -207,7 +205,7 @@ onMounted(async () => {
       containerStyle: canvasContainer.value.style.cssText,
       containerChildren: canvasContainer.value.children.length
     })
-    emit('canvasReady', canvasContainer.value)
+    // Container is now accessible via defineExpose, no need to emit
   } else {
     console.error('DesignCanvas: Container not found!')
   }

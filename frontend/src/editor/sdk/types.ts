@@ -14,17 +14,18 @@ export interface EditorConfig {
 }
 
 export interface EditorState {
-  selectedLayers: string[]
+  selectedLayers: number[]
   zoom: number
   panX: number
   panY: number
   isPlaying: boolean
   currentTime: number
   duration: number
+  isLoadingDesign: boolean
 }
 
 export interface LayerNode {
-  id: string
+  id: number
   type: string
   name: string
   visible: boolean
@@ -112,25 +113,25 @@ export interface LayerAPI {
   // Layer CRUD operations
   createLayer(type: string, data: Partial<Layer>): Promise<LayerNode>
   addLayer(layerData: Partial<Layer>): Promise<LayerNode>
-  deleteLayer(layerId: string): Promise<void>
-  updateLayer(layerId: string, updates: Partial<LayerNode>): Promise<void>
-  getLayer(layerId: string): LayerNode | null
+  deleteLayer(layerId: number): Promise<void>
+  updateLayer(layerId: number, updates: Partial<LayerNode>): Promise<void>
+  getLayer(layerId: number): LayerNode | null
   getAllLayers(): LayerNode[]
   
   // Layer selection and transformation
-  selectLayer(layerId: string): void
-  selectLayers(layerIds: string[]): void
-  toggleSelection(layerId: string): void
+  selectLayer(layerId: number): void
+  selectLayers(layerIds: number[]): void
+  toggleSelection(layerId: number): void
   deselectAll(): void
-  moveLayer(layerId: string, newIndex: number): void
-  reorderLayers(layerIds: string[]): void
-  duplicateLayer(layerId: string): Promise<LayerNode>
+  moveLayer(layerId: number, newIndex: number): void
+  reorderLayers(layerIds: number[]): void
+  duplicateLayer(layerId: number): Promise<LayerNode>
   
   // Layer ordering methods
-  bringToFront(layerId: string): void
-  bringForward(layerId: string): void
-  sendBackward(layerId: string): void
-  sendToBack(layerId: string): void
+  bringToFront(layerId: number): void
+  bringForward(layerId: number): void
+  sendBackward(layerId: number): void
+  sendToBack(layerId: number): void
   
   clear(): Promise<void>
 }
@@ -173,9 +174,9 @@ export interface AnimationAPI {
   setDuration(duration: number): void
   
   // Keyframe management
-  addKeyframe(layerId: string, time: number, properties: Record<string, any>): void
-  removeKeyframe(layerId: string, time: number): void
-  setLayerFinder(finder: (layerId: string) => LayerNode | null): void
+  addKeyframe(layerId: number, time: number, properties: Record<string, any>): void
+  removeKeyframe(layerId: number, time: number): void
+  setLayerFinder(finder: (layerId: number) => LayerNode | null): void
   destroy(): void
 }
 
@@ -198,8 +199,8 @@ export interface PluginAPI {
 export interface EditorEvents {
   'layer:created': (layer: LayerNode) => void
   'layer:updated': (layer: LayerNode) => void
-  'layer:deleted': (layerId: string) => void
-  'layer:selected': (layerIds: string[]) => void
+  'layer:deleted': (layerId: number) => void
+  'layer:selected': (layerIds: number[]) => void
   'layer:context-menu': (data: { event: MouseEvent; layer: LayerNode | null; position: { x: number; y: number } }) => void
   'viewport:changed': (viewport: { zoom: number; panX: number; panY: number }) => void
   'design:loaded': (design: any) => void

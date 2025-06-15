@@ -4,7 +4,7 @@
       v-for="item in items"
       :key="item.id"
       class="media-item"
-      @click="$emit('select', item)"
+      @click="$emit('openInEditor', item)"
     >
       <!-- Media Image -->
       <img
@@ -14,24 +14,8 @@
         loading="lazy"
       />
       
-      <!-- Overlay (only visible on hover) -->
-      <div class="media-overlay">
-        <div class="media-actions">
-          <button 
-            @click.stop="$emit('select', item)"
-            class="btn-select"
-          >
-            Select
-          </button>
-          <button 
-            @click.stop="$emit('preview', item)"
-            class="btn-preview"
-          >
-            <EyeIcon class="w-4 h-4" />
-          </button>
-        </div>
-        
-        <!-- Media Info -->
+      <!-- Simple Info Overlay -->
+      <div class="media-info-overlay">
         <div class="media-info">
           <p class="media-name">{{ item.name || 'Untitled' }}</p>
           <p class="media-size">{{ formatFileSize(item.size) }}</p>
@@ -47,7 +31,6 @@
 </template>
 
 <script setup lang="ts">
-import { EyeIcon } from '@heroicons/vue/24/outline'
 import type { MediaItem } from '@/types'
 
 interface Props {
@@ -55,8 +38,7 @@ interface Props {
 }
 
 interface Emits {
-  select: [item: MediaItem]
-  preview: [item: MediaItem]
+  openInEditor: [item: MediaItem]
 }
 
 defineProps<Props>()
@@ -135,61 +117,19 @@ const formatFileSize = (bytes: number | undefined): string => {
   transform: scale(1.05);
 }
 
-.media-overlay {
+.media-info-overlay {
   position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 0.75rem;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 1rem 0.75rem 0.75rem;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
-.media-item:hover .media-overlay {
-  background-color: rgba(0, 0, 0, 0.6);
+.media-item:hover .media-info-overlay {
   opacity: 1;
-}
-
-.media-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.btn-select {
-  background-color: white;
-  color: #111827;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.btn-select:hover {
-  background-color: #f9fafb;
-}
-
-.btn-preview {
-  background-color: #7c3aed;
-  color: white;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
-}
-
-.btn-preview:hover {
-  background-color: #6d28d9;
 }
 
 .media-info {
@@ -202,6 +142,7 @@ const formatFileSize = (bytes: number | undefined): string => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: 0.25rem;
 }
 
 .media-size {

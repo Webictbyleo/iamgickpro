@@ -62,7 +62,8 @@ import type {
   GenerateDesignFromVideoRequest,
   VideoAnalysisApiResponse,
   VideoAnalysisJobApiResponse,
-  VideoAnalysisJobsApiResponse
+  VideoAnalysisJobsApiResponse,
+  UpdatedUserApiResponse
 } from '@/types'
 
 // Authentication API - aligned with AuthController
@@ -80,7 +81,7 @@ export const authAPI = {
 
   // PUT /auth/profile
   updateProfile: (data: Partial<User>) =>
-    api.put<ApiResponse<User>>('/auth/profile', data),
+    api.put<UpdatedUserApiResponse>('/auth/profile', data),
 
   // PUT /auth/change-password
   changePassword: (data: ChangePasswordData) =>
@@ -229,21 +230,21 @@ export const layerAPI = {
     api.put<LayersApiResponse>('/layers/bulk-update', data),
 
   // GET /layers/{id}
-  getLayer: (id: string) => api.get<LayerApiResponse>(`/layers/${id}`),
+  getLayer: (id: number) => api.get<LayerApiResponse>(`/layers/${id}`),
 
   // PUT /layers/{id}
-  updateLayer: (id: string, data: UpdateLayerData) => 
+  updateLayer: (id: number, data: UpdateLayerData) => 
     api.put<LayerApiResponse>(`/layers/${id}`, data),
 
   // DELETE /layers/{id}
-  deleteLayer: (id: string) => api.delete<ApiResponse<{ message: string }>>(`/layers/${id}`),
+  deleteLayer: (id: number) => api.delete<ApiResponse<{ message: string }>>(`/layers/${id}`),
 
   // POST /layers/{id}/duplicate
-  duplicateLayer: (id: string, data?: DuplicateLayerData) => 
+  duplicateLayer: (id: number, data?: DuplicateLayerData) => 
     api.post<LayerApiResponse>(`/layers/${id}/duplicate`, data),
 
   // PUT /layers/{id}/move
-  moveLayer: (id: string, data: MoveLayerData) => 
+  moveLayer: (id: number, data: MoveLayerData) => 
     api.put<LayerApiResponse>(`/layers/${id}/move`, data),
 }
 

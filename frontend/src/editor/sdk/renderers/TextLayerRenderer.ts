@@ -9,11 +9,11 @@ import { FontManager } from '../../../services/FontManager'
  * Matches backend TextLayerRenderer properties and validation
  */
 export class TextLayerRenderer implements KonvaLayerRenderer {
-  private editingLayer: string | null = null
+  private editingLayer: number | null = null
   private textInput: HTMLTextAreaElement | null = null
   private editStartText: string = ''
   private eventEmitter?: any // Will be injected for communication
-  private fontLoadingHandlers = new Map<string, () => void>() // Track font loading callbacks
+  private fontLoadingHandlers = new Map<number, () => void>() // Track font loading callbacks
   canRender(layer: Layer): boolean {
     return layer.type === 'text'
   }
@@ -30,7 +30,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     
     // Following Konva docs exactly - NEVER set height for text wrapping
     const textNode = new Konva.Text({
-      id: layerData.id,
+      id: layerData.id.toString(), // Convert number ID to string for Konva
       x: layerData.x,
       y: layerData.y,
       width: layerData.width,
@@ -186,10 +186,11 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
   destroy(node: Konva.Node): void {
     // Clean up any font loading handlers
     if (node.id()) {
-      const handler = this.fontLoadingHandlers.get(node.id())
+      const layerId = parseInt(node.id(), 10) // Convert Konva string ID back to number
+      const handler = this.fontLoadingHandlers.get(layerId)
       if (handler) {
         handler()
-        this.fontLoadingHandlers.delete(node.id())
+        this.fontLoadingHandlers.delete(layerId)
       }
     }
     
@@ -519,7 +520,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       const stage = document.querySelector('canvas')?.closest('.konva-stage')
       if (stage) {
         const konvaStage = (stage as any).__konvaStage as Konva.Stage
-        if (konvaStage) {
+        if (konvaStage && this.editingLayer) {
           const textNode = konvaStage.findOne(`#${this.editingLayer}`) as Konva.Text
           if (textNode) {
             textNode.visible(true)
@@ -537,7 +538,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
   /**
    * Check if a layer is currently being edited
    */
-  public isEditing(layerId: string): boolean {
+  public isEditing(layerId: number): boolean {
     return this.editingLayer === layerId
   }
 

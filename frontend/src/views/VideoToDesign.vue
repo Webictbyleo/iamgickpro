@@ -626,9 +626,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 1}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: selectedStyle === 'minimal' ? '#ffffff' : '#1a1a1a' },
-        layers: []
+        backgroundColor: selectedStyle === 'minimal' ? '#ffffff' : '#1a1a1a',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 92,
       sourceFrames: [0, 3, 7], 
@@ -641,9 +654,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 2}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#2563eb' },
-        layers: []
+        backgroundColor: '#2563eb',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 88,
       sourceFrames: [1, 5, 9], 
@@ -656,9 +682,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 3}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#dc2626' },
-        layers: []
+        backgroundColor: '#dc2626',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 95,
       sourceFrames: [2, 6, 11], 
@@ -671,9 +710,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 4}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#059669' },
-        layers: []
+        backgroundColor: '#059669',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 87,
       sourceFrames: [3, 7, 12], 
@@ -686,9 +738,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 5}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#7c3aed' },
-        layers: []
+        backgroundColor: '#7c3aed',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 90,
       sourceFrames: [4, 8, 13], 
@@ -701,12 +766,25 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 6}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#ea580c' },
-        layers: []
+        backgroundColor: '#ea580c',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
-      width, height, confidence: 94,
-      sourceFrames: [5, 9, 14], 
+      width, height, confidence: 91,
+      sourceFrames: [6, 10, 15], 
       tags: [selectedStyle, 'professional', 'advanced', 'psychology', ...videoInfo.tags.slice(0, 1)]
     },
     {
@@ -716,9 +794,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 7}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#be185d' },
-        layers: []
+        backgroundColor: '#be185d',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 91,
       sourceFrames: [6, 10, 15], 
@@ -731,9 +822,22 @@ const generateMockThumbnails = (videoInfo: YouTubeVideoInfo): DesignSuggestion[]
       category: selectedStyle,
       thumbnailUrl: `https://picsum.photos/${width}/${height}?random=${Date.now() + 8}`,
       designData: {
-        version: '1.0',
-        canvas: { width, height, backgroundColor: '#0891b2' },
-        layers: []
+        backgroundColor: '#0891b2',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
       },
       width, height, confidence: 89,
       sourceFrames: [7, 11, 16], 

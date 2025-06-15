@@ -1,5 +1,5 @@
 import Konva from 'konva'
-import type { LayerNode } from './types'
+import type { LayerNode, EditorState } from './types'
 import type { EventEmitter } from './EventEmitter'
 
 // Define the Box type interface for transformer constraints
@@ -20,10 +20,11 @@ export class TransformManager {
   private uiLayer: Konva.Layer | null = null
   private selectedLayers: LayerNode[] = []
   private historyManager: any = null
-  private transformStartStates: Map<string, Partial<LayerNode>> = new Map()
+  private transformStartStates: Map<number, Partial<LayerNode>> = new Map()
 
   constructor(
     private stage: Konva.Stage,
+    private state: EditorState,
     private emitter: EventEmitter
   ) {
     this.setupUILayer()
@@ -90,8 +91,10 @@ export class TransformManager {
         })
       }
       
-      // Emit update event
-      this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+      // Emit update event only if not loading a design
+      if (!this.state.isLoadingDesign) {
+        this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+      }
     })
 
     // Redraw layers
@@ -601,8 +604,10 @@ export class TransformManager {
         })
       }
 
-      // Emit update event
-      this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+      // Emit update event only if not loading a design
+      if (!this.state.isLoadingDesign) {
+        this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+      }
     })
 
     // Capture final state and add to history if history manager is available
@@ -651,7 +656,7 @@ export class TransformManager {
     const activeAnchor = this.transformer?.getActiveAnchor()
 
     if (!textNode || !activeAnchor) return
-
+    
     // Middle handles: Width resizing for text wrapping
     if (['middle-left', 'middle-right'].includes(activeAnchor)) {
       // Following Konva docs: just update width, let height be auto-calculated
@@ -908,7 +913,7 @@ export class TransformManager {
     this.emitter.on('layer:updated', this.handleLayerUpdated.bind(this))
   }
 
-  private handleTextReflow(data: { layerId: string; newHeight: number; reason: string }): void {
+  private handleTextReflow(data: { layerId: number; newHeight: number; reason: string }): void {
     // Find the layer that was reflowed
     const layer = this.selectedLayers.find(l => l.id === data.layerId)
     if (!layer) return
@@ -942,9 +947,12 @@ export class TransformManager {
   }
 
   private emitSelectionChange(): void {
-    const selectedLayerData = this.selectedLayers.map(layer => this.layerNodeToLayer(layer))
-    this.emitter.emit('selection:changed', this.selectedLayers.map(layer => layer.id))
-    this.emitter.emit('layer:selected', selectedLayerData)
+    // Only emit selection events if not loading a design
+    if (!this.state.isLoadingDesign) {
+      const selectedLayerData = this.selectedLayers.map(layer => this.layerNodeToLayer(layer))
+      this.emitter.emit('selection:changed', this.selectedLayers.map(layer => layer.id))
+      this.emitter.emit('layer:selected', selectedLayerData)
+    }
   }
 
   private layerNodeToLayer(layer: LayerNode): any {
@@ -1023,8 +1031,10 @@ export class TransformManager {
             this.transformStartStates.delete(layer.id)
           }
           
-          // Emit layer update event to sync with store
-          this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+          // Emit layer update event to sync with store only if not loading a design
+          if (!this.state.isLoadingDesign) {
+            this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
+          }
         }
       })
     })

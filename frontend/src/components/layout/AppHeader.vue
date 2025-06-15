@@ -139,7 +139,7 @@
             <MenuItems class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-1 z-[9999]">
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="$emit('createDesign', 'blank')"
+                  @click="handleCreateDesign('blank')"
                   :class="[
                     active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
                     'group flex w-full items-center px-4 py-3 text-sm font-medium'
@@ -156,7 +156,7 @@
               </MenuItem>
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="$emit('createDesign', 'template')"
+                  @click="handleCreateDesign('template')"
                   :class="[
                     active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
                     'group flex w-full items-center px-4 py-3 text-sm font-medium'
@@ -171,23 +171,7 @@
                   </div>
                 </button>
               </MenuItem>
-              <MenuItem v-slot="{ active }">
-                <button
-                  @click="$emit('createDesign', 'upload')"
-                  :class="[
-                    active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
-                    'group flex w-full items-center px-4 py-3 text-sm font-medium'
-                  ]"
-                >
-                  <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
-                    <component :is="icons.upload" class="w-4 h-4 text-white" />
-                  </div>
-                  <div class="text-left">
-                    <div class="font-semibold">Upload Image</div>
-                    <div class="text-xs text-gray-500">Edit existing image</div>
-                  </div>
-                </button>
-              </MenuItem>
+              
             </MenuItems>
           </Transition>
         </Menu>
@@ -363,6 +347,17 @@ const navigateToSearch = () => {
     })
   } else {
     router.push({ name: 'SearchResults' })
+  }
+}
+
+// Create design functionality
+const handleCreateDesign = (type?: string) => {
+  if (type === 'template') {
+    // Navigate to templates page
+    router.push({ name: 'Templates' })
+  } else {
+    // Navigate to editor for blank design
+    router.push({ name: 'Editor' })
   }
 }
 

@@ -117,8 +117,7 @@
       <MediaGrid
         v-else-if="mediaItems.length > 0"
         :items="mediaItems"
-        @select="selectMedia"
-        @preview="previewMedia"
+        @openInEditor="openInEditor"
       />
 
       <!-- Simplified Empty State -->
@@ -218,6 +217,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { 
   MagnifyingGlassIcon, 
   ArrowUpTrayIcon, 
@@ -228,6 +228,8 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import MediaGrid from '@/components/MediaGrid.vue'
 import { mediaAPI } from '@/services/api'
 import type { MediaItem } from '@/types'
+
+const router = useRouter()
 
 // Reactive data
 const searchQuery = ref('')
@@ -394,13 +396,15 @@ const handleFileUpload = async (event: Event) => {
   }
 }
 
-const selectMedia = (item: MediaItem) => {
-  // TODO: Implement media selection for editor
-  // This would typically add the media to the current design or copy URL to clipboard
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(item.url)
-    console.log('Media URL copied to clipboard:', item.url)
-  }
+const openInEditor = async (item: MediaItem) => {
+  // Navigate to editor and pass media item data
+  router.push({
+    name: 'Editor',
+    query: {
+      mediaUrl: item.url,
+      mediaName: item.name || 'Untitled Media'
+    }
+  })
 }
 
 const previewMedia = (item: MediaItem) => {

@@ -7,8 +7,8 @@ import type { EventEmitter } from './EventEmitter'
  */
 export class AnimationManager implements AnimationAPI {
   private animation: Konva.Animation | null = null
-  private layerFinder: ((layerId: string) => LayerNode | null) | null = null
-  private keyframes: Map<string, Map<number, Record<string, any>>> = new Map()
+  private layerFinder: ((layerId: number) => LayerNode | null) | null = null
+  private keyframes: Map<number, Map<number, Record<string, any>>> = new Map()
 
   constructor(
     private state: EditorState,
@@ -78,7 +78,7 @@ export class AnimationManager implements AnimationAPI {
   // KEYFRAME MANAGEMENT
   // ============================================================================
 
-  addKeyframe(layerId: string, time: number, properties: Record<string, any>): void {
+  addKeyframe(layerId: number, time: number, properties: Record<string, any>): void {
     if (!this.keyframes.has(layerId)) {
       this.keyframes.set(layerId, new Map())
     }
@@ -89,7 +89,7 @@ export class AnimationManager implements AnimationAPI {
     this.emitter.emit('animation:keyframe-added', { layerId, time, properties })
   }
 
-  removeKeyframe(layerId: string, time: number): void {
+  removeKeyframe(layerId: number, time: number): void {
     const layerKeyframes = this.keyframes.get(layerId)
     if (layerKeyframes) {
       layerKeyframes.delete(time)
@@ -126,7 +126,8 @@ export class AnimationManager implements AnimationAPI {
     }
     
     if (data.tracks) {
-      Object.entries(data.tracks).forEach(([layerId, keyframeArray]) => {
+      Object.entries(data.tracks).forEach(([layerIdString, keyframeArray]) => {
+        const layerId = parseInt(layerIdString, 10) // Convert string key to number
         const keyframes = keyframeArray as any[]
         const layerKeyframes = new Map<number, Record<string, any>>()
         
@@ -204,7 +205,7 @@ export class AnimationManager implements AnimationAPI {
   }
 
   // Method to connect with layer manager
-  setLayerFinder(finder: (layerId: string) => LayerNode | null): void {
+  setLayerFinder(finder: (layerId: number) => LayerNode | null): void {
     this.layerFinder = finder
   }
 }

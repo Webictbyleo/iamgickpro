@@ -88,11 +88,13 @@ class DesignController extends AbstractController
                     $errorResponse = $this->responseDTOFactory->createErrorResponse('Project not found or access denied');
                     return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
                 }
-                $designs = $this->designRepository->findByProject($project, $limit, $offset);
-                $total = count($this->designRepository->findByProject($project));
+                $result = $this->designRepository->findByProjectPaginated($project, $page, $limit);
+                $designs = $result['designs'];
+                $total = $result['total'];
             } else {
-                $designs = $this->designRepository->findByUser($user, $limit, $offset);
-                $total = count($this->designRepository->findByUser($user));
+                $result = $this->designRepository->findByUserPaginated($user, $page, $limit);
+                $designs = $result['designs'];
+                $total = $result['total'];
             }
 
             $designResponses = array_map(
@@ -320,6 +322,7 @@ class DesignController extends AbstractController
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
+            
 
             // Check if user has access to this design
             $project = $design->getProject();
@@ -330,7 +333,8 @@ class DesignController extends AbstractController
 
             $designResponse = $this->responseDTOFactory->createDesignResponse(
                 $design,
-                'Design retrieved successfully'
+                'Design retrieved successfully',
+                true // Include layers for the show method
             );
             return $this->designResponse($designResponse);
 

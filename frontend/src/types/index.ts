@@ -53,6 +53,10 @@ export interface AuthApiResponse extends BaseApiResponse {
   user: User
 }
 
+export interface UpdatedUserApiResponse extends BaseApiResponse {
+  user: User
+}
+
 /**
  * Error response structure
  */
@@ -97,7 +101,8 @@ export interface Design {
   name: string
   title: string // Display title for the design (usually same as name)
   description?: string
-  designData: DesignData
+  data: DesignData
+  layers?: Layer[] // Optional direct layers array from backend
   thumbnail?: string
   width: number
   height: number
@@ -109,9 +114,23 @@ export interface Design {
 }
 
 export interface DesignData {
-  version: string
-  layers: Layer[]
-  canvas: CanvasSettings
+  animationSettings?: Record<string, any> // Animation settings for the design
+  backgroundColor?: string // Background color for the design
+  customProperties?: Record<string, any> // Custom properties for the design
+  globalStyles?: Record<string, any> // Global styles for the design
+  gridSettings?: {
+    gridSize: number // Size of the grid cells
+    showGrid: boolean
+    snapToGrid: boolean
+    snapToObjects: boolean
+    snapTolerance: number // Tolerance for snapping to grid or objects
+  }
+  viewportSettings?: {
+    zoom: number // Current zoom level
+    panX: number // Horizontal pan offset
+    panY: number // Vertical pan offset
+  }
+
 }
 
 export interface CanvasSettings {
@@ -122,19 +141,12 @@ export interface CanvasSettings {
 }
 
 export interface Layer {
-  id: string
+  id: number
   type: LayerType
   name: string
   visible: boolean
   locked: boolean
-  opacity: number
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation: number
-  scaleX: number
-  scaleY: number
+  transform: Transform
   zIndex: number
   properties: LayerProperties
 }
@@ -732,9 +744,9 @@ export interface DesignAnalytics {
 
 export interface UserSubscription {
   plan: string
-  status: string
-  expires_at: string
-  features: string[]
+  isActive: boolean,
+  usage: Record<string, number>,
+  limits: Record<string, number>,
 }
 
 export interface StorageUsage {

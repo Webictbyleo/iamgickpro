@@ -49,7 +49,7 @@ readonly class FileUploadService
         }
     }
 
-    public function uploadMedia(UploadedFile $file, array $allowedMimeTypes = null): string
+    public function uploadMedia(UploadedFile $file, ?array $allowedMimeTypes = null): string
     {
         if ($allowedMimeTypes !== null) {
             $this->validateMediaFile($file, $allowedMimeTypes);

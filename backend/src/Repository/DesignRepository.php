@@ -424,4 +424,84 @@ class DesignRepository extends ServiceEntityRepository
         
         return $duplicatedDesign;
     }
+
+    /**
+     * Find designs belonging to a specific project with pagination.
+     * 
+     * Retrieves designs that are associated with the given project,
+     * excluding soft-deleted designs. Results are ordered by most recently updated.
+     * 
+     * @param Project $project The project to find designs for
+     * @param int $page Page number (1-based)
+     * @param int $limit Number of results per page
+     * @return array Array containing designs and pagination info
+     */
+    public function findByProjectPaginated(Project $project, int $page = 1, int $limit = 10): array
+    {
+        $query = $this->createQueryBuilder('d')
+            ->andWhere('d.project = :project')
+            ->andWhere('d.deletedAt IS NULL')
+            ->setParameter('project', $project)
+            ->orderBy('d.updatedAt', 'DESC');
+
+        // Get total count
+        $totalQuery = clone $query;
+        $total = $totalQuery->select('COUNT(d.id)')->getQuery()->getSingleScalarResult();
+
+        // Apply pagination
+        $designs = $query
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'designs' => $designs,
+            'total' => (int) $total,
+            'page' => $page,
+            'limit' => $limit,
+            'totalPages' => (int) ceil($total / $limit)
+        ];
+    }
+
+    /**
+     * Find designs belonging to a specific user with pagination.
+     * 
+     * Retrieves designs that are associated with the given user,
+     * excluding soft-deleted designs. Results are ordered by most recently updated.
+     * 
+     * @param User $user The user whose designs are to be retrieved
+     * @param int $page Page number (1-based)
+     * @param int $limit Number of results per page
+     * @return array Array containing designs and pagination info
+     */
+    public function findByUserPaginated(User $user, int $page = 1, int $limit = 10): array
+    {
+        $query = $this->createQueryBuilder('d')
+            ->join('d.project', 'p')
+            ->andWhere('p.user = :user')
+            ->andWhere('d.deletedAt IS NULL')
+            ->andWhere('p.deletedAt IS NULL')
+            ->setParameter('user', $user)
+            ->orderBy('d.updatedAt', 'DESC');
+
+        // Get total count
+        $totalQuery = clone $query;
+        $total = $totalQuery->select('COUNT(d.id)')->getQuery()->getSingleScalarResult();
+
+        // Apply pagination
+        $designs = $query
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'designs' => $designs,
+            'total' => (int) $total,
+            'page' => $page,
+            'limit' => $limit,
+            'totalPages' => (int) ceil($total / $limit)
+        ];
+    }
 }

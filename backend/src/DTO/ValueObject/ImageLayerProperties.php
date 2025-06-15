@@ -18,7 +18,7 @@ final readonly class ImageLayerProperties extends LayerProperties
          */
         #[Assert\NotBlank(message: 'Image source URL is required')]
         #[Assert\Url(message: 'Image source must be a valid URL')]
-        public string $src = '',
+        public string $src,
 
         /**
          * Alternative text for accessibility and fallback display

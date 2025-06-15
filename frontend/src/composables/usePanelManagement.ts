@@ -4,7 +4,7 @@ import type { Layer } from '@/types'
 export interface PanelCache {
   panelType: string
   layerType?: string
-  layerId?: string
+  layerId?: number
   lastAccessed: number
   cachedData?: any
 }
@@ -81,7 +81,7 @@ export function usePanelManagement() {
   /**
    * Cache panel data for quick access
    */
-  const cachePanelData = (panelType: string, layerType?: string, layerId?: string, data?: any) => {
+  const cachePanelData = (panelType: string, layerType?: string, layerId?: number, data?: any) => {
     // Clean old cache entries first
     cleanCache()
     
@@ -99,7 +99,7 @@ export function usePanelManagement() {
   /**
    * Get cached panel data
    */
-  const getCachedPanelData = (panelType: string, layerType?: string, layerId?: string): any => {
+  const getCachedPanelData = (panelType: string, layerType?: string, layerId?: number): any => {
     const cacheKey = `${panelType}-${layerType || 'general'}-${layerId || 'none'}`
     const cached = panelCache.value.get(cacheKey)
     

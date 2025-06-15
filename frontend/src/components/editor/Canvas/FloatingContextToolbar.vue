@@ -184,7 +184,7 @@
                 <!-- Current position display -->
                 <div class="border-t border-gray-200 dark:border-gray-600 pt-2 px-2">
                   <div class="text-xs text-gray-500 dark:text-gray-400">
-                    Current: X: {{ Math.round(selectedLayer.x) }}, Y: {{ Math.round(selectedLayer.y) }}
+                    Current: X: {{ Math.round(selectedLayer.transform?.x || 0) }}, Y: {{ Math.round(selectedLayer.transform?.y || 0) }}
                   </div>
                 </div>
               </div>
@@ -208,11 +208,11 @@
               <div class="p-4">
                 <div class="flex items-center justify-between mb-3">
                   <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Layer Opacity</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ Math.round((selectedLayer.opacity || 1) * 100) }}%</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ Math.round((selectedLayer.transform.opacity || 1) * 100) }}%</span>
                 </div>
                 
                 <PropertySlider
-                  :value="selectedLayer.opacity || 1"
+                  :value="selectedLayer.transform.opacity || 1"
                   :min="0"
                   :max="1"
                   :step="0.01"
@@ -231,7 +231,7 @@
                     }"
                     :class="[
                       'px-2 py-1 text-xs rounded border transition-colors',
-                      Math.abs((selectedLayer.opacity || 1) - preset.value) < 0.01
+                      Math.abs((selectedLayer.transform.opacity || 1) - preset.value) < 0.01
                         ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-600 dark:text-purple-300'
                         : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
                     ]"

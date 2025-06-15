@@ -256,10 +256,10 @@ const exportBackground = ref<'transparent' | 'white'>('transparent')
 // Check if current design has animations
 const hasAnimations = computed(() => {
   const { currentDesign } = designStore
-  if (!currentDesign?.designData?.layers) return false
+  if (!currentDesign?.layers) return false
   
   // Check if any layer has animation data or is a video layer
-  return currentDesign.designData.layers.some((layer: any) => {
+  return currentDesign.layers.some((layer: any) => {
     // Check for video layer type
     if (layer.type === 'video') {
       return true

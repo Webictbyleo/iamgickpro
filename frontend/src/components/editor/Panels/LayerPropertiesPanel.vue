@@ -329,7 +329,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  updateProperties: [layerId: string, properties: Partial<Layer>]
+  updateProperties: [layerId: number, properties: Partial<Layer>]
 }>()
 
 const primaryLayer = computed(() => props.selectedLayers[0] || null)

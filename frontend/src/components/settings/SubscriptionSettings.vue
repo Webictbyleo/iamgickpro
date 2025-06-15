@@ -50,45 +50,6 @@
         </div>
       </div>
 
-      <!-- Usage Statistics -->
-      <div class="bg-white rounded-xl p-6">
-        <h4 class="text-lg font-semibold text-gray-900 mb-4">Current Usage</h4>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div v-for="usage in usageStats" :key="usage.label" class="text-center">
-            <div v-if="usage.limit !== 'unlimited'" class="relative w-16 h-16 mx-auto mb-3">
-              <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
-                <path
-                  class="text-gray-200"
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  class="text-indigo-500"
-                  :stroke-dasharray="`${usage.percentage || 0}, 100`"
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-sm font-bold text-gray-900">{{ usage.percentage || 0 }}%</span>
-              </div>
-            </div>
-            <div v-else class="w-16 h-16 mx-auto mb-3 flex items-center justify-center bg-green-100 rounded-full">
-              <span class="text-xl font-bold text-green-600">∞</span>
-            </div>
-            <p class="text-sm font-medium text-gray-900">{{ usage.used }}/{{ usage.limit }}</p>
-            <p class="text-xs text-gray-500">{{ usage.label }}</p>
-          </div>
-        </div>
-      </div>
     </div>
     </div>
   </div>
@@ -98,6 +59,7 @@
 import { ref, onMounted } from 'vue'
 import { useIcons } from '@/composables/useIcons'
 import { userAPI } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 const icons = useIcons()
 
@@ -121,20 +83,7 @@ interface UsageStat {
   percentage?: number
 }
 
-interface SubscriptionData {
-  plan: string
-  isActive: boolean
-  usage: {
-    projects: number
-    mediaFiles: number
-    exportJobs: number
-  }
-  limits: {
-    projects: number
-    storage: number
-    exports: number
-  }
-}
+
 
 // State
 const loading = ref(true)
@@ -206,7 +155,7 @@ const fetchSubscriptionData = async () => {
   try {
     const response = await userAPI.getSubscription()
     const subscription = response.data.data
-    
+   
     // Update current plan
     const planConfig = planConfigs[subscription.plan] || planConfigs.free
     currentPlan.value = {
@@ -214,28 +163,7 @@ const fetchSubscriptionData = async () => {
       ...planConfig
     }
     
-    // Since usage/limits aren't available in the API, we'll show features instead
-    // You could also remove this section entirely or fetch usage from a different endpoint
-    usageStats.value = [
-      {
-        label: 'Plan Status',
-        used: subscription.status,
-        limit: 'Active',
-        percentage: subscription.status === 'active' ? 100 : 0
-      },
-      {
-        label: 'Features Available',
-        used: subscription.features.length,
-        limit: 'unlimited',
-        percentage: undefined
-      },
-      {
-        label: 'Plan Level',
-        used: subscription.plan,
-        limit: subscription.plan,
-        percentage: undefined
-      }
-    ]
+    
   } catch (error) {
     console.error('Failed to fetch subscription data:', error)
   } finally {

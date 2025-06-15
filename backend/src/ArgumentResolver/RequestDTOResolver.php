@@ -66,8 +66,8 @@ class RequestDTOResolver implements ValueResolverInterface
         }
 
         try {
-            // Deserialize JSON to DTO
-            $dto = $this->serializer->deserialize($content, $type, 'json');
+            // Enhanced deserialization with union type best-match resolution
+            $dto = $this->deserializeWithBestMatch($content, $type, $request);
             
             // Validate the DTO
             $violations = $this->validator->validate($dto);
@@ -90,6 +90,8 @@ class RequestDTOResolver implements ValueResolverInterface
             throw new BadRequestHttpException('Invalid field type: ' . $e->getMessage());
         } catch (\Symfony\Component\Serializer\Exception\ExceptionInterface $e) {
             throw new BadRequestHttpException('Request validation failed: ' . $e->getMessage());
+        } catch(\Exception $e){
+            throw new BadRequestHttpException('An error occurred while processing the request: ' . $e->getMessage());
         }
     }
 
@@ -462,5 +464,256 @@ class RequestDTOResolver implements ValueResolverInterface
         } catch (\ReflectionException $e) {
             throw new BadRequestHttpException("Failed to resolve DTO {$type}: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Deserialize with best-match union type resolution
+     * Analyzes the incoming data to find the best fitting type for union parameters
+     */
+    private function deserializeWithBestMatch(string $content, string $type, Request $request): object
+    {
+        // Parse JSON content
+        try {
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new BadRequestHttpException('Invalid JSON format');
+        }
+
+        try {
+            $reflectionClass = new ReflectionClass($type);
+            $constructor = $reflectionClass->getConstructor();
+            
+            if (!$constructor) {
+                throw new BadRequestHttpException("DTO {$type} must have a constructor");
+            }
+
+            $constructorArgs = [];
+            
+            foreach ($constructor->getParameters() as $parameter) {
+                $paramName = $parameter->getName();
+                $paramType = $parameter->getType();
+                $value = $data[$paramName] ?? null;
+                
+                if ($value === null) {
+                    // Handle null values
+                    if ($parameter->isDefaultValueAvailable()) {
+                        $constructorArgs[$paramName] = $parameter->getDefaultValue();
+                    } elseif ($paramType?->allowsNull()) {
+                        $constructorArgs[$paramName] = null;
+                    } else {
+                        $constructorArgs[$paramName] = null; // Let validation catch this
+                    }
+                } else {
+                    // Resolve value with best-match for union types
+                    $constructorArgs[$paramName] = $this->resolveBestMatchType($value, $paramType, $paramName);
+                }
+            }
+            
+            return $reflectionClass->newInstance(...$constructorArgs);
+            
+        } catch (\ReflectionException $e) {
+            throw new BadRequestHttpException("Failed to deserialize {$type}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Resolve the best matching type for a parameter value
+     */
+    private function resolveBestMatchType(mixed $value, ?\ReflectionType $type, string $paramName): mixed
+    {
+        if ($type === null) {
+            return $value;
+        }
+
+        // Handle union types with best-match logic
+        if ($type instanceof \ReflectionUnionType) {
+            return $this->findBestMatchInUnion($value, $type, $paramName);
+        }
+
+        // Handle named types
+        if ($type instanceof \ReflectionNamedType) {
+            return $this->deserializeToNamedType($value, $type);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Find the best matching type in a union by trying deserialization and scoring
+     */
+    private function findBestMatchInUnion(mixed $value, \ReflectionUnionType $unionType, string $paramName): mixed
+    {
+        $types = $unionType->getTypes();
+        
+        // Handle null case first
+        if ($value === null && $unionType->allowsNull()) {
+            return null;
+        }
+
+        $candidates = [];
+        
+        // Try each type and score the match quality
+        foreach ($types as $type) {
+            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                $score = $this->scoreTypeMatch($value, $type);
+                // Only consider types with positive scores (negative scores indicate non-viable types)
+                if ($score > 0) {
+                    $candidates[] = ['type' => $type, 'score' => $score];
+                }
+            }
+        }
+
+        // Sort by score (highest first) and try deserialization in order
+        usort($candidates, fn($a, $b) => $b['score'] - $a['score']);
+
+        $lastException = null;
+        foreach ($candidates as $candidate) {
+            try {
+                return $this->deserializeToNamedType($value, $candidate['type']);
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                continue; // Try next candidate
+            }
+        }
+
+        // If no type worked, throw the last exception with context
+        throw new BadRequestHttpException(
+            "Could not resolve union type for parameter '{$paramName}': " . 
+            ($lastException ? $lastException->getMessage() : 'No matching type found')
+        );
+    }
+
+    /**
+     * Score how well a value matches a specific type based on its structure
+     */
+    private function scoreTypeMatch(mixed $value, \ReflectionNamedType $type): int
+    {
+        if (!is_array($value)) {
+            return 0; // We only score array values for object types
+        }
+
+        $typeName = $type->getName();
+        $score = 0;
+
+        // Check for required constructor parameters first
+        try {
+            $reflectionClass = new ReflectionClass($typeName);
+            $constructor = $reflectionClass->getConstructor();
+            if ($constructor) {
+                foreach ($constructor->getParameters() as $param) {
+                    $paramName = $param->getName();
+                    // If parameter is required (no default value) and not present in data, heavily penalize
+                    if (!$param->isDefaultValueAvailable() && !$param->getType()?->allowsNull() && !isset($value[$paramName])) {
+                        return -100; // This type is not viable
+                    }
+                }
+            }
+        } catch (\ReflectionException) {
+            return 0;
+        }
+
+        // Special scoring for known layer property types
+        switch ($typeName) {
+            case 'App\DTO\ValueObject\TextLayerProperties':
+                $textFields = ['text', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'textAlign', 'color', 'lineHeight', 'letterSpacing', 'textDecoration'];
+                foreach ($textFields as $field) {
+                    if (isset($value[$field])) $score += 10;
+                }
+                // Bonus for text-specific fields
+                if (isset($value['text'])) $score += 50;
+                if (isset($value['fontFamily'])) $score += 30;
+                break;
+
+            case 'App\DTO\ValueObject\ImageLayerProperties':
+                // Critical: src is required for ImageLayerProperties
+                if (!isset($value['src'])) {
+                    return -100; // Cannot be an image layer without src
+                }
+                
+                $imageFields = ['src', 'alt', 'objectFit', 'objectPosition', 'quality', 'brightness', 'contrast', 'saturation', 'blur'];
+                foreach ($imageFields as $field) {
+                    if (isset($value[$field])) $score += 10;
+                }
+                // Bonus for image-specific fields
+                if (isset($value['src'])) $score += 50;
+                if (isset($value['objectFit'])) $score += 30;
+                break;
+
+            case 'App\DTO\ValueObject\ShapeLayerProperties':
+                $shapeFields = ['shapeType', 'fill', 'stroke', 'strokeWidth', 'strokeOpacity', 'strokeDashArray', 'strokeLineCap', 'strokeLineJoin', 'cornerRadius', 'sides', 'points', 'innerRadius', 'x1', 'y1', 'x2', 'y2', 'shadow', 'glow'];
+                foreach ($shapeFields as $field) {
+                    if (isset($value[$field])) $score += 10;
+                }
+                // Bonus for shape-specific fields
+                if (isset($value['shapeType'])) $score += 50;
+                if (isset($value['fill'])) $score += 30;
+                break;
+
+            case 'App\DTO\ValueObject\Transform':
+                $transformFields = ['x', 'y', 'width', 'height', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY', 'opacity'];
+                foreach ($transformFields as $field) {
+                    if (isset($value[$field])) $score += 10;
+                }
+                break;
+
+            default:
+                // Generic scoring: try to match field names with constructor parameters
+                try {
+                    $reflectionClass = new ReflectionClass($typeName);
+                    $constructor = $reflectionClass->getConstructor();
+                    if ($constructor) {
+                        foreach ($constructor->getParameters() as $param) {
+                            if (isset($value[$param->getName()])) {
+                                $score += 5;
+                            }
+                        }
+                    }
+                } catch (\ReflectionException) {
+                    // Ignore reflection errors for scoring
+                }
+                break;
+        }
+
+        return $score;
+    }
+
+    /**
+     * Deserialize value to a specific named type
+     */
+    private function deserializeToNamedType(mixed $value, \ReflectionNamedType $type): mixed
+    {
+        $typeName = $type->getName();
+        
+        // Handle null values
+        if ($value === null && $type->allowsNull()) {
+            return null;
+        }
+
+        // Handle primitive types
+        if ($type->isBuiltin()) {
+            return $this->convertToBuiltinType($value, $typeName);
+        }
+
+        // Handle object types - serialize to JSON then deserialize to target type
+        if (is_array($value)) {
+            return $this->serializer->deserialize(json_encode($value), $typeName, 'json');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Convert value to builtin PHP types
+     */
+    private function convertToBuiltinType(mixed $value, string $typeName): mixed
+    {
+        return match ($typeName) {
+            'int' => is_numeric($value) ? (int) $value : throw new BadRequestHttpException("Invalid integer: {$value}"),
+            'float' => is_numeric($value) ? (float) $value : throw new BadRequestHttpException("Invalid float: {$value}"),
+            'string' => (string) $value,
+            'bool' => is_bool($value) ? $value : $this->convertToBool($value),
+            'array' => is_array($value) ? $value : [$value],
+            default => $value
+        };
     }
 }

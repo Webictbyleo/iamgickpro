@@ -93,7 +93,7 @@ trait TypedResponseTrait
      */
     protected function layerResponse(LayerResponseDTO $dto, int $status = Response::HTTP_OK): JsonResponse
     {
-        return $this->json($dto, $status);
+        return $this->json($dto->toArray(), $status);
     }
 
     /**

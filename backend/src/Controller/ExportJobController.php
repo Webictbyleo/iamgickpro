@@ -239,7 +239,7 @@ class ExportJobController extends AbstractController
             }
 
             // Check if user owns the design or has access to it
-            if ($design->getUser() !== $user && !$design->isPublic()) {
+            if ($design->getProject()->getUser() !== $user && !$design->getIsPublic()) {
                 return $this->errorResponse(
                     $this->responseDTOFactory->createErrorResponse('Access denied'),
                     Response::HTTP_FORBIDDEN

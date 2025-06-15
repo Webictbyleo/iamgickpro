@@ -62,13 +62,14 @@ class SearchController extends AbstractController
     /**
      * Perform a global search across multiple content types
      * 
-     * Searches across templates, media, projects based on the query and type filter.
+     * Searches across templates, media, designs based on the query and type filter.
+     * Results are prioritized: templates (40%), media (30%), designs (30%).
      * Supports pagination and returns results in a structured format with relevance scoring.
      * Respects user permissions and only returns content the user has access to.
      * 
      * @param Request $request HTTP request containing search parameters:
      *                        - q: Search query string (required)
-     *                        - type: Content type filter (all, templates, media, projects) (default: all)
+     *                        - type: Content type filter (all, templates, media, designs) (default: all)
      *                        - page: Page number (default: 1, min: 1)
      *                        - limit: Items per page (default: 20, max: 50)
      * @return JsonResponse<GlobalSearchResponseDTO|ErrorResponseDTO> Search results with pagination metadata or error response
@@ -82,7 +83,7 @@ class SearchController extends AbstractController
             
             // Extract and validate query parameters
             $query = $request->query->get('q', '');
-            $type = $request->query->get('type', 'all'); // all, templates, media, projects
+            $type = $request->query->get('type', 'all'); // all, templates, media, designs
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
             

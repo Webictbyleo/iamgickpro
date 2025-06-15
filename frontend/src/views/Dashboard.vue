@@ -340,7 +340,7 @@ const useTemplate = async (template: Template) => {
   
   // Copy template data to design
   if (template.designData) {
-    newDesign.designData = { ...template.designData }
+    newDesign.data = { ...template.designData }
   }
   
   newDesign.name = `${template.name} Copy`

@@ -15,6 +15,7 @@ use App\Entity\User;
 use App\Service\ResponseDTOFactory;
 use App\Service\UserService;
 use App\Service\FileUploadService;
+use PHPUnit\Util\Json;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -99,8 +100,7 @@ class UserController extends AbstractController
             
             return $this->successResponse(
                 $this->responseDTOFactory->createSuccessResponse(
-                    'Profile updated successfully',
-                    ['user' => $this->responseDTOFactory->createUserResponse($updatedUser, true)->toArray()]
+                    'Profile updated successfully'
                 )
             );
         } catch (\InvalidArgumentException $e) {
@@ -152,8 +152,7 @@ class UserController extends AbstractController
             
             return $this->successResponse(
                 $this->responseDTOFactory->createSuccessResponse(
-                    'Avatar uploaded successfully',
-                    ['avatar' => $avatarUrl]
+                    'Avatar uploaded successfully'
                 )
             );
         } catch (\Exception $e) {
@@ -227,8 +226,7 @@ class UserController extends AbstractController
             
             return $this->successResponse(
                 $this->responseDTOFactory->createSuccessResponse(
-                    'Data download request submitted',
-                    ['estimatedTime' => '24 hours']
+                    'Data download request submitted'
                 )
             );
         } catch (\Exception $e) {
@@ -258,8 +256,7 @@ class UserController extends AbstractController
             
             return $this->successResponse(
                 $this->responseDTOFactory->createSuccessResponse(
-                    'Data export completed',
-                    ['data' => $exportData]
+                    'Data export completed'
                 )
             );
         } catch (\Exception $e) {
@@ -314,13 +311,14 @@ class UserController extends AbstractController
             $user = $this->getUser();
             
             $subscriptionData = $this->userService->getSubscriptionData($user);
-            
-            return $this->successResponse(
-                $this->responseDTOFactory->createSuccessResponse(
-                    'Subscription data retrieved successfully',
-                    $subscriptionData
-                )
+            return JsonResponse::fromJsonString(
+                $this->serializer->serialize(
+                    ['data'=>$subscriptionData],
+                    'json'
+                ),
+                Response::HTTP_OK
             );
+           
         } catch (\Exception $e) {
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse('Failed to get subscription data'),

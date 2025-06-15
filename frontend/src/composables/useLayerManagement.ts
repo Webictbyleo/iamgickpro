@@ -16,24 +16,26 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
 
     try {
       const baseLayer = {
-        x: 100,
-        y: 100,
-        width: 150,
-        height: 100,
-        rotation: 0,
-        opacity: 1,
         visible: true,
         locked: false,
         name: `${type} ${Date.now()}`,
-        scaleX: 1,
-        scaleY: 1,
-        zIndex: 0
+        zIndex: 0,
+        transform: {
+          x: 100,
+          y: 100,
+          width: 150,
+          height: 100,
+          rotation: 0,
+          opacity: 1,
+          scaleX: 1,
+          scaleY: 1
+        }
       }
 
       if (type === 'text') {
         const textLayer: Layer = {
           ...baseLayer,
-          id: `text_${Date.now()}`,
+          id: -Date.now(), // Use negative timestamp as temporary ID
           type: 'text',
           properties: {
             text: properties.text || 'Hello World!',
@@ -63,7 +65,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
       } else if (type === 'shape') {
         const shapeLayer: Layer = {
           ...baseLayer,
-          id: `shape_${Date.now()}`,
+          id: -Date.now() - 1, // Use negative timestamp as temporary ID, offset to avoid conflicts
           type: 'shape',
           properties: {
             shapeType: properties.shapeType || 'rectangle',
@@ -92,7 +94,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
       } else if (type === 'image') {
         const imageLayer: Layer = {
           ...baseLayer,
-          id: `image_${Date.now()}`,
+          id: -Date.now() - 2, // Use negative timestamp as temporary ID, offset to avoid conflicts
           type: 'image',
           properties: {
             src: properties.src || 'https://picsum.photos/400/300',
@@ -108,7 +110,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const selectLayer = (layerId: string, event?: MouseEvent) => {
+  const selectLayer = (layerId: number, event?: MouseEvent) => {
     if (!editorSDK.value) return
 
     const isMultiSelect = event?.ctrlKey || event?.metaKey
@@ -124,12 +126,12 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
 
   const selectAllLayers = () => {
     if (!editorSDK.value) return
-    const layers = designStore.currentDesign?.designData.layers || []
-    const layerIds = layers.map(l => l.id)
+    const layers = designStore.currentDesign?.layers || []
+    const layerIds = layers.map((l: Layer) => l.id)
     designStore.selectedLayerIds = layerIds
   }
 
-  const duplicateLayer = async (layerId: string) => {
+  const duplicateLayer = async (layerId: number) => {
     if (!editorSDK.value || !layerId) return
     
     try {
@@ -139,7 +141,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const deleteLayer = async (layerId: string) => {
+  const deleteLayer = async (layerId: number) => {
     if (!editorSDK.value || !layerId) return
     
     try {
@@ -173,7 +175,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const toggleLayerVisibility = async (layerId: string) => {
+  const toggleLayerVisibility = async (layerId: number) => {
     if (!editorSDK.value) return
     
     try {
@@ -186,7 +188,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const toggleLayerLock = async (layerId: string) => {
+  const toggleLayerLock = async (layerId: number) => {
     if (!editorSDK.value) return
     
     try {
@@ -199,7 +201,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const reorderLayers = (layerIds: string[]) => {
+  const reorderLayers = (layerIds: number[]) => {
     if (!designStore.currentDesign) return
     
     // Update the design store
@@ -211,7 +213,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
     }
   }
 
-  const updateLayerProperties = async (layerId: string, properties: Partial<Layer>) => {
+  const updateLayerProperties = async (layerId: number, properties: Partial<Layer>) => {
     if (!editorSDK.value) return
     
     try {

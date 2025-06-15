@@ -5,6 +5,7 @@ import type {
   EditorState, 
   LayerNode 
 } from './types'
+import type { LayerManager } from './LayerManager'
 
 /**
  * CanvasManager - Handles canvas viewport control, rendering, and export
@@ -12,11 +13,13 @@ import type {
 export class CanvasManager implements CanvasAPI {
   private gridLayer?: Konva.Layer
   private guidesLayer?: Konva.Layer
+  private backgroundLayer?: Konva.Layer
   private backgroundRect?: Konva.Rect
   private gridVisible = false
   private guidesVisible = false
   private gridSize = 20
   private backgroundColor: string = '#ffffff'
+  private layerManager: LayerManager | null = null
   
   // Store original design canvas dimensions (independent of stage scaling)
   private originalCanvasWidth: number
@@ -27,12 +30,29 @@ export class CanvasManager implements CanvasAPI {
     private state: EditorState,
     private eventEmitter: EventEmitter
   ) {
-    // Store original canvas dimensions
+    // Store original canvas dimensions - will be updated when design is loaded
     this.originalCanvasWidth = this.stage.width()
     this.originalCanvasHeight = this.stage.height()
     
     this.setupCanvas()
     this.setupEventHandlers()
+  }
+
+  // ============================================================================
+  // INTEGRATION METHODS
+  // ============================================================================
+
+  /**
+   * Set the LayerManager instance for integration
+   */
+  setLayerManager(layerManager: LayerManager): void {
+    this.layerManager = layerManager
+    
+    // Ensure background layer stays at the bottom when LayerManager adds its layers
+    if (this.backgroundLayer) {
+      this.backgroundLayer.moveToBottom()
+      console.log('🔍 CanvasManager: Ensured background layer is at bottom after LayerManager integration')
+    }
   }
 
   // ============================================================================
@@ -47,14 +67,23 @@ export class CanvasManager implements CanvasAPI {
     this.originalCanvasWidth = width
     this.originalCanvasHeight = height
     
-    // Update background if it exists
+    // Update background rectangle dimensions if it exists
     if (this.backgroundRect) {
       this.backgroundRect.width(width)
       this.backgroundRect.height(height)
+      this.backgroundLayer?.batchDraw()
     }
     
+    // Update grid when canvas size changes
     this.updateGrid()
-    this.eventEmitter.emit('canvas:resized', { width, height })
+    
+    // Update background to maintain proper styling
+    this.updateBackground()
+    
+    // Only emit canvas:resized if not loading a design
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('canvas:resized', { width, height })
+    }
   }
 
   getSize(): { width: number, height: number } {
@@ -66,15 +95,8 @@ export class CanvasManager implements CanvasAPI {
 
   setBackgroundColor(color: string): void {
     this.backgroundColor = color
-
-    if (!this.backgroundRect) {
-      this.createBackground()
-    }
-    
-    if (this.backgroundRect) {
-      this.backgroundRect.fill(color)
-      this.stage.batchDraw()
-    }
+    this.createBackground()
+    this.updateBackground()
   }
 
   getBackgroundColor(): string {
@@ -118,14 +140,20 @@ export class CanvasManager implements CanvasAPI {
     const canvasHeight = this.originalCanvasHeight
     
     // Add minimal padding around the canvas for breathing room
-    const padding = 10 // 10px padding on all sides (reduced from 20px for large canvases)
+    const padding = 50 // Reduced padding to maximize canvas usage
     const targetWidth = Math.max(availableWidth - padding * 2, 200) // Minimum 200px
     const targetHeight = Math.max(availableHeight - padding * 2, 150) // Minimum 150px
     
     // Calculate scale to fit the entire canvas in viewport
     const scaleX = targetWidth / canvasWidth
     const scaleY = targetHeight / canvasHeight
-    const scale = Math.min(scaleX, scaleY) // Allow scaling down below 100% for large canvases
+    let scale = Math.min(scaleX, scaleY)
+    
+    // Allow scaling up to a reasonable maximum (3x)
+    scale = Math.min(scale, 3)
+    
+    // Ensure minimum scale for very large canvases
+    scale = Math.max(scale, 0.1)
     
     console.log('🔍 CanvasManager fitCanvasToViewport:', {
       availableViewport: { width: availableWidth, height: availableHeight },
@@ -133,7 +161,7 @@ export class CanvasManager implements CanvasAPI {
       targetSize: { width: targetWidth, height: targetHeight },
       scaleCalculations: { scaleX, scaleY, finalScale: scale },
       padding,
-      willScaleDown: scale < 1
+      willScale: scale < 1 ? 'down' : scale > 1 ? 'up' : 'same'
     })
     
     // Center the canvas in the viewport
@@ -158,12 +186,17 @@ export class CanvasManager implements CanvasAPI {
     this.state.panX = x
     this.state.panY = y
     
-    // Emit viewport change event
-    this.eventEmitter.emit('viewport:changed', { 
-      zoom: scale, 
-      panX: x, 
-      panY: y 
-    })
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
+    
+    // Emit viewport change event only if not loading a design
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('viewport:changed', { 
+        zoom: scale, 
+        panX: x, 
+        panY: y 
+      })
+    }
   }
 
   /**
@@ -203,12 +236,17 @@ export class CanvasManager implements CanvasAPI {
     this.state.panX = x
     this.state.panY = y
     
-    // Emit viewport change event
-    this.eventEmitter.emit('viewport:changed', { 
-      zoom: scale, 
-      panX: x, 
-      panY: y 
-    })
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
+    
+    // Emit viewport change event only if not loading a design
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('viewport:changed', { 
+        zoom: scale, 
+        panX: x, 
+        panY: y 
+      })
+    }
   }
 
   zoomToLayer(layerId: string): void {
@@ -240,11 +278,17 @@ export class CanvasManager implements CanvasAPI {
     this.state.panX = x
     this.state.panY = y
     
-    this.eventEmitter.emit('viewport:changed', { 
-      zoom: scale, 
-      panX: x, 
-      panY: y 
-    })
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
+    
+    // Emit viewport change event only if not loading a design
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('viewport:changed', { 
+        zoom: scale, 
+        panX: x, 
+        panY: y 
+      })
+    }
   }
 
   setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void {
@@ -297,11 +341,17 @@ export class CanvasManager implements CanvasAPI {
     this.stage.scale({ x: clampedZoom, y: clampedZoom })
     this.state.zoom = clampedZoom
     
-    this.eventEmitter.emit('viewport:changed', { 
-      zoom: clampedZoom, 
-      panX: this.state.panX, 
-      panY: this.state.panY 
-    })
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
+    
+    // Emit viewport change event only if not loading a design
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('viewport:changed', { 
+        zoom: clampedZoom, 
+        panX: this.state.panX, 
+        panY: this.state.panY 
+      })
+    }
   }
 
   getZoom(): number {
@@ -318,11 +368,17 @@ export class CanvasManager implements CanvasAPI {
     this.state.panX = newPos.x
     this.state.panY = newPos.y
     
-    this.eventEmitter.emit('viewport:changed', { 
-      zoom: this.state.zoom, 
-      panX: newPos.x, 
-      panY: newPos.y 
-    })
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
+    
+    // Emit viewport change event only if not loading a design
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('viewport:changed', { 
+        zoom: this.state.zoom, 
+        panX: newPos.x, 
+        panY: newPos.y 
+      })
+    }
   }
 
   setPanMode(enabled: boolean): void {
@@ -348,6 +404,9 @@ export class CanvasManager implements CanvasAPI {
     this.state.zoom = 1
     this.state.panX = stageWidth / 2
     this.state.panY = stageHeight / 2
+    
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
     
     this.eventEmitter.emit('viewport:changed', { 
       zoom: 1, 
@@ -463,11 +522,50 @@ export class CanvasManager implements CanvasAPI {
   // ============================================================================
 
   private setupCanvas(): void {
-    console.log(`🔍 CanvasManager: setupCanvas() called - DISABLED automatic layer creation`)
+    console.log(`🔍 CanvasManager: setupCanvas() called - creating Konva background for export compatibility`)
+    this.createBackground()
+    this.updateBackground()
+    console.log(`🔍 CanvasManager: setupCanvas() completed with Konva background layer`)
+  }
+
+  private createBackground(): void {
+    // Create dedicated background layer if it doesn't exist
+    if (!this.backgroundLayer) {
+      this.backgroundLayer = new Konva.Layer({
+        name: 'background-layer'
+      })
+      
+      // Add background layer as the first layer (bottom-most)
+      this.stage.add(this.backgroundLayer)
+      this.backgroundLayer.moveToBottom()
+      
+      console.log('🔍 CanvasManager: Created background layer')
+    }
     
-    // DON'T create background, grid, and guides layers automatically
-    // These should only be created when explicitly requested
-    console.log(`🔍 CanvasManager: setupCanvas() completed without creating extra layers`)
+    // Create or update background rectangle
+    if (!this.backgroundRect) {
+      this.backgroundRect = new Konva.Rect({
+        x: 0,
+        y: 0,
+        width: this.originalCanvasWidth,
+        height: this.originalCanvasHeight,
+        fill: this.backgroundColor,
+        listening: false, // Don't interfere with interactions
+        name: 'canvas-background',
+      })
+      
+      this.backgroundLayer.add(this.backgroundRect)
+      console.log('🔍 CanvasManager: Created background rectangle')
+    } else {
+      // Update existing background
+      this.backgroundRect.fill(this.backgroundColor)
+      this.backgroundRect.width(this.originalCanvasWidth)
+      this.backgroundRect.height(this.originalCanvasHeight)
+    }
+    
+    // Ensure background layer is at the bottom
+    this.backgroundLayer.moveToBottom()
+    this.backgroundLayer.batchDraw()
   }
 
   private setupEventHandlers(): void {
@@ -501,6 +599,9 @@ export class CanvasManager implements CanvasAPI {
       this.state.panX = newPos.x
       this.state.panY = newPos.y
       
+      // Update background for viewport changes
+      this.updateBackgroundForViewport()
+      
       this.eventEmitter.emit('viewport:changed', { 
         zoom: clampedScale, 
         panX: newPos.x, 
@@ -529,6 +630,10 @@ export class CanvasManager implements CanvasAPI {
       if (isPanning) {
         this.state.panX = this.stage.x()
         this.state.panY = this.stage.y()
+        
+        // Update background for viewport changes during panning
+        this.updateBackgroundForViewport()
+        
         this.eventEmitter.emit('viewport:changed', { 
           zoom: this.state.zoom, 
           panX: this.state.panX, 
@@ -553,36 +658,16 @@ export class CanvasManager implements CanvasAPI {
       // Update state after pan
       this.state.panX = this.stage.x()
       this.state.panY = this.stage.y()
+      
+      // Update background for viewport changes after dragging
+      this.updateBackgroundForViewport()
+      
       this.eventEmitter.emit('viewport:changed', { 
         zoom: this.state.zoom, 
         panX: this.state.panX, 
         panY: this.state.panY 
       })
     })
-  }
-
-  private createBackground(): void {
-    if (!this.backgroundRect) {
-      this.backgroundRect = new Konva.Rect({
-        x: 0,
-        y: 0,
-        width: this.stage.width(),
-        height: this.stage.height(),
-        fill: '#ffffff',
-        listening: false
-      })
-      
-      // Use existing layer instead of creating a new one
-      const existingLayers = this.stage.getChildren()
-      if (existingLayers.length > 0) {
-        // Add background to the first (main) layer
-        const mainLayer = existingLayers[0] as Konva.Layer
-        mainLayer.add(this.backgroundRect)
-        // Move background to bottom of the layer
-        this.backgroundRect.moveToBottom()
-        mainLayer.batchDraw()
-      }
-    }
   }
 
   private createGrid(): void {
@@ -686,7 +771,27 @@ export class CanvasManager implements CanvasAPI {
   }
 
   destroy(): void {
-    // Clean up any background elements
+    // Clean up background elements
+    if (this.backgroundRect) {
+      this.backgroundRect.destroy()
+      this.backgroundRect = undefined
+    }
+    
+    if (this.backgroundLayer) {
+      this.backgroundLayer.destroy()
+      this.backgroundLayer = undefined
+    }
+    
+    // Clean up other layers
+    if (this.gridLayer) {
+      this.gridLayer.destroy()
+      this.gridLayer = undefined
+    }
+    
+    if (this.guidesLayer) {
+      this.guidesLayer.destroy()
+      this.guidesLayer = undefined
+    }
   }
 
   zoomIn(): void {
@@ -702,6 +807,10 @@ export class CanvasManager implements CanvasAPI {
   resetZoom(): void {
     this.setZoom(1, { zoomToCenter: true })
     this.stage.position({ x: 0, y: 0 })
+    
+    // Update background for viewport changes
+    this.updateBackgroundForViewport()
+    
     this.updateState()
   }
 
@@ -710,8 +819,49 @@ export class CanvasManager implements CanvasAPI {
   }
 
   private updateBackground(): void {
-    const container = this.stage.container()
-    container.style.backgroundColor = this.backgroundColor
+    // Update Konva background rectangle for export compatibility
+    if (this.backgroundRect) {
+      this.backgroundRect.fill(this.backgroundColor)
+      this.backgroundLayer?.batchDraw()
+      console.log(`🔍 CanvasManager: Background dimension is ${this.backgroundRect.width()}x${this.backgroundRect.height()}`)
+    }
+  }
+
+  /**
+   * Update background rectangle for viewport changes (zoom/pan)
+   * According to Konva documentation, when stage is transformed, background needs to be reset
+   * to fill the entire visible stage area
+   */
+  private updateBackgroundForViewport(): void {
+    if (!this.backgroundRect || !this.backgroundLayer) return
+    
+    // Get current stage transform
+    const scale = this.stage.scaleX()
+    const stagePos = this.stage.position()
+    
+    // Calculate the visible area in world coordinates
+    const containerWidth = this.stage.width()
+    const containerHeight = this.stage.height()
+    
+    // Calculate where the visible area is in world coordinates
+    const visibleX = -stagePos.x / scale
+    const visibleY = -stagePos.y / scale
+    const visibleWidth = containerWidth / scale
+    const visibleHeight = containerHeight / scale
+    
+    // Update background rectangle to fill the entire visible area
+    this.backgroundRect.setAttrs({
+      x: visibleX,
+      y: visibleY,
+      width: visibleWidth,
+      height: visibleHeight,
+      fill: this.backgroundColor
+    })
+    
+    // Force redraw of background layer
+    this.backgroundLayer.batchDraw()
+    
+    console.log(`🔍 CanvasManager: Updated background for viewport - pos:(${visibleX.toFixed(1)}, ${visibleY.toFixed(1)}) size:(${visibleWidth.toFixed(1)}x${visibleHeight.toFixed(1)}) scale:${scale.toFixed(2)}`)
   }
 
   private updateState(): void {

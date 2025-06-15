@@ -120,14 +120,13 @@
           <!-- Canvas -->
           <div class="flex-1 relative min-h-0">
             <DesignCanvas 
+              ref="designCanvasRef"
               :width="canvasWidth"
               :height="canvasHeight"
-              :background-color="backgroundColor"
               :zoom-level="zoomLevel"
               :selected-layer="selectedLayer"
               :active-tool="activeTool || undefined"
               :show-floating-toolbar="true"
-              @canvas-ready="handleCanvasReady"
               @tool-update="handleToolUpdate"
               @duplicate-layer="handleDuplicateSelectedLayer"
               @delete-layer="handleDeleteSelectedLayer"
@@ -183,7 +182,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType, ImageLayerProperties } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties, Design } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
@@ -213,14 +212,16 @@ import { useDesignEditor } from '@/composables/useDesignEditor'
 import { useLayerManagement } from '@/composables/useLayerManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { usePanelManagement } from '@/composables/usePanelManagement'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const designStore = useDesignStore()
+const route = useRoute()
+const router = useRouter()
 
 // Create helper methods for design updates
 const updateDesignBackground = (backgroundColor: string) => {
   if (designStore.currentDesign) {
-    designStore.currentDesign.designData.canvas.backgroundColor = backgroundColor
+    designStore.currentDesign.data.backgroundColor = backgroundColor
     designStore.currentDesign.updatedAt = new Date().toISOString()
   }
 }
@@ -238,6 +239,7 @@ const {
   canRedo,
   hasUnsavedChanges,
   initializeEditor,
+  loadDesign,
   saveDesign,
   exportDesign,
   undo,
@@ -300,6 +302,7 @@ const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
 const canvasViewportElement = ref<HTMLElement>()
+const designCanvasRef = ref<InstanceType<typeof DesignCanvas>>()
 
 // Update canvas container dimensions based on actual viewport
 const updateCanvasViewportDimensions = () => {
@@ -354,7 +357,7 @@ const leftPanels = ['elements', 'templates', 'media', 'layers', 'animation', 'co
 
 // Computed properties
 const designName = computed({
-  get: () => designStore.currentDesign?.name || 'Untitled Design',
+  get: () => designStore.currentDesign?.name || designStore.currentDesign?.title  || 'Untitled Design',
   set: (value: string) => {
     if (designStore.currentDesign) {
       designStore.updateDesignName(value)
@@ -385,14 +388,14 @@ const canvasHeight = computed({
 })
 
 const backgroundColor = computed({
-  get: () => designStore.currentDesign?.designData?.canvas?.backgroundColor || '#ffffff',
+  get: () => designStore.currentDesign?.data?.backgroundColor || '#ffffff',
   set: (value: string) => {
     updateDesignBackground(value)
     editorSDK.value?.canvas.setBackgroundColor(value)
   }
 })
 
-const layers = computed(() => designStore.currentDesign?.designData?.layers || [])
+const layers = computed(() => designStore.currentDesign?.layers || [])
 const selectedLayer = computed(() => selectedLayers.value[0] || null)
 
 // Watch for layer selection changes and auto-close contextual panels
@@ -450,11 +453,18 @@ const handleSidebarAction = (action: string) => {
   }
 }
 
-const handleCanvasReady = (container: HTMLElement) => {
-  initializeEditor(container)
+// Initialize editor using the canvas container ref
+const initializeEditorWithCanvas = async () => {
+  await nextTick() // Ensure DOM is fully rendered
   
-  // Auto-fit to screen after editor initialization
-  autoFitToScreen()
+  if (designCanvasRef.value && designCanvasRef.value.canvasContainer) {
+    console.log('🎯 EditorLayout: Initializing editor with canvas container')
+    initializeEditor(designCanvasRef.value.canvasContainer)
+    // Auto-fit to screen after editor initialization
+    autoFitToScreen()
+  } else {
+    console.error('❌ EditorLayout: Canvas container not available for editor initialization')
+  }
 }
 
 const handleAddElement = (type: LayerType, properties: any) => {
@@ -476,8 +486,34 @@ const handleUseTemplate = async (template: any) => {
     )
 
     // Copy template data if available
-    if (template.designData) {
-      newDesign.designData = { ...template.designData }
+    if (template.data) {
+      newDesign.data = { ...template.data }
+    }
+    
+    // Handle legacy designData format for backward compatibility
+    if (template.designData && !template.data) {
+      newDesign.data = {
+        backgroundColor: template.designData.canvas?.backgroundColor || '#ffffff',
+        animationSettings: {},
+        customProperties: {},
+        globalStyles: {},
+        gridSettings: {
+          gridSize: 20,
+          showGrid: false,
+          snapToGrid: false,
+          snapToObjects: false,
+          snapTolerance: 5
+        },
+        viewportSettings: {
+          zoom: 1,
+          panX: 0,
+          panY: 0
+        }
+      }
+      // Copy layers if they exist in the old format
+      if (template.designData.layers) {
+        newDesign.layers = [...template.designData.layers]
+      }
     }
 
     newDesign.name = `${template.name} Copy`
@@ -501,16 +537,16 @@ const handleUseTemplate = async (template: any) => {
   }
 }
 
-const handleSelectLayer = (layerId: string, event: MouseEvent) => {
+const handleSelectLayer = (layerId: number, event: MouseEvent) => {
   selectLayer(layerId, event)
   // Layer selection will automatically show context toolbar
 }
 
-const handleDuplicateLayer = (layerId: string) => {
+const handleDuplicateLayer = (layerId: number) => {
   duplicateLayer(layerId)
 }
 
-const handleDeleteLayer = (layerId: string) => {
+const handleDeleteLayer = (layerId: number) => {
   deleteLayer(layerId)
 }
 
@@ -542,11 +578,11 @@ const handlePositionPreset = (preset: string) => {
   
   // Get layer dimensions
   const layer = selectedLayer.value
-  const layerWidth = layer.width
-  const layerHeight = layer.height
+  const layerWidth = layer.transform.width || 100
+  const layerHeight = layer.transform.height || 100
   
-  let x = layer.x
-  let y = layer.y
+  let x = layer.transform.x || 0
+  let y = layer.transform.y || 0
   
   // Calculate position based on preset
   switch (preset) {
@@ -601,7 +637,7 @@ const handleUpdateLayerOpacity = (opacity: number) => {
   editorSDK.value.layers.updateLayer(selectedLayer.value.id, { opacity })
 }
 
-const handleUpdateLayerName = (layerId: string, name: string) => {
+const handleUpdateLayerName = (layerId: number, name: string) => {
   if (!editorSDK.value) return
   
   // Update layer name through the LayerManager
@@ -625,10 +661,11 @@ const handleZoomChanged = (zoom: number) => {
 
 const handlePanToCenter = () => {
   // Use centerView instead of panToCenter
-  editorSDK.value?.canvas.centerView()
+  //editorSDK.value?.canvas.centerView()
 }
 
 const handleFitToScreen = () => {
+  
   // First, ensure viewport dimensions are up to date
   updateCanvasViewportDimensions()
   
@@ -882,10 +919,13 @@ const handlePasteLayer = () => {
     // Create a new layer from clipboard data
     const newLayer = {
       ...clipboard.value,
-      id: `layer_${Date.now()}`, // Generate new ID
+      id: -Date.now(), // Generate new numeric ID
       name: `${clipboard.value.name} Copy`,
-      x: clipboard.value.x + 20, // Offset position slightly
-      y: clipboard.value.y + 20
+      transform: {
+        ...clipboard.value.transform,
+        x: (clipboard.value.transform.x || 0) + 20, // Offset position slightly
+        y: (clipboard.value.transform.y || 0) + 20
+      }
     }
     
     // Add the new layer through the SDK
@@ -997,7 +1037,7 @@ const handleContextAction = (action: string) => {
 const handleSelectAll = () => {
   if (editorSDK.value) {
     // Select all layers in the current design
-    const allLayerIds = layers.value.map(layer => layer.id)
+    const allLayerIds = layers.value.map((layer: Layer) => layer.id)
     editorSDK.value.layers.selectLayers(allLayerIds)
     console.log('Selected all layers:', allLayerIds)
   }
@@ -1159,65 +1199,118 @@ const handleToolUpdate = (toolType: string, properties: any) => {
   }
 }
 
-const route = useRoute()
+
 // Load design when component mounts
 onMounted(async () => {
-  const designId = route.params.id as string
-  if (designId && designId !== 'new') {
-    try {
-      const loadResult = await designStore.loadDesign(designId)
-      
-      if (!loadResult.success) {
-        console.warn(`Failed to load design ${designId}:`, loadResult.error)
-        
-        // Create a fallback design when loading fails
-        console.log('Creating fallback design due to load failure')
-        const fallbackDesign = designStore.createNewDesign(800, 600)
-        fallbackDesign.name = `Design ${designId} (Recovery)`
-        fallbackDesign.title = `Design ${designId} (Recovery)`
-        
-        // Don't save the fallback design automatically - let user decide
-        console.log('Fallback design created:', fallbackDesign)
-      }
-    } catch (error) {
-      console.error('Failed to load design:', error)
-      
-      // Create a fallback design when exception occurs
-      console.log('Creating fallback design due to exception')
-      const fallbackDesign = designStore.createNewDesign(800, 600)
-      fallbackDesign.name = `Design ${designId} (Recovery)`
-      fallbackDesign.title = `Design ${designId} (Recovery)`
-      
-      // Don't save the fallback design automatically - let user decide
-      console.log('Fallback design created:', fallbackDesign)
+  const designIdParam = route.params.id as string
+  
+  try {
+    if (designIdParam && designIdParam !== 'new') {
+      // Load existing design
+      await handleLoadExistingDesign(designIdParam)
+    } else {
+      // Create new design
+      await handleCreateNewDesign()
     }
-  } else {
-    // Create new design
-    const newDesign = designStore.createNewDesign(800, 600)
-    newDesign.name = 'Untitled Design'
-    newDesign.title = 'Untitled Design'
-    
-    // Save the new design to the backend
-    try {
-      await designStore.saveDesign(newDesign)
-      
-      // Auto-fit to screen after new design creation
-      autoFitToScreen()
-    } catch (error) {
-      console.error('Failed to save new design:', error)
-      // Design is still available locally even if save fails
-      
-      // Still auto-fit even if save fails
-      autoFitToScreen()
-    }
+  } catch (error) {
+    console.error('Failed to initialize editor:', error)
+    // Create fallback design on any error
+    await handleCreateFallbackDesign()
   }
   
+  // Initialize editor with canvas container
+  await initializeEditorWithCanvas()
+  
+  // Set up global event listeners
+  setupGlobalEventListeners()
+})
+
+// Helper function to load existing design
+const handleLoadExistingDesign = async (designIdParam: string) => {
+  // Parse design ID as integer for proper backend compatibility
+  const designId = parseInt(designIdParam, 10)
+  
+  // Validate that the parsed ID is a valid number
+  if (isNaN(designId) || designId <= 0) {
+    console.warn(`Invalid design ID: ${designIdParam}`)
+    // Redirect to new design creation
+    router.replace({ name: 'Editor' })
+    return
+  }
+  
+  console.log(`🔄 Loading design ${designId}...`)
+  
+  // Use the improved loadDesign from useDesignEditor
+  // This will load the design into the store AND the EditorSDK
+  const loadResult = await loadDesign(designId.toString())
+  
+  if (!loadResult.success) {
+    console.warn(`Failed to load design ${designId}:`, loadResult.error)
+    
+    // Create a fallback design when loading fails
+    console.log('Creating fallback design due to load failure')
+    const fallbackDesign = designStore.createNewDesign(800, 600)
+    fallbackDesign.name = `Design ${designId} (Recovery)`
+    fallbackDesign.title = `Design ${designId} (Recovery)`
+    
+    console.log('Fallback design created:', fallbackDesign)
+  } else {
+    console.log("✅ Design loaded successfully:", loadResult.design?.id)
+  }
+}
+
+// Helper function to create new design
+const handleCreateNewDesign = async () => {
+  console.log('🔄 Creating new design...')
+  
+  // Create new design
+  const newDesign = designStore.createNewDesign(800, 600)
+  newDesign.name = 'Untitled Design'
+  newDesign.title = 'Untitled Design'
+  
+  // Save the new design to the backend
+  const result = await designStore.saveDesign(newDesign)
+  
+  if (result.success && newDesign.id) {
+    const newDesignId = parseInt(newDesign.id.toString(), 10)
+    if (!isNaN(newDesignId) && newDesignId > 0) {
+      // Replace current route with the new design ID
+      router.replace({ 
+        name: 'Editor', 
+        params: { id: newDesignId.toString() } 
+      })
+      console.log(`✅ New design created with ID: ${newDesignId}`)
+    }
+  } else {
+    console.warn('Failed to save new design, continuing with local version')
+  }
+  
+  // Auto-fit to screen after new design creation
+  autoFitToScreen()
+}
+
+// Helper function to create fallback design
+const handleCreateFallbackDesign = async () => {
+  console.log('🔄 Creating fallback design...')
+  
+  const fallbackDesign = designStore.createNewDesign(800, 600)
+  fallbackDesign.name = 'Untitled Design'
+  fallbackDesign.title = 'Untitled Design'
+  
+  console.log('Fallback design created')
+  autoFitToScreen()
+}
+
+// Helper function to set up global event listeners
+const setupGlobalEventListeners = () => {
   // Add global event listener for context menu
   document.addEventListener('editor:context-menu', handleEditorContextMenuEvent as EventListener)
   
   // Add global event listener for auto-fit requests
   document.addEventListener('editor:auto-fit-request', handleAutoFitRequest as EventListener)
-})
+  
+  console.log('✅ Global event listeners set up')
+}
 
 // Global context menu event handler
 const handleEditorContextMenuEvent = (event: CustomEvent) => {

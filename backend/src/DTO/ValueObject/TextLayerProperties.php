@@ -30,15 +30,15 @@ final readonly class TextLayerProperties extends LayerProperties
 
         /**
          * Font size in pixels (1-500px)
-         * @var int $fontSize
+         * @var float $fontSize
          */
-        #[Assert\Type(type: 'integer', message: 'Font size must be an integer')]
+        #[Assert\Type(type: 'float', message: 'Font size must be an integer')]
         #[Assert\Range(
             min: 1,
             max: 500,
             notInRangeMessage: 'Font size must be between 1 and 500 pixels'
         )]
-        public int $fontSize = 16,
+        public float $fontSize = 16,
 
         /**
          * Font weight (normal, bold, or numeric values 100-900)

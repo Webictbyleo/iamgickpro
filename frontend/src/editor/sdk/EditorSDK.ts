@@ -16,7 +16,7 @@ import { AnimationManager } from './AnimationManager'
 import { PluginManager } from './PluginManager'
 import { TransformManager } from './TransformManager'
 import { HistoryManager } from './HistoryManager'
-import type { Layer, Design, LayerType } from '../../types'
+import type { Layer, Design, DesignData, LayerType } from '../../types'
 
 /**
  * Main Editor SDK class - provides unified interface for all editor operations
@@ -37,7 +37,8 @@ export class EditorSDK extends EventEmitter {
     panY: 0,
     isPlaying: false,
     currentTime: 0,
-    duration: 10
+    duration: 10,
+    isLoadingDesign: false // Track loading state in shared state
   }
 
   constructor(private config: EditorConfig) {
@@ -63,6 +64,10 @@ export class EditorSDK extends EventEmitter {
       width: config.width || 800,
       height: config.height || 600
     })
+    console.log('EditorSDK: Stage created with dimensions:', {
+      width: this.stage.width(),
+      height: this.stage.height()
+    })
     
     // Set up layerEmitter on stage for renderer communication
     ;(this.stage as any).layerEmitter = this
@@ -72,7 +77,7 @@ export class EditorSDK extends EventEmitter {
     this.canvasManager = new CanvasManager(this.stage, this.state, this)
     this.animationManager = new AnimationManager(this.state, this)
     this.pluginManager = new PluginManager(this.state, this)
-    this.transformManager = new TransformManager(this.stage, this)
+    this.transformManager = new TransformManager(this.stage, this.state, this)
     this.historyManager = new HistoryManager(null, this) // Will be set in connectManagers
     
     // Connect managers
@@ -88,7 +93,7 @@ export class EditorSDK extends EventEmitter {
 
   private connectManagers(): void {
     // Connect AnimationManager with LayerManager for layer lookup
-    this.animationManager.setLayerFinder((layerId: string) => this.layerManager.getLayer(layerId))
+    this.animationManager.setLayerFinder((layerId: number) => this.layerManager.getLayer(layerId))
     
     // Connect LayerManager with TransformManager for transformation handling
     this.layerManager.setTransformManager(this.transformManager)
@@ -99,6 +104,9 @@ export class EditorSDK extends EventEmitter {
     
     // Connect TransformManager with HistoryManager for transform capture
     this.transformManager.setHistoryManager(this.historyManager)
+    
+    // Connect CanvasManager with LayerManager for background integration
+    this.canvasManager.setLayerManager(this.layerManager)
   }
 
   // ============================================================================
@@ -152,13 +160,13 @@ export class EditorSDK extends EventEmitter {
    */
   get transform() {
     return {
-      selectLayers: (layerIds: string[]) => {
+      selectLayers: (layerIds: number[]) => {
         const layers = layerIds.map(id => this.layerManager.getLayer(id)).filter(Boolean) as LayerNode[]
         this.transformManager.selectLayers(layers)
         // Update state for compatibility
         this.state.selectedLayers = layerIds
       },
-      selectLayer: (layerId: string) => {
+      selectLayer: (layerId: number) => {
         const layer = this.layerManager.getLayer(layerId)
         if (layer) {
           this.transformManager.selectLayer(layer)
@@ -187,70 +195,106 @@ export class EditorSDK extends EventEmitter {
   }
 
   /**
+   * Check if design is currently being loaded
+   */
+  isLoading(): boolean {
+    return this.state.isLoadingDesign
+  }
+
+  /**
    * Load design data into the editor
    */
   async loadDesign(design: Design): Promise<void> {
     try {
       console.log('EditorSDK: Loading design', design)
       
-      // Clear existing layers
+      // Set loading state to prevent circular events
+      this.state.isLoadingDesign = true
+      
+      // Clear existing layers first
       await this.layerManager.clear()
       
       // Set canvas size
       this.canvasManager.setSize(design.width, design.height)
       
       // Ensure design data structure exists
-      if (!design.designData) {
+      if (!design.data) {
         console.warn('EditorSDK: Design data is missing, initializing default structure')
-        design.designData = {
-          version: '1.0',
-          layers: [],
-          canvas: {
-            width: design.width,
-            height: design.height,
-            backgroundColor: '#ffffff'
+        design.data = {
+          animationSettings: {},
+          backgroundColor: '#ffffff',
+          customProperties: {},
+          globalStyles: {},
+          gridSettings: {
+            gridSize: 20,
+            showGrid: false,
+            snapToGrid: false,
+            snapToObjects: false,
+            snapTolerance: 5
+          },
+          viewportSettings: {
+            zoom: 1,
+            panX: 0,
+            panY: 0
           }
         }
       }
       
-      // Ensure canvas settings exist
-      if (!design.designData.canvas) {
-        console.warn('EditorSDK: Canvas settings are missing, initializing defaults')
-        design.designData.canvas = {
-          width: design.width,
-          height: design.height,
-          backgroundColor: '#ffffff'
-        }
+      // Set background color from design data
+      const backgroundColor = design.data.backgroundColor || '#ffffff'
+      this.canvasManager.setBackgroundColor(backgroundColor)
+      
+      // Load layers - check both direct layers array and legacy data structure
+      let layersToLoad: Layer[] = []
+      
+      if (design.layers && Array.isArray(design.layers)) {
+        // Use direct layers array from backend
+        console.log(`EditorSDK: Using direct layers array (${design.layers.length} layers)`)
+        layersToLoad = design.layers
+      } else {
+        console.log('EditorSDK: No direct layers array found')
+        layersToLoad = []
       }
       
-      // Ensure layers array exists
-      if (!design.designData.layers) {
-        console.warn('EditorSDK: Layers array is missing, initializing empty array')
-        design.designData.layers = []
-      }
-      
-      // Set background color
-      if (design.designData.canvas.backgroundColor) {
-        this.canvasManager.setBackgroundColor(design.designData.canvas.backgroundColor)
-      }
-      
-      // Load layers (safe iteration)
-      console.log(`EditorSDK: Loading ${design.designData.layers.length} layers`)
-      for (const layerData of design.designData.layers) {
+      // Load layers silently to prevent event emission during loading
+      console.log(`EditorSDK: Loading ${layersToLoad.length} layers`)
+      for (const layerData of layersToLoad) {
         try {
-          await this.layerManager.createLayer(layerData.type, layerData)
+          // Create layer with silent flag to prevent events during loading
+          await this.layerManager.createLayer(layerData.type, layerData, true)
         } catch (layerError) {
           console.error(`EditorSDK: Failed to load layer ${layerData.id}:`, layerError)
           // Continue loading other layers even if one fails
         }
       }
       
-      // Center view
-      this.canvasManager.centerView()
+      // Apply viewport settings if available
+      if (design.data.viewportSettings) {
+        if (design.data.viewportSettings.zoom !== undefined) {
+          this.state.zoom = design.data.viewportSettings.zoom
+        }
+        if (design.data.viewportSettings.panX !== undefined) {
+          this.state.panX = design.data.viewportSettings.panX
+        }
+        if (design.data.viewportSettings.panY !== undefined) {
+          this.state.panY = design.data.viewportSettings.panY
+        }
+        
+        // Apply zoom and pan to stage
+        this.stage.scale({ x: this.state.zoom, y: this.state.zoom })
+        this.stage.position({ x: this.state.panX, y: this.state.panY })
+      } else {
+        // Center view if no custom viewport settings
+        this.canvasManager.centerView()
+      }
+      
+      // Clear loading state before emitting events
+      this.state.isLoadingDesign = false
       
       console.log('EditorSDK: Design loaded successfully')
       this.emit('design:loaded', design)
     } catch (error) {
+      this.state.isLoadingDesign = false
       console.error('EditorSDK: Failed to load design:', error)
       throw error
     }
@@ -259,34 +303,27 @@ export class EditorSDK extends EventEmitter {
   /**
    * Export current design data
    */
-  exportDesign(): Design['designData'] {
+  exportDesign(): DesignData {
     const layers = this.layerManager.getAllLayers()
     const canvasSize = this.canvasManager.getSize()
     const backgroundColor = this.canvasManager.getBackgroundColor()
     
     return {
-      version: '1.0',
-      layers: layers.map((layer: LayerNode) => ({
-        id: layer.id,
-        type: layer.type as LayerType,
-        name: layer.name,
-        visible: layer.visible,
-        locked: layer.locked,
-        opacity: layer.opacity,
-        x: layer.x,
-        y: layer.y,
-        width: layer.width,
-        height: layer.height,
-        rotation: layer.rotation,
-        scaleX: layer.scaleX,
-        scaleY: layer.scaleY,
-        zIndex: layer.zIndex,
-        properties: layer.properties
-      })),
-      canvas: {
-        width: canvasSize.width,
-        height: canvasSize.height,
-        backgroundColor
+      backgroundColor,
+      animationSettings: {},
+      customProperties: {},
+      globalStyles: {},
+      gridSettings: {
+        gridSize: 20,
+        showGrid: false,
+        snapToGrid: false,
+        snapToObjects: false,
+        snapTolerance: 5
+      },
+      viewportSettings: {
+        zoom: this.state.zoom,
+        panX: this.state.panX,
+        panY: this.state.panY
       }
     }
   }
@@ -380,7 +417,7 @@ export class EditorSDK extends EventEmitter {
         // Handle multi-selection with ctrl/cmd key
         if (e.evt.ctrlKey || e.evt.metaKey) {
           const currentSelection = [...this.state.selectedLayers]
-          const layerId = clickedLayer.id()
+          const layerId = parseInt(clickedLayer.id(), 10) // Parse string ID back to number
           const index = currentSelection.indexOf(layerId)
           if (index === -1) {
             currentSelection.push(layerId)
@@ -391,7 +428,7 @@ export class EditorSDK extends EventEmitter {
           }
         } else {
           // Single selection
-          const layerId = clickedLayer.id()
+          const layerId = parseInt(clickedLayer.id(), 10) // Parse string ID back to number
           if (layerId) {
             this.layerManager.selectLayer(layerId)
           }
@@ -414,7 +451,8 @@ export class EditorSDK extends EventEmitter {
       // Find the layer data if a layer was clicked
       let layerData = null
       if (clickedLayer && clickedLayer.id()) {
-        const layerNode = this.layerManager.getLayer(clickedLayer.id())
+        const layerId = parseInt(clickedLayer.id(), 10) // Parse string ID back to number
+        const layerNode = this.layerManager.getLayer(layerId)
         
         if (layerNode) {
           // Convert LayerNode to Layer format for compatibility with UI components

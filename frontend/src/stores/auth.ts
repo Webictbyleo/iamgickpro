@@ -127,7 +127,8 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await authAPI.updateProfile(data)
-      user.value = response.data.data
+      user.value = response.data.user
+      localStorage.setItem('user_data', JSON.stringify(user.value))
       success('Profile Updated', 'Profile updated successfully!')
       return { success: true }
     } catch (err: any) {
@@ -211,7 +212,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await authAPI.updateProfile(data)
-      user.value = response.data.data
+      user.value = response.data.user
       success('Profile Updated', 'Profile updated successfully!')
       return { success: true }
     } catch (err: any) {

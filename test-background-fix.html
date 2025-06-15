@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Color Fix Test</title>
+    <script src="https://unpkg.com/konva@9.3.20/konva.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        
+        .test-container {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #333;
+            margin: 20px 0;
+            position: relative;
+            background: #ccc; /* Gray background to show contrast */
+        }
+        
+        .konva-canvas-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Background Color Fix Test</h1>
+    <p>This test verifies that the canvas background color properly fills the entire canvas area.</p>
+    
+    <div class="controls">
+        <button onclick="testBackgroundColor('#FFD700')">Yellow Background</button>
+        <button onclick="testBackgroundColor('#FF6B6B')">Red Background</button>
+        <button onclick="testBackgroundColor('#4ECDC4')">Teal Background</button>
+        <button onclick="testBackgroundColor('#45B7D1')">Blue Background</button>
+        <button onclick="testBackgroundColor('#96CEB4')">Green Background</button>
+        <button onclick="testBackgroundColor('#FFEAA7')">Light Yellow</button>
+        <button onclick="testBackgroundColor('#DDA0DD')">Plum</button>
+        <button onclick="testBackgroundColor('#ffffff')">White</button>
+        <button onclick="addTestContent()">Add Test Content</button>
+        <button onclick="debugCanvas()">Debug Canvas</button>
+    </div>
+    
+    <div class="test-container">
+        <div id="canvas-container" class="konva-canvas-container"></div>
+    </div>
+    
+    <div id="debug-info">Debug info will appear here...</div>
+
+    <script>
+        let stage = null;
+        let mainLayer = null;
+        let canvasManager = null;
+
+        function log(message) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+            console.log(message);
+        }
+
+        // Simple CanvasManager implementation for testing
+        class TestCanvasManager {
+            constructor(stage) {
+                this.stage = stage;
+                this.backgroundColor = '#ffffff';
+                this.setupBackground();
+            }
+
+            setBackgroundColor(color) {
+                this.backgroundColor = color;
+                this.updateBackground();
+            }
+
+            updateBackground() {
+                const container = this.stage.container();
+                
+                // Set background color on the stage container
+                container.style.backgroundColor = this.backgroundColor;
+                
+                // Also set background on the parent container to ensure full coverage
+                const parentContainer = container.parentElement;
+                if (parentContainer && parentContainer.classList.contains('konva-canvas-container')) {
+                    parentContainer.style.backgroundColor = this.backgroundColor;
+                }
+                
+                // Ensure the canvas has transparent background so container background shows through
+                const canvas = container.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.backgroundColor = 'transparent';
+                }
+                
+                log('🔍 Background color updated to: ' + this.backgroundColor);
+            }
+
+            setupBackground() {
+                this.updateBackground();
+            }
+        }
+
+        function initializeCanvas() {
+            const container = document.getElementById('canvas-container');
+            
+            log('=== INITIALIZING CANVAS ===');
+            log(`Container found: ${container ? 'YES' : 'NO'}`);
+            
+            // Clear existing content
+            container.innerHTML = '';
+            
+            // Create stage
+            stage = new Konva.Stage({
+                container: container,
+                width: 400,
+                height: 300
+            });
+            
+            // Create main layer
+            mainLayer = new Konva.Layer();
+            stage.add(mainLayer);
+            
+            // Create canvas manager
+            canvasManager = new TestCanvasManager(stage);
+            
+            log(`Stage created with size: ${stage.width()}x${stage.height()}`);
+            log(`Main layer added: ${mainLayer ? 'YES' : 'NO'}`);
+            log('Canvas manager initialized');
+            
+            // Check canvas element
+            const canvas = container.querySelector('canvas');
+            if (canvas) {
+                log(`Canvas element found: YES`);
+                log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+                log(`Canvas background: ${canvas.style.backgroundColor || 'not set'}`);
+            } else {
+                log('Canvas element NOT FOUND!');
+            }
+            
+            stage.batchDraw();
+        }
+
+        function testBackgroundColor(color) {
+            if (!canvasManager) {
+                log('ERROR: Canvas not initialized');
+                return;
+            }
+            
+            log(`\n=== TESTING BACKGROUND COLOR: ${color} ===`);
+            canvasManager.setBackgroundColor(color);
+            
+            // Log container styles for debugging
+            const container = document.getElementById('canvas-container');
+            const stageContainer = stage.container();
+            const canvas = stageContainer.querySelector('canvas');
+            
+            log(`Container background: ${container.style.backgroundColor || 'not set'}`);
+            log(`Stage container background: ${stageContainer.style.backgroundColor || 'not set'}`);
+            log(`Canvas background: ${canvas ? (canvas.style.backgroundColor || 'not set') : 'canvas not found'}`);
+        }
+
+        function addTestContent() {
+            if (!stage || !mainLayer) {
+                log('ERROR: Canvas not initialized');
+                return;
+            }
+            
+            log('\n=== ADDING TEST CONTENT ===');
+            
+            // Clear existing content
+            mainLayer.destroyChildren();
+            
+            // Add a rectangle
+            const rect = new Konva.Rect({
+                x: 50,
+                y: 50,
+                width: 100,
+                height: 80,
+                fill: '#FF6B6B',
+                stroke: '#333',
+                strokeWidth: 2,
+                draggable: true
+            });
+            mainLayer.add(rect);
+            
+            // Add a circle
+            const circle = new Konva.Circle({
+                x: 200,
+                y: 100,
+                radius: 40,
+                fill: '#4ECDC4',
+                stroke: '#333',
+                strokeWidth: 2,
+                draggable: true
+            });
+            mainLayer.add(circle);
+            
+            // Add text
+            const text = new Konva.Text({
+                x: 250,
+                y: 200,
+                text: 'Test Content',
+                fontSize: 20,
+                fontFamily: 'Arial',
+                fill: '#333'
+            });
+            mainLayer.add(text);
+            
+            mainLayer.batchDraw();
+            log('Test content added: rectangle, circle, and text');
+        }
+
+        function debugCanvas() {
+            if (!stage) {
+                log('ERROR: Stage not initialized');
+                return;
+            }
+            
+            log('\n=== CANVAS DEBUG INFO ===');
+            log(`Stage size: ${stage.width()}x${stage.height()}`);
+            log(`Stage position: (${stage.x()}, ${stage.y()})`);
+            log(`Stage scale: ${stage.scaleX()}, ${stage.scaleY()}`);
+            log(`Stage visible: ${stage.visible()}`);
+            log(`Stage layers: ${stage.children.length}`);
+            
+            const container = document.getElementById('canvas-container');
+            const stageContainer = stage.container();
+            const canvas = stageContainer.querySelector('canvas');
+            
+            log(`\n--- Container Styles ---`);
+            log(`Canvas container background: ${container.style.backgroundColor || 'not set'}`);
+            log(`Stage container background: ${stageContainer.style.backgroundColor || 'not set'}`);
+            if (canvas) {
+                log(`Canvas element background: ${canvas.style.backgroundColor || 'not set'}`);
+                log(`Canvas computed background: ${getComputedStyle(canvas).backgroundColor}`);
+            }
+            
+            log(`\n--- Layer Content ---`);
+            log(`Main layer children: ${mainLayer.children.length}`);
+            mainLayer.children.forEach((child, index) => {
+                log(`  Child ${index}: ${child.className} at (${child.x()}, ${child.y()})`);
+            });
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            log('Page loaded, initializing canvas...');
+            initializeCanvas();
+            
+            // Test with yellow background immediately
+            setTimeout(() => {
+                testBackgroundColor('#FFD700');
+            }, 500);
+        };
+    </script>
+</body>
+</html>

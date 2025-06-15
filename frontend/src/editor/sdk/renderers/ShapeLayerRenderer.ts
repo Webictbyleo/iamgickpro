@@ -366,6 +366,9 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
   }
 
   private applyCommonProperties(shape: Konva.Shape, layer: LayerNode, props: ShapeLayerProperties): void {
+    // Set ID first (convert number to string for Konva)
+    shape.id(layer.id.toString())
+    
     // Apply fill based on type
     this.applyFill(shape, props.fill)
     

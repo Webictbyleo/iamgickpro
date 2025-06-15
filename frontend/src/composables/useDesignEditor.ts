@@ -67,8 +67,10 @@ export function useDesignEditor() {
         // The SDK will handle layer creation when they're added
       }
 
-      // Start auto-save
-      startAutoSave()
+      // Start auto-save only after editor is fully initialized and design is loaded
+      setTimeout(() => {
+        startAutoSave()
+      }, 1000) // Small delay to ensure loading is complete
 
     } catch (error) {
       console.error('Error initializing editor SDK:', error)
@@ -85,26 +87,44 @@ export function useDesignEditor() {
     // Layer events
     editorSDK.value.on('layer:created', (layer: any) => {
       console.log('🎯 Event received: layer:created', layer)
-      designStore.addLayer(layer)
-      hasUnsavedChanges.value = true
-      console.log('📦 Design store layers after add:', designStore.currentDesign?.designData?.layers)
+      // Only process if not loading a design to prevent circular saves
+      if (!editorSDK.value?.isLoading()) {
+        // Normal layer creation - persist to backend
+        designStore.addLayer(layer)
+        hasUnsavedChanges.value = true
+        console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)
+      } else {
+        // During design loading - skip persistence to avoid circular saves
+        designStore.addLayer(layer, { skipPersistence: true })
+        console.log('📦 Layer added during loading (skipped persistence):', layer.id)
+      }
     })
 
     editorSDK.value.on('layer:updated', (layer: any) => {
       console.log('🎯 Event received: layer:updated', layer)
-      designStore.updateLayer(layer.id, layer)
-      hasUnsavedChanges.value = true
+      // Only process if not loading a design to prevent circular saves
+      if (!editorSDK.value?.isLoading()) {
+        designStore.updateLayer(layer.id, layer, { skipPersistence: false })
+        hasUnsavedChanges.value = true
+        console.log('📦 Layer updated in store with backend persistence')
+      } else {
+        console.log('📦 Layer updated during loading (ignored to prevent circular saves)')
+      }
     })
 
-    editorSDK.value.on('layer:deleted', (layerId: string) => {
+    editorSDK.value.on('layer:deleted', (layerId: number) => {
       console.log('🎯 Event received: layer:deleted', layerId)
-      designStore.removeLayer(layerId)
-      hasUnsavedChanges.value = true
+      // Only process if not loading a design to prevent circular saves
+      if (!editorSDK.value?.isLoading()) {
+        designStore.removeLayer(layerId)
+        hasUnsavedChanges.value = true
+      }
     })
 
     // Selection events
-    editorSDK.value.on('selection:changed', (layerIds: string[]) => {
+    editorSDK.value.on('selection:changed', (layerIds: number[]) => {
       console.log('🎯 Event received: selection:changed', layerIds)
+      // Selection changes don't affect unsaved state during loading
       designStore.selectedLayerIds = layerIds
     })
 
@@ -117,11 +137,28 @@ export function useDesignEditor() {
 
     // Canvas events
     editorSDK.value.on('canvas:changed', () => {
-      hasUnsavedChanges.value = true
+      // Only mark as changed if not loading a design
+      if (!editorSDK.value?.isLoading()) {
+        hasUnsavedChanges.value = true
+      }
     })
 
     // Design events
     editorSDK.value.on('design:loaded', (design: any) => {
+      console.log('🎯 Event received: design:loaded', design)
+      
+      // Sync store with loaded design state (without triggering saves)
+      if (design.layers && Array.isArray(design.layers)) {
+        // Update store layers directly to match what was loaded into the editor
+        if (designStore.currentDesign) {
+          designStore.currentDesign.layers = [...design.layers]
+          console.log('📦 Store synced with loaded layers:', design.layers.length)
+        }
+      }
+      
+      // Clear unsaved changes since we just loaded a fresh design
+      hasUnsavedChanges.value = false
+      
       // Emit a custom event to trigger auto-fit in EditorLayout
       if (typeof window !== 'undefined') {
         const autoFitEvent = new CustomEvent('editor:auto-fit-request', { 
@@ -186,16 +223,24 @@ export function useDesignEditor() {
   }
 
   const startAutoSave = () => {
+    // Don't start auto-save if it's already running
+    if (autoSaveInterval) return
+    
     autoSaveInterval = setInterval(() => {
-      if (hasUnsavedChanges.value && designStore.currentDesign) {
+      // Only auto-save if we have unsaved changes and we're not currently loading a design
+      if (hasUnsavedChanges.value && designStore.currentDesign && !editorSDK.value?.isLoading()) {
+        console.log('🔄 Auto-saving design...')
         saveDesign()
       }
     }, 30000) // Auto-save every 30 seconds
+    console.log('✅ Auto-save started')
   }
 
   const stopAutoSave = () => {
     if (autoSaveInterval) {
       clearInterval(autoSaveInterval)
+      autoSaveInterval = null as any
+      console.log('🛑 Auto-save stopped')
     }
   }
 
@@ -206,10 +251,19 @@ export function useDesignEditor() {
       const result = await designStore.loadDesign(id)
       if (!result.success) {
         console.error('Failed to load design:', result.error)
-        throw new Error(result.error)
+        return result // Return the failed result
       }
+      
+      // Load the design into the EditorSDK after store loads it
+      if (result.design && editorSDK.value) {
+        console.log('Loading design into EditorSDK:', result.design.id)
+        await editorSDK.value.loadDesign(result.design)
+      }
+      
+      return result // Return the successful result
     } else {
-      designStore.createNewDesign()
+      const newDesign = designStore.createNewDesign()
+      return { success: true, design: newDesign } // Return new design result
     }
   }
 

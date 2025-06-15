@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
+use App\Repository\DesignRepository;
 use App\Repository\ProjectRepository;
 use App\Repository\MediaRepository;
 use App\Repository\TemplateRepository;
@@ -12,10 +13,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * SearchService provides comprehensive search functionality across projects, templates, and media.
+ * SearchService provides comprehensive search functionality across templates, media, and designs.
  * 
  * This service handles:
- * - Full-text search across multiple entity types
+ * - Full-text search across templates, media, and user designs
  * - Type-specific searches with proper filtering
  * - Search suggestions for autocomplete functionality
  * - Pagination and result formatting
@@ -28,6 +29,7 @@ readonly class SearchService
 {
     /**
      * @param EntityManagerInterface $entityManager Doctrine entity manager for database operations
+     * @param DesignRepository $designRepository Repository for design-related queries
      * @param ProjectRepository $projectRepository Repository for project-related queries
      * @param MediaRepository $mediaRepository Repository for media-related queries
      * @param TemplateRepository $templateRepository Repository for template-related queries
@@ -35,6 +37,7 @@ readonly class SearchService
      */
     public function __construct(
         private EntityManagerInterface $entityManager,
+        private DesignRepository $designRepository,
         private ProjectRepository $projectRepository,
         private MediaRepository $mediaRepository,
         private TemplateRepository $templateRepository,
@@ -43,11 +46,11 @@ readonly class SearchService
     }
 
     /**
-     * Performs a comprehensive search across all entity types or a specific type.
+     * Performs a comprehensive search across templates, media, and designs.
      * 
      * @param User $user The user performing the search (for access control)
      * @param string $query The search query string
-     * @param string $type The type of search: 'all', 'projects', 'templates', or 'media'
+     * @param string $type The type of search: 'all', 'templates', 'media', or 'designs'
      * @param int $page The page number for pagination (1-based)
      * @param int $limit The number of results per page
      * 
@@ -63,8 +66,8 @@ readonly class SearchService
 
         // Route to appropriate search method based on type
         switch ($type) {
-            case 'projects':
-                $results = $this->searchProjects($user, $query, $page, $limit);
+            case 'designs':
+                $results = $this->searchDesigns($user, $query, $page, $limit);
                 break;
             case 'templates':
                 // Search templates without category/tag filters for general search
@@ -76,7 +79,7 @@ readonly class SearchService
                 break;
             case 'all':
             default:
-                // Perform combined search across all entity types
+                // Perform combined search across templates, media, and designs
                 $results = $this->searchAll($user, $query, $page, $limit);
                 break;
         }
@@ -129,6 +132,49 @@ readonly class SearchService
 
         return [
             'items' => array_map([$this, 'formatProject'], $projects),
+            'total' => (int) $total
+        ];
+    }
+
+    /**
+     * Searches user's designs by name and description.
+     * 
+     * @param User $user The user whose designs to search
+     * @param string $query The search query string
+     * @param int $page The page number for pagination (1-based)
+     * @param int $limit The number of results per page
+     * 
+     * @return array{items: array, total: int} Formatted design results with pagination info
+     */
+    public function searchDesigns(User $user, string $query, int $page = 1, int $limit = 20): array
+    {
+        // Calculate offset for pagination
+        $offset = ($page - 1) * $limit;
+
+        // Build query to search user's designs by name and description through project relationship
+        $qb = $this->designRepository->createQueryBuilder('d')
+            ->join('d.project', 'p')
+            ->where('p.user = :user') // Security: only search user's own designs
+            ->andWhere('d.name LIKE :query OR d.description LIKE :query')
+            ->andWhere('d.deletedAt IS NULL') // Exclude soft-deleted designs
+            ->andWhere('p.deletedAt IS NULL') // Exclude designs from deleted projects
+            ->setParameter('user', $user)
+            ->setParameter('query', '%' . $query . '%') // Use wildcards for partial matching
+            ->orderBy('d.updatedAt', 'DESC'); // Most recently updated first
+
+        // Clone query for counting total results (without pagination)
+        $totalQuery = clone $qb;
+        $total = $totalQuery->select('COUNT(d.id)')->getQuery()->getSingleScalarResult();
+
+        // Apply pagination and execute query
+        $designs = $qb
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'items' => array_map([$this, 'formatDesign'], $designs),
             'total' => (int) $total
         ];
     }
@@ -317,11 +363,10 @@ readonly class SearchService
     }
 
     /**
-     * Performs a combined search across all entity types with distributed results.
+     * Performs a combined search across templates, media, and designs with distributed results.
      * 
-     * Allocates roughly 1/3 of results to each entity type (projects, templates, media)
-     * to provide balanced search results. The actual pagination is applied to the
-     * combined results after merging.
+     * Allocates results proportionally: 40% templates, 30% media, 30% designs.
+     * Each entity type is searched with its allocated portion of the limit.
      * 
      * @param User $user The user performing the search
      * @param string $query The search query string
@@ -332,51 +377,45 @@ readonly class SearchService
      */
     private function searchAll(User $user, string $query, int $page = 1, int $limit = 20): array
     {
-        $offset = ($page - 1) * $limit;
-        $results = [];
+        // Calculate distributed limits for each entity type
+        $templateLimit = (int) ceil($limit * 0.4); // 40% for templates
+        $mediaLimit = (int) ceil($limit * 0.3);    // 30% for media
+        $designLimit = (int) ceil($limit * 0.3);   // 30% for designs
 
-        // Distribute search results across entity types for balanced results
-        // Each entity type gets roughly 1/3 of the requested results
+        // Search each entity type with its allocated limit
+        $templateResults = $this->searchTemplates($user, $query, '', '', $page, $templateLimit);
+        $mediaResults = $this->searchMedia($user, $query, '', $page, $mediaLimit);
+        $designResults = $this->searchDesigns($user, $query, $page, $designLimit);
 
-        // Search projects (limit to 1/3 of results)
-        $projectLimit = (int) ceil($limit / 3);
-        $projectResults = $this->searchProjects($user, $query, 1, $projectLimit);
-        
-        // Search templates (limit to 1/3 of results)
-        $templateLimit = (int) ceil($limit / 3);
-        $templateResults = $this->searchTemplates($user, $query, '', '', 1, $templateLimit);
-        
-        // Search media (use remaining allocation)
-        $mediaLimit = $limit - count($projectResults['items']) - count($templateResults['items']);
-        $mediaResults = $this->searchMedia($user, $query, '', 1, max(1, $mediaLimit));
-
-        // Combine all results into a single array with type indicators
+        // Combine results maintaining the priority order
         $allResults = [];
         
-        // Add projects with result type marker
-        foreach ($projectResults['items'] as $item) {
-            $item['result_type'] = 'project';
-            $allResults[] = $item;
-        }
-        
-        // Add templates with result type marker
+        // Add templates with result type marker (highest priority)
         foreach ($templateResults['items'] as $item) {
             $item['result_type'] = 'template';
             $allResults[] = $item;
         }
         
-        // Add media with result type marker
+        // Add media with result type marker (second priority)
         foreach ($mediaResults['items'] as $item) {
             $item['result_type'] = 'media';
             $allResults[] = $item;
         }
+        
+        // Add designs with result type marker (third priority)
+        foreach ($designResults['items'] as $item) {
+            $item['result_type'] = 'design';
+            $allResults[] = $item;
+        }
 
-        // Calculate total across all entity types
-        $total = $projectResults['total'] + $templateResults['total'] + $mediaResults['total'];
+        // Calculate total across all three entity types
+        $total = $templateResults['total'] + $mediaResults['total'] + $designResults['total'];
 
-        // Apply final pagination to combined results
+        // Trim results to exact limit in case of rounding up
+        $finalResults = array_slice($allResults, 0, $limit);
+
         return [
-            'items' => array_slice($allResults, $offset, $limit),
+            'items' => $finalResults,
             'total' => $total
         ];
     }
@@ -404,6 +443,38 @@ readonly class SearchService
             'thumbnail' => $project->getThumbnail(), // Project thumbnail URL
             'updatedAt' => $project->getUpdatedAt()->format('c'), // ISO 8601 format
             'type' => 'project'
+        ];
+    }
+
+    /**
+     * Formats a Design entity for API response.
+     * 
+     * @param object $design The Design entity to format
+     * 
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     title: string,
+     *     description: ?string,
+     *     thumbnail: ?string,
+     *     width: int,
+     *     height: int,
+     *     updatedAt: string,
+     *     type: string
+     * } Formatted design data
+     */
+    private function formatDesign(object $design): array
+    {
+        return [
+            'id' => $design->getId(),
+            'name' => $design->getName(),
+            'title' => $design->getTitle(),
+            'description' => $design->getDescription(),
+            'thumbnail' => $design->getThumbnail(), // Design thumbnail URL
+            'width' => $design->getWidth(),
+            'height' => $design->getHeight(),
+            'updatedAt' => $design->getUpdatedAt()?->format('c'), // ISO 8601 format
+            'type' => 'design'
         ];
     }
 
@@ -460,7 +531,7 @@ readonly class SearchService
         return [
             'id' => $media->getId(),
             'name' => $media->getName(), // Original filename or user-assigned name
-            'type' => $media->getType(), // Media type: image, video, audio, etc.
+            'media_type' => $media->getType(), // Media type: image, video, audio, etc.
             'mime_type' => $media->getMimeType(), // Specific MIME type (image/jpeg, video/mp4, etc.)
             'size' => $media->getSize(), // File size in bytes
             'url' => $media->getUrl(), // Direct URL to media file

@@ -227,6 +227,7 @@
           </div>
           <button
             @click="showPasswordChange = true"
+            type="button"
             class="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-colors"
           >
             Change Password

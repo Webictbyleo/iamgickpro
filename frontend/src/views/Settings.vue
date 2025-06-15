@@ -64,16 +64,6 @@
               <IntegrationsSettings />
             </div>
 
-            <!-- General Tab -->
-            <div v-if="activeTab === 'general'" class="space-y-8">
-              <GeneralSettings />
-            </div>
-
-            <!-- Notifications Tab -->
-            <div v-if="activeTab === 'notifications'" class="space-y-8">
-              <NotificationSettings />
-            </div>
-
             <!-- Privacy Tab -->
             <div v-if="activeTab === 'privacy'" class="space-y-8">
               <PrivacySettings />
@@ -93,15 +83,11 @@ import {
   UserIcon,
   CreditCardIcon,
   PuzzlePieceIcon,
-  BellIcon,
-  ShieldCheckIcon,
-  AdjustmentsHorizontalIcon
+  ShieldCheckIcon
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ProfileSettings from '@/components/settings/ProfileSettings.vue'
 import SubscriptionSettings from '@/components/settings/SubscriptionSettings.vue'
-import GeneralSettings from '@/components/settings/GeneralSettings.vue'
-import NotificationSettings from '@/components/settings/NotificationSettings.vue'
 import PrivacySettings from '@/components/settings/PrivacySettings.vue'
 import IntegrationsSettings from '@/components/settings/IntegrationsSettings.vue'
 
@@ -127,18 +113,6 @@ const tabs = ref([
     name: 'Integrations',
     icon: PuzzlePieceIcon,
     description: 'Third-party service API keys and settings'
-  },
-  {
-    id: 'general',
-    name: 'General',
-    icon: AdjustmentsHorizontalIcon,
-    description: 'Application preferences and settings'
-  },
-  {
-    id: 'notifications',
-    name: 'Notifications',
-    icon: BellIcon,
-    description: 'Email and push notification preferences'
   },
   {
     id: 'privacy',

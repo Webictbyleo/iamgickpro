@@ -168,17 +168,17 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'select-layer': [layerId: string, event: MouseEvent]
-  'duplicate-layer': [layerId: string]
-  'delete-layer': [layerId: string]
-  'toggle-visibility': [layerId: string]
-  'toggle-lock': [layerId: string]
-  'reorder-layers': [layerIds: string[]]
-  'update-layer-name': [layerId: string, name: string]
+  'select-layer': [layerId: number, event: MouseEvent]
+  'duplicate-layer': [layerId: number]
+  'delete-layer': [layerId: number]
+  'toggle-visibility': [layerId: number]
+  'toggle-lock': [layerId: number]
+  'reorder-layers': [layerIds: number[]]
+  'update-layer-name': [layerId: number, name: string]
 }>()
 
 // Layer editing
-const editingLayerId = ref<string | null>(null)
+const editingLayerId = ref<number | null>(null)
 const editingLayerName = ref('')
 const editInput = ref<HTMLInputElement>()
 
@@ -188,7 +188,7 @@ const draggedLayer = ref<Layer | null>(null)
 // Computed
 const reversedLayers = computed(() => [...props.layers].reverse())
 
-const isSelected = (layerId: string): boolean => {
+const isSelected = (layerId: number): boolean => {
   return props.selectedLayers.some(layer => layer.id === layerId)
 }
 
@@ -220,12 +220,12 @@ const cancelEditingLayerName = () => {
   editingLayerName.value = ''
 }
 
-const handleDuplicate = (layerId: string, closeDropdown: () => void) => {
+const handleDuplicate = (layerId: number, closeDropdown: () => void) => {
   emit('duplicate-layer', layerId)
   closeDropdown()
 }
 
-const handleDelete = (layerId: string, closeDropdown: () => void) => {
+const handleDelete = (layerId: number, closeDropdown: () => void) => {
   emit('delete-layer', layerId)
   closeDropdown()
 }

@@ -15,7 +15,7 @@ import { ShapeLayerRenderer } from './renderers/ShapeLayerRenderer'
 import { GroupLayerRenderer } from './renderers/GroupLayerRenderer'
 
 export class LayerManager implements LayerAPI {
-  private layers: Map<string, LayerNode> = new Map()
+  private layers: Map<number, LayerNode> = new Map()
   private renderers: Map<LayerType, KonvaLayerRenderer> = new Map()
   private mainLayer!: Konva.Layer
   private transformManager: any = null // Will be injected from EditorSDK
@@ -36,6 +36,13 @@ export class LayerManager implements LayerAPI {
 
   setHistoryManager(historyManager: any): void {
     this.historyManager = historyManager
+  }
+
+  /**
+   * Get the main layer for external access (e.g., from CanvasManager)
+   */
+  getMainLayer(): Konva.Layer {
+    return this.mainLayer
   }
 
   // ============================================================================
@@ -91,24 +98,10 @@ export class LayerManager implements LayerAPI {
       this.historyManager.addCreateLayerCommand(layerNode)
     }
     
-    // Emit creation event    
-    this.emitter.emit('layer:created', {
-      id: layerNode.id,
-      type: layerNode.type as LayerTypeImport,
-      name: layerNode.name,
-      visible: layerNode.visible,
-      locked: layerNode.locked,
-      opacity: layerNode.opacity,
-      x: layerNode.x,
-      y: layerNode.y,
-      width: layerNode.width,
-      height: layerNode.height,
-      rotation: layerNode.rotation,
-      scaleX: layerNode.scaleX,
-      scaleY: layerNode.scaleY,
-      zIndex: layerNode.zIndex,
-      properties: layerNode.properties
-    })
+    // Emit creation event only if not silent and not loading a design
+    if (!silent && !this.state.isLoadingDesign) {
+      this.emitter.emit('layer:created', this.layerNodeToLayer(layerNode))
+    }
     
     return layerNode
   }
@@ -119,7 +112,7 @@ export class LayerManager implements LayerAPI {
     return this.createLayer(type, layerData)
   }
 
-  async deleteLayer(layerId: string, silent: boolean = false): Promise<void> {
+  async deleteLayer(layerId: number, silent: boolean = false): Promise<void> {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -152,12 +145,12 @@ export class LayerManager implements LayerAPI {
       this.historyManager.addDeleteLayerCommand(layerDataForHistory)
     }
     
-    if (!silent) {
+    if (!silent && !this.state.isLoadingDesign) {
       this.emitter.emit('layer:deleted', layerId)
     }
   }
 
-  async updateLayer(layerId: string, updates: Partial<LayerNode>, silent: boolean = false): Promise<void> {
+  async updateLayer(layerId: number, updates: Partial<LayerNode>, silent: boolean = false): Promise<void> {
     const layer = this.layers.get(layerId)
     if (!layer) {
       throw new Error(`Layer ${layerId} not found`)
@@ -182,31 +175,12 @@ export class LayerManager implements LayerAPI {
       this.historyManager.addUpdateLayerCommand(layerId, previousData, layer)
     }
 
-    if (!silent) {
-      // Convert LayerNode to Layer for the event
-      const layerData: Layer = {
-        id: layer.id,
-        type: layer.type as LayerTypeImport,
-        name: layer.name,
-        visible: layer.visible,
-        locked: layer.locked,
-        opacity: layer.opacity,
-        x: layer.x,
-        y: layer.y,
-        width: layer.width,
-        height: layer.height,
-        rotation: layer.rotation,
-        scaleX: layer.scaleX,
-        scaleY: layer.scaleY,
-        zIndex: layer.zIndex,
-        properties: layer.properties
-      }
-
-      this.emitter.emit('layer:updated', layerData)
+    if (!silent && !this.state.isLoadingDesign) {
+      this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
     }
   }
 
-  async duplicateLayer(layerId: string): Promise<LayerNode> {
+  async duplicateLayer(layerId: number): Promise<LayerNode> {
     const originalLayer = this.layers.get(layerId)
     if (!originalLayer) throw new Error(`Layer ${layerId} not found`)
 
@@ -215,8 +189,7 @@ export class LayerManager implements LayerAPI {
       ...originalLayer,
       id: undefined, // Will be generated
       name: `${originalLayer.name} Copy`,
-      x: originalLayer.x + 10,
-      y: originalLayer.y + 10
+      transform: this.createTransformFromLayerNode(originalLayer, 10, 10)
     } as Partial<Layer>
 
     return this.createLayer(originalLayer.type, duplicateData)
@@ -226,7 +199,7 @@ export class LayerManager implements LayerAPI {
   // SELECTION AND TRANSFORMATION
   // ============================================================================
 
-  selectLayer(layerId: string): void {
+  selectLayer(layerId: number): void {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -239,7 +212,7 @@ export class LayerManager implements LayerAPI {
     }
   }
 
-  selectLayers(layerIds: string[]): void {
+  selectLayers(layerIds: number[]): void {
     // Update internal selection state
     this.state.selectedLayers = layerIds.filter(id => this.layers.has(id))
     
@@ -250,7 +223,7 @@ export class LayerManager implements LayerAPI {
     }
   }
 
-  toggleSelection(layerId: string): void {
+  toggleSelection(layerId: number): void {
     const currentSelection = [...this.state.selectedLayers]
     const index = currentSelection.indexOf(layerId)
     
@@ -275,7 +248,7 @@ export class LayerManager implements LayerAPI {
     }
   }
 
-  getLayer(layerId: string): LayerNode | null {
+  getLayer(layerId: number): LayerNode | null {
     return this.layers.get(layerId) || null
   }
 
@@ -283,7 +256,7 @@ export class LayerManager implements LayerAPI {
     return Array.from(this.layers.values())
   }
 
-  moveLayer(layerId: string, newIndex: number): void {
+  moveLayer(layerId: number, newIndex: number): void {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -310,7 +283,7 @@ export class LayerManager implements LayerAPI {
     this.emitter.emit('layer:moved', { layerId, newIndex: clampedIndex })
   }
 
-  reorderLayers(layerIds: string[], silent: boolean = false): void {
+  reorderLayers(layerIds: number[], silent: boolean = false): void {
     // Validate that all layer IDs exist
     const validLayerIds = layerIds.filter(id => this.layers.has(id))
     if (validLayerIds.length === 0) return
@@ -363,7 +336,7 @@ export class LayerManager implements LayerAPI {
       this.historyManager.addReorderLayersCommand(previousOrder, validLayerIds)
     }
 
-    if (!silent) {
+    if (!silent && !this.state.isLoadingDesign) {
       this.emitter.emit('layers:reordered', { layerIds: validLayerIds })
     }
   }
@@ -372,7 +345,7 @@ export class LayerManager implements LayerAPI {
   // LAYER ORDERING METHODS
   // ============================================================================
 
-  bringToFront(layerId: string): void {
+  bringToFront(layerId: number): void {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -390,7 +363,7 @@ export class LayerManager implements LayerAPI {
     this.emitter.emit('layer:moved', { layerId, action: 'bringToFront' })
   }
 
-  bringForward(layerId: string): void {
+  bringForward(layerId: number): void {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -413,7 +386,7 @@ export class LayerManager implements LayerAPI {
     }
   }
 
-  sendBackward(layerId: string): void {
+  sendBackward(layerId: number): void {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -436,7 +409,7 @@ export class LayerManager implements LayerAPI {
     }
   }
 
-  sendToBack(layerId: string): void {
+  sendToBack(layerId: number): void {
     const layer = this.layers.get(layerId)
     if (!layer) return
 
@@ -494,6 +467,31 @@ export class LayerManager implements LayerAPI {
   // ============================================================================
   // PRIVATE METHODS
   // ============================================================================
+
+  /**
+   * Convert LayerNode (internal SDK format) to Layer (API format) for event emission
+   */
+  private layerNodeToLayer(layerNode: LayerNode): Layer {
+    return {
+      id: layerNode.id,
+      type: layerNode.type as LayerTypeImport,
+      name: layerNode.name,
+      visible: layerNode.visible,
+      locked: layerNode.locked,
+      transform: {
+        x: layerNode.x,
+        y: layerNode.y,
+        width: layerNode.width,
+        height: layerNode.height,
+        rotation: layerNode.rotation,
+        scaleX: layerNode.scaleX,
+        scaleY: layerNode.scaleY,
+        opacity: layerNode.opacity
+      },
+      zIndex: layerNode.zIndex,
+      properties: layerNode.properties
+    }
+  }
 
   private emitSelectionChange(): void {
     // Get selected layer data
@@ -577,7 +575,7 @@ export class LayerManager implements LayerAPI {
   /**
    * Handle layer property updates from inline text editing
    */
-  private async handleLayerPropertyUpdate(data: { layerId: string; properties: any }): Promise<void> {
+  private async handleLayerPropertyUpdate(data: { layerId: number; properties: any }): Promise<void> {
     const { layerId, properties } = data
     const layer = this.layers.get(layerId)
     
@@ -604,26 +602,10 @@ export class LayerManager implements LayerAPI {
       this.historyManager.addUpdateLayerCommand(layerId, previousData, newData)
     }
 
-    // Emit layer updated event
-    const layerData: Layer = {
-      id: layer.id,
-      type: layer.type as LayerTypeImport,
-      name: layer.name,
-      visible: layer.visible,
-      locked: layer.locked,
-      opacity: layer.opacity,
-      x: layer.x,
-      y: layer.y,
-      width: layer.width,
-      height: layer.height,
-      rotation: layer.rotation,
-      scaleX: layer.scaleX,
-      scaleY: layer.scaleY,
-      zIndex: layer.zIndex,
-      properties: layer.properties
+    // Emit layer updated event only if not in loading state
+    if (!this.state.isLoadingDesign) {
+      this.emitter.emit('layer:updated', this.layerNodeToLayer(layer))
     }
-
-    this.emitter.emit('layer:updated', layerData)
   }
 
   private getNextZIndex(): number {
@@ -633,6 +615,7 @@ export class LayerManager implements LayerAPI {
 
   private createLayerNode(type: string, data: Partial<Layer>): LayerNode {
     // Merge default properties with provided properties
+    console.log('Creating layer node', { type, data })
     const defaultProps = this.getDefaultProperties(type as Layer['type'])
     const mergedProperties = { ...defaultProps, ...data.properties }
     
@@ -647,23 +630,23 @@ export class LayerManager implements LayerAPI {
     const canvasHeight = stageHeight > 0 ? stageHeight : 600
     
     // Use center positioning with consistent offset
-    const defaultX = data.x !== undefined ? data.x : (canvasWidth / 2) - 75 // Slightly left of center
-    const defaultY = data.y !== undefined ? data.y : (canvasHeight / 2) - 50 // Slightly above center
+    const defaultX = data.transform?.x !== undefined ? data.transform.x : (canvasWidth / 2) - 75 // Slightly left of center
+    const defaultY = data.transform?.y !== undefined ? data.transform.y : (canvasHeight / 2) - 50 // Slightly above center
     
     const layerNode = {
-      id: data.id || `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: data.id || -Date.now(), // Use negative timestamp as temporary number ID
       type,
       name: data.name || `${type} Layer`,
       visible: data.visible !== false,
       locked: data.locked || false,
-      opacity: data.opacity || 1,
+      opacity: data.transform?.opacity || 1,
       x: defaultX,
       y: defaultY,
-      width: data.width || 100,
-      height: data.height || 100,
-      rotation: data.rotation || 0,
-      scaleX: data.scaleX || 1,
-      scaleY: data.scaleY || 1,
+      width: data.transform?.width || 100,
+      height: data.transform?.height || 100,
+      rotation: data.transform?.rotation || 0,
+      scaleX: data.transform?.scaleX || 1,
+      scaleY: data.transform?.scaleY || 1,
       zIndex: data.zIndex || this.getNextZIndex(),
       properties: mergedProperties
     } as LayerNode
@@ -709,6 +692,22 @@ export class LayerManager implements LayerAPI {
         return {}
       default:
         return {}
+    }
+  }
+
+  /**
+   * Create a transform object from LayerNode properties
+   */
+  private createTransformFromLayerNode(layerNode: LayerNode, offsetX: number = 0, offsetY: number = 0): Transform {
+    return {
+      x: layerNode.x + offsetX,
+      y: layerNode.y + offsetY,
+      width: layerNode.width,
+      height: layerNode.height,
+      rotation: layerNode.rotation,
+      scaleX: layerNode.scaleX,
+      scaleY: layerNode.scaleY,
+      opacity: layerNode.opacity
     }
   }
 

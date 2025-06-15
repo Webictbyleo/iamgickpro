@@ -26,8 +26,8 @@ final readonly class CreateLayerRequestDTO
          * Used to ensure layer is added to the correct design context
          */
         #[Assert\NotBlank(message: 'Design ID is required')]
-        #[Assert\Type(type: 'string', message: 'Design ID must be a string')]
-        public string $designId,
+        #[Assert\Type(type: ['int','string'], message: 'Design ID must be a string')]
+        public int|string $designId,
 
         /**
          * Type of layer being created

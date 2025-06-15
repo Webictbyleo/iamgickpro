@@ -15,7 +15,7 @@ export class GroupLayerRenderer implements KonvaLayerRenderer {
     const properties = layer.properties as GroupLayerProperties
     
     const group = new Konva.Group({
-      id: layer.id,  // Set the group ID to match the layer ID
+      id: layer.id.toString(),  // Convert number ID to string for Konva
       x: layer.x,
       y: layer.y,
       width: layer.width,

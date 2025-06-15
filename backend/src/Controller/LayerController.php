@@ -82,7 +82,13 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $design = $this->designRepository->findOneBy(['uuid' => $dto->designId]);
+            // Find design by UUID if designId is string, by ID if numeric
+            if (is_string($dto->designId)) {
+                $design = $this->designRepository->findOneBy(['uuid' => $dto->designId]);
+            } else {
+                $design = $this->designRepository->find($dto->designId);
+            }
+            
             if (!$design) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
@@ -266,7 +272,6 @@ class LayerController extends AbstractController
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
                 'Layers updated successfully',
-                ['updatedLayers' => $updatedLayers]
             );
             return $this->successResponse($successResponse);
 
@@ -357,8 +362,9 @@ class LayerController extends AbstractController
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
-
+            
             $layerId = (int)$id;
+            /**  @var Layer */
             $layer = $this->layerRepository->find($layerId);
             if (!$layer) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
@@ -409,6 +415,7 @@ class LayerController extends AbstractController
                     $layer->setParent($parent);
                 }
             }
+           
 
             $errors = $this->validator->validate($layer);
             if (count($errors) > 0) {
@@ -616,8 +623,7 @@ class LayerController extends AbstractController
             $this->entityManager->flush();
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
-                'Layer moved successfully',
-                ['zIndex' => $layer->getZIndex()]
+                'Layer moved successfully'
             );
             return $this->successResponse($successResponse);
 
