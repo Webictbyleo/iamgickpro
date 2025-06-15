@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
 import { EditorSDK } from '@/editor/sdk/EditorSDK'
 import type { EditorConfig } from '@/editor/sdk/types'
+import type { Layer } from '@/types'
 
 export function useDesignEditor() {
   const route = useRoute()
@@ -85,7 +86,7 @@ export function useDesignEditor() {
     console.log('Setting up SDK event listeners')
 
     // Layer events
-    editorSDK.value.on('layer:created', (layer: any) => {
+    editorSDK.value.on('layer:created', (layer: Layer) => {
       console.log('🎯 Event received: layer:created', layer)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
@@ -100,8 +101,8 @@ export function useDesignEditor() {
       }
     })
 
-    editorSDK.value.on('layer:updated', (layer: any) => {
-      console.log('🎯 Event received: layer:updated', layer)
+    editorSDK.value.on('layer:updated', (layer: Layer) => {
+      
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
         designStore.updateLayer(layer.id, layer, { skipPersistence: false })

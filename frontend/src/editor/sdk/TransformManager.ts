@@ -1,6 +1,7 @@
 import Konva from 'konva'
-import type { LayerNode, EditorState } from './types'
+import type { LayerNode, EditorState, LayerType } from './types'
 import type { EventEmitter } from './EventEmitter'
+import type { Layer } from '@/types'
 
 // Define the Box type interface for transformer constraints
 interface Box {
@@ -79,7 +80,9 @@ export class TransformManager {
         canvasHeight
       )
       
-      // Update layer position
+      // Position layers directly in canvas coordinates
+      // The LayerManager's updateMainLayerForViewport() method handles
+      // the viewport offset automatically for all user layers
       layer.x = position.x
       layer.y = position.y
       
@@ -955,23 +958,25 @@ export class TransformManager {
     }
   }
 
-  private layerNodeToLayer(layer: LayerNode): any {
+  private layerNodeToLayer(layer: LayerNode): Layer {
     return {
       id: layer.id,
-      type: layer.type,
+      type: layer.type as LayerType,
       name: layer.name,
       visible: layer.visible,
       locked: layer.locked,
-      opacity: layer.opacity,
-      x: layer.x,
-      y: layer.y,
-      width: layer.width,
-      height: layer.height,
-      rotation: layer.rotation,
-      scaleX: layer.scaleX,
-      scaleY: layer.scaleY,
+      transform: {
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        rotation: layer.rotation,
+        scaleX: layer.scaleX || 1,
+        scaleY: layer.scaleY || 1,
+        opacity: layer.opacity
+      },
       zIndex: layer.zIndex,
-      properties: layer.properties
+      properties: layer.properties || {}
     }
   }
 

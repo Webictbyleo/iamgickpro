@@ -572,60 +572,9 @@ const handleLockSelectedLayer = () => {
 const handlePositionPreset = (preset: string) => {
   if (!selectedLayer.value || !editorSDK.value) return
 
-  // Get canvas dimensions
-  const canvasWidth = designStore.currentDesign?.width || 800
-  const canvasHeight = designStore.currentDesign?.height || 600
-  
-  // Get layer dimensions
-  const layer = selectedLayer.value
-  const layerWidth = layer.transform.width || 100
-  const layerHeight = layer.transform.height || 100
-  
-  let x = layer.transform.x || 0
-  let y = layer.transform.y || 0
-  
-  // Calculate position based on preset
-  switch (preset) {
-    case 'top-left':
-      x = 0
-      y = 0
-      break
-    case 'top-center':
-      x = (canvasWidth - layerWidth) / 2
-      y = 0
-      break
-    case 'top-right':
-      x = canvasWidth - layerWidth
-      y = 0
-      break
-    case 'center-left':
-      x = 0
-      y = (canvasHeight - layerHeight) / 2
-      break
-    case 'center':
-      x = (canvasWidth - layerWidth) / 2
-      y = (canvasHeight - layerHeight) / 2
-      break
-    case 'center-right':
-      x = canvasWidth - layerWidth
-      y = (canvasHeight - layerHeight) / 2
-      break
-    case 'bottom-left':
-      x = 0
-      y = canvasHeight - layerHeight
-      break
-    case 'bottom-center':
-      x = (canvasWidth - layerWidth) / 2
-      y = canvasHeight - layerHeight
-      break
-    case 'bottom-right':
-      x = canvasWidth - layerWidth
-      y = canvasHeight - layerHeight
-      break
-  }
-  
-  // Update layer position
-  editorSDK.value.layers.updateLayer(layer.id, { x, y })
+  // Use the proper TransformManager API for position presets
+  // This ensures layers are positioned correctly considering viewport transforms
+  editorSDK.value.transform.applyPositionPreset(preset)
 }
 
 const handleUpdateLayerOpacity = (opacity: number) => {
@@ -672,9 +621,9 @@ const handleFitToScreen = () => {
   // Use zoomToFit method from editorSDK with proper viewport dimensions
   if (editorSDK.value && canvasViewportElement.value) {
     // Get the actual viewport dimensions
-    const rect = canvasViewportElement.value.getBoundingClientRect()
-    let viewportWidth = rect.width
-    let viewportHeight = rect.height
+    
+    let viewportWidth = canvasContainerWidth.value
+    let viewportHeight = canvasContainerHeight.value
     
     // Only account for zoom controls (positioned at bottom-right)
     // Reduce width by 100px for zoom controls, height by 50px
@@ -682,15 +631,9 @@ const handleFitToScreen = () => {
     
     viewportWidth = Math.max(viewportWidth - zoomControlAdjustment.width, 400)
     viewportHeight = Math.max(viewportHeight - zoomControlAdjustment.height, 300)
-    
-    console.log('🎯 Fit to screen:', { 
-      originalDimensions: { width: rect.width, height: rect.height },
-      adjustedDimensions: { width: viewportWidth, height: viewportHeight },
-      canvasSize: { width: canvasWidth.value, height: canvasHeight.value },
-      ratio: { 
-        widthRatio: viewportWidth / canvasWidth.value, 
-        heightRatio: viewportHeight / canvasHeight.value 
-      }
+    console.log('🎯 EditorLayout: Adjusted viewport dimensions for fitToScreen:', {
+      viewportWidth,
+      viewportHeight
     })
     
     // Call fitCanvasToViewport with the adjusted viewport dimensions

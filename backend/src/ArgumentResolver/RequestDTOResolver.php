@@ -539,7 +539,7 @@ class RequestDTOResolver implements ValueResolverInterface
     }
 
     /**
-     * Find the best matching type in a union by trying deserialization and scoring
+     * Find the best matching type in a union by scoring all types and choosing the best match
      */
     private function findBestMatchInUnion(mixed $value, \ReflectionUnionType $unionType, string $paramName): mixed
     {
@@ -552,11 +552,14 @@ class RequestDTOResolver implements ValueResolverInterface
 
         $candidates = [];
         
-        // Try each type and score the match quality
+        // Score ALL types (both builtin and non-builtin) for unified comparison
         foreach ($types as $type) {
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                $score = $this->scoreTypeMatch($value, $type);
-                // Only consider types with positive scores (negative scores indicate non-viable types)
+            if ($type instanceof \ReflectionNamedType) {
+                $score = $type->isBuiltin() 
+                    ? $this->scoreBuiltinTypeMatch($value, $type->getName())
+                    : $this->scoreTypeMatch($value, $type);
+                
+                // Only consider types with positive scores
                 if ($score > 0) {
                     $candidates[] = ['type' => $type, 'score' => $score];
                 }
@@ -678,6 +681,97 @@ class RequestDTOResolver implements ValueResolverInterface
     }
 
     /**
+     * Score how well a value matches a builtin type
+     */
+    private function scoreBuiltinTypeMatch(mixed $value, string $typeName): int
+    {
+        return match ($typeName) {
+            'int' => $this->scoreIntMatch($value),
+            'float' => $this->scoreFloatMatch($value),
+            'string' => $this->scoreStringMatch($value),
+            'bool' => $this->scoreBoolMatch($value),
+            'array' => $this->scoreArrayMatch($value),
+            default => 0
+        };
+    }
+
+    /**
+     * Score how well a value matches the int type
+     */
+    private function scoreIntMatch(mixed $value): int
+    {
+        if (is_int($value)) {
+            return 100; // Perfect match
+        }
+        if (is_numeric($value) && (string)(int)$value === (string)$value) {
+            return 80; // Good conversion candidate
+        }
+        return 0; // Cannot convert
+    }
+
+    /**
+     * Score how well a value matches the float type
+     */
+    private function scoreFloatMatch(mixed $value): int
+    {
+        if (is_float($value)) {
+            return 100; // Perfect match
+        }
+        if (is_numeric($value)) {
+            return 70; // Good conversion candidate
+        }
+        return 0; // Cannot convert
+    }
+
+    /**
+     * Score how well a value matches the string type
+     */
+    private function scoreStringMatch(mixed $value): int
+    {
+        if (is_string($value)) {
+            return 100; // Perfect match
+        }
+        if (is_scalar($value)) {
+            return 50; // Can convert scalar to string
+        }
+        if (is_array($value)) {
+            return 10; // Can convert array to string but it's usually not what we want
+        }
+        return 0; // Cannot convert objects to string reliably
+    }
+
+    /**
+     * Score how well a value matches the bool type
+     */
+    private function scoreBoolMatch(mixed $value): int
+    {
+        if (is_bool($value)) {
+            return 100; // Perfect match
+        }
+        if (is_string($value)) {
+            $lower = strtolower($value);
+            if (in_array($lower, ['true', 'false', '1', '0', 'yes', 'no', 'on', 'off'], true)) {
+                return 80; // Good boolean string
+            }
+        }
+        if (is_int($value) && ($value === 0 || $value === 1)) {
+            return 70; // Integer 0/1 boolean
+        }
+        return 0; // Cannot reliably convert
+    }
+
+    /**
+     * Score how well a value matches the array type
+     */
+    private function scoreArrayMatch(mixed $value): int
+    {
+        if (is_array($value)) {
+            return 100; // Perfect match
+        }
+        return 0; // Cannot convert non-arrays to arrays reliably
+    }
+
+    /**
      * Deserialize value to a specific named type
      */
     private function deserializeToNamedType(mixed $value, \ReflectionNamedType $type): mixed
@@ -715,5 +809,51 @@ class RequestDTOResolver implements ValueResolverInterface
             'array' => is_array($value) ? $value : [$value],
             default => $value
         };
+    }
+
+    /**
+     * Try to convert value to builtin PHP types without throwing exceptions
+     * Returns null if conversion is not possible
+     */
+    private function tryConvertToBuiltinType(mixed $value, string $typeName): mixed
+    {
+        try {
+            return match ($typeName) {
+                'int' => is_numeric($value) ? (int) $value : null,
+                'float' => is_numeric($value) ? (float) $value : null,
+                'string' => (string) $value,
+                'bool' => is_bool($value) ? $value : $this->tryConvertToBool($value),
+                'array' => is_array($value) ? $value : null,
+                default => null
+            };
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Try to convert value to boolean without throwing exceptions
+     */
+    private function tryConvertToBool(mixed $value): ?bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        
+        if (is_string($value)) {
+            $lower = strtolower($value);
+            if (in_array($lower, ['true', '1', 'yes', 'on'], true)) {
+                return true;
+            }
+            if (in_array($lower, ['false', '0', 'no', 'off', ''], true)) {
+                return false;
+            }
+        }
+        
+        if (is_int($value)) {
+            return $value !== 0;
+        }
+        
+        return null;
     }
 }

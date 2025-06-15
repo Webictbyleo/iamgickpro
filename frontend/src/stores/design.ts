@@ -350,7 +350,7 @@ export const useDesignStore = defineStore('design', () => {
         
         // Convert backend layer format to frontend Layer format
         const persistedLayer = backendToFrontendLayer(backendLayer)
-
+        
         // Add to local state
         currentDesign.value.layers.push(persistedLayer)
         currentDesign.value.updatedAt = new Date().toISOString()
@@ -435,7 +435,7 @@ export const useDesignStore = defineStore('design', () => {
       console.warn('Cannot update layer: Layers array is not initialized')
       return { success: false, error: 'Layers array is not initialized' }
     }
-
+    console.log(`Updating layer ${layerId} with updates:`, updates)
     const layer = currentDesign.value.layers.find((l: Layer) => l.id === layerId)
     if (!layer) {
       console.warn(`Layer ${layerId} not found in design`)

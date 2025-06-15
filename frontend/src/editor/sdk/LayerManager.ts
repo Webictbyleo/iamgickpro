@@ -45,6 +45,18 @@ export class LayerManager implements LayerAPI {
     return this.mainLayer
   }
 
+  /**
+   * Update main content layer for viewport changes (zoom/pan)
+   * FIXED: Do not apply manual offsets to the main layer!
+   * Konva's stage transformation automatically handles zoom/pan for all child layers.
+   * Manual offsetting creates double transformation and breaks positioning.
+   */
+  updateMainLayerForViewport(): void {
+    // DO NOTHING - Stage transformation handles zoom/pan automatically
+    // The main layer should remain at (0,0) and let the stage handle transformations
+    console.log('🔍 LayerManager: Viewport update called but skipped - stage handles transformations automatically')
+  }
+
   // ============================================================================
   // LAYER CRUD OPERATIONS
   // ============================================================================
@@ -528,14 +540,38 @@ export class LayerManager implements LayerAPI {
   }
 
   private setupLayers(): void {
-    // Only create the main content layer if it doesn't exist
-    const layers = this.stage.getLayers()
+    // Check if we already have a main content layer
+    const existingMainLayer = this.stage.findOne('.main-content-layer')
     
-    if (layers.length === 0) {
-      this.mainLayer = new Konva.Layer()
-      this.stage.add(this.mainLayer)
-    } else {
-      this.mainLayer = layers[0]
+    if (existingMainLayer && existingMainLayer instanceof Konva.Layer) {
+      this.mainLayer = existingMainLayer
+      // Ensure it's positioned at origin (fix any previous incorrect positioning)
+      this.mainLayer.setAttrs({ x: 0, y: 0 })
+      console.log('🔍 LayerManager: Using existing main content layer, reset to (0,0)')
+      return
+    }
+
+    // Create a dedicated main content layer for user content
+    // This ensures separation from CanvasManager's background layer
+    this.mainLayer = new Konva.Layer({
+      name: 'main-content-layer',
+      id: 'main-content-layer',
+      x: 0,  // Always keep at origin
+      y: 0   // Always keep at origin
+    })
+    
+    // Add CSS-style class for better identification
+    this.mainLayer.setAttr('className', 'main-content-layer')
+    
+    this.stage.add(this.mainLayer)
+    console.log('🔍 LayerManager: Created new main content layer at (0,0)')
+    
+    // Ensure the main content layer is above any background layers
+    // Background layers should stay at the bottom
+    const backgroundLayer = this.stage.findOne('.background-layer')
+    if (backgroundLayer) {
+      backgroundLayer.moveToBottom()
+      console.log('🔍 LayerManager: Moved background layer to bottom')
     }
   }
 

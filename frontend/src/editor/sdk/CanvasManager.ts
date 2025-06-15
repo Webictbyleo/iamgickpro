@@ -96,7 +96,7 @@ export class CanvasManager implements CanvasAPI {
   setBackgroundColor(color: string): void {
     this.backgroundColor = color
     this.createBackground()
-    this.updateBackground()
+    this.updateViewport() // Use updateViewport() instead of updateBackground() to ensure proper positioning
   }
 
   getBackgroundColor(): string {
@@ -187,7 +187,7 @@ export class CanvasManager implements CanvasAPI {
     this.state.panY = y
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     // Emit viewport change event only if not loading a design
     if (!this.state.isLoadingDesign) {
@@ -237,7 +237,7 @@ export class CanvasManager implements CanvasAPI {
     this.state.panY = y
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     // Emit viewport change event only if not loading a design
     if (!this.state.isLoadingDesign) {
@@ -279,7 +279,7 @@ export class CanvasManager implements CanvasAPI {
     this.state.panY = y
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     // Emit viewport change event only if not loading a design
     if (!this.state.isLoadingDesign) {
@@ -342,7 +342,7 @@ export class CanvasManager implements CanvasAPI {
     this.state.zoom = clampedZoom
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     // Emit viewport change event only if not loading a design
     if (!this.state.isLoadingDesign) {
@@ -369,7 +369,7 @@ export class CanvasManager implements CanvasAPI {
     this.state.panY = newPos.y
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     // Emit viewport change event only if not loading a design
     if (!this.state.isLoadingDesign) {
@@ -406,7 +406,7 @@ export class CanvasManager implements CanvasAPI {
     this.state.panY = stageHeight / 2
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     this.eventEmitter.emit('viewport:changed', { 
       zoom: 1, 
@@ -415,40 +415,6 @@ export class CanvasManager implements CanvasAPI {
     })
   }
 
-  // ============================================================================
-  // RENDERING AND EXPORT
-  // ============================================================================
-
-  toDataURL(options?: { format?: string, quality?: number, pixelRatio?: number }): string {
-    const opts = {
-      format: 'image/png',
-      quality: 1,
-      pixelRatio: 1,
-      ...options
-    }
-    
-    return this.stage.toDataURL({
-      mimeType: opts.format,
-      quality: opts.quality,
-      pixelRatio: opts.pixelRatio
-    })
-  }
-
-  toBlob(callback: (blob: Blob | null) => void, options?: { format?: string, quality?: number, pixelRatio?: number }): void {
-    const opts = {
-      format: 'image/png',
-      quality: 1,
-      pixelRatio: 1,
-      ...options
-    }
-    
-    this.stage.toBlob({
-      callback,
-      mimeType: opts.format,
-      quality: opts.quality,
-      pixelRatio: opts.pixelRatio
-    })
-  }
 
   // ============================================================================
   // GRID AND GUIDES
@@ -532,8 +498,12 @@ export class CanvasManager implements CanvasAPI {
     // Create dedicated background layer if it doesn't exist
     if (!this.backgroundLayer) {
       this.backgroundLayer = new Konva.Layer({
-        name: 'background-layer'
+        name: 'background-layer',
+        id: 'canvas-background-layer'
       })
+      
+      // Add CSS-style class for better identification
+      this.backgroundLayer.setAttr('className', 'background-layer')
       
       // Add background layer as the first layer (bottom-most)
       this.stage.add(this.backgroundLayer)
@@ -599,7 +569,7 @@ export class CanvasManager implements CanvasAPI {
       this.state.panY = newPos.y
       
       // Update background for viewport changes
-      this.updateBackgroundForViewport()
+      this.updateViewport()
       
       this.eventEmitter.emit('viewport:changed', { 
         zoom: clampedScale, 
@@ -631,7 +601,7 @@ export class CanvasManager implements CanvasAPI {
         this.state.panY = this.stage.y()
         
         // Update background for viewport changes during panning
-        this.updateBackgroundForViewport()
+        this.updateViewport()
         
         this.eventEmitter.emit('viewport:changed', { 
           zoom: this.state.zoom, 
@@ -659,7 +629,7 @@ export class CanvasManager implements CanvasAPI {
       this.state.panY = this.stage.y()
       
       // Update background for viewport changes after dragging
-      this.updateBackgroundForViewport()
+      this.updateViewport()
       
       this.eventEmitter.emit('viewport:changed', { 
         zoom: this.state.zoom, 
@@ -808,14 +778,12 @@ export class CanvasManager implements CanvasAPI {
     this.stage.position({ x: 0, y: 0 })
     
     // Update background for viewport changes
-    this.updateBackgroundForViewport()
+    this.updateViewport()
     
     this.updateState()
   }
 
-  private setupBackground(): void {
-    this.updateBackground()
-  }
+  
 
   private updateBackground(): void {
     // Update Konva background rectangle for export compatibility
@@ -823,6 +791,7 @@ export class CanvasManager implements CanvasAPI {
       this.backgroundRect.fill(this.backgroundColor)
       this.backgroundLayer?.batchDraw()
       console.log(`🔍 CanvasManager: Background dimension is ${this.backgroundRect.width()}x${this.backgroundRect.height()}`)
+      
     }
   }
 
@@ -856,11 +825,27 @@ export class CanvasManager implements CanvasAPI {
       height: visibleHeight,
       fill: this.backgroundColor
     })
-    
+    this.layerManager?.getMainLayer().batchDraw()
+    this.backgroundRect.cache() // Cache for performance
     // Force redraw of background layer
     this.backgroundLayer.batchDraw()
     
     console.log(`🔍 CanvasManager: Updated background for viewport - pos:(${visibleX.toFixed(1)}, ${visibleY.toFixed(1)}) size:(${visibleWidth.toFixed(1)}x${visibleHeight.toFixed(1)}) scale:${scale.toFixed(2)}`)
+  }
+
+  /**
+   * Update all viewport-dependent elements (background and content layers)
+   * This should be called instead of updateBackgroundForViewport() to ensure
+   * both background and user content layers are properly updated for zoom/pan changes
+   */
+  private updateViewport(): void {
+    // Update background layer
+    this.updateBackgroundForViewport()
+    
+    // Update main content layer through LayerManager
+    if (this.layerManager) {
+      this.layerManager.updateMainLayerForViewport()
+    }
   }
 
   private updateState(): void {
