@@ -358,7 +358,6 @@ const mediaType = computed(() => {
   if (!props.media?.type) return 'unknown'
   
   const type = props.media.type.toLowerCase()
-  console.log('MediaPreviewModal - Detecting type for:', type, 'from media:', props.media)
   
   if (type.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(type)) {
     return 'image'

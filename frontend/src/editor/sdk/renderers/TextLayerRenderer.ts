@@ -390,11 +390,13 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       fontFamily: textNode.fontFamily(),
       fontWeight: textNode.fontStyle().includes('bold') ? 'bold' : 'normal',
       fontStyle: textNode.fontStyle().includes('italic') ? 'italic' : 'normal',
+      textDecoration: textNode.textDecoration(),
       color: textNode.fill(),
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      backgroundColor: 'rgba(255, 255, 255, 0.98)',
       border: '2px solid #3b82f6',
       borderRadius: '4px',
       padding: '4px 8px',
+      margin: '0',
       outline: 'none',
       resize: 'none',
       overflow: 'hidden',
@@ -403,7 +405,11 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       lineHeight: `${textNode.lineHeight()}`,
       letterSpacing: `${textNode.letterSpacing()}px`,
       wordWrap: 'break-word',
-      whiteSpace: 'pre-wrap'
+      whiteSpace: 'pre-wrap',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+      // Match text transformation
+      transform: `rotate(${textNode.rotation()}deg) scale(${textNode.scaleX()}, ${textNode.scaleY()})`,
+      transformOrigin: 'top left'
     })
 
     // Auto-resize textarea
@@ -459,19 +465,19 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
   private finishTextEditing(): void {
     if (!this.textInput || !this.editingLayer) return
 
-    const newText = this.textInput.value
+    const newText = this.textInput.value || this.editStartText // Fallback to original text
     const layerId = this.editingLayer
 
-    // Clean up editor
-    this.cleanupTextEditor()
-
-    // Update the text layer
-    if (this.eventEmitter && newText !== this.editStartText) {
+    // Always update the text layer to ensure it's not lost
+    if (this.eventEmitter) {
       this.eventEmitter.emit('layer:update-properties', {
         layerId,
         properties: { text: newText }
       })
     }
+
+    // Clean up editor after updating
+    this.cleanupTextEditor()
 
     // Emit editing finished event
     if (this.eventEmitter) {

@@ -66,16 +66,6 @@
     <!-- Quick Actions -->
     <div class="flex flex-col space-y-2 mt-auto">
       <button
-        @click="$emit('action', 'save')"
-        class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-green-400 hover:bg-gray-800 transition-all duration-200"
-        title="Save (Ctrl+S)"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-        </svg>
-      </button>
-
-      <button
         @click="$emit('action', 'export')"
         class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-400 hover:bg-gray-800 transition-all duration-200"
         title="Export"
@@ -95,7 +85,6 @@ import {
   HandRaisedIcon,
   Squares2X2Icon,
   Square3Stack3DIcon as LayersIcon,
-  PlayIcon,
   SwatchIcon,
   DocumentDuplicateIcon,
   FilmIcon,
@@ -140,7 +129,6 @@ const panels: Panel[] = [
   { id: 'uploads', icon: CloudArrowUpIcon, label: 'Uploads' },
   { id: 'media', icon: FilmIcon, label: 'Stock Media' },
   { id: 'layers', icon: LayersIcon, label: 'Layers' },
-  { id: 'animation', icon: PlayIcon, label: 'Animation' },
   { id: 'colors', icon: SwatchIcon, label: 'Colors' }
 ]
 

@@ -68,11 +68,6 @@ export class EditorSDK extends EventEmitter {
     // Improve hit detection for better layer selection at any zoom level
     this.stage.listening(true)
     
-    console.log('EditorSDK: Stage created with dimensions:', {
-      stageSize: { width: this.stage.width(), height: this.stage.height() },
-      canvasSize: { width: config.canvasWidth || config.width, height: config.canvasHeight || config.height }
-    })
-    
     // Set up layerEmitter on stage for renderer communication
     ;(this.stage as any).layerEmitter = this
     
@@ -214,8 +209,6 @@ export class EditorSDK extends EventEmitter {
    */
   async loadDesign(design: Design): Promise<void> {
     try {
-      console.log('EditorSDK: Loading design', design)
-      
       // Set loading state to prevent circular events
       this.state.isLoadingDesign = true
       
@@ -251,15 +244,12 @@ export class EditorSDK extends EventEmitter {
       // Set background from design data - support both new and legacy formats
       if (design.data.background) {
         // New DesignBackground format
-        console.log('EditorSDK: Loading background from new format:', design.data.background)
         this.canvasManager.setBackground(design.data.background)
       } else if (design.data.backgroundColor) {
         // Legacy string format
-        console.log('EditorSDK: Loading background from legacy format:', design.data.backgroundColor)
         this.canvasManager.setBackgroundColor(design.data.backgroundColor)
       } else {
         // Default background
-        console.log('EditorSDK: No background found, using default white')
         this.canvasManager.setBackgroundColor('#ffffff')
       }
       
@@ -268,15 +258,12 @@ export class EditorSDK extends EventEmitter {
       
       if (design.layers && Array.isArray(design.layers)) {
         // Use direct layers array from backend
-        console.log(`EditorSDK: Using direct layers array (${design.layers.length} layers)`)
         layersToLoad = design.layers
       } else {
-        console.log('EditorSDK: No direct layers array found')
         layersToLoad = []
       }
       
       // Load layers silently to prevent event emission during loading
-      console.log(`EditorSDK: Loading ${layersToLoad.length} layers`)
       for (const layerData of layersToLoad) {
         try {
           // Create layer with silent flag to prevent events during loading
@@ -313,7 +300,6 @@ export class EditorSDK extends EventEmitter {
       // Force refresh hit detection after design loads to ensure proper interaction at all zoom levels
       this.layerManager.refreshHitDetection()
       
-      console.log('EditorSDK: Design loaded successfully')
       this.emit('design:loaded', design)
     } catch (error) {
       this.state.isLoadingDesign = false
@@ -359,11 +345,8 @@ export class EditorSDK extends EventEmitter {
    */
   async exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): Promise<string> {
     try {
-      console.log('🎨 EditorSDK: Starting image export', { format, quality })
-      
       // Get the original canvas dimensions (design size, not viewport size)
       const canvasSize = this.canvasManager.getSize()
-      console.log('🎨 EditorSDK: Canvas dimensions for export', canvasSize)
       
       // Create a temporary hidden container for export
       const tempContainer = document.createElement('div')
@@ -382,8 +365,6 @@ export class EditorSDK extends EventEmitter {
         height: canvasSize.height,
       })
 
-      console.log('🎨 EditorSDK: Created temporary stage for export')
-
       // Clone all layers from the original stage to the temporary stage
       // This preserves all layer content without affecting the visible stage
       const clonedLayers: Konva.Layer[] = []
@@ -398,8 +379,6 @@ export class EditorSDK extends EventEmitter {
           }
         }
       })
-
-      console.log('🎨 EditorSDK: Cloned layers to temporary stage', { layerCount: clonedLayers.length })
 
       // Force a render cycle to ensure all content is properly drawn
       tempStage.batchDraw()
@@ -417,8 +396,6 @@ export class EditorSDK extends EventEmitter {
         width: canvasSize.width,
         height: canvasSize.height,
       })
-
-      console.log('🎨 EditorSDK: Export completed successfully')
 
       // Clean up temporary stage and container
       tempStage.destroy()
@@ -451,8 +428,6 @@ export class EditorSDK extends EventEmitter {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
-      console.log(`Design downloaded as ${link.download}`)
     } catch (error) {
       console.error('Download failed:', error)
       throw error
@@ -669,12 +644,9 @@ export class EditorSDK extends EventEmitter {
     }
 
     try {
-      console.log('EditorSDK: Initiating undo')
       const success = this.historyManager.undo()
       
-      if (success) {
-        console.log('EditorSDK: Undo completed successfully')
-      } else {
+      if (!success) {
         console.warn('EditorSDK: Undo failed')
       }
     } catch (error) {
@@ -689,12 +661,9 @@ export class EditorSDK extends EventEmitter {
     }
 
     try {
-      console.log('EditorSDK: Initiating redo')
       const success = this.historyManager.redo()
       
-      if (success) {
-        console.log('EditorSDK: Redo completed successfully')
-      } else {
+      if (!success) {
         console.warn('EditorSDK: Redo failed')
       }
     } catch (error) {

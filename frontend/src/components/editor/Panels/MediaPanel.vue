@@ -491,8 +491,7 @@ const tooltipPosition = ref({ x: 0, y: 0 })
 const mediaTabs = [
   { id: 'photos', label: 'Photos', icon: PhotoIcon },
   { id: 'icons', label: 'Icons', icon: SparklesIcon },
-  { id: 'shapes', label: 'Shapes', icon: Square3Stack3DIcon },
-  { id: 'videos', label: 'Videos', icon: VideoCameraIcon }
+  { id: 'shapes', label: 'Shapes', icon: Square3Stack3DIcon }
 ]
 
 // Stock media

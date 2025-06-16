@@ -374,35 +374,6 @@ watch(() => props.visible, (visible) => {
   }
 })
 
-// Debugging watchers
-watch(() => props.targetLayer, (newLayer, oldLayer) => {
-  console.log('🎯 ContextMenu: targetLayer prop changed', {
-    newLayer: newLayer ? {
-      id: newLayer.id,
-      name: newLayer.name,
-      type: newLayer.type,
-      keys: Object.keys(newLayer)
-    } : null,
-    oldLayer: oldLayer ? {
-      id: oldLayer.id,
-      name: oldLayer.name,
-      type: oldLayer.type
-    } : null,
-    hasNewLayer: !!newLayer,
-    hasOldLayer: !!oldLayer
-  })
-}, { immediate: true })
-
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    console.log('🎯 ContextMenu: Menu became visible with targetLayer:', props.targetLayer ? {
-      id: props.targetLayer.id,
-      name: props.targetLayer.name,
-      type: props.targetLayer.type
-    } : 'NO LAYER')
-  }
-})
-
 // Cleanup
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)

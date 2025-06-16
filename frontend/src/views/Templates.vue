@@ -169,7 +169,7 @@ const handleTemplateSelected = async (template: Template) => {
       
       newDesign.name = `${template.name} Copy`
       
-      const result = await designStore.saveDesign(newDesign)
+      const result = await designStore.saveDesign(newDesign, true)
       
       if (result.success) {
         router.push(`/editor/${newDesign.id}`)

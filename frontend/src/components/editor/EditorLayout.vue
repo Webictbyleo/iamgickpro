@@ -431,20 +431,13 @@ const backgroundColor = computed({
     return currentDesign.data.backgroundColor || '#ffffff'
   },
   set: (value: string | DesignBackground) => {
-    console.log('🔍 EditorLayout: backgroundColor setter called with:', value)
-    console.log('🔍 EditorLayout: Value type:', typeof value)
-    console.log('🔍 EditorLayout: Value stringified:', JSON.stringify(value, null, 2))
-    
     updateDesignBackground(value)
     // Update canvas background
     if (typeof value === 'string') {
-      console.log('🔍 EditorLayout: Calling setBackgroundColor with string:', value)
       editorSDK.value?.canvas.setBackgroundColor(value)
     } else {
-      console.log('🔍 EditorLayout: Calling setBackground with object:', value)
       editorSDK.value?.canvas.setBackground(value)
     }
-    console.log('🔍 EditorLayout: Background update completed')
   }
 })
 
@@ -573,7 +566,7 @@ const handleUseTemplate = async (template: any) => {
     newDesign.title = `${template.name} Copy`
 
     // Save the design
-    const result = await designStore.saveDesign(newDesign)
+    const result = await designStore.saveDesign(newDesign, true)
 
     if (result.success && editorSDK.value) {
       // Load the template data into the editor
@@ -1356,7 +1349,7 @@ const handleCreateNewDesign = async () => {
   newDesign.title = 'Untitled Design'
   
   // Save the new design to the backend
-  const result = await designStore.saveDesign(newDesign)
+  const result = await designStore.saveDesign(newDesign, true)
   
   if (result.success && newDesign.id) {
     const newDesignId = parseInt(newDesign.id.toString(), 10)
@@ -1436,7 +1429,7 @@ onUnmounted(() => {
   document.removeEventListener('editor:auto-fit-request', handleAutoFitRequest as EventListener)
   // Optionally save the design if there are unsaved changes
   if (hasUnsavedChanges.value) {
-    saveDesign()
+    saveDesign(false) // Don't show notifications for route change saves
   }
 })
 

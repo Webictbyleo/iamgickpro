@@ -162,10 +162,6 @@ export interface CanvasAPI {
   setPanMode(enabled: boolean): void
   
   // Debug utilities
-  toggleDebugRect(): void
-  showDebugRect(): void
-  hideDebugRect(): void
-  updateDebugRect(): void
   getCanvasDimensions(): { width: number; height: number }
   debugCanvasDimensions(): void
   

@@ -183,13 +183,6 @@ const verticalMarks = computed(() => {
 onMounted(async () => {
   await nextTick()
   if (canvasContainer.value) {
-    console.log('DesignCanvas: Container ready', {
-      container: canvasContainer.value,
-      containerDimensions: `${canvasContainer.value.offsetWidth}x${canvasContainer.value.offsetHeight}`,
-      containerClasses: canvasContainer.value.className,
-      containerStyle: canvasContainer.value.style.cssText,
-      containerChildren: canvasContainer.value.children.length
-    })
     // Container is now accessible via defineExpose, no need to emit
   } else {
     console.error('DesignCanvas: Container not found!')
@@ -208,7 +201,6 @@ const handleContainerClick = (event: MouseEvent) => {
 
 const handleEditorContextMenu = (event: CustomEvent) => {
   const { layer, position, event: originalEvent } = event.detail
-  console.log('🎯 DesignCanvas: Received context menu event', { layer, position })
   
   // Forward the context menu to the parent EditorLayout
   // Don't show our own context menu, let the parent handle it

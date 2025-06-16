@@ -202,14 +202,19 @@ export function useDesignEditor() {
     })
   }
 
-  const saveDesign = async () => {
+  const saveDesign = async (showNotification: boolean = true) => {
     if (!designStore.currentDesign) return
     
     try {
       saveError.value = false
-      const result = await designStore.saveDesign()
+      const result = await designStore.saveDesign(undefined, showNotification)
       if (result.success) {
         hasUnsavedChanges.value = false
+        if (showNotification) {
+          // Only show success notification for manual saves
+          console.log('✅ Design saved successfully')
+          // TODO: Add toast notification here for manual saves
+        }
       } else {
         saveError.value = true
         throw new Error(result.error || 'Save failed')
@@ -217,6 +222,10 @@ export function useDesignEditor() {
     } catch (error) {
       console.error('Failed to save design:', error)
       saveError.value = true
+      if (showNotification) {
+        // Only show error notification for manual saves
+        // TODO: Add error toast notification here for manual saves
+      }
       throw error
     }
   }
@@ -250,7 +259,7 @@ export function useDesignEditor() {
       // Only auto-save if we have unsaved changes and we're not currently loading a design
       if (hasUnsavedChanges.value && designStore.currentDesign && !editorSDK.value?.isLoading()) {
         console.log('🔄 Auto-saving design...')
-        saveDesign()
+        saveDesign(false) // Don't show notifications for autosave
       }
     }, 30000) // Auto-save every 30 seconds
     console.log('✅ Auto-save started')
@@ -298,7 +307,7 @@ export function useDesignEditor() {
     
     // Save before leaving
     if (hasUnsavedChanges.value && designStore.currentDesign) {
-      await saveDesign()
+      await saveDesign(false) // Don't show notifications for cleanup autosave
     }
     designStore.clearCurrentDesign()
   }

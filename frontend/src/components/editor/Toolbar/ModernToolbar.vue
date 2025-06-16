@@ -105,8 +105,31 @@
         </div>
       </div>
 
-      <!-- Right Section - Export Action -->
+      <!-- Right Section - Save & Export Actions -->
       <div class="flex items-center space-x-3">
+        <!-- Save Button -->
+        <button
+          @click="$emit('save')"
+          :disabled="saveStatus === 'saving'"
+          class="inline-flex items-center px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+          title="Save Design (Ctrl+S)"
+        >
+          <ArrowPathIcon 
+            v-if="saveStatus === 'saving'" 
+            class="w-4 h-4 mr-2 animate-spin"
+          />
+          <svg 
+            v-else
+            class="w-4 h-4 mr-2" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          </svg>
+          {{ saveStatus === 'saving' ? 'Saving...' : 'Save' }}
+        </button>
+        
         <!-- Export Dropdown -->
         <ExportDropdown @export="handleExport" />
       </div>

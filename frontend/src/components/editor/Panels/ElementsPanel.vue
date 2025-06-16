@@ -1,47 +1,38 @@
 <template>
   <div class="h-full flex flex-col bg-white">
-    <!-- Search Bar -->
-    <div class="p-3 border-b bg-gray-50">
-      <div class="relative">
-        <input
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Search elements..."
-          class="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-        <svg class="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </div>
+    <!-- Header -->
+    <div class="p-4 border-b bg-gray-50">
+      <h3 class="text-lg font-semibold text-gray-900">Elements</h3>
+      <p class="text-sm text-gray-600 mt-1">Add text, images, and shapes to your design</p>
     </div>
 
     <!-- Content Area -->
     <div class="flex-1 overflow-y-auto">
       <!-- Quick Add Section -->
-      <div class="p-3 border-b">
-        <div class="grid grid-cols-2 gap-2">
+      <div class="p-4">
+        <div class="grid grid-cols-2 gap-3">
           <button
             @click="addTextElement"
-            class="group flex flex-col items-center p-4 border-2 border-dashed border-purple-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all duration-200"
+            class="group flex flex-col items-center p-6 border-2 border-dashed border-blue-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
           >
-            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-purple-200">
-              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-200 group-hover:scale-110 transition-all duration-200">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2C7 1.44772 7.44772 1 8 1H16C16.5523 1 17 1.44772 17 2V4H20C20.5523 4 21 4.44772 21 5C21 5.55228 20.5523 6 20 6H19V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6H4C3.44772 6 3 5.55228 3 5C3 4.44772 3.44772 4 4 4H7ZM9 3V4H15V3H9ZM7 6V20H17V6H7ZM9 8H15V10H9V8ZM9 12H15V14H9V12Z" />
               </svg>
             </div>
-            <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700">Add Text</span>
+            <span class="text-sm font-semibold text-gray-700 group-hover:text-blue-700">Add Text</span>
           </button>
           
           <button
             @click="addImagePlaceholder"
-            class="group flex flex-col items-center p-4 border-2 border-dashed border-purple-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all duration-200"
+            class="group flex flex-col items-center p-6 border-2 border-dashed border-green-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all duration-200"
           >
-            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-purple-200">
-              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-green-200 group-hover:scale-110 transition-all duration-200">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16L8.586 11.414C9.367 10.633 10.633 10.633 11.414 11.414L16 16M14 14L15.586 12.414C16.367 11.633 17.633 11.633 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" />
               </svg>
             </div>
-            <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700">Add Image</span>
+            <span class="text-sm font-semibold text-gray-700 group-hover:text-green-700">Add Image</span>
           </button>
         </div>
       </div>
@@ -70,22 +61,22 @@
       </div>
 
       <!-- Shapes -->
-      <div class="p-3 border-t">
-        <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+      <div class="p-4 border-t">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center">
           <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
           </svg>
-          Shapes
+          Basic Shapes
         </h3>
-        <div class="grid grid-cols-4 gap-2">
+        <div class="grid grid-cols-4 gap-3">
           <button
-            v-for="shape in filteredShapes"
+            v-for="shape in shapes"
             :key="shape.type"
             @click="addShape(shape.type)"
-            class="group flex flex-col items-center p-3 rounded-lg border border-gray-100 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 hover:shadow-sm"
+            class="group flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 hover:shadow-sm"
           >
-            <div class="w-8 h-8 flex items-center justify-center text-lg mb-2 group-hover:text-purple-600">
-              {{ shape.icon }}
+            <div class="w-10 h-10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div v-html="shape.icon" class="text-2xl text-gray-600 group-hover:text-purple-600"></div>
             </div>
             <span class="text-xs font-medium text-gray-700 group-hover:text-purple-700 text-center leading-tight">{{ shape.label }}</span>
           </button>

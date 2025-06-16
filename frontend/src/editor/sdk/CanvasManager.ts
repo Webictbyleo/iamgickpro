@@ -14,7 +14,6 @@ export class CanvasManager implements CanvasAPI {
   private gridLayer?: Konva.Layer
   private guidesLayer?: Konva.Layer
   private backgroundRect?: Konva.Rect
-  private debugRect?: Konva.Rect // Debug rectangle to visualize main layer
   private gridVisible = false
   private guidesVisible = false
   private gridSize = 20
@@ -36,11 +35,6 @@ export class CanvasManager implements CanvasAPI {
     // Store original canvas dimensions (design content size, not stage viewport size)
     this.originalCanvasWidth = canvasWidth || this.stage.width()
     this.originalCanvasHeight = canvasHeight || this.stage.height()
-    
-    console.log('🔍 CanvasManager: Initialized with dimensions', {
-      stage: { width: this.stage.width(), height: this.stage.height() },
-      canvas: { width: this.originalCanvasWidth, height: this.originalCanvasHeight }
-    })
     
     // Ensure we have a visible default background color
     this.backgroundColor = '#ffffff'
@@ -104,13 +98,6 @@ export class CanvasManager implements CanvasAPI {
       console.log('🔍 CanvasManager: Updated background rectangle dimensions')
     }
     
-    // Update debug rectangle dimensions if it exists
-    if (this.debugRect) {
-      this.debugRect.width(width)
-      this.debugRect.height(height)
-      console.log('🐛 CanvasManager: Updated debug rectangle dimensions to match canvas')
-    }
-    
     // Update grid when canvas size changes
     this.updateGrid()
     
@@ -124,8 +111,7 @@ export class CanvasManager implements CanvasAPI {
     
     console.log('🔍 CanvasManager: setSize completed', {
       canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
-      stageDimensions: { width: this.stage.width(), height: this.stage.height() },
-      debugRectSize: this.debugRect ? { width: this.debugRect.width(), height: this.debugRect.height() } : 'not created'
+      stageDimensions: { width: this.stage.width(), height: this.stage.height() }
     })
   }
 
@@ -459,11 +445,38 @@ export class CanvasManager implements CanvasAPI {
 
   setPanMode(enabled: boolean): void {
     if (enabled) {
+      // Enable stage dragging
       this.stage.draggable(true)
       this.stage.container().style.cursor = 'grab'
+      
+      // Disable layer interactions
+      this.stage.listening(false)
+      
+      // Clear any current selection
+      if (this.layerManager) {
+        this.layerManager.deselectAll()
+      }
+      
+      // Add pan cursor feedback
+      this.stage.on('dragstart.panmode', () => {
+        this.stage.container().style.cursor = 'grabbing'
+      })
+      
+      this.stage.on('dragend.panmode', () => {
+        this.stage.container().style.cursor = 'grab'
+      })
+      
     } else {
+      // Disable stage dragging
       this.stage.draggable(false)
       this.stage.container().style.cursor = 'default'
+      
+      // Re-enable layer interactions
+      this.stage.listening(true)
+      
+      // Remove pan mode event listeners
+      this.stage.off('dragstart.panmode')
+      this.stage.off('dragend.panmode')
     }
   }
 
@@ -606,9 +619,6 @@ export class CanvasManager implements CanvasAPI {
       })
     }
     
-    // Create debug rectangle to visualize main layer bounds
-    this.createDebugRect()
-    
     // Ensure background is attached (in case it was detached)
     this.ensureBackgroundAttached()
     
@@ -622,51 +632,6 @@ export class CanvasManager implements CanvasAPI {
     // Call debug to see current state
     this.debugBackground()
   }
-
-  /**
-   * Create a debug rectangle to visualize the main layer bounds
-   */
-  private createDebugRect(): void {
-    if (!this.layerManager) return
-    
-    // Remove existing debug rect if it exists
-    if (this.debugRect) {
-      this.debugRect.destroy()
-    }
-    
-    console.log('🐛 CanvasManager: Creating debug rectangle with canvas dimensions', {
-      canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
-      stageDimensions: { width: this.stage.width(), height: this.stage.height() }
-    })
-    
-    // Create debug rectangle with red border
-    this.debugRect = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: this.originalCanvasWidth,
-      height: this.originalCanvasHeight,
-      stroke: '#ff0000', // Red border
-      strokeWidth: 2,
-      fill: 'transparent',
-      listening: false, // Don't interfere with interactions
-      name: 'debug-main-layer-bounds',
-      visible: true,
-      opacity: 0.7,
-      dash: [5, 5] // Dashed line
-    })
-    
-    // Add to main layer (on top)
-    const mainLayer = this.layerManager.getMainLayer()
-    mainLayer.add(this.debugRect)
-    this.debugRect.moveToTop() // Ensure debug rect is visible on top
-    
-    console.log('🐛 CanvasManager: Created debug rectangle to visualize main layer bounds', {
-      debugRectSize: { width: this.debugRect.width(), height: this.debugRect.height() },
-      canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
-      attached: !!this.debugRect.getParent()
-    })
-  }
-
   private applyBackgroundFill(): void {
     if (!this.backgroundRect) {
       console.log('🔍 CanvasManager: applyBackgroundFill - missing backgroundRect')
@@ -992,63 +957,6 @@ export class CanvasManager implements CanvasAPI {
   }
 
   /**
-   * Toggle debug rectangle visibility
-   */
-  toggleDebugRect(): void {
-    if (this.debugRect) {
-      this.debugRect.visible(!this.debugRect.visible())
-      this.layerManager?.getMainLayer().batchDraw()
-      console.log('🐛 CanvasManager: Debug rectangle visibility toggled to:', this.debugRect.visible())
-    } else {
-      console.log('🐛 CanvasManager: Debug rectangle not created yet')
-    }
-  }
-
-  /**
-   * Show debug rectangle
-   */
-  showDebugRect(): void {
-    if (this.debugRect) {
-      this.debugRect.visible(true)
-      this.layerManager?.getMainLayer().batchDraw()
-      console.log('🐛 CanvasManager: Debug rectangle shown')
-    } else {
-      console.log('🐛 CanvasManager: Debug rectangle not created yet')
-    }
-  }
-
-  /**
-   * Hide debug rectangle
-   */
-  hideDebugRect(): void {
-    if (this.debugRect) {
-      this.debugRect.visible(false)
-      this.layerManager?.getMainLayer().batchDraw()
-      console.log('🐛 CanvasManager: Debug rectangle hidden')
-    } else {
-      console.log('🐛 CanvasManager: Debug rectangle not created yet')
-    }
-  }
-
-  /**
-   * Update debug rectangle to match current canvas dimensions
-   */
-  updateDebugRect(): void {
-    if (this.debugRect) {
-      this.debugRect.width(this.originalCanvasWidth)
-      this.debugRect.height(this.originalCanvasHeight)
-      this.layerManager?.getMainLayer().batchDraw()
-      console.log('🐛 CanvasManager: Debug rectangle updated to match canvas dimensions', {
-        width: this.debugRect.width(),
-        height: this.debugRect.height(),
-        canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight }
-      })
-    } else {
-      console.log('🐛 CanvasManager: Debug rectangle not created yet')
-    }
-  }
-
-  /**
    * Get current canvas dimensions (for debugging)
    */
   getCanvasDimensions(): { width: number, height: number } {
@@ -1071,13 +979,6 @@ export class CanvasManager implements CanvasAPI {
         x: this.backgroundRect.x(),
         y: this.backgroundRect.y(),
         visible: this.backgroundRect.visible()
-      } : 'not created',
-      debugRectSize: this.debugRect ? { 
-        width: this.debugRect.width(), 
-        height: this.debugRect.height(),
-        x: this.debugRect.x(),
-        y: this.debugRect.y(),
-        visible: this.debugRect.visible()
       } : 'not created',
       layerManagerAttached: !!this.layerManager,
       isLoadingDesign: this.state.isLoadingDesign,
@@ -1106,12 +1007,6 @@ export class CanvasManager implements CanvasAPI {
   }
 
   destroy(): void {
-    // Clean up debug rectangle
-    if (this.debugRect) {
-      this.debugRect.destroy()
-      this.debugRect = undefined
-    }
-    
     // Clean up background elements
     if (this.backgroundRect) {
       this.backgroundRect.destroy()

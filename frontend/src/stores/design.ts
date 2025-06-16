@@ -216,7 +216,7 @@ export const useDesignStore = defineStore('design', () => {
     return newDesign
   }
   
-  const saveDesign = async (design?: Design): Promise<{ success: boolean; error?: string }> => {
+  const saveDesign = async (design?: Design, showNotifications: boolean = true): Promise<{ success: boolean; error?: string }> => {
     const designToSave = design || currentDesign.value
     if (!designToSave) return { success: false, error: 'No design to save' }
     
@@ -265,12 +265,16 @@ export const useDesignStore = defineStore('design', () => {
         designs.value.unshift(designToSave)
       }
       
-      designSaved(designToSave.name?? designToSave.title)
+      if (showNotifications) {
+        designSaved(designToSave.name?? designToSave.title)
+      }
       return { success: true }
     } catch (err: unknown) {
       const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Save failed'
       error.value = errorMessage
-      saveFailed(errorMessage)
+      if (showNotifications) {
+        saveFailed(errorMessage)
+      }
       return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
