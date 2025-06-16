@@ -31,27 +31,30 @@ export function useDesignEditor() {
       // Clear any existing content in the container
       container.innerHTML = ''
 
-      // Get current design dimensions
+      // Get current design dimensions (for canvas content)
       const currentDesign = designStore.currentDesign
       const designWidth = currentDesign?.width || 800
       const designHeight = currentDesign?.height || 600
 
-      // Use design dimensions for the stage (not container dimensions)
-      // The container size will be handled by Vue's reactive styling
-      const width = designWidth
-      const height = designHeight
+      // Use container dimensions for the stage (viewport)
+      const containerRect = container.getBoundingClientRect()
+      const stageWidth = containerRect.width || 1000
+      const stageHeight = containerRect.height || 700
 
       console.log('Initializing EditorSDK:', {
         designDimensions: `${designWidth}x${designHeight}`,
-        stageDimensions: `${width}x${height}`,
+        containerDimensions: `${stageWidth}x${stageHeight}`,
         containerElement: container
       })
 
-      // Initialize SDK
+      // Initialize SDK with container dimensions for stage
       const config: EditorConfig = {
         container,
-        width,
-        height
+        width: stageWidth,
+        height: stageHeight,
+        // Pass design dimensions separately for canvas content
+        canvasWidth: designWidth,
+        canvasHeight: designHeight
       }
 
       editorSDK.value = new EditorSDK(config)

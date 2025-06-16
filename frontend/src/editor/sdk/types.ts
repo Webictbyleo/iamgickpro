@@ -9,6 +9,8 @@ export interface EditorConfig {
   container: HTMLElement | string
   width: number
   height: number
+  canvasWidth?: number  // Optional: specific canvas content dimensions
+  canvasHeight?: number // Optional: specific canvas content dimensions
   backgroundColor?: string
   plugins?: string[]
 }
@@ -144,6 +146,7 @@ export interface LayerAPI {
 export interface CanvasAPI {
   // Canvas management
   setSize(width: number, height: number): void
+  setStageSize(width: number, height: number): void
   getSize(): { width: number; height: number }
   setBackgroundColor(color: string): void
   setBackground(background: any): void

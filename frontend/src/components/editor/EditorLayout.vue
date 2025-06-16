@@ -322,6 +322,11 @@ const updateCanvasViewportDimensions = () => {
     const rect = designCanvasRef.value.canvasContainer.parentElement.getBoundingClientRect()
     canvasContainerWidth.value = rect.width
     canvasContainerHeight.value = rect.height
+    
+    // Update stage dimensions to match viewport
+    if (editorSDK.value) {
+      editorSDK.value.canvas.setStageSize(rect.width, rect.height)
+    }
   }
 }
 

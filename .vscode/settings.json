@@ -16,5 +16,6 @@
             "database": "iamgickpro_db",
             "password": "iamgickpro_password123!"
         }
-    ]
+    ],
+    "workbench.editor.closeOnFileDelete": true
 }

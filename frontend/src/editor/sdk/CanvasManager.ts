@@ -29,11 +29,18 @@ export class CanvasManager implements CanvasAPI {
   constructor(
     private stage: Konva.Stage,
     private state: EditorState,
-    private eventEmitter: EventEmitter
+    private eventEmitter: EventEmitter,
+    canvasWidth?: number,
+    canvasHeight?: number
   ) {
-    // Store original canvas dimensions - will be updated when design is loaded
-    this.originalCanvasWidth = this.stage.width()
-    this.originalCanvasHeight = this.stage.height()
+    // Store original canvas dimensions (design content size, not stage viewport size)
+    this.originalCanvasWidth = canvasWidth || this.stage.width()
+    this.originalCanvasHeight = canvasHeight || this.stage.height()
+    
+    console.log('🔍 CanvasManager: Initialized with dimensions', {
+      stage: { width: this.stage.width(), height: this.stage.height() },
+      canvas: { width: this.originalCanvasWidth, height: this.originalCanvasHeight }
+    })
     
     // Ensure we have a visible default background color
     this.backgroundColor = '#ffffff'
@@ -77,15 +84,14 @@ export class CanvasManager implements CanvasAPI {
 
   setSize(width: number, height: number): void {
     console.log('🔍 CanvasManager: setSize called', {
-      oldDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
-      newDimensions: { width, height },
+      oldCanvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+      newCanvasDimensions: { width, height },
+      stageDimensions: { width: this.stage.width(), height: this.stage.height() },
       isLoadingDesign: this.state.isLoadingDesign
     })
     
-    this.stage.width(width)
-    this.stage.height(height)
-    
-    // Update original canvas dimensions when size is explicitly changed
+    // DO NOT change stage dimensions - stage should always match viewport
+    // Only update the canvas content dimensions
     this.originalCanvasWidth = width
     this.originalCanvasHeight = height
     
@@ -200,6 +206,7 @@ export class CanvasManager implements CanvasAPI {
       // Use provided viewport dimensions (from EditorLayout)
       availableWidth = viewportWidth
       availableHeight = viewportHeight
+      console.log('🔍 CanvasManager: Using provided viewport dimensions', { viewportWidth, viewportHeight })
     } else {
       // Fallback: try to get dimensions from container
       const viewportContainer = container.parentElement
@@ -208,7 +215,18 @@ export class CanvasManager implements CanvasAPI {
       const viewportRect = viewportContainer.getBoundingClientRect()
       availableWidth = viewportRect.width
       availableHeight = viewportRect.height
+      console.log('🔍 CanvasManager: Using container dimensions', { 
+        width: availableWidth, 
+        height: availableHeight,
+        containerRect: viewportRect 
+      })
     }
+
+    console.log('🔍 CanvasManager: Stage vs Container comparison', {
+      stage: { width: this.stage.width(), height: this.stage.height() },
+      container: { width: container.offsetWidth, height: container.offsetHeight },
+      available: { width: availableWidth, height: availableHeight }
+    })
 
     const canvasWidth = this.originalCanvasWidth
     const canvasHeight = this.originalCanvasHeight
@@ -224,6 +242,15 @@ export class CanvasManager implements CanvasAPI {
     let scale = Math.min(scaleX, scaleY)
     scale = Math.max(scale, 0.01)
     scale = Math.min(scale, 10)
+    
+    console.log('🔍 CanvasManager: FitToViewport calculation', {
+      available: { width: availableWidth, height: availableHeight },
+      target: { width: targetWidth, height: targetHeight },
+      canvas: { width: canvasWidth, height: canvasHeight },
+      scales: { x: scaleX, y: scaleY, final: scale },
+      padding
+    })
+    
     this.setZoom(scale, { zoomToCenter: true })
 
   }
@@ -322,7 +349,6 @@ export class CanvasManager implements CanvasAPI {
   }
 
   setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void {
-    
     const clampedZoom = Math.max(0.1, Math.min(10, zoom))
     const oldScale = this.stage.scaleX()
     
@@ -331,23 +357,42 @@ export class CanvasManager implements CanvasAPI {
     const shouldZoomToCenter = options?.zoomToCenter || !pointer
     
     if (shouldZoomToCenter) {
-      // Zoom to center of the stage
+      // Zoom while keeping the canvas content centered in the viewport
       const stageWidth = this.stage.width()
       const stageHeight = this.stage.height()
-      const stageCenter = {
+      
+      // Calculate viewport center
+      const viewportCenter = {
         x: stageWidth / 2,
         y: stageHeight / 2
       }
       
-      const mousePointTo = {
-        x: (stageCenter.x - this.stage.x()) / oldScale,
-        y: (stageCenter.y - this.stage.y()) / oldScale
+      // Calculate canvas center in world coordinates
+      const canvasCenter = {
+        x: this.originalCanvasWidth / 2,
+        y: this.originalCanvasHeight / 2
       }
       
+      // Position the stage so that the canvas center aligns with viewport center
+      // Add a small vertical offset if needed to account for UI elements
+      const verticalOffset = 0 // We'll adjust this if needed based on debug output
       const newPos = {
-        x: stageCenter.x - mousePointTo.x * clampedZoom,
-        y: stageCenter.y - mousePointTo.y * clampedZoom
+        x: viewportCenter.x - canvasCenter.x * clampedZoom,
+        y: viewportCenter.y - canvasCenter.y * clampedZoom + verticalOffset
       }
+      
+      console.log('🔍 CanvasManager: Centering debug', {
+        stageSize: { width: stageWidth, height: stageHeight },
+        viewportCenter,
+        canvasSize: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+        canvasCenter,
+        zoom: clampedZoom,
+        newPos,
+        calculation: {
+          x: `${viewportCenter.x} - ${canvasCenter.x} * ${clampedZoom} = ${newPos.x}`,
+          y: `${viewportCenter.y} - ${canvasCenter.y} * ${clampedZoom} = ${newPos.y}`
+        }
+      })
       
       this.stage.position(newPos)
       this.state.panX = newPos.x
@@ -1024,7 +1069,8 @@ export class CanvasManager implements CanvasAPI {
         width: this.backgroundRect.width(), 
         height: this.backgroundRect.height(),
         x: this.backgroundRect.x(),
-        y: this.backgroundRect.y()
+        y: this.backgroundRect.y(),
+        visible: this.backgroundRect.visible()
       } : 'not created',
       debugRectSize: this.debugRect ? { 
         width: this.debugRect.width(), 
@@ -1131,6 +1177,8 @@ export class CanvasManager implements CanvasAPI {
     if (this.layerManager) {
       this.layerManager.updateMainLayerForViewport()
     }
+    
+    
   }
 
   private updateState(): void {
@@ -1217,5 +1265,20 @@ export class CanvasManager implements CanvasAPI {
     console.log('🔍 CanvasManager: Testing background visibility with red color')
     this.setBackgroundColor('#ff0000') // Set to red for visibility test
     this.debugBackground()
+  }
+
+  /**
+   * Update stage dimensions to match viewport (separate from canvas content size)
+   */
+  setStageSize(width: number, height: number): void {
+    console.log('🔍 CanvasManager: setStageSize called', {
+      oldStageDimensions: { width: this.stage.width(), height: this.stage.height() },
+      newStageDimensions: { width, height }
+    })
+    
+    this.stage.width(width)
+    this.stage.height(height)
+    
+    console.log('🔍 CanvasManager: Stage dimensions updated')
   }
 }

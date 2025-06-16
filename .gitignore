@@ -1,0 +1,118 @@
+# Symfony Framework
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+# Symfony PHPUnit
+###> symfony/phpunit-bridge ###
+.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+
+# Doctrine
+###> doctrine/doctrine-bundle ###
+/migrations/*.php
+!/migrations/.gitkeep
+###< doctrine/doctrine-bundle ###
+
+# Node.js / npm / yarn
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Vue.js / Vite build outputs
+dist/
+build/
+.vite/
+.cache/
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+var/log/*
+!/var/log/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# PHP specific
+composer.phar
+/vendor/
+*.phar
+
+# Cache and compiled files
+/var/cache/*
+!/var/cache/.gitkeep
+/public/build/
+/public/bundles/
+
+# Upload directories
+/public/uploads/*
+!/public/uploads/.gitkeep
+/public/media/*
+!/public/media/.gitkeep
+
+# Database
+*.sqlite
+*.db
+*.sql
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Coverage reports
+coverage/
+*.lcov
+clover.xml
+
+# Testing
+/tests/coverage/
+.phpunit.cache
+
+# Package managers lock files (optional - consider keeping these)
+# package-lock.json
+# yarn.lock
+# composer.lock

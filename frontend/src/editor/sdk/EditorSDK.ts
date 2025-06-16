@@ -58,7 +58,7 @@ export class EditorSDK extends EventEmitter {
     
     
     
-    // Create Konva Stage
+    // Create Konva Stage (fills the container viewport)
     this.stage = new Konva.Stage({
       container,
       width: config.width || 800,
@@ -69,16 +69,18 @@ export class EditorSDK extends EventEmitter {
     this.stage.listening(true)
     
     console.log('EditorSDK: Stage created with dimensions:', {
-      width: this.stage.width(),
-      height: this.stage.height()
+      stageSize: { width: this.stage.width(), height: this.stage.height() },
+      canvasSize: { width: config.canvasWidth || config.width, height: config.canvasHeight || config.height }
     })
     
     // Set up layerEmitter on stage for renderer communication
     ;(this.stage as any).layerEmitter = this
     
-    // Initialize managers
+    // Initialize managers with canvas dimensions
+    const canvasWidth = config.canvasWidth || config.width || 800
+    const canvasHeight = config.canvasHeight || config.height || 600
     this.layerManager = new LayerManager(this.stage, this.state, this)
-    this.canvasManager = new CanvasManager(this.stage, this.state, this)
+    this.canvasManager = new CanvasManager(this.stage, this.state, this, canvasWidth, canvasHeight)
     this.animationManager = new AnimationManager(this.state, this)
     this.pluginManager = new PluginManager(this.state, this)
     this.transformManager = new TransformManager(this.stage, this.state, this)
@@ -353,29 +355,79 @@ export class EditorSDK extends EventEmitter {
 
   /**
    * Export design as image in specified format
-   * Simple approach: Temporarily zoom to 1 (100%), export, then restore zoom
+   * Uses a temporary hidden stage to avoid visual flashing during export
    */
   async exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): Promise<string> {
     try {
+      console.log('🎨 EditorSDK: Starting image export', { format, quality })
       
-      // Export as data URL
-      const dataURL = this.stage.toDataURL({
+      // Get the original canvas dimensions (design size, not viewport size)
+      const canvasSize = this.canvasManager.getSize()
+      console.log('🎨 EditorSDK: Canvas dimensions for export', canvasSize)
+      
+      // Create a temporary hidden container for export
+      const tempContainer = document.createElement('div')
+      tempContainer.style.position = 'absolute'
+      tempContainer.style.left = '-99999px'
+      tempContainer.style.top = '-99999px'
+      tempContainer.style.width = `${canvasSize.width}px`
+      tempContainer.style.height = `${canvasSize.height}px`
+      tempContainer.style.pointerEvents = 'none'
+      document.body.appendChild(tempContainer)
+
+      // Create a temporary stage with the original canvas dimensions
+      const tempStage = new Konva.Stage({
+        container: tempContainer,
+        width: canvasSize.width,
+        height: canvasSize.height,
+      })
+
+      console.log('🎨 EditorSDK: Created temporary stage for export')
+
+      // Clone all layers from the original stage to the temporary stage
+      // This preserves all layer content without affecting the visible stage
+      const clonedLayers: Konva.Layer[] = []
+      this.stage.children.forEach((child) => {
+        if (child instanceof Konva.Layer) {
+          try {
+            const clonedLayer = child.clone()
+            clonedLayers.push(clonedLayer)
+            tempStage.add(clonedLayer)
+          } catch (cloneError) {
+            console.warn('🎨 EditorSDK: Failed to clone layer:', cloneError)
+          }
+        }
+      })
+
+      console.log('🎨 EditorSDK: Cloned layers to temporary stage', { layerCount: clonedLayers.length })
+
+      // Force a render cycle to ensure all content is properly drawn
+      tempStage.batchDraw()
+      
+      // Small delay to ensure rendering is complete
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      // Export from the temporary stage at original dimensions
+      const dataURL = tempStage.toDataURL({
         mimeType: `image/${format}`,
         quality: quality,
-        pixelRatio: 1, // Use 1:1 pixel ratio for correct dimensions
-        x: 1, 
-        y: 1,
-        width: this.stage.width(), 
-        height: this.stage.height(),
-      });
-      
-      
-      return dataURL;
+        pixelRatio: 1, // Higher resolution for better quality
+        x: 0,
+        y: 0,
+        width: canvasSize.width,
+        height: canvasSize.height,
+      })
+
+      console.log('🎨 EditorSDK: Export completed successfully')
+
+      // Clean up temporary stage and container
+      tempStage.destroy()
+      document.body.removeChild(tempContainer)
+
+      return dataURL
     } catch (error) {
-      console.error('Failed to export design as image:', error);
-      // Attempt to restore original state even if an error occurs during export
-      // Consider re-fetching and re-applying original values if error handling needs to be more granular.
-      throw error;
+      console.error('🎨 EditorSDK: Failed to export design as image:', error)
+      throw error
     }
   }
 

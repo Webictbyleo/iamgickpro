@@ -29,12 +29,11 @@
     </div>
     
     <!-- Canvas Container -->
-    <div class="flex-1 overflow-auto relative min-h-0" @click="handleContainerClick">
-      <div class="absolute inset-0 flex items-center justify-center p-8">
+    <div class="flex-1 overflow-hidden relative min-h-0" @click="handleContainerClick">
+      <div class="absolute inset-0">
         <div
           ref="canvasContainer"
-          class="shadow-lg border relative konva-canvas-container"
-          :style="canvasStyle"
+          class="w-full h-full relative konva-canvas-container"
           @click.stop
         >
           <!-- Konva Stage will be mounted here -->
@@ -131,19 +130,7 @@ const floatingToolbarPosition = computed(() => ({
   y: 0
 }))
 
-// Computed styles
-const canvasStyle = computed(() => {
-  const scaledWidth = props.width
-  const scaledHeight = props.height
-  
-  return {
-    width: scaledWidth + 'px',
-    height: scaledHeight + 'px',
-    minWidth: scaledWidth + 'px',
-    minHeight: scaledHeight + 'px',
-  }
-})
-
+// Computed styles for grid overlay
 const gridStyle = computed(() => {
   if (!props.showGrid) return {}
   
