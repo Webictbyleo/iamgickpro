@@ -13,8 +13,8 @@ import type { LayerManager } from './LayerManager'
 export class CanvasManager implements CanvasAPI {
   private gridLayer?: Konva.Layer
   private guidesLayer?: Konva.Layer
-  private backgroundLayer?: Konva.Layer
   private backgroundRect?: Konva.Rect
+  private debugRect?: Konva.Rect // Debug rectangle to visualize main layer
   private gridVisible = false
   private guidesVisible = false
   private gridSize = 20
@@ -35,6 +35,10 @@ export class CanvasManager implements CanvasAPI {
     this.originalCanvasWidth = this.stage.width()
     this.originalCanvasHeight = this.stage.height()
     
+    // Ensure we have a visible default background color
+    this.backgroundColor = '#ffffff'
+    this.backgroundConfig = { type: 'solid', color: this.backgroundColor }
+    
     this.setupCanvas()
     this.setupEventHandlers()
   }
@@ -49,11 +53,22 @@ export class CanvasManager implements CanvasAPI {
   setLayerManager(layerManager: LayerManager): void {
     this.layerManager = layerManager
     
-    // Ensure background layer stays at the bottom when LayerManager adds its layers
-    if (this.backgroundLayer) {
-      this.backgroundLayer.moveToBottom()
-      console.log('🔍 CanvasManager: Ensured background layer is at bottom after LayerManager integration')
+    // If we have a background rect, add it to the main layer as the bottom-most element
+    if (this.backgroundRect) {
+      const mainLayer = this.layerManager.getMainLayer()
+      mainLayer.add(this.backgroundRect)
+      this.backgroundRect.moveToBottom() // Ensure background is at the bottom
+      this.applyBackgroundFill() // Ensure background has proper fill
+      mainLayer.batchDraw()
+      console.log('🔍 CanvasManager: Added existing background rect to main layer after LayerManager integration')
+    } else {
+      // Create background now that LayerManager is available
+      this.createBackground()
+      console.log('🔍 CanvasManager: Created background after LayerManager integration')
     }
+    
+    // Call debug to see current state
+    this.debugBackground()
   }
 
   // ============================================================================
@@ -61,6 +76,12 @@ export class CanvasManager implements CanvasAPI {
   // ============================================================================
 
   setSize(width: number, height: number): void {
+    console.log('🔍 CanvasManager: setSize called', {
+      oldDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+      newDimensions: { width, height },
+      isLoadingDesign: this.state.isLoadingDesign
+    })
+    
     this.stage.width(width)
     this.stage.height(height)
     
@@ -72,7 +93,16 @@ export class CanvasManager implements CanvasAPI {
     if (this.backgroundRect) {
       this.backgroundRect.width(width)
       this.backgroundRect.height(height)
-      this.backgroundLayer?.batchDraw()
+      // Redraw the main layer since background is now part of it
+      this.layerManager?.getMainLayer().batchDraw()
+      console.log('🔍 CanvasManager: Updated background rectangle dimensions')
+    }
+    
+    // Update debug rectangle dimensions if it exists
+    if (this.debugRect) {
+      this.debugRect.width(width)
+      this.debugRect.height(height)
+      console.log('🐛 CanvasManager: Updated debug rectangle dimensions to match canvas')
     }
     
     // Update grid when canvas size changes
@@ -85,6 +115,12 @@ export class CanvasManager implements CanvasAPI {
     if (!this.state.isLoadingDesign) {
       this.eventEmitter.emit('canvas:resized', { width, height })
     }
+    
+    console.log('🔍 CanvasManager: setSize completed', {
+      canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+      stageDimensions: { width: this.stage.width(), height: this.stage.height() },
+      debugRectSize: this.debugRect ? { width: this.debugRect.width(), height: this.debugRect.height() } : 'not created'
+    })
   }
 
   getSize(): { width: number, height: number } {
@@ -153,6 +189,7 @@ export class CanvasManager implements CanvasAPI {
    * Fit the entire canvas to the available viewport space with provided dimensions
    */
   fitCanvasToViewport(viewportWidth?: number, viewportHeight?: number): void {
+    
     const container = this.stage.container()
     if (!container) return
 
@@ -176,13 +213,10 @@ export class CanvasManager implements CanvasAPI {
     const canvasWidth = this.originalCanvasWidth
     const canvasHeight = this.originalCanvasHeight
 
-    // Only apply padding if canvas is larger than viewport (so it doesn't touch edges)
-    let padding = 0
-    if (canvasWidth > availableWidth || canvasHeight > availableHeight) {
-      padding = 20 // breathing room only if canvas is bigger
-    }
-    const targetWidth = availableWidth - padding * 2
-    const targetHeight = availableHeight - padding * 2
+    // Apply padding for breathing room
+    const padding = 20
+    const targetWidth = Math.max(availableWidth - padding * 2, 100)
+    const targetHeight = Math.max(availableHeight - padding * 2, 100)
 
     // Calculate scale using CSS object-fit: contain logic
     const scaleX = targetWidth / canvasWidth
@@ -190,43 +224,15 @@ export class CanvasManager implements CanvasAPI {
     let scale = Math.min(scaleX, scaleY)
     scale = Math.max(scale, 0.01)
     scale = Math.min(scale, 10)
+    this.setZoom(scale, { zoomToCenter: true })
 
-    // Center the canvas in the viewport
-    const scaledCanvasWidth = canvasWidth * scale
-    const scaledCanvasHeight = canvasHeight * scale
-    const x = (availableWidth - scaledCanvasWidth) / 2
-    const y = (availableHeight - scaledCanvasHeight) / 2
-
-    console.log('🔍 CanvasManager fitCanvasToViewport (CONTAIN mode):', {
-      availableViewport: { width: availableWidth, height: availableHeight },
-      canvasSize: { width: canvasWidth, height: canvasHeight },
-      padding,
-      targetSize: { width: targetWidth, height: targetHeight },
-      scaleCalculations: { scaleX, scaleY, finalScale: scale },
-      scaleLimits: { min: 0.01, max: 10 },
-      fitMode: 'contain - canvas will fit entirely within viewport',
-      willScale: scale < 1 ? 'down' : scale > 1 ? 'up' : 'same'
-    })
-
-    this.stage.scale({ x: scale, y: scale })
-    this.stage.position({ x, y })
-    this.state.zoom = scale
-    this.state.panX = x
-    this.state.panY = y
-    this.updateViewport()
-    if (!this.state.isLoadingDesign) {
-      this.eventEmitter.emit('viewport:changed', {
-        zoom: scale,
-        panX: x,
-        panY: y
-      })
-    }
   }
 
   /**
    * Zoom to fit content (existing behavior)
    */
   zoomToFitContent(): void {
+    
     const padding = 50
     const stageWidth = this.originalCanvasWidth
     const stageHeight = this.originalCanvasHeight
@@ -316,6 +322,7 @@ export class CanvasManager implements CanvasAPI {
   }
 
   setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void {
+    
     const clampedZoom = Math.max(0.1, Math.min(10, zoom))
     const oldScale = this.stage.scaleX()
     
@@ -379,7 +386,7 @@ export class CanvasManager implements CanvasAPI {
   }
 
   getZoom(): number {
-    return this.stage.scaleX()
+    return this.state.zoom || 1
   }
 
   pan(deltaX: number, deltaY: number): void {
@@ -416,6 +423,7 @@ export class CanvasManager implements CanvasAPI {
   }
 
   centerView(): void {
+    
     const stageWidth = this.stage.width()
     const stageHeight = this.stage.height()
     
@@ -512,28 +520,18 @@ export class CanvasManager implements CanvasAPI {
   // ============================================================================
 
   private setupCanvas(): void {
-    console.log(`🔍 CanvasManager: setupCanvas() called - creating Konva background for export compatibility`)
-    this.createBackground()
+    console.log(`🔍 CanvasManager: setupCanvas() called - background will be created when LayerManager is set`)
+    // Background creation moved to setLayerManager() method
+    // this.createBackground() - removed, LayerManager not available yet
     this.updateBackground()
-    console.log(`🔍 CanvasManager: setupCanvas() completed with Konva background layer`)
+    console.log(`🔍 CanvasManager: setupCanvas() completed`)
   }
 
   private createBackground(): void {
-    // Create dedicated background layer if it doesn't exist
-    if (!this.backgroundLayer) {
-      this.backgroundLayer = new Konva.Layer({
-        name: 'background-layer',
-        id: 'canvas-background-layer'
-      })
-      
-      // Add CSS-style class for better identification
-      this.backgroundLayer.setAttr('className', 'background-layer')
-      
-      // Add background layer as the first layer (bottom-most)
-      this.stage.add(this.backgroundLayer)
-      this.backgroundLayer.moveToBottom()
-      
-      console.log('🔍 CanvasManager: Created background layer')
+    // Only create background if LayerManager is available
+    if (!this.layerManager) {
+      console.log('🔍 CanvasManager: LayerManager not available, skipping background creation')
+      return
     }
     
     // Create or update background rectangle
@@ -545,24 +543,93 @@ export class CanvasManager implements CanvasAPI {
         height: this.originalCanvasHeight,
         listening: false, // Don't interfere with interactions
         name: 'canvas-background',
+        fill: this.backgroundColor, // Ensure it has a fill
+        visible: true, // Ensure it's visible
+        opacity: 1 // Ensure it's opaque
       })
       
-      this.backgroundLayer.add(this.backgroundRect)
-      console.log('🔍 CanvasManager: Created background rectangle')
+      // Add to main layer
+      const mainLayer = this.layerManager.getMainLayer()
+      mainLayer.add(this.backgroundRect)
+      this.backgroundRect.moveToBottom() // Ensure background is at the bottom
+      console.log('🔍 CanvasManager: Created and added background rectangle to main layer', {
+        width: this.backgroundRect.width(),
+        height: this.backgroundRect.height(),
+        backgroundColor: this.backgroundColor,
+        fill: this.backgroundRect.fill(),
+        visible: this.backgroundRect.visible()
+      })
     }
+    
+    // Create debug rectangle to visualize main layer bounds
+    this.createDebugRect()
+    
+    // Ensure background is attached (in case it was detached)
+    this.ensureBackgroundAttached()
     
     // Apply background fill based on configuration
     this.applyBackgroundFill()
     
-    // Force redraw
-    this.backgroundLayer.batchDraw()
+    // Force redraw on the main layer
+    this.layerManager.getMainLayer().batchDraw()
+    console.log('🔍 CanvasManager: Background creation and rendering complete')
+    
+    // Call debug to see current state
+    this.debugBackground()
+  }
+
+  /**
+   * Create a debug rectangle to visualize the main layer bounds
+   */
+  private createDebugRect(): void {
+    if (!this.layerManager) return
+    
+    // Remove existing debug rect if it exists
+    if (this.debugRect) {
+      this.debugRect.destroy()
+    }
+    
+    console.log('🐛 CanvasManager: Creating debug rectangle with canvas dimensions', {
+      canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+      stageDimensions: { width: this.stage.width(), height: this.stage.height() }
+    })
+    
+    // Create debug rectangle with red border
+    this.debugRect = new Konva.Rect({
+      x: 0,
+      y: 0,
+      width: this.originalCanvasWidth,
+      height: this.originalCanvasHeight,
+      stroke: '#ff0000', // Red border
+      strokeWidth: 2,
+      fill: 'transparent',
+      listening: false, // Don't interfere with interactions
+      name: 'debug-main-layer-bounds',
+      visible: true,
+      opacity: 0.7,
+      dash: [5, 5] // Dashed line
+    })
+    
+    // Add to main layer (on top)
+    const mainLayer = this.layerManager.getMainLayer()
+    mainLayer.add(this.debugRect)
+    this.debugRect.moveToTop() // Ensure debug rect is visible on top
+    
+    console.log('🐛 CanvasManager: Created debug rectangle to visualize main layer bounds', {
+      debugRectSize: { width: this.debugRect.width(), height: this.debugRect.height() },
+      canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+      attached: !!this.debugRect.getParent()
+    })
   }
 
   private applyBackgroundFill(): void {
-    if (!this.backgroundRect || !this.backgroundLayer) {
-      console.log('🔍 CanvasManager: applyBackgroundFill - missing backgroundRect or backgroundLayer')
+    if (!this.backgroundRect) {
+      console.log('🔍 CanvasManager: applyBackgroundFill - missing backgroundRect')
       return
     }
+    
+    // Ensure background is attached before applying fill
+    this.ensureBackgroundAttached()
 
     const config = this.backgroundConfig || { type: 'solid', color: this.backgroundColor }
     console.log('🔍 CanvasManager: Applying background fill with config:', config)
@@ -669,10 +736,12 @@ export class CanvasManager implements CanvasAPI {
       console.log('🔍 CanvasManager: Unknown background config type:', config.type)
     }
     
-    // Ensure background layer is at the bottom
-    this.backgroundLayer.moveToBottom()
-    this.backgroundLayer.batchDraw()
-    console.log('🔍 CanvasManager: Background layer redrawn and moved to bottom')
+    // Ensure background rect is at the bottom and redraw the main layer
+    if (this.backgroundRect && this.layerManager) {
+      this.backgroundRect.moveToBottom()
+      this.layerManager.getMainLayer().batchDraw()
+      console.log('🔍 CanvasManager: Background moved to bottom and main layer redrawn')
+    }
   }
 
   private setupEventHandlers(): void {
@@ -877,28 +946,97 @@ export class CanvasManager implements CanvasAPI {
     return this.stage
   }
 
-  destroy(): void {
-    // Clean up background elements
-    if (this.backgroundRect) {
-      this.backgroundRect.destroy()
-      this.backgroundRect = undefined
+  /**
+   * Toggle debug rectangle visibility
+   */
+  toggleDebugRect(): void {
+    if (this.debugRect) {
+      this.debugRect.visible(!this.debugRect.visible())
+      this.layerManager?.getMainLayer().batchDraw()
+      console.log('🐛 CanvasManager: Debug rectangle visibility toggled to:', this.debugRect.visible())
+    } else {
+      console.log('🐛 CanvasManager: Debug rectangle not created yet')
     }
-    
-    if (this.backgroundLayer) {
-      this.backgroundLayer.destroy()
-      this.backgroundLayer = undefined
+  }
+
+  /**
+   * Show debug rectangle
+   */
+  showDebugRect(): void {
+    if (this.debugRect) {
+      this.debugRect.visible(true)
+      this.layerManager?.getMainLayer().batchDraw()
+      console.log('🐛 CanvasManager: Debug rectangle shown')
+    } else {
+      console.log('🐛 CanvasManager: Debug rectangle not created yet')
     }
-    
-    // Clean up other layers
-    if (this.gridLayer) {
-      this.gridLayer.destroy()
-      this.gridLayer = undefined
+  }
+
+  /**
+   * Hide debug rectangle
+   */
+  hideDebugRect(): void {
+    if (this.debugRect) {
+      this.debugRect.visible(false)
+      this.layerManager?.getMainLayer().batchDraw()
+      console.log('🐛 CanvasManager: Debug rectangle hidden')
+    } else {
+      console.log('🐛 CanvasManager: Debug rectangle not created yet')
     }
-    
-    if (this.guidesLayer) {
-      this.guidesLayer.destroy()
-      this.guidesLayer = undefined
+  }
+
+  /**
+   * Update debug rectangle to match current canvas dimensions
+   */
+  updateDebugRect(): void {
+    if (this.debugRect) {
+      this.debugRect.width(this.originalCanvasWidth)
+      this.debugRect.height(this.originalCanvasHeight)
+      this.layerManager?.getMainLayer().batchDraw()
+      console.log('🐛 CanvasManager: Debug rectangle updated to match canvas dimensions', {
+        width: this.debugRect.width(),
+        height: this.debugRect.height(),
+        canvasDimensions: { width: this.originalCanvasWidth, height: this.originalCanvasHeight }
+      })
+    } else {
+      console.log('🐛 CanvasManager: Debug rectangle not created yet')
     }
+  }
+
+  /**
+   * Get current canvas dimensions (for debugging)
+   */
+  getCanvasDimensions(): { width: number, height: number } {
+    return {
+      width: this.originalCanvasWidth,
+      height: this.originalCanvasHeight
+    }
+  }
+
+  /**
+   * Debug method to check all canvas-related dimensions and states
+   */
+  debugCanvasDimensions(): void {
+    console.log('🐛 CanvasManager: Canvas Dimensions Debug Report', {
+      originalCanvasSize: { width: this.originalCanvasWidth, height: this.originalCanvasHeight },
+      stageSize: { width: this.stage.width(), height: this.stage.height() },
+      backgroundRectSize: this.backgroundRect ? { 
+        width: this.backgroundRect.width(), 
+        height: this.backgroundRect.height(),
+        x: this.backgroundRect.x(),
+        y: this.backgroundRect.y()
+      } : 'not created',
+      debugRectSize: this.debugRect ? { 
+        width: this.debugRect.width(), 
+        height: this.debugRect.height(),
+        x: this.debugRect.x(),
+        y: this.debugRect.y(),
+        visible: this.debugRect.visible()
+      } : 'not created',
+      layerManagerAttached: !!this.layerManager,
+      isLoadingDesign: this.state.isLoadingDesign,
+      mainLayerChildren: this.layerManager ? this.layerManager.getMainLayer().children.length : 'N/A'
+    })
   }
 
   zoomIn(): void {
@@ -921,13 +1059,38 @@ export class CanvasManager implements CanvasAPI {
     this.updateState()
   }
 
-  
+  destroy(): void {
+    // Clean up debug rectangle
+    if (this.debugRect) {
+      this.debugRect.destroy()
+      this.debugRect = undefined
+    }
+    
+    // Clean up background elements
+    if (this.backgroundRect) {
+      this.backgroundRect.destroy()
+      this.backgroundRect = undefined
+    }
+    
+    // Clean up other layers
+    if (this.gridLayer) {
+      this.gridLayer.destroy()
+      this.gridLayer = undefined
+    }
+    
+    if (this.guidesLayer) {
+      this.guidesLayer.destroy()
+      this.guidesLayer = undefined
+    }
+    
+    console.log('🔍 CanvasManager: Destroyed all canvas elements')
+  }
 
   private updateBackground(): void {
     // Update Konva background rectangle for export compatibility
     if (this.backgroundRect) {
       this.backgroundRect.fill(this.backgroundColor)
-      this.backgroundLayer?.batchDraw()
+      this.layerManager?.getMainLayer().batchDraw()
       console.log(`🔍 CanvasManager: Background dimension is ${this.backgroundRect.width()}x${this.backgroundRect.height()}`)
       
     }
@@ -935,44 +1098,24 @@ export class CanvasManager implements CanvasAPI {
 
   /**
    * Update background rectangle for viewport changes (zoom/pan)
-   * According to Konva documentation, when stage is transformed, background needs to be reset
-   * to fill the entire visible stage area
+   * FIXED: Keep background constrained to canvas dimensions, don't expand to fill viewport
    */
   private updateBackgroundForViewport(): void {
-    if (!this.backgroundRect || !this.backgroundLayer) return
+    if (!this.backgroundRect) return
     
-    // Get current stage transform
-    const scale = this.stage.scaleX()
-    const stagePos = this.stage.position()
-    
-    // Calculate the visible area in world coordinates
-    const containerWidth = this.stage.width()
-    const containerHeight = this.stage.height()
-    
-    // Calculate where the visible area is in world coordinates
-    const visibleX = -stagePos.x / scale
-    const visibleY = -stagePos.y / scale
-    const visibleWidth = containerWidth / scale
-    const visibleHeight = containerHeight / scale
-    
-    // Update background rectangle position and size only - preserve fill properties
+    // FIXED: Instead of expanding to fill visible viewport, keep background at canvas size
+    // This ensures the background only covers the actual design canvas area
     this.backgroundRect.setAttrs({
-      x: visibleX,
-      y: visibleY,
-      width: visibleWidth,
-      height: visibleHeight
+      x: 0,
+      y: 0,
+      width: this.originalCanvasWidth,
+      height: this.originalCanvasHeight
       // Don't set fill here - it would override gradients!
     })
     
-    // Re-apply the background fill to ensure gradients are preserved
-    this.applyBackgroundFill()
-    
     this.layerManager?.getMainLayer().batchDraw()
-    this.backgroundRect.cache() // Cache for performance
-    // Force redraw of background layer
-    this.backgroundLayer.batchDraw()
     
-    console.log(`🔍 CanvasManager: Updated background for viewport - pos:(${visibleX.toFixed(1)}, ${visibleY.toFixed(1)}) size:(${visibleWidth.toFixed(1)}x${visibleHeight.toFixed(1)}) scale:${scale.toFixed(2)}`)
+    console.log(`🔍 CanvasManager: Background kept at canvas dimensions - pos:(0, 0) size:(${this.originalCanvasWidth}x${this.originalCanvasHeight}) [FIXED: no longer expanding to viewport]`)
   }
 
   /**
@@ -1003,5 +1146,76 @@ export class CanvasManager implements CanvasAPI {
       panX: pos.x,
       panY: pos.y
     })
+  }
+
+  /**
+   * Ensure background is properly attached to main layer
+   */
+  ensureBackgroundAttached(): void {
+    if (!this.backgroundRect || !this.layerManager) {
+      return
+    }
+    
+    const mainLayer = this.layerManager.getMainLayer()
+    const isAttached = mainLayer.children.includes(this.backgroundRect)
+    
+    if (!isAttached) {
+      console.log('🔍 CanvasManager: Background detached, re-adding to main layer')
+      mainLayer.add(this.backgroundRect)
+      this.backgroundRect.moveToBottom()
+      this.applyBackgroundFill()
+      mainLayer.batchDraw()
+      console.log('🔍 CanvasManager: Background re-attached successfully')
+    }
+  }
+
+  /**
+   * Debug method to check background state
+   */
+  debugBackground(): void {
+    console.log('🔍 CanvasManager: Background Debug Info:')
+    console.log('  - LayerManager available:', !!this.layerManager)
+    console.log('  - Background rect exists:', !!this.backgroundRect)
+    console.log('  - Background color:', this.backgroundColor)
+    console.log('  - Background config:', this.backgroundConfig)
+    
+    if (this.backgroundRect) {
+      console.log('  - Background rect properties:', {
+        x: this.backgroundRect.x(),
+        y: this.backgroundRect.y(),
+        width: this.backgroundRect.width(),
+        height: this.backgroundRect.height(),
+        fill: this.backgroundRect.fill(),
+        visible: this.backgroundRect.visible(),
+        opacity: this.backgroundRect.opacity(),
+        listening: this.backgroundRect.listening(),
+        parent: this.backgroundRect.getParent()?.name()
+      })
+      
+      if (this.layerManager) {
+        const mainLayer = this.layerManager.getMainLayer()
+        console.log('  - Main layer children count:', mainLayer.children.length)
+        console.log('  - Background rect in main layer:', mainLayer.children.includes(this.backgroundRect))
+      }
+    }
+    
+    if (this.layerManager) {
+      const mainLayer = this.layerManager.getMainLayer()
+      console.log('  - Main layer info:', {
+        name: mainLayer.name(),
+        children: mainLayer.children.length,
+        visible: mainLayer.visible(),
+        opacity: mainLayer.opacity()
+      })
+    }
+  }
+
+  /**
+   * Test method to force background visibility with a contrasting color
+   */
+  testBackground(): void {
+    console.log('🔍 CanvasManager: Testing background visibility with red color')
+    this.setBackgroundColor('#ff0000') // Set to red for visibility test
+    this.debugBackground()
   }
 }

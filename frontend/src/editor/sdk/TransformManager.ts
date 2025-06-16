@@ -18,17 +18,16 @@ interface Box {
  */
 export class TransformManager {
   private transformer: Konva.Transformer | null = null
-  private uiLayer: Konva.Layer | null = null
   private selectedLayers: LayerNode[] = []
   private historyManager: any = null
   private transformStartStates: Map<number, Partial<LayerNode>> = new Map()
+  private currentTransformerLayer: Konva.Layer | null = null
 
   constructor(
     private stage: Konva.Stage,
     private state: EditorState,
     private emitter: EventEmitter
   ) {
-    this.setupUILayer()
     this.setupTransformer()
     this.setupEventListeners()
   }
@@ -152,15 +151,31 @@ export class TransformManager {
       .map(layer => layer.konvaNode)
       .filter((node): node is Konva.Node => node !== null && node !== undefined)
 
+    // Remove transformer from current layer if it exists
+    if (this.currentTransformerLayer && this.transformer.getParent()) {
+      this.transformer.remove()
+      this.currentTransformerLayer.batchDraw()
+    }
+
     this.transformer.nodes(selectedNodes)
     this.transformer.visible(selectedNodes.length > 0)
 
     if (selectedNodes.length > 0) {
-      this.configureTransformerForLayers()
-      this.setupTransformEventHandlers()
+      // Add transformer to the same layer as the first selected node
+      const targetLayer = selectedNodes[0].getLayer() as Konva.Layer
+      if (targetLayer) {
+        targetLayer.add(this.transformer)
+        this.currentTransformerLayer = targetLayer
+        this.configureTransformerForLayers()
+        this.setupTransformEventHandlers()
+        
+       
+        
+        targetLayer.batchDraw()
+      }
+    } else {
+      this.currentTransformerLayer = null
     }
-
-    this.uiLayer?.batchDraw()
   }
 
   private configureTransformerForLayers(): void {
@@ -890,17 +905,6 @@ export class TransformManager {
   // SETUP AND CLEANUP
   // ============================================================================
 
-  private setupUILayer(): void {
-    // Get or create UI layer for transformer
-    const layers = this.stage.getLayers()
-    this.uiLayer = layers.find(layer => layer.name() === 'ui-layer') || null
-    
-    if (!this.uiLayer) {
-      this.uiLayer = new Konva.Layer({ name: 'ui-layer' })
-      this.stage.add(this.uiLayer)
-    }
-  }
-
   private setupTransformer(): void {
     this.transformer = new Konva.Transformer({
       boundBoxFunc: (oldBox: Box, newBox: Box) => {
@@ -908,10 +912,27 @@ export class TransformManager {
           return oldBox
         }
         return newBox
-      }
+      },
+      // Enable responsive scaling for handles
+      enabledAnchors: [
+        'top-left', 'top-center', 'top-right',
+        'middle-left', 'middle-right',
+        'bottom-left', 'bottom-center', 'bottom-right'
+      ],
+      rotateEnabled: true,
+      borderEnabled: true,
+      // These will be dynamically adjusted based on stage scale
+      anchorSize: 8,
+      borderStroke: '#007bff',
+      borderStrokeWidth: 1,
+      anchorStroke: '#007bff',
+      anchorFill: '#ffffff',
+      anchorCornerRadius: 4,
+      rotateAnchorOffset: 20
     })
-
-    this.uiLayer?.add(this.transformer)
+    // Transformer will be added to the appropriate layer in updateTransformer()
+    
+    this.currentTransformerLayer = null
   }
 
   private setupEventListeners(): void {
@@ -920,6 +941,7 @@ export class TransformManager {
 
     // Listen for layer updates that might require transformer refresh
     this.emitter.on('layer:updated', this.handleLayerUpdated.bind(this))
+    
   }
 
   private handleTextReflow(data: { layerId: number; newHeight: number; reason: string }): void {
@@ -935,8 +957,8 @@ export class TransformManager {
       // Force transformer to recalculate its bounds
       this.updateTransformer()
       
-      // Force UI layer redraw to show updated handles
-      this.uiLayer?.batchDraw()
+      // Force current transformer layer redraw to show updated handles
+      this.currentTransformerLayer?.batchDraw()
     }
   }
 
@@ -951,7 +973,7 @@ export class TransformManager {
     // If it's a text layer that might have height changes, refresh transformer
     if (selectedLayer.type === 'text') {
       this.updateTransformer()
-      this.uiLayer?.batchDraw()
+      this.currentTransformerLayer?.batchDraw()
     }
   }
 
@@ -1080,6 +1102,10 @@ export class TransformManager {
       }
     })
   }
+
+ 
+
+  
 
   destroy(): void {
     // Clean up event listeners

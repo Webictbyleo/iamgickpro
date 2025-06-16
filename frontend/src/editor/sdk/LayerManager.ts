@@ -28,6 +28,7 @@ export class LayerManager implements LayerAPI {
   ) {
     this.setupRenderers()
     this.setupLayers()
+    this.setupStageEventHandlers()
   }
 
   setTransformManager(transformManager: any): void {
@@ -57,9 +58,42 @@ export class LayerManager implements LayerAPI {
     console.log('🔍 LayerManager: Viewport update called but skipped - stage handles transformations automatically')
   }
 
+  /**
+   * Handle viewport changes to update hit detection
+   */
+  handleViewportChange(data: { zoom: number; panX: number; panY: number }): void {
+    // Always refresh hit detection when zoom changes (not just significant changes)
+    // This ensures hit detection works correctly at all zoom levels
+    if (data.zoom !== this.state.zoom) {
+      this.updateHitDetectionForZoom()
+      console.log('🔍 LayerManager: Updated hit detection for zoom change', {
+        oldZoom: this.state.zoom,
+        newZoom: data.zoom,
+        difference: Math.abs(data.zoom - this.state.zoom)
+      })
+    }
+    
+    // Update state
+    this.state.zoom = data.zoom
+    this.state.panX = data.panX
+    this.state.panY = data.panY
+  }
+
   // ============================================================================
   // LAYER CRUD OPERATIONS
   // ============================================================================
+
+  /**
+   * Force refresh hit detection for all layers - useful after zoom changes
+   */
+  public refreshHitDetection(): void {
+    console.log('🔍 LayerManager: Force refreshing hit detection for all layers', {
+      stageScale: this.stage.scaleX(),
+      layerCount: this.layers.size
+    })
+    
+    this.updateHitDetectionForZoom()
+  }
 
   async createLayer(type: string, data: Partial<Layer>, silent: boolean = false): Promise<LayerNode> {
     console.log('LayerManager: Creating layer', { type, data })
@@ -72,9 +106,20 @@ export class LayerManager implements LayerAPI {
     // Create Konva node
     const konvaNode = renderer.render(layerNode)
     layerNode.konvaNode = konvaNode
+    
+    // Improve hit detection for scaled stages
+    this.improveHitDetection(konvaNode)
 
     // Add click event to make layer selectable
     konvaNode.on('click tap', (evt: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      console.log('🔍 LayerManager: Layer clicked', {
+        layerId: layerNode.id,
+        layerName: layerNode.name,
+        stageScale: this.stage.scaleX(),
+        clickPosition: this.stage.getPointerPosition(),
+        nodePosition: { x: konvaNode.x(), y: konvaNode.y() }
+      })
+      
       // Handle multi-selection with ctrl/cmd key
       if (evt.evt.ctrlKey || evt.evt.metaKey) {
         const currentSelection = [...this.state.selectedLayers]
@@ -371,8 +416,15 @@ export class LayerManager implements LayerAPI {
       layer.zIndex = index
     })
 
-    // Remove all Konva nodes from the layer
+    // Remove all Konva nodes from the layer except background
+    const backgroundRect = this.mainLayer.findOne('.canvas-background') as Konva.Rect
     this.mainLayer.removeChildren()
+    
+    // Re-add background if it exists
+    if (backgroundRect) {
+      this.mainLayer.add(backgroundRect)
+      backgroundRect.moveToBottom()
+    }
 
     // Re-add them in the correct order (bottom to top)
     reorderedLayers.forEach(layer => {
@@ -490,7 +542,17 @@ export class LayerManager implements LayerAPI {
     })
     
     this.layers.clear()
+    
+    // Preserve background when clearing layers
+    const backgroundRect = this.mainLayer.findOne('.canvas-background') as Konva.Rect
     this.mainLayer.removeChildren()
+    
+    // Re-add background if it exists
+    if (backgroundRect) {
+      this.mainLayer.add(backgroundRect)
+      backgroundRect.moveToBottom()
+    }
+    
     this.mainLayer.batchDraw()
   }
 
@@ -600,8 +662,7 @@ export class LayerManager implements LayerAPI {
       id: 'main-content-layer',
       x: 0,  // Always keep at origin
       y: 0   // Always keep at origin
-    })
-    
+    })    
     // Add CSS-style class for better identification
     this.mainLayer.setAttr('className', 'main-content-layer')
     
@@ -787,6 +848,141 @@ export class LayerManager implements LayerAPI {
       scaleY: layerNode.scaleY,
       opacity: layerNode.opacity
     }
+  }
+
+  /**
+   * Setup stage event handlers for debugging coordinate issues
+   */
+  private setupStageEventHandlers(): void {
+    // Add stage click handler for debugging
+    this.stage.on('click tap', (evt: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      const pointer = this.stage.getPointerPosition()
+      const stageScale = this.stage.scaleX()
+      const stagePosition = this.stage.position()
+      
+      // Try to find what was actually clicked
+      let targetInfo: any = 'unknown'
+      if (evt.target) {
+        targetInfo = {
+          className: evt.target.className,
+          name: evt.target.name?.() || 'unnamed',
+          type: evt.target.getType?.() || 'unknown',
+          position: (evt.target as any).x ? { x: (evt.target as any).x(), y: (evt.target as any).y() } : 'no-position',
+          listening: evt.target.listening?.() || 'unknown'
+        }
+      }
+      
+      console.log('🔍 LayerManager: Stage clicked', {
+        pointerPosition: pointer,
+        stageScale,
+        stagePosition,
+        target: targetInfo,
+        isStageClick: evt.target === this.stage
+      })
+      
+      // If clicking on empty stage, deselect all
+      if (evt.target === this.stage) {
+        this.deselectAll()
+      }
+    })
+    
+    // Listen for viewport changes to update hit detection
+    this.emitter.on('viewport:changed', this.handleViewportChange.bind(this))
+  }
+
+  /**
+   * Improve hit detection for scaled stages
+   */
+  private improveHitDetection(konvaNode: Konva.Node): void {
+    // Ensure the node has proper hit detection
+    (konvaNode as any).perfectDrawEnabled?.(false) // Improve performance if method exists
+    konvaNode.listening(true) // Ensure it's listening to events
+    
+    // For text nodes, ensure they have proper hit detection that works with scaling
+    if (konvaNode instanceof Konva.Text) {
+      const textNode = konvaNode as Konva.Text
+      
+      // Reset any custom hit function to use default behavior
+      textNode.hitFunc(null)
+      
+      // Instead, ensure the text node has proper bounds
+      textNode.listening(true)
+      textNode.perfectDrawEnabled(false)
+      
+      console.log('🔍 LayerManager: Improved hit detection for text node', {
+        nodeId: (textNode as any).id?.(),
+        nodeName: textNode.name?.(),
+        stageScale: this.stage.scaleX(),
+        textDimensions: { width: textNode.width(), height: textNode.height() },
+        nodePosition: { x: textNode.x(), y: textNode.y() },
+        listening: textNode.listening()
+      })
+    }
+    
+    // For shapes, ensure they have proper hit areas
+    if (konvaNode instanceof Konva.Shape) {
+      const shapeNode = konvaNode as Konva.Shape
+      const strokeWidth = (shapeNode as any).strokeWidth?.() || 0
+      
+      // Ensure adequate hit stroke width for small scales
+      const minHitWidth = 4
+      shapeNode.hitStrokeWidth(Math.max(minHitWidth, strokeWidth))
+      shapeNode.listening(true)
+      shapeNode.perfectDrawEnabled(false)
+      
+      console.log('🔍 LayerManager: Improved hit detection for shape node', {
+        nodeId: (shapeNode as any).id?.(),
+        nodeName: shapeNode.name?.(),
+        stageScale: this.stage.scaleX(),
+        originalStrokeWidth: strokeWidth,
+        hitStrokeWidth: shapeNode.hitStrokeWidth(),
+        listening: shapeNode.listening()
+      })
+    }
+    
+    // For groups and other nodes, ensure they have proper listening
+    if (konvaNode instanceof Konva.Group) {
+      // Groups should propagate events to children
+      konvaNode.listening(true)
+      
+      // Recursively improve hit detection for all children
+      konvaNode.getChildren().forEach(child => {
+        this.improveHitDetection(child)
+      })
+    }
+    
+    // For images, ensure they are listening
+    if (konvaNode instanceof Konva.Image) {
+      konvaNode.listening(true)
+      konvaNode.perfectDrawEnabled(false)
+      
+      console.log('🔍 LayerManager: Improved hit detection for image node', {
+        nodeId: (konvaNode as any).id?.(),
+        nodeName: konvaNode.name?.(),
+        stageScale: this.stage.scaleX(),
+        listening: konvaNode.listening()
+      })
+    }
+  }
+
+  /**
+   * Update hit detection for all layers when zoom level changes
+   */
+  private updateHitDetectionForZoom(): void {
+    console.log('🔍 LayerManager: Updating hit detection for zoom level', {
+      stageScale: this.stage.scaleX(),
+      layerCount: this.layers.size
+    })
+    
+    // Update hit detection for all existing layers
+    this.layers.forEach(layer => {
+      if (layer.konvaNode) {
+        this.improveHitDetection(layer.konvaNode)
+      }
+    })
+    
+    // Force redraw to apply changes
+    this.mainLayer.batchDraw()
   }
 
   // ============================================================================

@@ -88,7 +88,9 @@ export class EditorSDK extends EventEmitter {
     this.connectManagers()
     
     this.setupEventHandlers()
-    this.initializeCanvas()
+    this.initializeCanvas();
+
+    (window as any).editorSDK = this // Expose globally for debugging
   }
 
   // ============================================================================
@@ -299,12 +301,15 @@ export class EditorSDK extends EventEmitter {
         this.stage.scale({ x: this.state.zoom, y: this.state.zoom })
         this.stage.position({ x: this.state.panX, y: this.state.panY })
       } else {
-        // Center view if no custom viewport settings
-        this.canvasManager.centerView()
+        // Fit canvas to viewport if no custom viewport settings
+        this.canvasManager.zoomToFit()
       }
       
       // Clear loading state before emitting events
       this.state.isLoadingDesign = false
+      
+      // Force refresh hit detection after design loads to ensure proper interaction at all zoom levels
+      this.layerManager.refreshHitDetection()
       
       console.log('EditorSDK: Design loaded successfully')
       this.emit('design:loaded', design)
@@ -361,7 +366,7 @@ export class EditorSDK extends EventEmitter {
         x: 1, 
         y: 1,
         width: this.stage.width(), 
-        height: this.stage.height()
+        height: this.stage.height(),
       });
       
       
@@ -421,46 +426,9 @@ export class EditorSDK extends EventEmitter {
   // ============================================================================
 
   private setupEventHandlers(): void {
-    // Stage click handler for selection
-    this.stage.on('click tap', (e) => {
-      // Use Konva's relative pointer position which accounts for stage transforms (zoom/pan)
-      const pointer = this.stage.getRelativePointerPosition()
-      if (!pointer) return
-      
-      // Try hit detection with the relative pointer position
-      const clickedNode = this.stage.getIntersection(pointer)
-      const clickedLayer = clickedNode && clickedNode.id() ? clickedNode : null
-      
-      if (clickedLayer && clickedLayer.id()) {
-        // Prevent event from bubbling to stage
-        e.cancelBubble = true
-        
-        // Handle multi-selection with ctrl/cmd key
-        if (e.evt.ctrlKey || e.evt.metaKey) {
-          const currentSelection = [...this.state.selectedLayers]
-          const layerId = parseInt(clickedLayer.id(), 10) // Parse string ID back to number
-          const index = currentSelection.indexOf(layerId)
-          if (index === -1) {
-            currentSelection.push(layerId)
-            this.layerManager.selectLayers(currentSelection)
-          } else {
-            currentSelection.splice(index, 1)
-            this.layerManager.selectLayers(currentSelection)
-          }
-        } else {
-          // Single selection
-          const layerId = parseInt(clickedLayer.id(), 10) // Parse string ID back to number
-          if (layerId) {
-            this.layerManager.selectLayer(layerId)
-          }
-        }
-      } else if (!e.evt.ctrlKey && !e.evt.metaKey) {
-        // Clear selection when clicking on empty stage area
-        // (but not during multi-select)
-        this.layerManager.deselectAll()
-      }
-    })
-
+    // Remove stage click handler - let LayerManager handle all clicks naturally
+    // This prevents interference with Konva's natural event bubbling at different zoom levels
+    
     // Context menu handler for right-click
     this.stage.on('contextmenu', (e) => {
       e.evt.preventDefault()
@@ -624,6 +592,9 @@ export class EditorSDK extends EventEmitter {
       panX: pos.x, 
       panY: pos.y 
     })
+    
+    // Force refresh hit detection after viewport changes to ensure proper click detection at all zoom levels
+    this.layerManager.refreshHitDetection()
   }
 
   private async deleteSelectedLayers(): Promise<void> {

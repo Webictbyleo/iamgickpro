@@ -133,8 +133,8 @@ const floatingToolbarPosition = computed(() => ({
 
 // Computed styles
 const canvasStyle = computed(() => {
-  const scaledWidth = props.width * props.zoomLevel
-  const scaledHeight = props.height * props.zoomLevel
+  const scaledWidth = props.width
+  const scaledHeight = props.height
   
   return {
     width: scaledWidth + 'px',

@@ -151,13 +151,21 @@ export interface CanvasAPI {
   getBackground(): any
   
   // Viewport control
-  centerView(): void
   zoomToFit(): void
   fitCanvasToViewport(viewportWidth?: number, viewportHeight?: number): void
   resetZoom(): void
   setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void
   getZoom(): number
   setPanMode(enabled: boolean): void
+  
+  // Debug utilities
+  toggleDebugRect(): void
+  showDebugRect(): void
+  hideDebugRect(): void
+  updateDebugRect(): void
+  getCanvasDimensions(): { width: number; height: number }
+  debugCanvasDimensions(): void
+  
   destroy(): void
 }
 
