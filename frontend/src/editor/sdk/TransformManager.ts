@@ -80,6 +80,9 @@ export class TransformManager {
         canvasHeight
       )
       
+      // Store old position for history
+      const oldPosition = { x: layer.x, y: layer.y }
+      
       // Position layers directly in canvas coordinates
       // The LayerManager's updateMainLayerForViewport() method handles
       // the viewport offset automatically for all user layers
@@ -100,8 +103,11 @@ export class TransformManager {
       }
     })
 
-    // Redraw layers
+    // Force a complete redraw to ensure positions are applied
     this.stage.batchDraw()
+    
+    // Update transformer to match new positions
+    this.updateTransformer()
   }
 
   private calculatePresetPosition(

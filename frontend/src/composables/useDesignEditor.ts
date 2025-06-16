@@ -87,12 +87,17 @@ export function useDesignEditor() {
     console.log('Setting up SDK event listeners')
 
     // Layer events
-    editorSDK.value.on('layer:created', (layer: Layer) => {
+    editorSDK.value.on('layer:created', async (layer: Layer) => {
       console.log('🎯 Event received: layer:created', layer)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
         // Normal layer creation - persist to backend
-        designStore.addLayer(layer)
+        const result = await designStore.addLayer(layer)
+        if (result.success && result.layer && result.layer.id !== layer.id && editorSDK.value) {
+          // Update the SDK layer with the new ID from backend
+          console.log(`🔄 Updating layer ID from ${layer.id} to ${result.layer.id}`)
+          editorSDK.value.layers.updateLayerId(layer.id, result.layer.id)
+        }
         hasUnsavedChanges.value = true
         saveError.value = false // Clear previous save errors
         console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)

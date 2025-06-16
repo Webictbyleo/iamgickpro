@@ -192,6 +192,39 @@ export class LayerManager implements LayerAPI {
     }
   }
 
+  /**
+   * Update layer ID after backend synchronization
+   * Used when a temporary layer ID needs to be replaced with the backend-assigned ID
+   */
+  updateLayerId(oldId: number, newId: number): boolean {
+    const layer = this.layers.get(oldId)
+    if (!layer) {
+      console.warn(`LayerManager: Cannot update layer ID - layer ${oldId} not found`)
+      return false
+    }
+
+    // Update the layer's ID
+    layer.id = newId
+    
+    // Update the Konva node's ID
+    if (layer.konvaNode) {
+      layer.konvaNode.id(newId.toString())
+    }
+
+    // Move layer to new ID in the map
+    this.layers.delete(oldId)
+    this.layers.set(newId, layer)
+
+    // Update selection if the old ID was selected
+    const selectedIndex = this.state.selectedLayers.indexOf(oldId)
+    if (selectedIndex !== -1) {
+      this.state.selectedLayers[selectedIndex] = newId
+    }
+
+    console.log(`LayerManager: Updated layer ID from ${oldId} to ${newId}`)
+    return true
+  }
+
   async duplicateLayer(layerId: number): Promise<LayerNode> {
     const originalLayer = this.layers.get(layerId)
     if (!originalLayer) throw new Error(`Layer ${layerId} not found`)

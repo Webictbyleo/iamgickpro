@@ -54,7 +54,7 @@
           class="p-1.5"
           title="Actual size (100%)"
         >
-          <Square2StackIcon class="w-4 h-4" />
+          <ViewfinderCircleIcon class="w-4 h-4" />
         </ModernButton>
       </div>
 
@@ -104,7 +104,7 @@ import {
   PlusIcon,
   MinusIcon,
   ArrowsPointingOutIcon,
-  Square2StackIcon
+  ViewfinderCircleIcon
 } from '@heroicons/vue/24/outline';
 
 interface Props {

@@ -128,7 +128,7 @@
                 </select>
               </div>
 
-              <!-- Quality/Scale Settings -->
+              <!-- Quality Settings -->
               <div v-if="selectedFormat === 'jpg' || selectedFormat === 'webp'">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Quality ({{ exportQuality }}%)
@@ -144,24 +144,6 @@
                 <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span>Lower size</span>
                   <span>Higher quality</span>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Scale ({{ exportScale }}x)
-                </label>
-                <input
-                  v-model.number="exportScale"
-                  type="range"
-                  min="0.5"
-                  max="4"
-                  step="0.5"
-                  class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                />
-                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <span>0.5x</span>
-                  <span>4x</span>
                 </div>
               </div>
 
@@ -250,7 +232,6 @@ const designStore = useDesignStore()
 // Advanced export state
 const selectedFormat = ref('png')
 const exportQuality = ref(90)
-const exportScale = ref(1)
 const exportBackground = ref<'transparent' | 'white'>('transparent')
 
 // Check if current design has animations
@@ -344,7 +325,6 @@ const handleAdvancedExport = () => {
   const options = {
     format: selectedFormat.value,
     quality: exportQuality.value,
-    scale: exportScale.value,
     background: exportBackground.value
   }
   emit('export', selectedFormat.value, options)

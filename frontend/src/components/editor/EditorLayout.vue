@@ -105,17 +105,6 @@
               @update-layer-name="handleUpdateLayerName"
             />
 
-            <!-- Design Properties Panel -->
-            <DesignPropertiesPanel
-              v-if="activePanel === 'properties'"
-              :canvas-width="canvasWidth"
-              :canvas-height="canvasHeight"
-              :background-color="backgroundColor"
-              @update:canvas-width="handleCanvasWidthUpdate"
-              @update:canvas-height="handleCanvasHeightUpdate"
-              @update:background-color="handleBackgroundUpdate"
-            />
-
             <!-- Contextual Panels -->
             <ImageEditingPanel
               v-if="activePanelModal === 'image-editing' && selectedLayer && selectedLayer.type === 'image'"
@@ -211,7 +200,6 @@ import LayerPanel from './Panels/LayerPanel.vue'
 import MediaPanel from './Panels/MediaPanel.vue'
 import AnimationPanel from './Panels/AnimationPanel.vue'
 import ColorsPanel from './Panels/ColorsPanel.vue'
-import DesignPropertiesPanel from './Panels/DesignPropertiesPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
 import ImageEditingPanel from './Panels/ImageEditingPanel.vue'
 import DesignEditorContextMenu from './ContextMenu/DesignEditorContextMenu.vue'
@@ -360,12 +348,14 @@ watch([activePanel, activePanelModal], (newValues, oldValues) => {
     const wasPanelOpen = !!oldActivePanel || !!oldActivePanelModal
     const isPanelOpen = !!newActivePanel || !!newActivePanelModal
     
+    // Temporarily disable auto-fit to prevent layer position shifting
+    // TODO: Fix fitCanvasToViewport to preserve layer positions properly
     // Only trigger fit-to-screen if panel state changed (opened or closed)
-    if (wasPanelOpen !== isPanelOpen) {
-      setTimeout(() => {
-        autoFitToScreen()
-      }, 200) // Slightly longer delay for panel animations
-    }
+    // if (wasPanelOpen !== isPanelOpen) {
+    //   setTimeout(() => {
+    //     autoFitToScreen()
+    //   }, 200) // Slightly longer delay for panel animations
+    // }
   })
 })
 
@@ -726,8 +716,12 @@ const handleExport = async (format: string) => {
   }
 
   try {
-    const designName = designStore.currentDesign?.name || 'design'
-    const filename = `${designName}.${format}`
+    // Use the existing designName computed property and sanitize for filename
+    const sanitizedName = designName.value
+      .replace(/[^a-zA-Z0-9\-_\s]/g, '') // Remove special characters
+      .trim()
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+    const filename = `${sanitizedName}.${format}`
     
     console.log(`Exporting design as ${format}...`)
     await editorSDK.value.downloadAsImage(format as 'png' | 'jpeg' | 'webp', filename)

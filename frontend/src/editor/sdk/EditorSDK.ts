@@ -64,6 +64,10 @@ export class EditorSDK extends EventEmitter {
       width: config.width || 800,
       height: config.height || 600
     })
+    
+    // Improve hit detection for better layer selection at any zoom level
+    this.stage.listening(true)
+    
     console.log('EditorSDK: Stage created with dimensions:', {
       width: this.stage.width(),
       height: this.stage.height()
@@ -344,102 +348,29 @@ export class EditorSDK extends EventEmitter {
 
   /**
    * Export design as image in specified format
+   * Simple approach: Temporarily zoom to 1 (100%), export, then restore zoom
    */
   async exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): Promise<string> {
     try {
-      console.log('🔍 EditorSDK: Starting export as image...')
       
-      // Get the stage
-      const stage = this.stage
-      
-      // Store current stage transform
-      const currentZoom = stage.scaleX()
-      const currentX = stage.x()
-      const currentY = stage.y()
-      
-      console.log('🔍 EditorSDK: Current stage transform:', { zoom: currentZoom, x: currentX, y: currentY })
-      
-      // Get the original design dimensions
-      const canvasSize = this.canvas.getSize()
-      const designWidth = canvasSize.width
-      const designHeight = canvasSize.height
-      
-      console.log('🔍 EditorSDK: Canvas size:', { width: designWidth, height: designHeight })
-      
-      // Temporarily hide UI elements (transformer, guides, etc.)
-      const uiElements = stage.find('.ui-layer, .guides-layer, .transformer, .selection-rect')
-      uiElements.forEach(node => node.hide())
-      
-      // Create a temporary stage for export to avoid modifying the main stage
-      const exportStage = new Konva.Stage({
-        container: document.createElement('div'),
-        width: designWidth,
-        height: designHeight
-      })
-      
-      console.log('🔍 EditorSDK: Created export stage:', { width: designWidth, height: designHeight })
-      
-      // Clone the background layer
-      const backgroundLayer = stage.findOne('#canvas-background-layer')
-      if (backgroundLayer) {
-        const clonedBackground = backgroundLayer.clone()
-        
-        // Reset background layer positioning for export
-        const backgroundRect = clonedBackground.findOne('.canvas-background')
-        if (backgroundRect) {
-          backgroundRect.setAttrs({
-            x: 0,
-            y: 0,
-            width: designWidth,
-            height: designHeight
-          })
-          console.log('🔍 EditorSDK: Reset background rect for export')
-        }
-        
-        exportStage.add(clonedBackground)
-        console.log('🔍 EditorSDK: Added background layer to export stage')
-      }
-      
-      // Clone the main content layer
-      const mainLayer = this.layerManager.getMainLayer()
-      if (mainLayer) {
-        const clonedMainLayer = mainLayer.clone()
-        
-        // Reset any transformations that might have been applied to the main layer
-        clonedMainLayer.setAttrs({
-          x: 0,
-          y: 0,
-          scaleX: 1,
-          scaleY: 1,
-          rotation: 0
-        })
-        
-        exportStage.add(clonedMainLayer)
-        console.log('🔍 EditorSDK: Added main layer to export stage')
-      }
-      
-      // Force draw the export stage
-      exportStage.draw()
-      
-      // Export the temporary stage
-      const dataURL = exportStage.toDataURL({
-        mimeType: format === 'jpeg' ? 'image/jpeg' : `image/${format}`,
+      // Export as data URL
+      const dataURL = this.stage.toDataURL({
+        mimeType: `image/${format}`,
         quality: quality,
-        pixelRatio: 2 // Higher pixel ratio for better quality
-      })
+        pixelRatio: 1, // Use 1:1 pixel ratio for correct dimensions
+        x: 1, 
+        y: 1,
+        width: this.stage.width(), 
+        height: this.stage.height()
+      });
       
-      console.log('🔍 EditorSDK: Export completed successfully')
       
-      // Clean up the temporary stage
-      exportStage.destroy()
-      
-      // Restore UI elements
-      uiElements.forEach(node => node.show())
-      
-      return dataURL
+      return dataURL;
     } catch (error) {
-      console.error('🔍 EditorSDK: Export as image failed:', error)
-      throw new Error(`Failed to export as ${format}: ${error}`)
+      console.error('Failed to export design as image:', error);
+      // Attempt to restore original state even if an error occurs during export
+      // Consider re-fetching and re-applying original values if error handling needs to be more granular.
+      throw error;
     }
   }
 

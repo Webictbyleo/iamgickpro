@@ -99,6 +99,11 @@ export class CanvasManager implements CanvasAPI {
     this.backgroundConfig = { type: 'solid', color }
     this.createBackground()
     this.updateViewport() // Use updateViewport() instead of updateBackground() to ensure proper positioning
+    
+    // Emit canvas:changed event for autosave and history tracking
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('canvas:changed')
+    }
   }
 
   setBackground(background: any): void {
@@ -119,6 +124,11 @@ export class CanvasManager implements CanvasAPI {
     
     this.createBackground()
     this.updateViewport()
+    
+    // Emit canvas:changed event for autosave and history tracking
+    if (!this.state.isLoadingDesign) {
+      this.eventEmitter.emit('canvas:changed')
+    }
     
     console.log('🔍 CanvasManager: Background update complete')
   }

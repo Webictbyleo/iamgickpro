@@ -168,7 +168,7 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         properties.originalHeight = img.height
         
         // Update layer dimensions to match image aspect ratio if not explicitly set
-        if (!properties.explicitDimensions) {
+        /* if (!properties.explicitDimensions) {
           const aspectRatio = img.width / img.height
           if (layer.width / layer.height !== aspectRatio) {
             // Adjust dimensions to maintain aspect ratio, keeping the larger dimension
@@ -178,7 +178,7 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
               layer.width = layer.height * aspectRatio
             }
           }
-        }
+        } */
       }
 
       this.applyImageScaling(imageNode, img, layer, properties)

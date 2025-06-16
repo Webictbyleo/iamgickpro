@@ -167,9 +167,7 @@ const shapes: ShapeConfig[] = [
   { type: 'triangle', label: 'Triangle', icon: '🔺' },
   { type: 'line', label: 'Line', icon: '📏' },
   { type: 'arrow', label: 'Arrow', icon: '➡️' },
-  { type: 'star', label: 'Star', icon: '⭐' },
-  { type: 'polygon', label: 'Polygon', icon: '🔶' },
-  { type: 'heart', label: 'Heart', icon: '💙' }
+  { type: 'polygon', label: 'Polygon', icon: '🔶' }
 ]
 
 // Computed filtered arrays
