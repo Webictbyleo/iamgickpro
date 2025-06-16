@@ -165,7 +165,7 @@ export class CanvasManager implements CanvasAPI {
     console.log('🔍 CanvasManager: Current backgroundColor:', this.backgroundColor)
     
     this.createBackground()
-    this.updateViewport()
+    //this.updateViewport()
     
     // Emit canvas:changed event for autosave and history tracking
     if (!this.state.isLoadingDesign) {

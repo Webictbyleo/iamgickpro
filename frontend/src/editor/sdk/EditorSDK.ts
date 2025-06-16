@@ -482,16 +482,12 @@ export class EditorSDK extends EventEmitter {
     // This prevents interference with Konva's natural event bubbling at different zoom levels
     
     // Context menu handler for right-click
-    this.stage.on('contextmenu', (e) => {
+    this.stage.on('contextmenu', (e:Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       e.evt.preventDefault()
       
-      // Use the same relative pointer position as the click handler
-      const pointer = this.stage.getRelativePointerPosition()
-      if (!pointer) return
-      
-      // Get the clicked element using intersection with relative coordinates
-      const clickedNode = this.stage.getIntersection(pointer)
-      const clickedLayer = clickedNode && clickedNode.id() ? clickedNode : null
+      // Get the clicked layer
+      const clickedLayer = e.target
+
       
       // Find the layer data if a layer was clicked
       let layerData = null
@@ -526,8 +522,8 @@ export class EditorSDK extends EventEmitter {
         event: e.evt,
         layer: layerData,
         position: {
-          x: e.evt.clientX,
-          y: e.evt.clientY
+          x: e.evt instanceof MouseEvent ? e.evt.clientX : e.evt.touches[0].clientX,
+          y: e.evt instanceof MouseEvent ? e.evt.clientY : e.evt.touches[0].clientY
         }
       })
     })
