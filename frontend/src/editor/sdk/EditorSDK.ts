@@ -423,11 +423,15 @@ export class EditorSDK extends EventEmitter {
   private setupEventHandlers(): void {
     // Stage click handler for selection
     this.stage.on('click tap', (e) => {
-      // Get the actual clicked layer, not the parent
-      const clickedNode = e.target
-      const clickedLayer = clickedNode instanceof Konva.Stage ? null : clickedNode
+      // Use Konva's relative pointer position which accounts for stage transforms (zoom/pan)
+      const pointer = this.stage.getRelativePointerPosition()
+      if (!pointer) return
       
-      if (clickedLayer) {
+      // Try hit detection with the relative pointer position
+      const clickedNode = this.stage.getIntersection(pointer)
+      const clickedLayer = clickedNode && clickedNode.id() ? clickedNode : null
+      
+      if (clickedLayer && clickedLayer.id()) {
         // Prevent event from bubbling to stage
         e.cancelBubble = true
         
@@ -461,9 +465,13 @@ export class EditorSDK extends EventEmitter {
     this.stage.on('contextmenu', (e) => {
       e.evt.preventDefault()
       
-      // Get the clicked node and layer
-      const clickedNode = e.target
-      const clickedLayer = clickedNode instanceof Konva.Stage ? null : clickedNode
+      // Use the same relative pointer position as the click handler
+      const pointer = this.stage.getRelativePointerPosition()
+      if (!pointer) return
+      
+      // Get the clicked element using intersection with relative coordinates
+      const clickedNode = this.stage.getIntersection(pointer)
+      const clickedLayer = clickedNode && clickedNode.id() ? clickedNode : null
       
       // Find the layer data if a layer was clicked
       let layerData = null

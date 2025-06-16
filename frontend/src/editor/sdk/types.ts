@@ -132,6 +132,7 @@ export interface LayerAPI {
   bringForward(layerId: number): void
   sendBackward(layerId: number): void
   sendToBack(layerId: number): void
+  updateLayerId(layerId: number, newId: number): void
   
   clear(): Promise<void>
 }
