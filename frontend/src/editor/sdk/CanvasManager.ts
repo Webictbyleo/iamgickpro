@@ -505,6 +505,17 @@ export class CanvasManager implements CanvasAPI {
     })
   }
 
+  /**
+   * Center the canvas in the viewport while preserving the current zoom level
+   * This is useful when the viewport size changes (e.g., panels opening/closing)
+   */
+  centerCanvas(): void {
+    const currentZoom = this.getZoom()
+    
+    // Use the existing setZoom logic with zoomToCenter to center the canvas
+    // This preserves the zoom level and centers the content
+    this.setZoom(currentZoom, { zoomToCenter: true })
+  }
 
   // ============================================================================
   // GRID AND GUIDES

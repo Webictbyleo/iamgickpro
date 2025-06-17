@@ -60,12 +60,13 @@
     <div class="flex items-center space-x-1 ml-3 pl-3 border-l border-gray-200">
       <ModernButton
         variant="ghost"
-        size="xs"
+        size="sm"
         @click="$emit('edit-image')"
         tooltip="Advanced Image Settings"
-        class="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+        class="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 flex items-center space-x-1.5"
       >
-        <AdjustmentsHorizontalIcon class="w-3.5 h-3.5" />
+        <PencilSquareIcon class="w-4 h-4" />
+        <span class="text-sm font-medium">Edit</span>
       </ModernButton>
     </div>
   </div>
@@ -74,7 +75,7 @@
 <script setup lang="ts">
 import IconDropdown from '@/components/ui/IconDropdown.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
-import { AdjustmentsHorizontalIcon, ArrowsRightLeftIcon, ArrowsUpDownIcon } from '@heroicons/vue/24/outline'
+import { PencilSquareIcon, ArrowsRightLeftIcon, ArrowsUpDownIcon } from '@heroicons/vue/24/outline'
 
 interface Props {
   alt?: string

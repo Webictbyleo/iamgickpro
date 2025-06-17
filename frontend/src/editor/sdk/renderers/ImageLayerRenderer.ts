@@ -94,10 +94,8 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       // Always clear any existing border radius first, then apply new one if needed
       this.clearBorderRadius(imageNode)
       
-      // Update filters if present
-      if (this.hasImageFilters(properties)) {
-        this.applyImageFilters(imageNode, properties)
-      }
+      // Always apply image filters to ensure proper clearing when reset to defaults
+      this.applyImageFilters(imageNode, properties)
     }
   }
 
@@ -184,9 +182,8 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       this.applyImageScaling(imageNode, img, layer, properties)
       this.applyImageTransforms(imageNode, layer, properties)
 
-      if (this.hasImageFilters(properties)) {
-        this.applyImageFilters(imageNode, properties)
-      }
+      // Always apply image filters to ensure proper clearing when reset to defaults
+      this.applyImageFilters(imageNode, properties)
 
       group.add(imageNode)
       group.getLayer()?.batchDraw()
@@ -312,6 +309,9 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
   private applyImageFilters(imageNode: Konva.Image, properties: ImageLayerProperties): void {
     const konvaFilters: any[] = []
 
+    // Clear any previous cache to ensure filters are properly updated
+    imageNode.clearCache()
+
     // Apply filters in the same order as backend for consistency
     // 1. Basic color adjustments
     if (properties.brightness !== undefined && properties.brightness !== 1) {
@@ -319,6 +319,9 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       // Convert 0-3 range to Konva's -1 to 1 range
       const brightnessValue = (properties.brightness - 1) * 0.5
       imageNode.brightness(Math.max(-1, Math.min(1, brightnessValue)))
+    } else {
+      // Reset brightness to default when not applied
+      imageNode.brightness(0)
     }
 
     if (properties.contrast !== undefined && properties.contrast !== 1) {
@@ -326,11 +329,17 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       // Convert 0-3 range to Konva's contrast range (-100 to 100)
       const contrastValue = (properties.contrast - 1) * 50
       imageNode.contrast(Math.max(-100, Math.min(100, contrastValue)))
+    } else {
+      // Reset contrast to default when not applied
+      imageNode.contrast(0)
     }
 
     if (properties.saturation !== undefined && properties.saturation !== 1) {
       konvaFilters.push(Konva.Filters.HSV)
       imageNode.saturation(Math.max(0, properties.saturation))
+    } else if (properties.hue === undefined || properties.hue === 0) {
+      // Only reset saturation if hue is also not being used (since they share HSV filter)
+      imageNode.saturation(1)
     }
 
     // 2. Hue rotation
@@ -339,6 +348,17 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         konvaFilters.push(Konva.Filters.HSV)
       }
       imageNode.hue(properties.hue)
+    } else if (properties.saturation === undefined || properties.saturation === 1) {
+      // Only reset hue if saturation is also not being used (since they share HSV filter)
+      imageNode.hue(0)
+    }
+
+    // Ensure HSV filter is added if either saturation or hue is non-default
+    if ((properties.saturation !== undefined && properties.saturation !== 1) || 
+        (properties.hue !== undefined && properties.hue !== 0)) {
+      if (!konvaFilters.includes(Konva.Filters.HSV)) {
+        konvaFilters.push(Konva.Filters.HSV)
+      }
     }
 
     // 3. Special effects
@@ -358,6 +378,9 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     if (properties.blur !== undefined && properties.blur > 0) {
       konvaFilters.push(Konva.Filters.Blur)
       imageNode.blurRadius(Math.max(0, Math.min(50, properties.blur)))
+    } else {
+      // Reset blur to default when not applied
+      imageNode.blurRadius(0)
     }
 
     // 5. Shadow effect (applied to the image node directly, not as a filter)
@@ -369,6 +392,12 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         y: properties.shadow.offsetY || 0
       })
       imageNode.shadowOpacity(Math.max(0, Math.min(1, properties.shadow.opacity || 0.5)))
+    } else {
+      // Clear shadow when not enabled
+      imageNode.shadowColor('')
+      imageNode.shadowBlur(0)
+      imageNode.shadowOffset({ x: 0, y: 0 })
+      imageNode.shadowOpacity(0)
     }
 
     // 6. Border radius (applied via clipping mask)
@@ -379,9 +408,11 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       this.clearBorderRadius(imageNode)
     }
 
-    // Apply all filters and cache for performance
+    // Always set filters (even if empty array) to ensure proper clearing
+    imageNode.filters(konvaFilters)
+    
+    // Apply cache for performance, but only if there are filters to apply
     if (konvaFilters.length > 0) {
-      imageNode.filters(konvaFilters)
       imageNode.cache()
     }
   }

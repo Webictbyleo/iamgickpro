@@ -353,14 +353,25 @@ watch([activePanel, activePanelModal], (newValues, oldValues) => {
     const wasPanelOpen = !!oldActivePanel || !!oldActivePanelModal
     const isPanelOpen = !!newActivePanel || !!newActivePanelModal
     
-    // Temporarily disable auto-fit to prevent layer position shifting
-    // TODO: Fix fitCanvasToViewport to preserve layer positions properly
-    // Only trigger fit-to-screen if panel state changed (opened or closed)
-    // if (wasPanelOpen !== isPanelOpen) {
-    //   setTimeout(() => {
-    //     autoFitToScreen()
-    //   }, 200) // Slightly longer delay for panel animations
-    // }
+    // Center stage when panel state changes (opened or closed) - preserves zoom level
+    if (wasPanelOpen !== isPanelOpen) {
+      console.log('🎯 EditorLayout: Panel state changed, centering canvas (preserving zoom)', {
+        wasPanelOpen,
+        isPanelOpen,
+        newActivePanel,
+        newActivePanelModal
+      })
+      
+      // Immediate viewport update
+      setTimeout(() => {
+        updateCanvasViewportDimensions()
+      }, 50) // Quick update for responsive feel
+      
+      // Center the canvas after panel animation completes (without changing zoom)
+      setTimeout(() => {
+        centerCanvas()
+      }, 300) // Delay for panel animations to complete
+    }
   })
 })
 
@@ -1069,6 +1080,13 @@ const handleResetZoom = () => {
     editorSDK.value.canvas.setZoom(1)
     zoomLevel.value = 1
     console.log('Reset zoom to 100%')
+  }
+}
+
+// Center canvas utility function (preserves zoom level)
+const centerCanvas = () => {
+  if (editorSDK.value) {
+    editorSDK.value.canvas.centerCanvas()
   }
 }
 

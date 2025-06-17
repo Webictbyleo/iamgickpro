@@ -221,15 +221,27 @@ const handlePresetApplication = (preset: any) => {
   // Apply all preset values efficiently
   const presetValues = preset.values
   
-  // Update all values at once
-  if (presetValues.brightness !== undefined) brightness.value = presetValues.brightness
-  if (presetValues.contrast !== undefined) contrast.value = presetValues.contrast
-  if (presetValues.saturation !== undefined) saturation.value = presetValues.saturation
-  if (presetValues.blur !== undefined) blur.value = presetValues.blur
-  if (presetValues.hue !== undefined) hue.value = presetValues.hue
-  if (presetValues.sepia !== undefined) sepia.value = presetValues.sepia
-  if (presetValues.grayscale !== undefined) grayscale.value = presetValues.grayscale  
-  if (presetValues.invert !== undefined) invert.value = presetValues.invert
+  // Special handling for "Original" preset to ensure it works like resetFilters
+  if (preset.name === 'Original') {
+    brightness.value = 1
+    contrast.value = 1
+    saturation.value = 1
+    blur.value = 0
+    hue.value = 0
+    sepia.value = 0
+    grayscale.value = 0
+    invert.value = 0
+  } else {
+    // Update all values at once for other presets
+    if (presetValues.brightness !== undefined) brightness.value = presetValues.brightness
+    if (presetValues.contrast !== undefined) contrast.value = presetValues.contrast
+    if (presetValues.saturation !== undefined) saturation.value = presetValues.saturation
+    if (presetValues.blur !== undefined) blur.value = presetValues.blur
+    if (presetValues.hue !== undefined) hue.value = presetValues.hue
+    if (presetValues.sepia !== undefined) sepia.value = presetValues.sepia
+    if (presetValues.grayscale !== undefined) grayscale.value = presetValues.grayscale  
+    if (presetValues.invert !== undefined) invert.value = presetValues.invert
+  }
   
   // Emit single real-time update after all values are set
   emitRealTimeUpdate()

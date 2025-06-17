@@ -160,6 +160,7 @@ export interface CanvasAPI {
   setZoom(zoom: number, options?: { zoomToCenter?: boolean }): void
   getZoom(): number
   setPanMode(enabled: boolean): void
+  centerCanvas(): void
   
   // Debug utilities
   getCanvasDimensions(): { width: number; height: number }
