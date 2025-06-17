@@ -36,6 +36,18 @@ services:
             $maxLoginAttempts: 5
             $lockoutDurationMinutes: 30
 
+    # Email Service Configuration
+    App\Service\EmailService:
+        arguments:
+            $fromEmail: '%env(MAIL_FROM_ADDRESS)%'
+            $appName: '%env(APP_NAME)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
+
+    # Integration Service Configuration
+    App\Service\IntegrationService:
+        arguments:
+            $encryptionKey: '%env(APP_SECRET)%'
+
     # Testing Services (Public for direct access)
     # Make interfaces available for testing by aliasing the concrete implementations
     Doctrine\ORM\EntityManagerInterface:

@@ -147,7 +147,9 @@ class TemplateController extends AbstractController
                 $qb->andWhere('t.category = :category')
                    ->setParameter('category', $category);
             }
-
+            /**
+             * @var Template[] $templates
+             */
             $templates = $qb->orderBy('t.usage_count', 'DESC')
                             ->setMaxResults($dto->limit)
                             ->setFirstResult($offset)
@@ -176,37 +178,16 @@ class TemplateController extends AbstractController
 
             $total = (int) $totalQb->getQuery()->getSingleScalarResult();
 
-            // Convert templates to response data array
-            $templateData = array_map(function ($template) {
-                return [
-                    'id' => $template->getId(),
-                    'uuid' => $template->getUuid(),
-                    'name' => $template->getName(),
-                    'description' => $template->getDescription(),
-                    'category' => $template->getCategory(),
-                    'tags' => $template->getTags(),
-                    'thumbnailUrl' => $template->getThumbnailUrl(),
-                    'previewUrl' => $template->getPreviewUrl(),
-                    'width' => $template->getWidth(),
-                    'height' => $template->getHeight(),
-                    'isPremium' => $template->isPremium(),
-                    'isActive' => $template->isIsActive(),
-                    'rating' => (float) $template->getRating(),
-                    'ratingCount' => $template->getRatingCount(),
-                    'usageCount' => $template->getUsageCount(),
-                    'createdAt' => $template->getCreatedAt()?->format('c'),
-                    'updatedAt' => $template->getUpdatedAt()?->format('c'),
-                ];
-            }, $templates);
+            
 
-            $searchResponse = $this->responseDTOFactory->createTemplateSearchResponse(
-                $templateData,
+            $searchResponse = $this->responseDTOFactory->createTemplateListResponse(
+                $templates,
                 $dto->page,
                 $dto->limit,
                 $total,
                 $query ? "Search results for: {$query}" : 'Template search results'
             );
-            return $this->templateSearchResponse($searchResponse);
+            return $this->templateResponse($searchResponse);
 
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
@@ -224,7 +205,7 @@ class TemplateController extends AbstractController
      * and organization purposes. Categories help users find relevant templates
      * for their specific design needs and use cases. Requires authentication.
      * 
-     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> List of template categories or error response
+     * @return JsonResponse List of template categories or error response
      */
     #[Route('/categories', name: 'categories', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
@@ -233,12 +214,27 @@ class TemplateController extends AbstractController
         try {
             $categories = $this->templateRepository->findAllCategories();
 
-            $successResponse = $this->responseDTOFactory->createSuccessResponse(
-                'Categories retrieved successfully',
-                ['categories' => $categories]
+            if (empty($categories)) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('No categories found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+            $categoriesData = array_map(function ($category) {
+                return [
+                    'name' => $category,
+                    'title'=> ucfirst(str_replace(['_','-'], ' ', $category)), // Format category name for display
+                    'slug' => strtolower(str_replace(' ', '-', $category)), // Create slug for URL
+                ];
+            }, $categories);
+            return $this->json(
+                [
+                    'success' => true,
+                    'message' => 'Template categories retrieved successfully',
+                    'data' => $categoriesData,
+                ],
+                Response::HTTP_OK,
+                [],
+                ['groups' => ['template_category']]
             );
-            return $this->successResponse($successResponse);
-
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to fetch categories',

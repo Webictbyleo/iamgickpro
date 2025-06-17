@@ -63,7 +63,12 @@ import type {
   VideoAnalysisApiResponse,
   VideoAnalysisJobApiResponse,
   VideoAnalysisJobsApiResponse,
-  UpdatedUserApiResponse
+  UpdatedUserApiResponse,
+  TemplateCategoriesResponse,
+  Integration,
+  SaveIntegrationData,
+  TestIntegrationData,
+  TestIntegrationResult
 } from '@/types'
 
 // Authentication API - aligned with AuthController
@@ -77,7 +82,7 @@ export const authAPI = {
     api.post<AuthApiResponse>('/auth/login', credentials),
 
   // GET /auth/me
-  getCurrentUser: () => api.get<ApiResponse<User>>('/auth/me'),
+  getCurrentUser: () => api.get<{user:User}>('/auth/me'),
 
   // PUT /auth/profile
   updateProfile: (data: Partial<User>) =>
@@ -460,7 +465,7 @@ export const templateAPI = {
   }) => api.post<ApiResponse<Template>>('/templates', data),
 
   // GET /templates/categories
-  getCategories: () => api.get<ApiResponse<string[]>>('/templates/categories'),
+  getCategories: () => api.get<TemplateCategoriesResponse>('/templates/categories'),
 
   // GET /templates/search
   searchTemplates: (params: TemplateSearchParams) => 
@@ -631,4 +636,31 @@ export const videoAnalysisAPI = {
   // GET /video-analysis/extract-info - Extract basic video info from URL
   extractVideoInfo: (params: { videoUrl: string }) =>
     api.get<ApiResponse<YouTubeVideoInfo>>('/video-analysis/extract-info', { params }),
+}
+
+// ============================================================================
+// INTEGRATIONS API
+// ============================================================================
+
+// Integrations API - for managing third-party service credentials
+export const integrationsAPI = {
+  // GET /integrations - Get all user integrations
+  getIntegrations: () =>
+    api.get<ApiResponse<Integration[]>>('/integrations'),
+
+  // POST /integrations - Save integration credentials
+  saveIntegration: (data: SaveIntegrationData) =>
+    api.post<ApiResponse<{ message: string }>>('/integrations', data),
+
+  // POST /integrations/test - Test integration credentials
+  testIntegration: (data: TestIntegrationData) =>
+    api.post<ApiResponse<TestIntegrationResult>>('/integrations/test', data),
+
+  // GET /integrations/{serviceName} - Get specific integration
+  getIntegration: (serviceName: string) =>
+    api.get<ApiResponse<Integration>>(`/integrations/${serviceName}`),
+
+  // DELETE /integrations/{serviceName} - Remove integration
+  removeIntegration: (serviceName: string) =>
+    api.delete<ApiResponse<{ message: string }>>(`/integrations/${serviceName}`),
 }

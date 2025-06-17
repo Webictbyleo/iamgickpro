@@ -12,7 +12,12 @@ final readonly class SearchTemplateRequestDTO
         #[Assert\Type(type: 'string', message: 'Query must be a string')]
         public ?string $q = '',
 
-        #[Assert\Choice(choices: ['social-media', 'presentation', 'print', 'marketing', 'document', 'logo', 'web-graphics', 'video', 'animation'], message: 'Invalid category')]
+        #[Assert\Type(type: 'string', message: 'Category must be a string')]
+        #[Assert\Length(max: 255, maxMessage: 'Category must not exceed 255 characters')]
+        #[Assert\Regex(
+            pattern: '/^[a-zA-Z0-9_-]*$/',
+            message: 'Category can only contain alphanumeric characters, underscores, and hyphens'
+        )]
         public ?string $category = null,
 
         #[Assert\Type(type: 'integer', message: 'Page must be an integer')]

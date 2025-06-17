@@ -1,14 +1,15 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { EditorSDK } from '@/editor/sdk/EditorSDK'
-import type { Layer, LayerType, TextLayerProperties, ShapeLayerProperties, ImageLayerProperties } from '@/types'
+import type { Layer, LayerType, TextLayerProperties, ShapeLayerProperties, ImageLayerProperties, SVGLayerProperties, Transform } from '@/types'
 
 export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRef<EditorSDK | null>) {
   const designStore = useDesignStore()
 
   const selectedLayers = computed(() => designStore.selectedLayers)
 
-  const addElement = async (type: LayerType, properties: any = {}) => {
+  const addElement = async (type: LayerType, properties: Record<string,any> = {}, transform?: Transform) => {
+    console.log(`EditorSDK is loaded: ${!editorSDK.value?"No":"Yes"}`)
     if (!editorSDK.value) {
       console.warn('EditorSDK not initialized')
       return
@@ -20,7 +21,7 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
         locked: false,
         name: `${type} ${Date.now()}`,
         zIndex: 0,
-        transform: {
+        transform: transform || {
           x: 100,
           y: 100,
           width: 150,
@@ -103,6 +104,24 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
         }
         
         await editorSDK.value.layers.createLayer('image', imageLayer)
+      } else if (type === 'svg') {
+        const svgLayer: Layer = {
+          ...baseLayer,
+          id: -Date.now() - 3, // Use negative timestamp as temporary ID, offset to avoid conflicts
+          type: 'svg',
+          properties: {
+            svgContent: properties.svgContent || '<svg width="100" height="100"><rect width="100" height="100" fill="#3B82F6"/></svg>',
+            viewBox: properties.viewBox || '0 0 100 100',
+            preserveAspectRatio: properties.preserveAspectRatio || 'xMidYMid meet',
+            fillColors: properties.fillColors || {},
+            strokeColors: properties.strokeColors || {},
+            strokeWidths: properties.strokeWidths || {},
+            originalWidth: properties.originalWidth || 100,
+            originalHeight: properties.originalHeight || 100
+          } as SVGLayerProperties
+        }
+        
+        await editorSDK.value.layers.createLayer('svg', svgLayer)
       }
 
     } catch (error) {

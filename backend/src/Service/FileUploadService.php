@@ -31,13 +31,6 @@ readonly class FileUploadService
 
         try {
             $file->move($this->avatarUploadDirectory, $fileName);
-            
-            $this->logger->info('Avatar uploaded successfully', [
-                'filename' => $fileName,
-                'original_name' => $file->getClientOriginalName(),
-                'size' => $file->getSize()
-            ]);
-            
             return $fileName;
         } catch (FileException $e) {
             $this->logger->error('Avatar upload failed', [

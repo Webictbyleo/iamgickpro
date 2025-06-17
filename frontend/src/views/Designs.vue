@@ -24,9 +24,9 @@
               v-model="sortBy"
               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="updated">Recently Updated</option>
-              <option value="created">Recently Created</option>
-              <option value="title">Name A-Z</option>
+              <option value="updated_at">Recently Updated</option>
+              <option value="created_at">Recently Created</option>
+              <option value="name">Name A-Z</option>
             </select>
           </div>
           
@@ -59,6 +59,11 @@
 
       <!-- Designs Content -->
       <div class="bg-white rounded-lg shadow-sm p-6">
+        <!-- Results Summary -->
+        <div v-if="!loading && totalResults > 0" class="text-sm text-gray-600 mb-4">
+          Showing {{ designs.length }} of {{ totalResults }} designs
+        </div>
+        
         <!-- Grid View -->
         <DesignGrid
           v-if="viewMode === 'grid'"
@@ -127,19 +132,43 @@
             </div>
           </div>
         </div>
+
+        <!-- Empty State -->
+        <div v-if="!loading && designs.length === 0" class="text-center py-12">
+          <div class="text-gray-400 text-lg mb-4">No designs found</div>
+          <p class="text-gray-600 mb-6">
+            {{ searchQuery ? 'Try adjusting your search criteria' : 'Create your first design to get started' }}
+          </p>
+          <button
+            @click="createNewDesign"
+            class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
+          >
+            Create New Design
+          </button>
+        </div>
       </div>
+
+      <!-- Pagination -->
+      <Pagination
+        v-if="totalPages > 1"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @page-change="handlePageChange"
+      />
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
-import type { Design } from '@/types'
+import type { Design, DesignSearchParams } from '@/types'
+import { designAPI } from '@/services/api'
 
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import DesignGrid from '@/components/ui/DesignGrid.vue'
 
 const router = useRouter()
@@ -149,41 +178,74 @@ const designStore = useDesignStore()
 const loading = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const selectedCategory = ref('')
-const sortBy = ref('updated')
+const sortBy = ref('updated_at')
 const searchQuery = ref('')
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalResults = ref(0)
+const designs = ref<Design[]>([])
+
+// Methods
+const loadDesigns = async (resetPage = false) => {
+  try {
+    loading.value = true
+    
+    // Reset to page 1 if this is a new search/filter change
+    if (resetPage) {
+      currentPage.value = 1
+    }
+
+    const params = {
+      sort: sortBy.value as 'name' | 'created_at' | 'updated_at',
+      page: currentPage.value,
+      limit: 12,
+    }
+
+    let response;
+
+    // Use searchDesigns if there's a search query, otherwise use getDesigns
+    if (searchQuery.value.trim()) {
+      // Use search API for text-based search
+      const searchParams = {
+        q: searchQuery.value.trim(),
+        page: currentPage.value,
+        limit: 12,
+        sort: sortBy.value as 'name' | 'created_at' | 'updated_at'
+      }
+      response = await designAPI.searchDesigns(searchParams)
+    } else {
+      // Use regular getDesigns for listing with filters
+      response = await designAPI.getDesigns(params)
+    }
+    
+    if (response.data?.data) {
+      designs.value = response.data.data
+      if (response.data.pagination) {
+        totalPages.value = response.data.pagination.totalPages
+        totalResults.value = response.data.pagination.total
+      } else {
+        totalPages.value = 1
+        totalResults.value = designs.value.length
+      }
+    } else {
+      designs.value = []
+      totalPages.value = 1
+      totalResults.value = 0
+    }
+  } catch (error) {
+    console.error('Failed to load designs:', error)
+    designs.value = []
+    totalPages.value = 1
+    totalResults.value = 0
+  } finally {
+    loading.value = false
+  }
+}
 
 // Computed
 const filteredDesigns = computed(() => {
-  let designs = [...designStore.designs]
-
-  // Filter by search query
-  if (searchQuery.value) {
-    designs = designs.filter(design => 
-      design.title.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  }
-
-  // Filter by category
-  if (selectedCategory.value) {
-    // This would need to be implemented based on how you store design categories
-    // For now, we'll just return all designs
-  }
-
-  // Sort designs
-  designs.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'updated':
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      case 'created':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      case 'title':
-        return a.title.localeCompare(b.title)
-      default:
-        return 0
-    }
-  })
-
-  return designs
+  // Now that we're using server-side pagination, just return the loaded designs
+  return designs.value
 })
 
 // Methods
@@ -237,16 +299,27 @@ const formatDate = (date: string | Date) => {
   return d.toLocaleDateString()
 }
 
-const loadDesigns = async () => {
-  loading.value = true
-  try {
-    await designStore.loadUserDesigns()
-  } catch (error) {
-    console.error('Failed to load designs:', error)
-  } finally {
-    loading.value = false
-  }
+// Handle page change for pagination
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  loadDesigns() // Load new page data from server
 }
+
+// Watch for search and sort changes
+let searchTimeout: NodeJS.Timeout
+watch(searchQuery, () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  searchTimeout = setTimeout(() => {
+    loadDesigns(true)
+  }, 300)
+})
+
+watch(sortBy, () => {
+  loadDesigns(true)
+})
 
 // Lifecycle
 onMounted(() => {

@@ -20,6 +20,7 @@ class AuthService
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly EmailService $emailService,
         private readonly string $fromEmail,
         private readonly int $tokenExpiryHours,
         private readonly int $maxLoginAttempts,
@@ -59,6 +60,22 @@ class AuthService
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+
+        // Send verification email
+        try {
+            $this->emailService->sendEmailVerification($user, $verificationToken);
+        } catch (\Exception $e) {
+            // Log error but don't fail registration
+            error_log('Failed to send verification email: ' . $e->getMessage());
+        }
+
+        // Send welcome email
+        try {
+            $this->emailService->sendWelcome($user);
+        } catch (\Exception $e) {
+            // Log error but don't fail registration
+            error_log('Failed to send welcome email: ' . $e->getMessage());
+        }
 
         return $user;
     }
@@ -124,6 +141,14 @@ class AuthService
              ->setPasswordResetTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
 
         $this->entityManager->flush();
+
+        // Send password reset email
+        try {
+            $this->emailService->sendPasswordReset($user, $resetToken);
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            error_log('Failed to send password reset email: ' . $e->getMessage());
+        }
 
         return $user;
     }

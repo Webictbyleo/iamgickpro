@@ -150,12 +150,15 @@ class UserController extends AbstractController
             $user->setAvatar($avatarUrl);
             $this->userService->updateProfile($user, []);
             
-            return $this->successResponse(
-                $this->responseDTOFactory->createSuccessResponse(
-                    'Avatar uploaded successfully'
-                )
-            );
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Avatar uploaded successfully',
+                'data' => [
+                    'avatar' => $avatarUrl
+                ]
+            ], Response::HTTP_OK);
         } catch (\Exception $e) {
+           
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse($e->getMessage()),
                 Response::HTTP_BAD_REQUEST

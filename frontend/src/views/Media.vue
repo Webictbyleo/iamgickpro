@@ -397,13 +397,24 @@ const handleFileUpload = async (event: Event) => {
 }
 
 const openInEditor = async (item: MediaItem) => {
-  // Navigate to editor and pass media item data
+  // Create DSN for uploaded media
+  if (!item.url) {
+    console.warn('Cannot open in editor: media item has no URL', item)
+    return
+  }
+  // Use media ID if available, otherwise use URL
+  const resourceId = item.uuid || item.url
+  const encodedId = btoa(resourceId)
+  const source = item.source !=='upload' ? 'stock' : 'upload'
+  const provider = source === 'upload' ? 'media' : item.source
+  const dsn = `${source}:${provider}:${encodedId}`
+  
+  console.log(`🔗 Opening media in editor with DSN: ${dsn} (resource: ${resourceId})`)
+  
+  // Navigate to editor with DSN format
   router.push({
     name: 'Editor',
-    query: {
-      mediaUrl: item.url,
-      mediaName: item.name || 'Untitled Media'
-    }
+    params: { id: dsn }
   })
 }
 

@@ -485,15 +485,13 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       offsetY = imageNode.height()
     }
 
-    // Apply transformations
-    if (scaleX !== 1 || scaleY !== 1) {
-      imageNode.setAttrs({
-        scaleX,
-        scaleY,
-        offsetX,
-        offsetY
-      })
-    }
+    // Always apply transformations to ensure proper reset when flips are disabled
+    imageNode.setAttrs({
+      scaleX,
+      scaleY,
+      offsetX,
+      offsetY
+    })
   }
 
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {

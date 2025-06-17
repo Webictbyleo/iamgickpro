@@ -202,9 +202,9 @@ class IconfinderService implements StockMediaServiceInterface
             $tags = array_unique(array_filter($tags, fn($tag) => strlen($tag) > 1));
 
             // Extract and validate URLs
-            $downloadUrl = $this->responseValidator->extractStringField($primaryFormat, 'download_url', null);
-            $previewUrl = $this->responseValidator->extractStringField($primaryFormat, 'preview_url', null) 
-                ?? $this->responseValidator->extractStringField($bestFormat, 'preview_url', null);
+            $downloadUrl = $this->responseValidator->extractUrlField($primaryFormat, 'download_url', null);
+            $previewUrl = $this->responseValidator->extractUrlField($primaryFormat, 'preview_url', null) 
+                ?? $this->responseValidator->extractUrlField($bestFormat, 'preview_url', null);
             
             if (!$this->responseValidator->validateUrl($downloadUrl) && !$this->responseValidator->validateUrl($previewUrl)) {
                 $this->logger->warning('No valid URLs found for Iconfinder icon', ['icon_id' => $iconId]);
@@ -217,7 +217,7 @@ class IconfinderService implements StockMediaServiceInterface
             // Only proxy download URLs that require authentication
             // Thumbnail and preview URLs work fine directly
             $proxiedUrl = $this->createProxiedUrl($downloadUrl);
-            $directThumbnailUrl = $this->responseValidator->extractStringField($bestFormat, 'preview_url', null) ?: $previewUrl;
+            $directThumbnailUrl = $this->responseValidator->extractUrlField($bestFormat, 'preview_url', null) ?: $previewUrl;
             $directPreviewUrl = $previewUrl;
 
             return [
@@ -250,7 +250,7 @@ class IconfinderService implements StockMediaServiceInterface
                     'original_urls' => [
                         'download' => $downloadUrl,
                         'preview' => $previewUrl,
-                        'thumbnail' => $this->responseValidator->extractStringField($bestFormat, 'preview_url', null)
+                        'thumbnail' => $this->responseValidator->extractUrlField($bestFormat, 'preview_url', null)
                     ],
                     'proxy_info' => [
                         'download_proxied' => !empty($downloadUrl),
@@ -454,7 +454,7 @@ class IconfinderService implements StockMediaServiceInterface
             if ($quality === 'high' && !empty($vectorSizes)) {
                 $vectorFormat = $this->findVectorFormat($vectorSizes);
                 if ($vectorFormat) {
-                    $downloadUrl = $this->responseValidator->extractStringField($vectorFormat, 'download_url', '');
+                    $downloadUrl = $this->responseValidator->extractUrlField($vectorFormat, 'download_url', '');
                     if ($this->responseValidator->validateUrl($downloadUrl)) {
                         return $downloadUrl;
                     }
@@ -464,7 +464,7 @@ class IconfinderService implements StockMediaServiceInterface
             // Find appropriate raster size
             $format = $this->findBestIconFormat($rasterSizes);
             if ($format) {
-                $downloadUrl = $this->responseValidator->extractStringField($format, 'download_url', '');
+                $downloadUrl = $this->responseValidator->extractUrlField($format, 'download_url', '');
                 if ($this->responseValidator->validateUrl($downloadUrl)) {
                     return $downloadUrl;
                 }

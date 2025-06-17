@@ -333,7 +333,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, watchEffect, onMounted } from 'vue'
 import { CameraIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 import { userAPI } from '@/services/api'
 import { useNotifications } from '@/composables/useNotifications'
@@ -420,7 +420,7 @@ const initializeUserProfile = (user: User | null): UserProfile => {
   }
 }
 
-const userProfile = ref<UserProfile>(initializeUserProfile(authStore.user))
+const userProfile = ref<UserProfile>(initializeUserProfile(null))
 
 const passwordForm = ref<PasswordForm>({
   currentPassword: '',
@@ -428,27 +428,38 @@ const passwordForm = ref<PasswordForm>({
   confirmPassword: ''
 })
 
-// Watch for auth store user changes
-watch(() => authStore.user, (newUser) => {
-  if (newUser) {
-    userProfile.value = initializeUserProfile(newUser)
-  }
-}, { immediate: true })
-
-// Lifecycle hooks
-onMounted(async () => {
-  // If user is not loaded, try to fetch it
-  if (!authStore.user && authStore.isAuthenticated) {
-    isLoadingProfile.value = true
-    try {
-      await authStore.fetchUser()
-    } catch (err) {
-      console.error('Failed to fetch user profile:', err)
-    } finally {
-      isLoadingProfile.value = false
-    }
+// Watch for auth store user changes and update profile reactively
+watchEffect(() => {
+  console.log('ProfileSettings: watchEffect triggered, user:', authStore.user)
+  if (authStore.user) {
+    userProfile.value = initializeUserProfile(authStore.user)
+    console.log('ProfileSettings: Profile updated with user data')
   }
 })
+
+// Load user data on mount
+onMounted(async () => {
+  console.log('ProfileSettings: Component mounted')
+  console.log('ProfileSettings: Auth store user:', authStore.user)
+  console.log('ProfileSettings: Auth store token:', !!authStore.token)
+  
+  if (authStore.user) {
+    // User is already available, initialize immediately
+    console.log('ProfileSettings: User already available, initializing profile')
+    userProfile.value = initializeUserProfile(authStore.user)
+  } else if (authStore.token) {
+    // Token exists but no user, fetch user data
+    console.log('ProfileSettings: Token exists but no user, fetching user data')
+    const result = await authStore.fetchUser()
+    if (result.success && authStore.user) {
+      userProfile.value = initializeUserProfile(authStore.user)
+    }
+  } else {
+    console.log('ProfileSettings: No token or user data available')
+  }
+})
+
+
 
 // Computed
 const avatarInitials = computed(() => {

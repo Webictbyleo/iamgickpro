@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
 import { useDesignHistory } from '@/composables/useDesignHistory'
 import { EditorSDK } from '@/editor/sdk/EditorSDK'
+import { layerAPI } from '@/services/api'
 import type { EditorConfig } from '@/editor/sdk/types'
 import type { Layer } from '@/types'
 
@@ -276,7 +277,7 @@ export function useDesignEditor() {
     }
   }
 
-  const undo = () => {
+  const undo = async () => {
     if (!canUndo.value) return
     
     console.log('🔄 Starting undo operation...')
@@ -284,22 +285,34 @@ export function useDesignEditor() {
     
     const previousDesign = historyUndo()
     if (previousDesign && designStore.currentDesign && editorSDK.value) {
+      // Store current layers for comparison
+      const oldLayers = designStore.currentDesign.layers || []
+      
       // Update the store with the previous design state
       if (previousDesign.layers) {
         designStore.currentDesign.layers = [...previousDesign.layers]
       }
+      console.log('📦 Design store layers after undo:', previousDesign.layers)
       
       // Reload the design in the editor (loadDesign will reset the flag)
-      editorSDK.value.loadDesign(previousDesign)
+      try {
+        await editorSDK.value.loadDesign(previousDesign)
+        console.log('🔄 Design state restored after undo operation')
+        
+        // Save changed layers to backend
+        await saveChangedLayersToBackend(oldLayers, previousDesign.layers || [])
+      } catch (error) {
+        console.error('Failed to reload design after undo:', error)
+        isPerformingHistoryOperation.value = false
+      }
       
-      hasUnsavedChanges.value = true
       console.log('✨ Undo operation initiated - design state will be restored')
     } else {
       isPerformingHistoryOperation.value = false
     }
   }
 
-  const redo = () => {
+  const redo = async () => {
     if (!canRedo.value) return
     
     console.log('🔄 Starting redo operation...')
@@ -307,18 +320,118 @@ export function useDesignEditor() {
     
     const nextDesign = historyRedo()
     if (nextDesign && designStore.currentDesign && editorSDK.value) {
+      // Store current layers for comparison
+      const oldLayers = designStore.currentDesign.layers || []
+      
       // Update the store with the next design state
       if (nextDesign.layers) {
         designStore.currentDesign.layers = [...nextDesign.layers]
       }
       
       // Reload the design in the editor (loadDesign will reset the flag)
-      editorSDK.value.loadDesign(nextDesign)
+      try {
+        await editorSDK.value.loadDesign(nextDesign)
+        console.log('🔄 Design state restored after redo operation')
+        
+        // Save changed layers to backend
+        await saveChangedLayersToBackend(oldLayers, nextDesign.layers || [])
+      } catch (error) {
+        console.error('Failed to reload design after redo:', error)
+        isPerformingHistoryOperation.value = false
+      }
       
       hasUnsavedChanges.value = true
       console.log('✨ Redo operation initiated - design state will be restored')
     } else {
       isPerformingHistoryOperation.value = false
+    }
+  }
+
+  /**
+   * Save changed layers to backend after undo/redo operations
+   */
+  const saveChangedLayersToBackend = async (oldLayers: Layer[], newLayers: Layer[]): Promise<void> => {
+    if (!designStore.currentDesign?.id) return
+
+    try {
+      // Create maps for quick lookup
+      const oldLayerMap = new Map(oldLayers.map(layer => [layer.id, layer]))
+      const newLayerMap = new Map(newLayers.map(layer => [layer.id, layer]))
+
+      // Find deleted layers
+      const deletedLayerIds = oldLayers
+        .filter(layer => !newLayerMap.has(layer.id))
+        .map(layer => layer.id)
+
+      // Find added layers
+      const addedLayers = newLayers
+        .filter(layer => !oldLayerMap.has(layer.id))
+
+      // Find modified layers
+      const modifiedLayers = newLayers
+        .filter(layer => {
+          const oldLayer = oldLayerMap.get(layer.id)
+          return oldLayer && JSON.stringify(oldLayer) !== JSON.stringify(layer)
+        })
+
+      console.log('📊 Layer changes detected:', {
+        deleted: deletedLayerIds.length,
+        added: addedLayers.length,
+        modified: modifiedLayers.length
+      })
+
+      // Save changes to backend using the API
+      const promises: Promise<any>[] = []
+
+      // Delete removed layers
+      for (const layerId of deletedLayerIds) {
+        if (layerId > 0) { // Only delete layers that exist in backend (positive IDs)
+          promises.push(layerAPI.deleteLayer(layerId))
+        }
+      }
+
+      // Create new layers
+      for (const layer of addedLayers) {
+        if (layer.id < 0) { // Only create temporary layers (negative IDs)
+          // Skip SVG layers for now as backend doesn't support them yet
+          if (layer.type === 'svg') continue
+          
+          promises.push(layerAPI.createLayer({
+            designId: designStore.currentDesign.id,
+            type: layer.type as 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio',
+            name: layer.name,
+            properties: layer.properties,
+            transform: layer.transform,
+            visible: layer.visible,
+            locked: layer.locked,
+            zIndex: layer.zIndex
+          }))
+        }
+      }
+
+      // Update modified layers
+      for (const layer of modifiedLayers) {
+        if (layer.id > 0) { // Only update layers that exist in backend
+          promises.push(layerAPI.updateLayer(layer.id, {
+            name: layer.name,
+            properties: layer.properties,
+            transform: layer.transform,
+            visible: layer.visible,
+            locked: layer.locked,
+            zIndex: layer.zIndex
+          }))
+        }
+      }
+
+      // Execute all API calls
+      if (promises.length > 0) {
+        await Promise.allSettled(promises)
+        console.log('✅ Layer changes saved to backend')
+      }
+
+    } catch (error) {
+      console.error('Failed to save layer changes to backend:', error)
+      // Don't throw - continue with local changes even if backend save fails
     }
   }
 

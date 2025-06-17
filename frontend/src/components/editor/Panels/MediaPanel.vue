@@ -114,8 +114,7 @@
             <div
               v-for="photo in filteredPhotos"
               :key="photo.id"
-              @click="addMedia(photo)"
-              class="relative group cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
+              class="relative group border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200"
             >
               <div class="aspect-square bg-gray-100">
                 <img
@@ -126,11 +125,18 @@
                   @error="handleImageError"
                 />
               </div>
-              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                <div class="bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+              <!-- Action buttons overlay -->
+              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
+                <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    @click="addMedia(photo)"
+                    class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors"
+                    title="Add to current design"
+                  >
+                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               <!-- Photo info overlay -->

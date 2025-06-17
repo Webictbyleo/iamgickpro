@@ -50,6 +50,22 @@ class StockMediaResponseValidator
     }
 
     /**
+     * Extract URL field without HTML sanitization to preserve query parameters
+     */
+    public function extractUrlField(array $data, string $field, ?string $default = null): ?string
+    {
+        $value = $this->getNestedValue($data, $field, $default);
+        
+        // Type coercion if needed
+        if ($value !== $default && !is_string($value)) {
+            $value = $this->coerceType($value, 'string', $field);
+        }
+        
+        // Return as-is without HTML sanitization for URLs
+        return is_string($value) && $value !== '' ? $value : $default;
+    }
+
+    /**
      * Extract field with specific integer return type
      */
     public function extractIntField(array $data, string $field, ?int $default = null): ?int

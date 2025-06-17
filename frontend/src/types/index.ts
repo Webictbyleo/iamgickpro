@@ -85,11 +85,21 @@ export interface User {
   bio?: string
   avatar?: string
   role: string
+  roles?: string[]
+  plan?: string
+  emailVerified?: boolean
+  isActive?: boolean
   socialLinks?: {
     twitter?: string
     linkedin?: string
     dribbble?: string
     behance?: string
+  }
+  settings?: Record<string, any>
+  stats?: {
+    projectCount?: number
+    mediaCount?: number
+    exportJobCount?: number
   }
   createdAt: string
   updatedAt?: string
@@ -164,7 +174,7 @@ export interface Layer {
   properties: LayerProperties
 }
 
-export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio'
+export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg'
 
 // Base interface for all layer properties
 export interface BaseLayerProperties {
@@ -340,6 +350,18 @@ export interface AudioLayerProperties extends BaseLayerProperties {
   controls?: boolean
 }
 
+// SVG vector layer properties
+export interface SVGLayerProperties extends BaseLayerProperties {
+  svgContent: string // The raw SVG content
+  viewBox?: string // SVG viewBox attribute
+  preserveAspectRatio?: string // SVG preserveAspectRatio attribute
+  fillColors?: Record<string, string> // Map of element IDs/classes to fill colors for customization
+  strokeColors?: Record<string, string> // Map of element IDs/classes to stroke colors
+  strokeWidths?: Record<string, number> // Map of element IDs/classes to stroke widths
+  originalWidth?: number // Original SVG width
+  originalHeight?: number // Original SVG height
+}
+
 // Union type for all layer properties
 export type LayerProperties = 
   | TextLayerProperties
@@ -348,6 +370,7 @@ export type LayerProperties =
   | GroupLayerProperties
   | VideoLayerProperties
   | AudioLayerProperties
+  | SVGLayerProperties
   | BaseLayerProperties
 
 export interface ImageFilter {
@@ -479,6 +502,14 @@ export interface TemplateSearchParams extends SearchParams {
   q?: string // Add search query parameter
   tags?: string
   sort_by?: 'created_at' | 'updated_at' | 'name' | 'popularity'
+}
+
+export interface TemplateCategoriesResponse{
+  data: Array<{
+    name: string
+    slug: string
+    title: string
+  }>
 }
 
 export interface MediaSearchParams extends SearchParams {
@@ -760,6 +791,16 @@ export interface UserSubscription {
   isActive: boolean,
   usage: Record<string, number>,
   limits: Record<string, number>,
+  features: Record<string, boolean>,
+  planInfo: {
+    name: string
+    description: string
+    price?: {
+      monthly?: number
+      yearly?: number
+      currency?: string
+    }
+  }
 }
 
 export interface StorageUsage {
@@ -1030,7 +1071,7 @@ export interface Transform {
 // Enhanced Layer properties based on backend DTOs
 export interface CreateLayerData {
   designId: string
-  type: 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio'
+  type: 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg'
   name: string
   properties?: Record<string, any>
   transform: Transform
@@ -1225,6 +1266,42 @@ export interface ThumbnailDesign extends DesignSuggestion {
   style: string
   clickThroughRate?: number
   engagement?: number
+}
+
+// ============================================================================
+// INTEGRATIONS API TYPES
+// ============================================================================
+
+export interface Integration {
+  service: string
+  isConfigured: boolean
+  settings: Record<string, any>
+  createdAt: {
+    date: string
+    timezone_type: number
+    timezone: string
+  }
+  updatedAt: {
+    date: string
+    timezone_type: number
+    timezone: string
+  }
+}
+
+export interface SaveIntegrationData {
+  serviceName: string
+  credentials: Record<string, any>
+}
+
+export interface TestIntegrationData {
+  serviceName: string
+  credentials?: Record<string, any>
+}
+
+export interface TestIntegrationResult {
+  success: boolean
+  message: string
+  data?: Record<string, any>
 }
 
 

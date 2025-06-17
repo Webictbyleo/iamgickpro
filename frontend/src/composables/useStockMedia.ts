@@ -9,6 +9,7 @@ export interface StockMediaItem {
   alt: string
   tags?: string[]
   source?: string
+  type?: string
 }
 
 interface UseStockMediaReturn {

@@ -473,17 +473,24 @@ class DesignRepository extends ServiceEntityRepository
      * @param User $user The user whose designs are to be retrieved
      * @param int $page Page number (1-based)
      * @param int $limit Number of results per page
+     * @param string $sortBy Field to sort by (default: 'updatedAt')
      * @return array Array containing designs and pagination info
      */
-    public function findByUserPaginated(User $user, int $page = 1, int $limit = 10): array
+    public function findByUserPaginated(User $user, int $page = 1, int $limit = 10,string $sortBy="updatedAt"): array
     {
         $query = $this->createQueryBuilder('d')
             ->join('d.project', 'p')
             ->andWhere('p.user = :user')
             ->andWhere('d.deletedAt IS NULL')
             ->andWhere('p.deletedAt IS NULL')
-            ->setParameter('user', $user)
-            ->orderBy('d.updatedAt', 'DESC');
+            ->setParameter('user', $user);
+
+        // Allow sorting by different fields
+        if (in_array($sortBy, ['name', 'createdAt', 'updatedAt'])) {
+            $query->orderBy('d.' . $sortBy, 'DESC');
+        } else {
+            $query->orderBy('d.updatedAt', 'DESC'); // Default sorting
+        }
 
         // Get total count
         $totalQuery = clone $query;

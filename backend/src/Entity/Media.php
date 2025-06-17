@@ -104,7 +104,7 @@ class Media
     #[Groups(['media:admin'])]
     private bool $is_active = true;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'media')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'mediaFiles')]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     #[Groups(['media:admin'])]
     private ?User $user = null;

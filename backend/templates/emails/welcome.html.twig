@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{ app_name }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .content {
+            padding: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #059669;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .footer {
+            border-top: 1px solid #f0f0f0;
+            padding-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .feature-list {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .feature-item:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #059669;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">{{ app_name }}</div>
+    </div>
+    
+    <div class="content">
+        <h1>Welcome to {{ app_name }}! 🎉</h1>
+        
+        <p>Hello {{ user.firstName }},</p>
+        
+        <p>We're excited to welcome you to {{ app_name }}, the modern design platform that empowers you to create stunning visuals effortlessly!</p>
+        
+        <div class="feature-list">
+            <h3>What you can do with {{ app_name }}:</h3>
+            <div class="feature-item">Create professional designs with our intuitive editor</div>
+            <div class="feature-item">Access thousands of templates and design elements</div>
+            <div class="feature-item">Export your designs in multiple formats</div>
+            <div class="feature-item">Collaborate with team members in real-time</div>
+            <div class="feature-item">Store and organize your media files</div>
+            <div class="feature-item">Integrate with AI-powered tools</div>
+        </div>
+        
+        <p>Ready to start creating? Click the button below to access your dashboard:</p>
+        
+        <div style="text-align: center;">
+            <a href="{{ dashboard_url }}" class="button">Start Creating</a>
+        </div>
+        
+        <p>If you have any questions or need help getting started, our support team is here to help. You can also check out our:</p>
+        <ul>
+            <li>Getting Started Guide</li>
+            <li>Video Tutorials</li>
+            <li>Community Forum</li>
+            <li>Knowledge Base</li>
+        </ul>
+        
+        <p>Thank you for choosing {{ app_name }}. We can't wait to see what you create!</p>
+        
+        <p>Best regards,<br>The {{ app_name }} Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>This email was sent to {{ user.email }}. You're receiving this because you recently created an account with us.</p>
+    </div>
+</body>
+</html>

@@ -210,6 +210,13 @@
                       <PlusIcon class="w-4 h-4" />
                       <span>Add to Design</span>
                     </button>
+                    <button 
+                      @click.stop="openInEditor(result)"
+                      class="bg-indigo-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all duration-200 flex items-center space-x-2"
+                    >
+                      <PencilIcon class="w-4 h-4" />
+                      <span>Open in Editor</span>
+                    </button>
                   </template>
                   
                   <!-- Export Actions -->
@@ -320,39 +327,11 @@
       </div>
 
       <!-- Enhanced Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-center space-x-2">
-        <button
-          @click="goToPage(currentPage - 1)"
-          :disabled="currentPage === 1"
-          class="p-3 rounded-xl border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          <ChevronLeftIcon class="w-5 h-5" />
-        </button>
-        
-        <div class="flex items-center space-x-1">
-          <button
-            v-for="page in getPaginationPages()"
-            :key="page"
-            @click="goToPage(page)"
-            :class="[
-              page === currentPage
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
-              'px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 min-w-[48px]'
-            ]"
-          >
-            {{ page }}
-          </button>
-        </div>
-        
-        <button
-          @click="goToPage(currentPage + 1)"
-          :disabled="currentPage === totalPages"
-          class="p-3 rounded-xl border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          <ChevronRightIcon class="w-5 h-5" />
-        </button>
-      </div>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @page-change="goToPage"
+      />
     </div>
     
     <!-- Design Export Modal -->
@@ -408,6 +387,7 @@ import {
   ClockIcon
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 import MediaPreviewModal from '@/components/modals/MediaPreviewModal.vue'
 import ExportDetailsModal from '@/components/modals/ExportDetailsModal.vue'
@@ -530,26 +510,6 @@ const formatDuration = (seconds: number): string => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
   return `0:${remainingSeconds.toString().padStart(2, '0')}`
-}
-
-const getPaginationPages = (): number[] => {
-  const maxVisible = 7
-  const pages: number[] = []
-  
-  if (totalPages.value <= maxVisible) {
-    for (let i = 1; i <= totalPages.value; i++) {
-      pages.push(i)
-    }
-  } else {
-    const start = Math.max(1, currentPage.value - 3)
-    const end = Math.min(totalPages.value, start + maxVisible - 1)
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-  }
-  
-  return pages
 }
 
 // Search operations
@@ -719,6 +679,49 @@ const openResult = (result: SearchResult) => {
       break
     default:
       console.log('Opening result:', result)
+  }
+}
+
+// Open image in editor using DSN format (similar to MediaPanel)
+const openInEditor = (result: SearchResult) => {
+  // Create DSN based on result source
+  let dsn: string
+  
+  if (!result.url) {
+    console.warn('Cannot create DSN: result has no URL', result)
+    return
+  }
+  
+  if (result.type === 'media') {
+    // Base64 encode the URL as per DSN specification
+    const encodedUrl = btoa(result.id || result.url)
+    dsn = `upload:media:${encodedUrl}`
+    console.log(`🔗 Generated DSN: ${dsn} (URL: ${result.url})`)
+    // Navigate to editor with DSN
+    router.push({ name: 'Editor', params: { id: dsn } })
+  } else {
+    // For other types that might be stock media, we need to determine the source
+    // This could be based on the URL domain or other properties
+    let source = 'unknown'
+    
+    if (result.url.includes('unsplash.com') || result.url.includes('images.unsplash.com')) {
+      source = 'unsplash'
+    } else if (result.url.includes('pexels.com') || result.url.includes('images.pexels.com')) {
+      source = 'pexels'
+    } else if (result.url.includes('iconfinder.com') || result.url.includes('cdn.iconfinder.com')) {
+      source = 'iconfinder'
+    }
+    
+    if (source !== 'unknown') {
+      // For stock media, base64 encode the URL
+      const encodedUrl = btoa(result.url)
+      dsn = `stock:${source}:${encodedUrl}`
+      console.log(`🔗 Generated stock DSN: ${dsn} (URL: ${result.url}, source: ${source})`)
+      // Navigate to editor with DSN
+      router.push({ name: 'Editor', params: { id: dsn } })
+    } else {
+      console.warn('Cannot determine source for result:', result)
+    }
   }
 }
 

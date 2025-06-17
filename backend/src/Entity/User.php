@@ -100,6 +100,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: ExportJob::class, orphanRemoval: true)]
     private Collection $exportJobs;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserIntegration::class, orphanRemoval: true)]
+    private Collection $integrations;
+
     #[ORM\Column(type: 'integer')]
     private int $failedLoginAttempts = 0;
 
@@ -161,6 +164,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->projects = new ArrayCollection();
         $this->mediaFiles = new ArrayCollection();
         $this->exportJobs = new ArrayCollection();
+        $this->integrations = new ArrayCollection();
         $this->username = $this->uuid; // Set default username to UUID
     }
 
@@ -439,6 +443,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeExportJob(ExportJob $exportJob): self
     {
         $this->exportJobs->removeElement($exportJob);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserIntegration>
+     */
+    public function getIntegrations(): Collection
+    {
+        return $this->integrations;
+    }
+
+    public function addIntegration(UserIntegration $integration): self
+    {
+        if (!$this->integrations->contains($integration)) {
+            $this->integrations->add($integration);
+            $integration->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeIntegration(UserIntegration $integration): self
+    {
+        if ($this->integrations->removeElement($integration)) {
+            // set the owning side to null (unless already changed)
+            if ($integration->getUser() === $this) {
+                // Note: Cannot set to null as User is not nullable
+                // The integration will be orphaned and removed
+            }
+        }
 
         return $this;
     }

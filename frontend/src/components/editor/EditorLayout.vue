@@ -225,7 +225,7 @@ import { usePanelManagement } from '@/composables/usePanelManagement'
 import { useRoute, useRouter } from 'vue-router'
 
 // API Services
-import { templateAPI } from '@/services/api'
+import { templateAPI, mediaAPI } from '@/services/api'
 import { useNotifications } from '@/composables/useNotifications'
 
 const designStore = useDesignStore()
@@ -719,6 +719,10 @@ const handleFitToScreen = () => {
 
 // Auto-fit to screen utility function
 const autoFitToScreen = () => {
+  if(isPerformingHistoryOperation.value) {
+    console.warn('Skipping auto-fit while performing history operation')
+    return
+  }
   // Use nextTick to ensure DOM is updated and viewport dimensions are correct
   nextTick(() => {
     setTimeout(() => {
@@ -1310,12 +1314,18 @@ const handleToolUpdate = (toolType: string, properties: any) => {
 
 // Load design when component mounts
 onMounted(async () => {
-  const designIdParam = route.params.id as string
-  
+  const idParam = route.params.id as string
+    // Initialize editor with canvas container
+  await initializeEditorWithCanvas()
   try {
-    if (designIdParam && designIdParam !== 'new') {
-      // Load existing design
-      await handleLoadExistingDesign(designIdParam)
+    if (idParam && idParam !== 'new') {
+      // Check if this is a DSN format (for images) vs regular design ID
+      if (isDSNFormat(idParam)) {
+        await handleLoadImageAsDSN(idParam)
+      } else {
+        // Load existing design
+        await handleLoadExistingDesign(idParam)
+      }
     } else {
       // Create new design
       await handleCreateNewDesign()
@@ -1326,8 +1336,7 @@ onMounted(async () => {
     await handleCreateFallbackDesign()
   }
   
-  // Initialize editor with canvas container
-  await initializeEditorWithCanvas()
+
   
   // Set up global event listeners
   setupGlobalEventListeners()
@@ -1471,4 +1480,264 @@ onUnmounted(() => {
 // Provide editor context to child components
 provide('editorSDK', editorSDK)
 provide('designStore', designStore)
+
+// DSN (Data Source Name) format helpers
+// DSN format: type:source:base64EncodedId
+// Examples: 
+// - stock:unsplash:base64EncodedUrl (stock image from Unsplash)
+// - stock:pexels:base64EncodedUrl (stock image from Pexels)  
+// - stock:iconfinder:base64EncodedUrl (icon from Iconfinder)
+// - upload:media:base64EncodedResourceId (uploaded media file)
+const isDSNFormat = (param: string): boolean => {
+  // DSN format: type:source:(base64 encoded URL or resource ID)
+  const parts = param.split(':')
+  if (parts.length !== 3) return false
+  
+  const [type, source, encodedId] = parts
+  
+  // Validate type and source
+  const validTypes = ['stock', 'upload']
+  const validSources = ['unsplash', 'pexels', 'iconfinder', 'media']
+  
+  return validTypes.includes(type) && 
+         validSources.includes(source) && 
+         /^[A-Za-z0-9+/=]+$/.test(encodedId) // Valid base64 characters
+}
+
+// Parse DSN format
+const parseDSN = (dsn: string): { type: string; source: string; id: string } | null => {
+  // DSN format: type:source:(base64 encoded URL or resource ID)
+  // Example: upload:media:L21lZGlhLzE5N2JjMGI3MmU4YTk0MzI3MjUxNzAyZDc0MzM2ZTI2LTY4NDZjODQ4M2RiNGMuanB
+  const parts = dsn.split(':')
+  if (parts.length !== 3) return null
+  
+  const [type, source, encodedId] = parts
+  
+  // Validate type
+  if (!['stock', 'upload'].includes(type)) return null
+  
+  // Validate source
+  if (!['unsplash', 'pexels', 'iconfinder', 'media'].includes(source)) return null
+  
+  // Validate base64 encoded ID (should contain valid base64 characters)
+  if (!/^[A-Za-z0-9+/=]+$/.test(encodedId)) return null
+  
+  return {
+    type,
+    source, 
+    id: encodedId // Keep as base64 encoded, will decode when needed
+  }
+}
+
+// Handle loading image from DSN format
+const handleLoadImageAsDSN = async (dsn: string) => {
+  console.log(`🔄 Loading image from DSN: ${dsn}`)
+  const parsed = parseDSN(dsn)
+  if (!parsed) {
+    console.warn(`Invalid DSN format: ${dsn}`)
+    router.replace({ name: 'Editor' })
+    return
+  }
+  
+  try {
+    // Decode the base64 encoded ID
+    let decodedId: string
+    try {
+      decodedId = atob(parsed.id)
+      console.log(`🔓 Decoded ID: ${decodedId}`)
+    } catch (error) {
+      throw new Error(`Invalid base64 encoded ID: ${parsed.id}`)
+    }
+    
+    // Load image data and dimensions based on DSN type and source
+    let imageUrl: string
+    let imageData: any
+    let imageDimensions: { width: number; height: number }
+    
+    if (parsed.type === 'upload') {
+      // For uploads, use the media API to get complete information
+      if (parsed.source === 'media') {
+        console.log(`� Fetching uploaded media info for ID: ${decodedId}`)
+        const response = await mediaAPI.getMediaItem(decodedId)
+        imageData = response.data.data.media // Unwrap the API response structure
+        imageUrl = response.data.data.media.url
+        
+        // Use dimensions from API if available, otherwise load image to get dimensions
+        if (imageData.width && imageData.height) {
+          imageDimensions = {
+            width: imageData.width,
+            height: imageData.height
+          }
+          console.log(`✅ Got dimensions from API: ${imageDimensions.width}x${imageDimensions.height}`)
+        } else {
+          console.log(`📏 Loading image to get dimensions: ${imageUrl}`)
+          imageDimensions = await loadImageDimensions(imageUrl)
+          console.log(`✅ Got dimensions from image load: ${imageDimensions.width}x${imageDimensions.height}`)
+        }
+      } else {
+        throw new Error(`Unsupported upload source: ${parsed.source}`)
+      }
+      
+    } else if (parsed.type === 'stock') {
+      // For stock media, the decoded ID might be a URL or a resource identifier
+        imageUrl = decodedId
+        console.log(`📏 Loading stock image to get dimensions: ${imageUrl}`)
+        imageDimensions = await loadImageDimensions(imageUrl)
+        console.log(`✅ Got dimensions from stock image load: ${imageDimensions.width}x${imageDimensions.height}`)
+        
+        imageData = {
+          url: imageUrl,
+          width: imageDimensions.width,
+          height: imageDimensions.height,
+          name: `${parsed.source} Image`,
+          source: parsed.source
+        }
+      
+    } else {
+      throw new Error(`Unsupported DSN type: ${parsed.type}`)
+    }
+    
+    // Create new design with dimensions based on the loaded image
+    // Smart canvas sizing based on image dimensions and aspect ratio
+    let canvasWidth: number
+    let canvasHeight: number
+    
+    const imageAspectRatio = imageDimensions.width / imageDimensions.height
+    canvasWidth = imageDimensions.width
+    canvasHeight =imageDimensions.height
+    
+    console.log(`🎨 Creating design with canvas: ${canvasWidth}x${canvasHeight}, image: ${imageDimensions.width}x${imageDimensions.height}, aspect ratio: ${imageAspectRatio.toFixed(2)}`)
+    
+    const newDesign = designStore.createNewDesign(canvasWidth, canvasHeight)
+    newDesign.name = imageData.title || imageData.name || `${parsed.source} Design`
+    newDesign.title = newDesign.name
+    
+    // Save the new design to the backend
+    const result = await designStore.saveDesign(undefined, true)
+
+    if (result.success && newDesign.id) {
+      const newDesignId = parseInt(newDesign.id.toString(), 10)
+      if (!isNaN(newDesignId) && newDesignId > 0) {
+        await editorSDK.value?.loadDesign(newDesign)
+        // Add image layer using the layer management system
+        addElement('image', {
+          src: imageUrl,
+          alt: imageData.alt || imageData.description || '',
+          name: imageData.title || imageData.name || 'Image'
+        }, {
+          x: 0,
+          y: 0,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+          width: imageDimensions.width,
+          height: imageDimensions.height
+        })
+        
+        // Replace current route with the new design ID
+        router.replace({ 
+          name: 'Editor', 
+          params: { id: newDesignId.toString() } 
+        })
+        console.log(`✅ Image design created with ID: ${newDesignId}`)
+      }
+    } else {
+      console.warn('Failed to save image design, continuing with local version')
+    }
+    
+    console.log('✅ Image loaded successfully from DSN:', {
+      dsn: parsed,
+      dimensions: imageDimensions,
+      canvasDimensions: { width: canvasWidth, height: canvasHeight }
+    })
+    
+  } catch (error) {
+    console.error('Failed to load image from DSN:', error)
+    
+    // Create fallback design
+    const fallbackDesign = designStore.createNewDesign(800, 600)
+    fallbackDesign.name = 'New Design'
+    fallbackDesign.title = 'New Design'
+    
+    // Show error notification
+    if (error instanceof Error) {
+      console.error(`❌ Error loading image: ${error.message}`)
+    }
+  }
+}
+
+// Utility function to load image dimensions from URL
+const loadImageDimensions = (url: string): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    
+    img.onload = () => {
+      resolve({
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      })
+    }
+    
+    img.onerror = (error) => {
+      console.warn(`Failed to load image for dimensions: ${url}`, error)
+      // Return reasonable default dimensions instead of rejecting
+      resolve({
+        width: 800,
+        height: 600
+      })
+    }
+    
+    // Set cross-origin to handle external images, but handle failures gracefully
+    img.crossOrigin = 'anonymous'
+    
+    // Add timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      console.warn(`Image load timeout: ${url}`)
+      resolve({
+        width: 800,
+        height: 600
+      })
+    }, 10000) // 10 second timeout
+    
+    img.onload = () => {
+      clearTimeout(timeout)
+      resolve({
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      })
+    }
+    
+    img.src = url
+  })
+}
+
+// Fallback function to get image dimensions when CORS fails
+const getImageDimensionsFromAPI = async (url: string): Promise<{ width: number; height: number }> => {
+  try {
+    // Try to get dimensions via a backend proxy endpoint if available
+    const response = await fetch(`/api/utils/image-info`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url })
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      return {
+        width: data.width || 800,
+        height: data.height || 600
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to get image dimensions from API:', error)
+  }
+  
+  // Return default dimensions if all else fails
+  return {
+    width: 800,
+    height: 600
+  }
+}
 </script>

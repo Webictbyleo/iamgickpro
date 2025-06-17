@@ -61,6 +61,17 @@
       <ModernButton
         variant="ghost"
         size="sm"
+        @click="$emit('remove-background')"
+        tooltip="Remove Image Background (AI)"
+        class="hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 flex items-center space-x-1.5"
+      >
+        <ScissorsIcon class="w-4 h-4" />
+        <span class="text-sm font-medium">Remove BG</span>
+      </ModernButton>
+      
+      <ModernButton
+        variant="ghost"
+        size="sm"
         @click="$emit('edit-image')"
         tooltip="Advanced Image Settings"
         class="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 flex items-center space-x-1.5"
@@ -75,7 +86,7 @@
 <script setup lang="ts">
 import IconDropdown from '@/components/ui/IconDropdown.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
-import { PencilSquareIcon, ArrowsRightLeftIcon, ArrowsUpDownIcon } from '@heroicons/vue/24/outline'
+import { PencilSquareIcon, ArrowsRightLeftIcon, ArrowsUpDownIcon, ScissorsIcon } from '@heroicons/vue/24/outline'
 
 interface Props {
   alt?: string
@@ -124,5 +135,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   update: [properties: Partial<Props>]
   'edit-image': []
+  'remove-background': []
 }>()
 </script>

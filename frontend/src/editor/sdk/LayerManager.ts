@@ -13,6 +13,7 @@ import { TextLayerRenderer } from './renderers/TextLayerRenderer'
 import { ImageLayerRenderer } from './renderers/ImageLayerRenderer'
 import { ShapeLayerRenderer } from './renderers/ShapeLayerRenderer'
 import { GroupLayerRenderer } from './renderers/GroupLayerRenderer'
+import { SVGLayerRenderer } from './renderers/SVGLayerRenderer'
 
 export class LayerManager implements LayerAPI {
   private layers: Map<number, LayerNode> = new Map()
@@ -38,7 +39,6 @@ export class LayerManager implements LayerAPI {
   setHistoryManager(historyManager: any): void {
     // History is now handled by useDesignHistory composable - disable SDK history
     this.historyManager = null
-    console.log('LayerManager: History management disabled - now handled by useDesignHistory composable')
   }
 
   /**
@@ -57,7 +57,6 @@ export class LayerManager implements LayerAPI {
   updateMainLayerForViewport(): void {
     // DO NOTHING - Stage transformation handles zoom/pan automatically
     // The main layer should remain at (0,0) and let the stage handle transformations
-    console.log('🔍 LayerManager: Viewport update called but skipped - stage handles transformations automatically')
   }
 
   /**
@@ -66,14 +65,7 @@ export class LayerManager implements LayerAPI {
   handleViewportChange(data: { zoom: number; panX: number; panY: number }): void {
     // Always refresh hit detection when zoom changes (not just significant changes)
     // This ensures hit detection works correctly at all zoom levels
-    if (data.zoom !== this.state.zoom) {
-      this.updateHitDetectionForZoom()
-      console.log('🔍 LayerManager: Updated hit detection for zoom change', {
-        oldZoom: this.state.zoom,
-        newZoom: data.zoom,
-        difference: Math.abs(data.zoom - this.state.zoom)
-      })
-    }
+    
     
     // Update state
     this.state.zoom = data.zoom
@@ -89,16 +81,10 @@ export class LayerManager implements LayerAPI {
    * Force refresh hit detection for all layers - useful after zoom changes
    */
   public refreshHitDetection(): void {
-    console.log('🔍 LayerManager: Force refreshing hit detection for all layers', {
-      stageScale: this.stage.scaleX(),
-      layerCount: this.layers.size
-    })
     
-    this.updateHitDetectionForZoom()
   }
 
   async createLayer(type: string, data: Partial<Layer>, silent: boolean = false): Promise<LayerNode> {
-    console.log('LayerManager: Creating layer', { type, data })
     
     const layerNode = this.createLayerNode(type, data)
     
@@ -114,14 +100,6 @@ export class LayerManager implements LayerAPI {
 
     // Add click event to make layer selectable
     konvaNode.on('click tap', (evt: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-      console.log('🔍 LayerManager: Layer clicked', {
-        layerId: layerNode.id,
-        layerName: layerNode.name,
-        stageScale: this.stage.scaleX(),
-        clickPosition: this.stage.getPointerPosition(),
-        nodePosition: { x: konvaNode.x(), y: konvaNode.y() }
-      })
-      
       // Handle multi-selection with ctrl/cmd key
       if (evt.evt.ctrlKey || evt.evt.metaKey) {
         const currentSelection = [...this.state.selectedLayers]
@@ -246,7 +224,6 @@ export class LayerManager implements LayerAPI {
   updateLayerId(oldId: number, newId: number): boolean {
     const layer = this.layers.get(oldId)
     if (!layer) {
-      console.warn(`LayerManager: Cannot update layer ID - layer ${oldId} not found`)
       return false
     }
 
@@ -268,7 +245,6 @@ export class LayerManager implements LayerAPI {
       this.state.selectedLayers[selectedIndex] = newId
     }
 
-    console.log(`LayerManager: Updated layer ID from ${oldId} to ${newId}`)
     return true
   }
 
@@ -653,7 +629,6 @@ export class LayerManager implements LayerAPI {
       this.mainLayer = existingMainLayer
       // Ensure it's positioned at origin (fix any previous incorrect positioning)
       this.mainLayer.setAttrs({ x: 0, y: 0 })
-      console.log('🔍 LayerManager: Using existing main content layer, reset to (0,0)')
       return
     }
 
@@ -669,14 +644,12 @@ export class LayerManager implements LayerAPI {
     this.mainLayer.setAttr('className', 'main-content-layer')
     
     this.stage.add(this.mainLayer)
-    console.log('🔍 LayerManager: Created new main content layer at (0,0)')
     
     // Ensure the main content layer is above any background layers
     // Background layers should stay at the bottom
     const backgroundLayer = this.stage.findOne('.background-layer')
     if (backgroundLayer) {
       backgroundLayer.moveToBottom()
-      console.log('🔍 LayerManager: Moved background layer to bottom')
     }
   }
 
@@ -688,6 +661,7 @@ export class LayerManager implements LayerAPI {
     this.renderers.set('image', new ImageLayerRenderer())
     this.renderers.set('shape', new ShapeLayerRenderer())
     this.renderers.set('group', new GroupLayerRenderer())
+    this.renderers.set('svg', new SVGLayerRenderer())
 
     // Set up text editing event handlers
     this.emitter.on('layer:update-properties', this.handleLayerPropertyUpdate.bind(this))
@@ -721,7 +695,6 @@ export class LayerManager implements LayerAPI {
     const layer = this.layers.get(layerId)
     
     if (!layer) {
-      console.warn(`Layer ${layerId} not found for property update`)
       return
     }
 
@@ -756,7 +729,6 @@ export class LayerManager implements LayerAPI {
 
   private createLayerNode(type: string, data: Partial<Layer>): LayerNode {
     // Merge default properties with provided properties
-    console.log('Creating layer node', { type, data })
     const defaultProps = this.getDefaultProperties(type as Layer['type'])
     const mergedProperties = { ...defaultProps, ...data.properties }
     
@@ -874,14 +846,6 @@ export class LayerManager implements LayerAPI {
         }
       }
       
-      console.log('🔍 LayerManager: Stage clicked', {
-        pointerPosition: pointer,
-        stageScale,
-        stagePosition,
-        target: targetInfo,
-        isStageClick: evt.target === this.stage
-      })
-      
       // If clicking on empty stage, deselect all
       if (evt.target === this.stage) {
         this.deselectAll()
@@ -910,15 +874,6 @@ export class LayerManager implements LayerAPI {
       // Instead, ensure the text node has proper bounds
       textNode.listening(true)
       textNode.perfectDrawEnabled(false)
-      
-      console.log('🔍 LayerManager: Improved hit detection for text node', {
-        nodeId: (textNode as any).id?.(),
-        nodeName: textNode.name?.(),
-        stageScale: this.stage.scaleX(),
-        textDimensions: { width: textNode.width(), height: textNode.height() },
-        nodePosition: { x: textNode.x(), y: textNode.y() },
-        listening: textNode.listening()
-      })
     }
     
     // For shapes, ensure they have proper hit areas
@@ -931,15 +886,6 @@ export class LayerManager implements LayerAPI {
       shapeNode.hitStrokeWidth(Math.max(minHitWidth, strokeWidth))
       shapeNode.listening(true)
       shapeNode.perfectDrawEnabled(false)
-      
-      console.log('🔍 LayerManager: Improved hit detection for shape node', {
-        nodeId: (shapeNode as any).id?.(),
-        nodeName: shapeNode.name?.(),
-        stageScale: this.stage.scaleX(),
-        originalStrokeWidth: strokeWidth,
-        hitStrokeWidth: shapeNode.hitStrokeWidth(),
-        listening: shapeNode.listening()
-      })
     }
     
     // For groups and other nodes, ensure they have proper listening
@@ -957,35 +903,10 @@ export class LayerManager implements LayerAPI {
     if (konvaNode instanceof Konva.Image) {
       konvaNode.listening(true)
       konvaNode.perfectDrawEnabled(false)
-      
-      console.log('🔍 LayerManager: Improved hit detection for image node', {
-        nodeId: (konvaNode as any).id?.(),
-        nodeName: konvaNode.name?.(),
-        stageScale: this.stage.scaleX(),
-        listening: konvaNode.listening()
-      })
     }
   }
 
-  /**
-   * Update hit detection for all layers when zoom level changes
-   */
-  private updateHitDetectionForZoom(): void {
-    console.log('🔍 LayerManager: Updating hit detection for zoom level', {
-      stageScale: this.stage.scaleX(),
-      layerCount: this.layers.size
-    })
-    
-    // Update hit detection for all existing layers
-    this.layers.forEach(layer => {
-      if (layer.konvaNode) {
-        this.improveHitDetection(layer.konvaNode)
-      }
-    })
-    
-    // Force redraw to apply changes
-    this.mainLayer.batchDraw()
-  }
+  
 
   // ============================================================================
 }

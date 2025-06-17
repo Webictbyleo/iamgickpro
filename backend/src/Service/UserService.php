@@ -23,6 +23,7 @@ readonly class UserService
         private ValidatorInterface $validator,
         private SluggerInterface $slugger,
         private LoggerInterface $logger,
+        private EmailService $emailService,
         private string $avatarUploadDirectory
     ) {
     }
@@ -198,33 +199,56 @@ readonly class UserService
     public function deleteUserAccount(User $user): void
     {
         $userId = $user->getId();
+        $userEmail = $user->getEmail();
         
         // Log the deletion attempt
         $this->logger->warning('User account deletion initiated', [
             'user_id' => $userId,
-            'email' => $user->getEmail()
+            'email' => $userEmail
         ]);
+
+        // Send account deletion confirmation email
+        try {
+            $this->emailService->sendAccountDeletionConfirmation($user);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send account deletion confirmation email', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         // Remove the user (cascade delete should handle related entities)
         $this->entityManager->remove($user);
         $this->entityManager->flush();
         
         $this->logger->warning('User account deleted', [
-            'user_id' => $userId
+            'user_id' => $userId,
+            'email' => $userEmail
         ]);
     }
 
     public function getSubscriptionData(User $user): array
     {
+        $plan = $user->getPlan();
+        $limits = $this->getPlanLimits($plan);
+        $features = $this->getPlanFeatures($plan);
+        
         return [
-            'plan' => $user->getPlan(),
+            'plan' => $plan,
             'isActive' => $user->isActive(),
             'usage' => [
                 'projects' => $user->getProjects()->count(),
                 'mediaFiles' => $user->getMediaFiles()->count(),
                 'exportJobs' => $user->getExportJobs()->count(),
+                'storageUsed' => $this->calculateStorageUsage($user),
             ],
-            'limits' => $this->getPlanLimits($user->getPlan()),
+            'limits' => $limits,
+            'features' => $features,
+            'planInfo' => [
+                'name' => $this->getPlanDisplayName($plan),
+                'description' => $this->getPlanDescription($plan),
+                'price' => $this->getPlanPricing($plan),
+            ]
         ];
     }
 
@@ -235,21 +259,138 @@ readonly class UserService
                 'projects' => 5,
                 'storage' => 100 * 1024 * 1024, // 100MB
                 'exports' => 10,
+                'collaborators' => 1,
+                'templates' => 10,
             ],
             'pro' => [
                 'projects' => 100,
                 'storage' => 10 * 1024 * 1024 * 1024, // 10GB
                 'exports' => 500,
+                'collaborators' => 5,
+                'templates' => -1, // unlimited
             ],
             'business' => [
                 'projects' => -1, // unlimited
                 'storage' => 100 * 1024 * 1024 * 1024, // 100GB
                 'exports' => -1, // unlimited
+                'collaborators' => -1, // unlimited
+                'templates' => -1, // unlimited
             ],
             default => [
                 'projects' => 5,
                 'storage' => 100 * 1024 * 1024,
                 'exports' => 10,
+                'collaborators' => 1,
+                'templates' => 10,
+            ],
+        };
+    }
+
+    private function getPlanFeatures(string $plan): array
+    {
+        return match ($plan) {
+            'free' => [
+                'basic_templates' => true,
+                'basic_export' => true,
+                'cloud_storage' => true,
+                'premium_templates' => false,
+                'advanced_export' => false,
+                'collaboration' => false,
+                'api_access' => false,
+                'priority_support' => false,
+                'custom_branding' => false,
+                'team_management' => false,
+            ],
+            'pro' => [
+                'basic_templates' => true,
+                'basic_export' => true,
+                'cloud_storage' => true,
+                'premium_templates' => true,
+                'advanced_export' => true,
+                'collaboration' => true,
+                'api_access' => true,
+                'priority_support' => true,
+                'custom_branding' => false,
+                'team_management' => false,
+            ],
+            'business' => [
+                'basic_templates' => true,
+                'basic_export' => true,
+                'cloud_storage' => true,
+                'premium_templates' => true,
+                'advanced_export' => true,
+                'collaboration' => true,
+                'api_access' => true,
+                'priority_support' => true,
+                'custom_branding' => true,
+                'team_management' => true,
+            ],
+            default => [
+                'basic_templates' => true,
+                'basic_export' => true,
+                'cloud_storage' => true,
+                'premium_templates' => false,
+                'advanced_export' => false,
+                'collaboration' => false,
+                'api_access' => false,
+                'priority_support' => false,
+                'custom_branding' => false,
+                'team_management' => false,
+            ],
+        };
+    }
+
+    private function calculateStorageUsage(User $user): int
+    {
+        $totalSize = 0;
+        foreach ($user->getMediaFiles() as $media) {
+            $totalSize += $media->getSize();
+        }
+        return $totalSize;
+    }
+
+    private function getPlanDisplayName(string $plan): string
+    {
+        return match ($plan) {
+            'free' => 'Free',
+            'pro' => 'Pro',
+            'business' => 'Business',
+            default => 'Free',
+        };
+    }
+
+    private function getPlanDescription(string $plan): string
+    {
+        return match ($plan) {
+            'free' => 'Perfect for personal projects and getting started',
+            'pro' => 'Best for professionals and growing businesses',
+            'business' => 'Advanced features for teams and enterprises',
+            default => 'Basic plan with essential features',
+        };
+    }
+
+    private function getPlanPricing(string $plan): array
+    {
+        return match ($plan) {
+            'free' => [
+                'monthly' => 0,
+                'yearly' => 0,
+                'currency' => 'USD',
+            ],
+            'pro' => [
+                'monthly' => 19,
+                'yearly' => 190, // ~16.67/month
+                'currency' => 'USD',
+            ],
+            'business' => [
+                'monthly' => 49,
+                'yearly' => 490, // ~40.83/month
+                'currency' => 'USD',
+            ],
+            default => [
+                'monthly' => 0,
+                'yearly' => 0,
+                'currency' => 'USD',
             ],
         };
     }

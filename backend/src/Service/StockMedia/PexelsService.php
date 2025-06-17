@@ -174,7 +174,7 @@ class PexelsService implements StockMediaServiceInterface
             $tags = [];
             
             // Extract potential tags from the Pexels URL
-            $videoUrl = $this->responseValidator->extractStringField($video, 'url', '');
+            $videoUrl = $this->responseValidator->extractUrlField($video, 'url', '');
             if ($videoUrl && $this->responseValidator->validateUrl($videoUrl)) {
                 $urlParts = explode('-', basename(parse_url($videoUrl, PHP_URL_PATH)));
                 $urlTags = array_filter($urlParts, fn($part) => strlen($part) > 2 && is_numeric($part) === false);
@@ -193,9 +193,9 @@ class PexelsService implements StockMediaServiceInterface
             $tags = array_unique(array_filter($tags, fn($tag) => strlen($tag) > 2));
 
             // Extract and validate URLs
-            $videoFileUrl = $this->responseValidator->extractStringField($bestFile, 'link', '');
-            $thumbnailUrl = $this->responseValidator->extractStringField($video, 'image', '');
-            $previewUrl = $this->responseValidator->extractStringField($previewFile, 'link', '') ?: $videoFileUrl;
+            $videoFileUrl = $this->responseValidator->extractUrlField($bestFile, 'link', '');
+            $thumbnailUrl = $this->responseValidator->extractUrlField($video, 'image', '');
+            $previewUrl = $this->responseValidator->extractUrlField($previewFile, 'link', '') ?: $videoFileUrl;
 
             if (!$this->responseValidator->validateUrl($videoFileUrl)) {
                 $this->logger->warning('Invalid video file URL for Pexels video', ['video_id' => $videoId]);
@@ -207,7 +207,7 @@ class PexelsService implements StockMediaServiceInterface
             $photographerName = $this->responseValidator->sanitizeString(
                 $this->responseValidator->extractStringField($user, 'name', 'Unknown')
             );
-            $photographerUrl = $this->responseValidator->extractStringField($user, 'url', '');
+            $photographerUrl = $this->responseValidator->extractUrlField($user, 'url', '');
 
             // Build attribution safely
             $attribution = $this->buildAttribution($video);
@@ -429,7 +429,7 @@ class PexelsService implements StockMediaServiceInterface
                 foreach ($videoFiles as $file) {
                     $fileQuality = $this->responseValidator->extractStringField($file, 'quality', '');
                     if (in_array($fileQuality, ['uhd', 'hd'])) {
-                        $downloadUrl = $this->responseValidator->extractStringField($file, 'link', '');
+                        $downloadUrl = $this->responseValidator->extractUrlField($file, 'link', '');
                         if ($this->responseValidator->validateUrl($downloadUrl)) {
                             return $downloadUrl;
                         }
@@ -440,7 +440,7 @@ class PexelsService implements StockMediaServiceInterface
                 foreach ($videoFiles as $file) {
                     $fileQuality = $this->responseValidator->extractStringField($file, 'quality', '');
                     if ($fileQuality === 'sd') {
-                        $downloadUrl = $this->responseValidator->extractStringField($file, 'link', '');
+                        $downloadUrl = $this->responseValidator->extractUrlField($file, 'link', '');
                         if ($this->responseValidator->validateUrl($downloadUrl)) {
                             return $downloadUrl;
                         }
@@ -451,7 +451,7 @@ class PexelsService implements StockMediaServiceInterface
             // Return best available quality as fallback
             $bestFile = $this->findBestVideoFile($videoFiles);
             if ($bestFile) {
-                $downloadUrl = $this->responseValidator->extractStringField($bestFile, 'link', '');
+                $downloadUrl = $this->responseValidator->extractUrlField($bestFile, 'link', '');
                 if ($this->responseValidator->validateUrl($downloadUrl)) {
                     return $downloadUrl;
                 }

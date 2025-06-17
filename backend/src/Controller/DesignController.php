@@ -81,6 +81,9 @@ class DesignController extends AbstractController
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
             $offset = ($page - 1) * $limit;
+            $sortField = $request->query->get('sort', 'updatedAt');
+            // Convert thhe sort field to camelcase
+            $sortField = lcfirst(str_replace('_', '', ucwords($sortField, '_')));
 
             if ($projectId) {
                 $project = $this->projectRepository->find($projectId);
@@ -92,7 +95,7 @@ class DesignController extends AbstractController
                 $designs = $result['designs'];
                 $total = $result['total'];
             } else {
-                $result = $this->designRepository->findByUserPaginated($user, $page, $limit);
+                $result = $this->designRepository->findByUserPaginated($user, $page, $limit, $sortField);
                 $designs = $result['designs'];
                 $total = $result['total'];
             }

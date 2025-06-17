@@ -146,21 +146,26 @@ class UnsplashService implements StockMediaServiceInterface
                 return null;
             }
             
-            // Extract and sanitize URLs
+            // Extract and validate URLs without sanitization
             $regularUrl = $this->responseValidator->validateUrl(
-                $this->responseValidator->extractStringField($urls, 'regular', '')
+                $this->responseValidator->extractUrlField($urls, 'regular', '')
             );
             $thumbnailUrl = $this->responseValidator->validateUrl(
-                $this->responseValidator->extractStringField($urls, 'thumb', $regularUrl)
+                $this->responseValidator->extractUrlField($urls, 'thumb', $regularUrl)
             );
             $previewUrl = $this->responseValidator->validateUrl(
-                $this->responseValidator->extractStringField($urls, 'small', $thumbnailUrl)
+                $this->responseValidator->extractUrlField($urls, 'small', $thumbnailUrl)
             );
 
             if (!$regularUrl) {
                 $this->logger->warning('Photo has no valid URLs', ['photo_id' => $id]);
                 return null;
             }
+
+            // Create proxied URLs for main images to avoid CORS and bandwidth issues
+            $proxiedRegularUrl = $this->createProxiedUrl($regularUrl);
+            $proxiedThumbnailUrl = $this->createProxiedUrl($thumbnailUrl);
+            $proxiedPreviewUrl = $this->createProxiedUrl($previewUrl);
 
             // Extract and sanitize text fields
             $description = $this->responseValidator->sanitizeString(
@@ -216,9 +221,9 @@ class UnsplashService implements StockMediaServiceInterface
                 'name' => $altDescription ?: $description ?: "Photo by {$userName}",
                 'type' => 'image',
                 'mimeType' => 'image/jpeg',
-                'url' => $regularUrl,
-                'thumbnailUrl' => $thumbnailUrl,
-                'previewUrl' => $previewUrl,
+                'url' => $proxiedRegularUrl ?: $regularUrl, // Use proxied URL with fallback
+                'thumbnailUrl' => $proxiedThumbnailUrl ?: $thumbnailUrl,
+                'previewUrl' => $proxiedPreviewUrl ?: $previewUrl,
                 'width' => max(1, $width),
                 'height' => max(1, $height),
                 'size' => null,
@@ -231,13 +236,18 @@ class UnsplashService implements StockMediaServiceInterface
                 'metadata' => [
                     'photographer' => $userName,
                     'photographer_username' => $userUsername,
-                    'download_url' => $this->responseValidator->extractStringField($photo, 'links.download', ''),
-                    'unsplash_url' => $this->responseValidator->extractStringField($photo, 'links.html', ''),
+                    'download_url' => $this->responseValidator->extractUrlField($photo, 'links.download', ''),
+                    'unsplash_url' => $this->responseValidator->extractUrlField($photo, 'links.html', ''),
                     'color' => $this->responseValidator->extractStringField($photo, 'color', '#ffffff'),
                     'blur_hash' => $this->responseValidator->extractStringField($photo, 'blur_hash', ''),
                     'likes' => $this->responseValidator->extractIntField($photo, 'likes', 0),
                     'downloads' => $this->responseValidator->extractIntField($photo, 'downloads', 0),
-                    'created_at' => $this->responseValidator->extractStringField($photo, 'created_at', '')
+                    'created_at' => $this->responseValidator->extractStringField($photo, 'created_at', ''),
+                    'original_urls' => [
+                        'regular' => $regularUrl,
+                        'thumbnail' => $thumbnailUrl,
+                        'preview' => $previewUrl
+                    ]
                 ]
             ];
 
@@ -347,5 +357,21 @@ class UnsplashService implements StockMediaServiceInterface
             
             return null;
         }
+    }
+
+    /**
+     * Create a proxied URL for Unsplash images to avoid CORS and bandwidth issues
+     */
+    private function createProxiedUrl(?string $originalUrl): ?string
+    {
+        if (!$originalUrl || !$this->responseValidator->validateUrl($originalUrl)) {
+            return null;
+        }
+
+        // Encode the URL for safe transmission
+        $encodedUrl = base64_encode($originalUrl);
+        
+        // Return proxied URL through our media controller
+        return '/api/media/proxy/' . $encodedUrl;
     }
 }

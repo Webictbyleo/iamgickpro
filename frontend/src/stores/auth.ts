@@ -12,13 +12,13 @@ export const useAuthStore = defineStore('auth', () => {
     showError
   } = useNotifications()
   
-  const user = ref<User | null>(localStorage.getItem('user_data') ? JSON.parse(localStorage.getItem('user_data')!) : null)
+  const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('auth_token'))
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isAuthenticated = computed(() => !!token.value)
 
   const setError = (message: string) => {
     error.value = message
@@ -39,7 +39,6 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = userData
       token.value = access_token
       localStorage.setItem('auth_token', access_token)
-      localStorage.setItem('user_data', JSON.stringify(userData))
       
       success('Login Successful', 'Welcome back! You have been logged in successfully.')
       return { success: true, user: userData }
@@ -63,7 +62,6 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = userData
       token.value = access_token
       localStorage.setItem('auth_token', access_token)
-      localStorage.setItem('user_data', JSON.stringify(userData))
       
       success('Registration Successful', 'Account created successfully! Welcome to IGPro!')
       return { success: true, user: userData }
@@ -104,7 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await authAPI.getCurrentUser()
-      user.value = response.data.data
+      user.value = response.data.user
       return { success: true }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to fetch user'
@@ -128,7 +126,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authAPI.updateProfile(data)
       user.value = response.data.user
-      localStorage.setItem('user_data', JSON.stringify(user.value))
       success('Profile Updated', 'Profile updated successfully!')
       return { success: true }
     } catch (err: any) {
@@ -197,7 +194,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await authAPI.getCurrentUser()
-      user.value = response.data.data
+      user.value = response.data.user
       return { success: true }
     } catch (err: any) {
       console.warn('Token verification failed:', err)
@@ -227,9 +224,14 @@ export const useAuthStore = defineStore('auth', () => {
   // Initialize auth state on store creation
   const initialize = async () => {
     if (token.value) {
+      // Always fetch user if we have a token since we don't store user data in localStorage
+      console.log('🔄 Initializing auth state: fetching current user...')
       await fetchUser()
     }
   }
+
+  // Auto-initialize when store is created
+  initialize()
 
   // Alias for compatibility
   const initializeAuth = initialize
