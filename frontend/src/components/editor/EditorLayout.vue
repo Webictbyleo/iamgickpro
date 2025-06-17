@@ -62,6 +62,7 @@
 
             <TemplatesPanel 
               v-if="activePanel === 'templates'" 
+              :disabled="isApplyingTemplate"
               @use-template="handleUseTemplate"
             />
             
@@ -174,6 +175,15 @@
       @close="exportModal.isOpen = false"
       @exported="handleExportCompleted"
     />
+    
+    <!-- Template Application Loading Overlay -->
+    <div v-if="isApplyingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-sm mx-4 text-center shadow-2xl">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Applying Template</h3>
+        <p class="text-gray-600">Please wait while we set up your template...</p>
+      </div>
+    </div>
   </div>
   <!-- Toast Notifications -->
       <ToastNotifications />
@@ -182,7 +192,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
@@ -213,6 +223,10 @@ import { useLayerManagement } from '@/composables/useLayerManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { usePanelManagement } from '@/composables/usePanelManagement'
 import { useRoute, useRouter } from 'vue-router'
+
+// API Services
+import { templateAPI } from '@/services/api'
+import { useNotifications } from '@/composables/useNotifications'
 
 const designStore = useDesignStore()
 const route = useRoute()
@@ -250,6 +264,7 @@ const {
   canRedo,
   hasUnsavedChanges,
   saveError,
+  isPerformingHistoryOperation,
   initializeEditor,
   loadDesign,
   saveDesign,
@@ -270,6 +285,9 @@ const {
   reorderLayers,
   updateLayerProperties
 } = useLayerManagement(editorSDK)
+
+// Initialize notifications
+const { showSuccess, showError, showInfo } = useNotifications()
 
 // Initialize smart panel management
 const {
@@ -315,6 +333,7 @@ const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
 const canvasViewportElement = ref<HTMLElement>()
 const designCanvasRef = ref<InstanceType<typeof DesignCanvas>>()
+const isApplyingTemplate = ref(false)
 
 // Update canvas container dimensions based on actual viewport
 const updateCanvasViewportDimensions = () => {
@@ -534,64 +553,63 @@ const handleAddTemplate = (template: any) => {
   // TODO: Implement template handling logic
 }
 
-const handleUseTemplate = async (template: any) => {
+const handleUseTemplate = async (template: Template) => {
+  if (isApplyingTemplate.value) return // Prevent multiple simultaneous template applications
+  
   try {
-    // Create a new design with template dimensions
-    const newDesign = designStore.createNewDesign(
-      template.width || 800,
-      template.height || 600
-    )
-
-    // Copy template data if available
-    if (template.data) {
-      newDesign.data = { ...template.data }
-    }
+    isApplyingTemplate.value = true
     
-    // Handle legacy designData format for backward compatibility
-    if (template.designData && !template.data) {
-      newDesign.data = {
-        backgroundColor: template.designData.canvas?.backgroundColor || '#ffffff',
-        animationSettings: {},
-        customProperties: {},
-        globalStyles: {},
-        gridSettings: {
-          gridSize: 20,
-          showGrid: false,
-          snapToGrid: false,
-          snapToObjects: false,
-          snapTolerance: 5
-        },
-        viewportSettings: {
-          zoom: 1,
-          panX: 0,
-          panY: 0
-        }
-      }
-      // Copy layers if they exist in the old format
-      if (template.designData.layers) {
-        newDesign.layers = [...template.designData.layers]
-      }
-    }
-
-    newDesign.name = `${template.name} Copy`
-    newDesign.title = `${template.name} Copy`
-
-    // Save the design
-    const result = await designStore.saveDesign(newDesign, true)
-
-    if (result.success && editorSDK.value) {
-      // Load the template data into the editor
-      await editorSDK.value.loadDesign(newDesign)
-      closeAllPanels() // Close panels using new panel management
+    // Show loading notification
+    showInfo('Applying template...')
+    
+    // Use the proper API endpoint to apply the template
+    const response = await templateAPI.useTemplate(template.uuid, {
+      name: `${template.name} Copy`
+    })
+    
+    if (response.data?.success && response.data?.data) {
+      const newDesign = response.data.data
       
-      // Auto-fit to screen after template is applied
-      autoFitToScreen()
+      // Update the current design in the store
+      designStore.currentDesign = newDesign
+      
+      // Update the URL with the new design ID
+      if (route.params.id !== newDesign.id.toString()) {
+        await router.replace(`/editor/${newDesign.id}`)
+      }
+      
+      if (editorSDK.value) {
+        // Load the design data into the editor
+        await editorSDK.value.loadDesign(newDesign)
+        
+        // Close all panels and auto-fit to screen
+        closeAllPanels()
+        autoFitToScreen()
+        
+        showSuccess('Template applied successfully!')
+      } else {
+        throw new Error('Editor SDK not initialized')
+      }
     } else {
-      console.error('Failed to create design from template:', result.error)
+      throw new Error(response.data?.message || 'Failed to apply template')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Template application failed:', error)
+    
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to apply template'
+    showError(`Template Error: ${errorMessage}`)
+  } finally {
+    isApplyingTemplate.value = false
   }
+}
+
+// History handlers
+const handleUndo = () => {
+  undo()
+}
+
+const handleRedo = () => {
+  redo()
 }
 
 const handleSelectLayer = (layerId: number, event: MouseEvent) => {
@@ -744,14 +762,6 @@ const handleExport = async (format: string) => {
 const handleExportCompleted = (url: string, filename: string) => {
   console.log('Export completed:', { url, filename })
   // TODO: Handle completed export (download, notifications, etc.)
-}
-
-const handleUndo = () => {
-  undo()
-}
-
-const handleRedo = () => {
-  redo()
 }
 
 const handleResize = (width: number, height: number) => {
@@ -1435,8 +1445,15 @@ const handleEditorContextMenuEvent = (event: CustomEvent) => {
 const handleAutoFitRequest = (event: CustomEvent) => {
   const { reason, design } = event.detail
   
+  // Skip auto-fit during history operations to prevent flashing
+  if (isPerformingHistoryOperation.value) {
+    console.log('📐 Auto-fit skipped during undo/redo operation to prevent flashing')
+    return
+  }
+  
   // Auto-fit to screen with appropriate reason
   autoFitToScreen()
+  console.log('📐 Auto-fit executed for reason:', reason)
 }
 
 // Cleanup on unmount

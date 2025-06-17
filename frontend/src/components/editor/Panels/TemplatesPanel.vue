@@ -126,8 +126,11 @@
           <div
             v-for="template in templates"
             :key="template.id"
-            class="group cursor-pointer"
-            @click="useTemplate(template)"
+            :class="[
+              'group',
+              props.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+            ]"
+            @click="!props.disabled && useTemplate(template)"
           >
             <div class="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden mb-2 hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-purple-300 transform hover:scale-[1.02]">
               <img
@@ -186,7 +189,13 @@ import { MagnifyingGlassIcon, DocumentDuplicateIcon, SparklesIcon } from '@heroi
 import { templateAPI } from '@/services/api'
 import type { Template } from '@/types'
 
-interface TemplatesPanelProps {}
+interface TemplatesPanelProps {
+  disabled?: boolean
+}
+
+const props = withDefaults(defineProps<TemplatesPanelProps>(), {
+  disabled: false
+})
 
 const emit = defineEmits<{
   'use-template': [template: Template]
@@ -275,6 +284,7 @@ const loadTemplates = async (resetList = false) => {
 
 // Use template
 const useTemplate = (template: Template) => {
+  if (props.disabled) return
   emit('use-template', template)
 }
 

@@ -21,8 +21,11 @@
       <div
         v-for="template in templates"
         :key="template.id"
-        class="group cursor-pointer"
-        @click="handleTemplateClick(template)"
+        :class="[
+          'group',
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        ]"
+        @click="!disabled && handleTemplateClick(template)"
       >
         <!-- Template Card - Simplified and focused on thumbnail -->
         <div class="relative">
@@ -117,6 +120,7 @@ interface Props {
   showViewAll?: boolean
   emptyStateMessage?: string
   showCreateButton?: boolean
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -126,7 +130,8 @@ const props = withDefaults(defineProps<Props>(), {
   loadingCount: 8,
   showViewAll: true,
   emptyStateMessage: '',
-  showCreateButton: false
+  showCreateButton: false,
+  disabled: false
 })
 
 const emit = defineEmits<{
@@ -137,6 +142,7 @@ const emit = defineEmits<{
 
 // Methods
 const handleTemplateClick = (template: Template) => {
+  if (props.disabled) return
   emit('select', template)
 }
 

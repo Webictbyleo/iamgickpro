@@ -45,9 +45,19 @@
         :show-view-all="false"
         :empty-state-message="'Try adjusting your search criteria or browse our featured templates'"
         :show-create-button="true"
+        :disabled="isUsingTemplate"
         @select="handleTemplateSelected"
         @createNew="handleCreateNew"
       />
+      
+      <!-- Using Template Loading Overlay -->
+      <div v-if="isUsingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Creating Design</h3>
+          <p class="text-gray-600">Please wait while we set up your template...</p>
+        </div>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -69,6 +79,7 @@ const searchQuery = ref('')
 const selectedCategory = ref('')
 const templates = ref<Template[]>([])
 const isLoading = ref(false)
+const isUsingTemplate = ref(false)
 const currentPage = ref(1)
 const hasMorePages = ref(true)
 
@@ -143,24 +154,45 @@ onMounted(() => {
 })
 
 const handleTemplateSelected = async (template: Template) => {
+  if (isUsingTemplate.value) return // Prevent multiple clicks
+  
   try {
+    isUsingTemplate.value = true
+    
+    // Show a loading notification
+    const notification = {
+      id: Date.now(),
+      type: 'info' as const,
+      title: 'Creating design...',
+      message: `Using template: ${template.name}`,
+      duration: 0 // Don't auto-dismiss
+    }
+    
     // Use the template API to create a design from template
     const response = await templateAPI.useTemplate(template.uuid, {
       name: `${template.name} Copy`
     })
     
-    if (response.data) {
+    if (response.data?.success && response.data.data) {
+      // Success notification
+      console.log('Template used successfully, navigating to editor...')
+      
       // Navigate to editor with the new design
       router.push(`/editor/${response.data.data.id}`)
+    } else {
+      throw new Error('Failed to create design from template')
     }
   } catch (error) {
     console.error('Failed to create design from template:', error)
     
+    // Show error notification
+    console.error('Template application failed, trying fallback method...')
+    
     // Fallback to manual creation if API fails
     try {
       const newDesign = designStore.createNewDesign(
-        template.width,
-        template.height
+        template.width || 800,
+        template.height || 600
       )
       
       if (template.designData) {
@@ -172,13 +204,19 @@ const handleTemplateSelected = async (template: Template) => {
       const result = await designStore.saveDesign(newDesign, true)
       
       if (result.success) {
+        console.log('Fallback template creation successful')
         router.push(`/editor/${newDesign.id}`)
       } else {
         console.error('Failed to save design:', result.error)
+        throw new Error('Failed to save design')
       }
     } catch (fallbackError) {
       console.error('Fallback creation also failed:', fallbackError)
+      // Show final error notification
+      console.error('Both template application methods failed')
     }
+  } finally {
+    isUsingTemplate.value = false
   }
 }
 

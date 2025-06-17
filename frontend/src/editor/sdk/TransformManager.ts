@@ -33,10 +33,12 @@ export class TransformManager {
   }
 
   /**
-   * Set the history manager for transform capture
+   * Set the history manager for transform capture - DISABLED
    */
   setHistoryManager(historyManager: any): void {
-    this.historyManager = historyManager
+    // History is now handled by useDesignHistory composable - disable SDK history
+    this.historyManager = null
+    console.log('TransformManager: History management disabled - now handled by useDesignHistory composable')
   }
 
   // ============================================================================

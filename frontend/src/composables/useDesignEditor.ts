@@ -1,6 +1,7 @@
 import { ref, computed, nextTick, type ComputedRef } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
+import { useDesignHistory } from '@/composables/useDesignHistory'
 import { EditorSDK } from '@/editor/sdk/EditorSDK'
 import type { EditorConfig } from '@/editor/sdk/types'
 import type { Layer } from '@/types'
@@ -9,13 +10,28 @@ export function useDesignEditor() {
   const route = useRoute()
   const designStore = useDesignStore()
 
+  // Initialize design history service
+  const {
+    canUndo,
+    canRedo,
+    currentEntry,
+    undo: historyUndo,
+    redo: historyRedo,
+    addHistoryEntry,
+    addLayerHistoryEntry,
+    addCanvasHistoryEntry,
+    addPropertyHistoryEntry,
+    clearHistory,
+    initialize: initializeHistory,
+    getCurrentDesign: getCurrentHistoryDesign
+  } = useDesignHistory()
+
   // Refs
   const editorSDK = ref<EditorSDK | null>(null)
   const isInitializing = ref(false)
   const hasUnsavedChanges = ref(false)
   const saveError = ref(false)
-  const canUndo = ref(false)
-  const canRedo = ref(false)
+  const isPerformingHistoryOperation = ref(false) // Flag to prevent history reset during undo/redo
 
   // Auto-save functionality
   let autoSaveInterval: ReturnType<typeof setInterval>
@@ -104,6 +120,11 @@ export function useDesignEditor() {
         hasUnsavedChanges.value = true
         saveError.value = false // Clear previous save errors
         console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)
+        
+        // Add to history
+        if (designStore.currentDesign) {
+          addLayerHistoryEntry(designStore.currentDesign, 'add', layer.name || `${layer.type} layer`)
+        }
       } else {
         // During design loading - skip persistence to avoid circular saves
         designStore.addLayer(layer, { skipPersistence: true })
@@ -119,6 +140,11 @@ export function useDesignEditor() {
         hasUnsavedChanges.value = true
         saveError.value = false // Clear previous save errors
         console.log('📦 Layer updated in store with backend persistence')
+        
+        // Add to history
+        if (designStore.currentDesign) {
+          addLayerHistoryEntry(designStore.currentDesign, 'modify', layer.name || `${layer.type} layer`)
+        }
       } else {
         console.log('📦 Layer updated during loading (ignored to prevent circular saves)')
       }
@@ -128,9 +154,17 @@ export function useDesignEditor() {
       console.log('🎯 Event received: layer:deleted', layerId)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
+        // Store the layer name before deletion for history
+        const layerName = designStore.currentDesign?.layers?.find(l => l.id === layerId)?.name || 'Unknown layer'
+        
         designStore.removeLayer(layerId)
         hasUnsavedChanges.value = true
         saveError.value = false // Clear previous save errors
+        
+        // Add to history
+        if (designStore.currentDesign) {
+          addLayerHistoryEntry(designStore.currentDesign, 'delete', layerName)
+        }
       }
     })
 
@@ -141,18 +175,16 @@ export function useDesignEditor() {
       designStore.selectedLayerIds = layerIds
     })
 
-    // History events
-    editorSDK.value.on('history:changed', (historyState: any) => {
-      console.log('🎯 Event received: history:changed', historyState)
-      canUndo.value = historyState.canUndo
-      canRedo.value = historyState.canRedo
-    })
-
     // Canvas events
     editorSDK.value.on('canvas:changed', () => {
       // Only mark as changed if not loading a design
       if (!editorSDK.value?.isLoading()) {
         hasUnsavedChanges.value = true
+        
+        // Add to history
+        if (designStore.currentDesign) {
+          addCanvasHistoryEntry(designStore.currentDesign, 'settings')
+        }
       }
     })
 
@@ -169,15 +201,26 @@ export function useDesignEditor() {
         }
       }
       
+      // Only initialize history if we're not performing an undo/redo operation
+      if (!isPerformingHistoryOperation.value && designStore.currentDesign) {
+        initializeHistory(designStore.currentDesign, 'Design loaded')
+        console.log('📋 History initialized with loaded design')
+      } else if (isPerformingHistoryOperation.value) {
+        console.log('📋 Skipped history initialization during undo/redo operation')
+      }
+      
       // Clear unsaved changes since we just loaded a fresh design
       hasUnsavedChanges.value = false
       
-      // Emit a custom event to trigger auto-fit in EditorLayout
-      if (typeof window !== 'undefined') {
+      // Emit auto-fit event only if we're not performing a history operation
+      if (typeof window !== 'undefined' && !isPerformingHistoryOperation.value) {
         const autoFitEvent = new CustomEvent('editor:auto-fit-request', { 
           detail: { reason: 'design-loaded', design } 
         })
         document.dispatchEvent(autoFitEvent)
+        console.log('📐 Auto-fit request sent for design loading')
+      } else if (isPerformingHistoryOperation.value) {
+        console.log('📐 Auto-fit skipped during undo/redo operation to prevent flashing')
       }
     })
 
@@ -210,11 +253,7 @@ export function useDesignEditor() {
       const result = await designStore.saveDesign(undefined, showNotification)
       if (result.success) {
         hasUnsavedChanges.value = false
-        if (showNotification) {
-          // Only show success notification for manual saves
-          console.log('✅ Design saved successfully')
-          // TODO: Add toast notification here for manual saves
-        }
+        
       } else {
         saveError.value = true
         throw new Error(result.error || 'Save failed')
@@ -222,10 +261,6 @@ export function useDesignEditor() {
     } catch (error) {
       console.error('Failed to save design:', error)
       saveError.value = true
-      if (showNotification) {
-        // Only show error notification for manual saves
-        // TODO: Add error toast notification here for manual saves
-      }
       throw error
     }
   }
@@ -242,13 +277,49 @@ export function useDesignEditor() {
   }
 
   const undo = () => {
-    if (!editorSDK.value || !canUndo.value) return
-    editorSDK.value.undo()
+    if (!canUndo.value) return
+    
+    console.log('🔄 Starting undo operation...')
+    isPerformingHistoryOperation.value = true
+    
+    const previousDesign = historyUndo()
+    if (previousDesign && designStore.currentDesign && editorSDK.value) {
+      // Update the store with the previous design state
+      if (previousDesign.layers) {
+        designStore.currentDesign.layers = [...previousDesign.layers]
+      }
+      
+      // Reload the design in the editor (loadDesign will reset the flag)
+      editorSDK.value.loadDesign(previousDesign)
+      
+      hasUnsavedChanges.value = true
+      console.log('✨ Undo operation initiated - design state will be restored')
+    } else {
+      isPerformingHistoryOperation.value = false
+    }
   }
 
   const redo = () => {
-    if (!editorSDK.value || !canRedo.value) return
-    editorSDK.value.redo()
+    if (!canRedo.value) return
+    
+    console.log('🔄 Starting redo operation...')
+    isPerformingHistoryOperation.value = true
+    
+    const nextDesign = historyRedo()
+    if (nextDesign && designStore.currentDesign && editorSDK.value) {
+      // Update the store with the next design state
+      if (nextDesign.layers) {
+        designStore.currentDesign.layers = [...nextDesign.layers]
+      }
+      
+      // Reload the design in the editor (loadDesign will reset the flag)
+      editorSDK.value.loadDesign(nextDesign)
+      
+      hasUnsavedChanges.value = true
+      console.log('✨ Redo operation initiated - design state will be restored')
+    } else {
+      isPerformingHistoryOperation.value = false
+    }
   }
 
   const startAutoSave = () => {
@@ -276,23 +347,28 @@ export function useDesignEditor() {
   const loadDesign = async (designId?: string) => {
     const id = designId || route.params.id as string
     
-    if (id) {
-      const result = await designStore.loadDesign(id)
-      if (!result.success) {
-        console.error('Failed to load design:', result.error)
-        return result // Return the failed result
+    try {
+      if (id) {
+        const result = await designStore.loadDesign(id)
+        if (!result.success) {
+          console.error('Failed to load design:', result.error)
+          return result // Return the failed result
+        }
+        
+        // Load the design into the EditorSDK after store loads it
+        if (result.design && editorSDK.value) {
+          console.log('Loading design into EditorSDK:', result.design.id)
+          await editorSDK.value.loadDesign(result.design)
+        }
+        
+        return result // Return the successful result
+      } else {
+        const newDesign = designStore.createNewDesign()
+        return { success: true, design: newDesign } // Return new design result
       }
-      
-      // Load the design into the EditorSDK after store loads it
-      if (result.design && editorSDK.value) {
-        console.log('Loading design into EditorSDK:', result.design.id)
-        await editorSDK.value.loadDesign(result.design)
-      }
-      
-      return result // Return the successful result
-    } else {
-      const newDesign = designStore.createNewDesign()
-      return { success: true, design: newDesign } // Return new design result
+    } finally {
+      // Always reset the history operation flag when loadDesign completes
+      isPerformingHistoryOperation.value = false
     }
   }
 
@@ -317,8 +393,9 @@ export function useDesignEditor() {
     isInitializing: computed(() => isInitializing.value),
     hasUnsavedChanges: computed(() => hasUnsavedChanges.value),
     saveError: computed(() => saveError.value),
-    canUndo: computed(() => canUndo.value),
-    canRedo: computed(() => canRedo.value),
+    isPerformingHistoryOperation: computed(() => isPerformingHistoryOperation.value),
+    canUndo,
+    canRedo,
     initializeEditor,
     loadDesign,
     saveDesign,

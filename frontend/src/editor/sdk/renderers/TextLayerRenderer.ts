@@ -392,7 +392,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       fontStyle: textNode.fontStyle().includes('italic') ? 'italic' : 'normal',
       textDecoration: textNode.textDecoration(),
       color: textNode.fill(),
-      backgroundColor: 'rgba(255, 255, 255, 0.98)',
+      backgroundColor: 'transparent',
       border: '2px solid #3b82f6',
       borderRadius: '4px',
       padding: '4px 8px',

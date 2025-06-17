@@ -51,7 +51,11 @@
         ]"
         :title="panel.label"
       >
-        <component :is="panel.icon" class="w-5 h-5" />
+        <component v-if="panel.icon !== 'TemplateIcon'" :is="panel.icon" class="w-5 h-5" />
+        <!-- Custom Template Icon - Layout/Template themed -->
+        <svg v-else class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm0 2v3h16V6H4zm0 5v7h4v-7H4zm6 0v3h10v-3H10zm0 5v2h10v-2H10z"/>
+        </svg>
         
         <!-- Notification badge for certain panels -->
         <div 
@@ -125,7 +129,7 @@ const tools: Tool[] = [
 // Panel configuration
 const panels: Panel[] = [
   { id: 'elements', icon: Squares2X2Icon, label: 'Elements' },
-  { id: 'templates', icon: DocumentDuplicateIcon, label: 'Templates' },
+  { id: 'templates', icon: 'TemplateIcon', label: 'Templates' },
   { id: 'uploads', icon: CloudArrowUpIcon, label: 'Uploads' },
   { id: 'media', icon: FilmIcon, label: 'Stock Media' },
   { id: 'layers', icon: LayersIcon, label: 'Layers' },

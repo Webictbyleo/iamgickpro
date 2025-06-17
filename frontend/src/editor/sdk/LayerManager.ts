@@ -36,7 +36,9 @@ export class LayerManager implements LayerAPI {
   }
 
   setHistoryManager(historyManager: any): void {
-    this.historyManager = historyManager
+    // History is now handled by useDesignHistory composable - disable SDK history
+    this.historyManager = null
+    console.log('LayerManager: History management disabled - now handled by useDesignHistory composable')
   }
 
   /**

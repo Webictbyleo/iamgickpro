@@ -79,7 +79,7 @@ export class EditorSDK extends EventEmitter {
     this.animationManager = new AnimationManager(this.state, this)
     this.pluginManager = new PluginManager(this.state, this)
     this.transformManager = new TransformManager(this.stage, this.state, this)
-    this.historyManager = new HistoryManager(null, this) // Will be set in connectManagers
+    this.historyManager = new HistoryManager(null, this) // Kept for compatibility but disabled
     
     // Connect managers
     this.connectManagers()
@@ -101,12 +101,10 @@ export class EditorSDK extends EventEmitter {
     // Connect LayerManager with TransformManager for transformation handling
     this.layerManager.setTransformManager(this.transformManager)
     
-    // Connect LayerManager with HistoryManager
-    this.historyManager = new HistoryManager(this.layerManager, this)
-    this.layerManager.setHistoryManager(this.historyManager)
-    
-    // Connect TransformManager with HistoryManager for transform capture
-    this.transformManager.setHistoryManager(this.historyManager)
+    // History is now handled by useDesignHistory composable - disable SDK history
+    this.historyManager = new HistoryManager(null, this) // Kept for compatibility but not connected
+    this.layerManager.setHistoryManager(null) // Disabled
+    this.transformManager.setHistoryManager(null) // Disabled
     
     // Connect CanvasManager with LayerManager for background integration
     this.canvasManager.setLayerManager(this.layerManager)
@@ -131,16 +129,16 @@ export class EditorSDK extends EventEmitter {
   }
 
   /**
-   * History management API
+   * History management API - DISABLED (now handled by useDesignHistory)
    */
   get history() {
     return {
-      undo: () => this.undo(),
-      redo: () => this.redo(),
-      canUndo: () => this.canUndo(),
-      canRedo: () => this.canRedo(),
-      clear: () => this.historyManager.clear(),
-      getState: () => this.historyManager.getState()
+      undo: () => console.warn('History now handled by useDesignHistory composable'),
+      redo: () => console.warn('History now handled by useDesignHistory composable'),
+      canUndo: () => false,
+      canRedo: () => false,
+      clear: () => console.warn('History now handled by useDesignHistory composable'),
+      getState: () => ({ canUndo: false, canRedo: false, currentIndex: -1, totalCommands: 0 })
     }
   }
 
@@ -535,10 +533,8 @@ export class EditorSDK extends EventEmitter {
       this.updateViewport()
     })
 
-    // Forward history events from HistoryManager
-    this.historyManager.on('history:changed', (historyState: any) => {
-      this.emit('history:changed', historyState)
-    })
+    // History is now handled by useDesignHistory composable
+    // Removed history event forwarding
 
     // Keyboard shortcuts
     window.addEventListener('keydown', this.handleKeyboard.bind(this))
@@ -634,68 +630,42 @@ export class EditorSDK extends EventEmitter {
   }
 
   // ============================================================================
-  // PUBLIC UNDO/REDO METHODS
+  // PUBLIC UNDO/REDO METHODS - DISABLED (now handled by useDesignHistory)
   // ============================================================================
 
   undo(): void {
-    if (!this.historyManager.canUndo()) {
-      console.warn('Cannot undo: no commands available')
-      return
-    }
-
-    try {
-      const success = this.historyManager.undo()
-      
-      if (!success) {
-        console.warn('EditorSDK: Undo failed')
-      }
-    } catch (error) {
-      console.error('EditorSDK: Undo error:', error)
-    }
+    console.warn('EditorSDK: Undo/Redo now handled by useDesignHistory composable')
   }
 
   redo(): void {
-    if (!this.historyManager.canRedo()) {
-      console.warn('Cannot redo: no commands available')
-      return
-    }
-
-    try {
-      const success = this.historyManager.redo()
-      
-      if (!success) {
-        console.warn('EditorSDK: Redo failed')
-      }
-    } catch (error) {
-      console.error('EditorSDK: Redo error:', error)
-    }
+    console.warn('EditorSDK: Undo/Redo now handled by useDesignHistory composable')
   }
 
   /**
-   * Check if undo is available
+   * Check if undo is available - always false (handled by useDesignHistory)
    */
   canUndo(): boolean {
-    return this.historyManager.canUndo()
+    return false
   }
 
   /**
-   * Check if redo is available
+   * Check if redo is available - always false (handled by useDesignHistory)
    */
   canRedo(): boolean {
-    return this.historyManager.canRedo()
+    return false
   }
 
   /**
-   * Get current history state for UI updates
+   * Get current history state for UI updates - always empty (handled by useDesignHistory)
    */
   getHistoryState() {
-    return this.historyManager.getState()
+    return { canUndo: false, canRedo: false, currentIndex: -1, totalCommands: 0 }
   }
 
   /**
-   * Clear all history
+   * Clear all history - no-op (handled by useDesignHistory)
    */
   clearHistory(): void {
-    this.historyManager.clear()
+    console.warn('EditorSDK: History clearing now handled by useDesignHistory composable')
   }
 }
