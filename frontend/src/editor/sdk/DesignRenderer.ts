@@ -1,5 +1,5 @@
 import Konva from 'konva'
-import type { Design, Layer, LayerType } from '../../types'
+import type { Design, Layer, LayerType, DesignBackground } from '../../types'
 import type { LayerNode, KonvaLayerRenderer } from './types'
 import { TextLayerRenderer } from './renderers/TextLayerRenderer'
 import { ImageLayerRenderer } from './renderers/ImageLayerRenderer'
@@ -65,14 +65,18 @@ export class DesignRenderer {
     // Clear previous content
     this.layer.destroyChildren()
 
-    // Add background
+    // Add background with proper configuration support
     const backgroundRect = new Konva.Rect({
       x: 0,
       y: 0,
       width: design.width,
       height: design.height,
-      fill: background
+      listening: false
     })
+    
+    // Apply background configuration (supports solid, linear, and radial gradients)
+    const backgroundConfig = design.data?.background || { type: 'solid', color: background }
+    this.applyBackgroundToRect(backgroundRect, backgroundConfig, design.width, design.height)
     this.layer.add(backgroundRect)
 
     // Render layers using the renderer system
@@ -228,8 +232,10 @@ export class DesignRenderer {
     thumbnailCanvas.height = height
     
     const ctx = thumbnailCanvas.getContext('2d')!
-    ctx.fillStyle = background
-    ctx.fillRect(0, 0, width, height)
+    
+    // Apply background configuration to thumbnail canvas
+    const backgroundConfig = design.data?.background || { type: 'solid', color: background }
+    this.applyBackgroundToCanvas(ctx, backgroundConfig, width, height)
 
     // Center the rendered design in the thumbnail
     const scaledWidth = design.width * scale
@@ -330,6 +336,142 @@ export class DesignRenderer {
       }
       this.stage = null
       this.layer = null
+    }
+  }
+
+  /**
+   * Apply background configuration to a Konva rectangle
+   */
+  private applyBackgroundToRect(rect: Konva.Rect, backgroundConfig: DesignBackground | null | undefined, width: number, height: number): void {
+    if (!backgroundConfig) {
+      rect.fill('#ffffff')
+      return
+    }
+
+    // Handle different background types
+    if (backgroundConfig.type === 'solid' || !backgroundConfig.type) {
+      // Solid color background
+      rect.fill(backgroundConfig.color || '#ffffff')
+      rect.fillLinearGradientStartPoint(undefined)
+      rect.fillLinearGradientEndPoint(undefined)
+      rect.fillRadialGradientStartPoint(undefined)
+      rect.fillRadialGradientEndPoint(undefined)
+    } else if (backgroundConfig.type === 'linear' && backgroundConfig.gradient) {
+      // Linear gradient background
+      const gradient = backgroundConfig.gradient
+      const angle = gradient.angle || 0
+      
+      // Convert angle to start/end points
+      const radians = (angle * Math.PI) / 180
+      const length = Math.sqrt(width * width + height * height)
+      const centerX = width / 2
+      const centerY = height / 2
+      const startX = centerX - (Math.cos(radians) * length) / 2
+      const startY = centerY - (Math.sin(radians) * length) / 2
+      const endX = centerX + (Math.cos(radians) * length) / 2
+      const endY = centerY + (Math.sin(radians) * length) / 2
+      
+      // Build color stops array
+      const colorStops: (number | string)[] = []
+      gradient.colors.forEach((stop: { color: string; stop: number }) => {
+        colorStops.push(stop.stop, stop.color)
+      })
+      
+      rect.fill(undefined)
+      rect.fillLinearGradientStartPoint({ x: startX, y: startY })
+      rect.fillLinearGradientEndPoint({ x: endX, y: endY })
+      rect.fillLinearGradientColorStops(colorStops)
+      
+      // Clear radial gradient properties
+      rect.fillRadialGradientStartPoint(undefined)
+      rect.fillRadialGradientEndPoint(undefined)
+    } else if (backgroundConfig.type === 'radial' && backgroundConfig.gradient) {
+      // Radial gradient background
+      const gradient = backgroundConfig.gradient
+      
+      const centerX = (gradient.centerX || 0.5) * width
+      const centerY = (gradient.centerY || 0.5) * height
+      const radius = (gradient.radius || 0.7) * Math.max(width, height) / 2
+      
+      // Build color stops array
+      const colorStops: (number | string)[] = []
+      gradient.colors.forEach((stop: { color: string; stop: number }) => {
+        colorStops.push(stop.stop, stop.color)
+      })
+      
+      rect.fill(undefined)
+      rect.fillRadialGradientStartPoint({ x: centerX, y: centerY })
+      rect.fillRadialGradientEndPoint({ x: centerX, y: centerY })
+      rect.fillRadialGradientStartRadius(0)
+      rect.fillRadialGradientEndRadius(radius)
+      rect.fillRadialGradientColorStops(colorStops)
+      
+      // Clear linear gradient properties
+      rect.fillLinearGradientStartPoint(undefined)
+      rect.fillLinearGradientEndPoint(undefined)
+    } else {
+      // Fallback to solid color
+      rect.fill(backgroundConfig.color || '#ffffff')
+    }
+  }
+
+  /**
+   * Apply background to a canvas context (for thumbnail generation)
+   */
+  private applyBackgroundToCanvas(ctx: CanvasRenderingContext2D, backgroundConfig: DesignBackground | null | undefined, width: number, height: number): void {
+    if (!backgroundConfig) {
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, width, height)
+      return
+    }
+
+    if (backgroundConfig.type === 'solid' || !backgroundConfig.type) {
+      // Solid color background
+      ctx.fillStyle = backgroundConfig.color || '#ffffff'
+      ctx.fillRect(0, 0, width, height)
+    } else if (backgroundConfig.type === 'linear' && backgroundConfig.gradient) {
+      // Linear gradient background
+      const gradient = backgroundConfig.gradient
+      const angle = gradient.angle || 0
+      
+      // Convert angle to start/end points
+      const radians = (angle * Math.PI) / 180
+      const length = Math.sqrt(width * width + height * height)
+      const centerX = width / 2
+      const centerY = height / 2
+      const startX = centerX - (Math.cos(radians) * length) / 2
+      const startY = centerY - (Math.sin(radians) * length) / 2
+      const endX = centerX + (Math.cos(radians) * length) / 2
+      const endY = centerY + (Math.sin(radians) * length) / 2
+      
+      // Create gradient
+      const canvasGradient = ctx.createLinearGradient(startX, startY, endX, endY)
+      gradient.colors.forEach((stop: { color: string; stop: number }) => {
+        canvasGradient.addColorStop(stop.stop, stop.color)
+      })
+      
+      ctx.fillStyle = canvasGradient
+      ctx.fillRect(0, 0, width, height)
+    } else if (backgroundConfig.type === 'radial' && backgroundConfig.gradient) {
+      // Radial gradient background
+      const gradient = backgroundConfig.gradient
+      
+      const centerX = (gradient.centerX || 0.5) * width
+      const centerY = (gradient.centerY || 0.5) * height
+      const radius = (gradient.radius || 0.7) * Math.max(width, height) / 2
+      
+      // Create gradient
+      const canvasGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius)
+      gradient.colors.forEach((stop: { color: string; stop: number }) => {
+        canvasGradient.addColorStop(stop.stop, stop.color)
+      })
+      
+      ctx.fillStyle = canvasGradient
+      ctx.fillRect(0, 0, width, height)
+    } else {
+      // Fallback to solid color
+      ctx.fillStyle = backgroundConfig.color || '#ffffff'
+      ctx.fillRect(0, 0, width, height)
     }
   }
 }
