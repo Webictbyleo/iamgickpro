@@ -2,6 +2,7 @@ import { ref, computed, nextTick, type ComputedRef } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
 import { useDesignHistory } from '@/composables/useDesignHistory'
+import { useDesignPreview } from '@/composables/useDesignPreview'
 import { EditorSDK } from '@/editor/sdk/EditorSDK'
 import { layerAPI } from '@/services/api'
 import type { EditorConfig } from '@/editor/sdk/types'
@@ -10,6 +11,7 @@ import type { Layer } from '@/types'
 export function useDesignEditor() {
   const route = useRoute()
   const designStore = useDesignStore()
+  const { generateAndSaveThumbnail } = useDesignPreview()
 
   // Initialize design history service
   const {
@@ -36,6 +38,32 @@ export function useDesignEditor() {
 
   // Auto-save functionality
   let autoSaveInterval: ReturnType<typeof setInterval>
+  let thumbnailUpdateTimeout: ReturnType<typeof setTimeout>
+
+  // Debounced thumbnail generation to avoid excessive API calls
+  const debouncedThumbnailGeneration = () => {
+    if (thumbnailUpdateTimeout) {
+      clearTimeout(thumbnailUpdateTimeout)
+    }
+    
+    thumbnailUpdateTimeout = setTimeout(async () => {
+      const currentDesign = designStore.currentDesign
+      if (currentDesign && currentDesign.id && !editorSDK.value?.isLoading()) {
+        try {
+          console.log('🖼️ Generating design thumbnail...')
+          await generateAndSaveThumbnail(currentDesign, {
+            width: 300,
+            height: 200,
+            format: 'png',
+            quality: 0.8,
+            updateBackend: true
+          })
+        } catch (error) {
+          console.error('Failed to generate thumbnail:', error)
+        }
+      }
+    }, 3000) // Wait 3 seconds after last change before generating thumbnail
+  }
 
   const initializeEditor = async (container: HTMLElement) => {
     if (isInitializing.value || !container) {
@@ -122,6 +150,9 @@ export function useDesignEditor() {
         saveError.value = false // Clear previous save errors
         console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)
         
+        // Trigger thumbnail generation
+        debouncedThumbnailGeneration()
+        
         // Add to history
         if (designStore.currentDesign) {
           addLayerHistoryEntry(designStore.currentDesign, 'add', layer.name || `${layer.type} layer`)
@@ -142,6 +173,9 @@ export function useDesignEditor() {
         saveError.value = false // Clear previous save errors
         console.log('📦 Layer updated in store with backend persistence')
         
+        // Trigger thumbnail generation
+        debouncedThumbnailGeneration()
+        
         // Add to history
         if (designStore.currentDesign) {
           addLayerHistoryEntry(designStore.currentDesign, 'modify', layer.name || `${layer.type} layer`)
@@ -161,6 +195,9 @@ export function useDesignEditor() {
         designStore.removeLayer(layerId)
         hasUnsavedChanges.value = true
         saveError.value = false // Clear previous save errors
+        
+        // Trigger thumbnail generation
+        debouncedThumbnailGeneration()
         
         // Add to history
         if (designStore.currentDesign) {
@@ -457,6 +494,14 @@ export function useDesignEditor() {
     }
   }
 
+  const stopThumbnailGeneration = () => {
+    if (thumbnailUpdateTimeout) {
+      clearTimeout(thumbnailUpdateTimeout)
+      thumbnailUpdateTimeout = null as any
+      console.log('🛑 Thumbnail generation stopped')
+    }
+  }
+
   const loadDesign = async (designId?: string) => {
     const id = designId || route.params.id as string
     
@@ -493,6 +538,7 @@ export function useDesignEditor() {
     }
     
     stopAutoSave()
+    stopThumbnailGeneration()
     
     // Save before leaving
     if (hasUnsavedChanges.value && designStore.currentDesign) {

@@ -160,30 +160,12 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     
     // Fire transform-related events to update transformation handles
     if (this.eventEmitter) {
-      // Emit layer:updated (not layer:update) to properly trigger store and UI updates
-      this.eventEmitter.emit('layer:updated', { 
+      // Use a visual-only reflow event that doesn't trigger backend persistence
+      // This event should only update the visual representation and transform handles
+      this.eventEmitter.emit('layer:reflow', { 
         id: layerData.id,
-        type: layerData.type,
-        name: layerData.name,
-        visible: layerData.visible,
-        locked: layerData.locked,
-        opacity: layerData.opacity,
-        x: layerData.x,
-        y: layerData.y,
-        width: layerData.width,
-        height: newHeight, // Use the new calculated height
-        rotation: layerData.rotation,
-        scaleX: layerData.scaleX,
-        scaleY: layerData.scaleY,
-        zIndex: layerData.zIndex,
-        properties: layerData.properties
-      })
-      
-      // Also emit a specific event to refresh transformation handles
-      this.eventEmitter.emit('text:reflow', { 
-        layerId: layerData.id,
-        newHeight: newHeight,
-        reason: 'font-change'
+        height: newHeight,
+        type: 'text-font-loaded'
       })
     }
 

@@ -19,6 +19,8 @@ use App\Entity\User;
 use App\Repository\DesignRepository;
 use App\Repository\ProjectRepository;
 use App\Service\ResponseDTOFactory;
+use App\Service\MediaProcessing\MediaProcessingService;
+use App\Service\MediaProcessing\Config\ImageProcessingConfig;
 use App\Controller\Trait\TypedResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -50,6 +52,7 @@ class DesignController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
         private readonly ResponseDTOFactory $responseDTOFactory,
+        private readonly MediaProcessingService $mediaProcessingService,
     ) {}
 
     /**
@@ -600,7 +603,10 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $design->setThumbnail($dto->thumbnail);
+            // Process thumbnail data (handle data URLs and regular URLs)
+            $thumbnailPath = $this->processThumbnailData($dto->thumbnail, $design->getId());
+            
+            $design->setThumbnail($thumbnailPath);
             $this->entityManager->flush();
 
             $designResponse = $this->responseDTOFactory->createDesignResponse(
@@ -609,6 +615,10 @@ class DesignController extends AbstractController
             );
             return $this->designResponse($designResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to update thumbnail',
@@ -616,5 +626,177 @@ class DesignController extends AbstractController
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Process thumbnail data - handle both data URLs and regular URLs
+     * 
+     * @param string $thumbnail The thumbnail data (URL or data URL)
+     * @param int $designId The design ID for generating unique filenames
+     * @return string The processed thumbnail path or URL
+     * @throws \InvalidArgumentException If data URL processing fails
+     */
+    private function processThumbnailData(string $thumbnail, int $designId): string
+    {
+        // If it's a data URL, extract and save the image
+        if (str_starts_with($thumbnail, 'data:image/')) {
+            return $this->saveDataUrlAsFile($thumbnail, $designId);
+        }
+        
+        // For regular URLs, return as-is
+        return $thumbnail;
+    }
+
+    /**
+     * Save data URL as a file and return the file path
+     * Uses MediaProcessingService for validation, optimization, and resizing
+     * 
+     * @param string $dataUrl The data URL containing base64 encoded image
+     * @param int $designId The design ID for generating unique filename
+     * @return string The saved file path
+     * @throws \InvalidArgumentException If data URL is invalid or processing fails
+     */
+    private function saveDataUrlAsFile(string $dataUrl, int $designId): string
+    {
+        // Parse the data URL
+        if (!preg_match('/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/', $dataUrl, $matches)) {
+            throw new \InvalidArgumentException('Invalid data URL format');
+        }
+        
+        $mimeType = $matches[1];
+        $base64Data = $matches[2];
+        
+        // Validate and determine file extension
+        $allowedTypes = [
+            'png' => 'png',
+            'jpeg' => 'jpg', 
+            'jpg' => 'jpg',
+            'webp' => 'webp',
+            'gif' => 'gif'
+        ];
+        
+        if (!isset($allowedTypes[$mimeType])) {
+            throw new \InvalidArgumentException("Unsupported image type: {$mimeType}");
+        }
+        
+        $extension = $allowedTypes[$mimeType];
+        
+        // Decode base64 data
+        $imageData = base64_decode($base64Data, true);
+        if ($imageData === false) {
+            throw new \InvalidArgumentException('Invalid base64 data');
+        }
+        
+        // Validate image data
+        if (strlen($imageData) === 0) {
+            throw new \InvalidArgumentException('Empty image data');
+        }
+        
+        // Create temporary file for initial processing
+        $tempFile = tmpfile();
+        fwrite($tempFile, $imageData);
+        $tempPath = stream_get_meta_data($tempFile)['uri'];
+        
+        // Validate image using getimagesize first
+        $imageInfo = @getimagesize($tempPath);
+        if ($imageInfo === false) {
+            fclose($tempFile);
+            throw new \InvalidArgumentException('Invalid image data - cannot process as image');
+        }
+        
+        // Extract image dimensions
+        $originalWidth = $imageInfo[0];
+        $originalHeight = $imageInfo[1];
+        
+        // Define thumbnail constraints
+        $maxWidth = 800;   // Maximum width for thumbnails
+        $maxHeight = 600;  // Maximum height for thumbnails
+        $quality = 85;     // Quality for JPEG/WebP compression
+        
+        // Calculate new dimensions if resizing is needed
+        $needsResize = ($originalWidth > $maxWidth || $originalHeight > $maxHeight);
+        
+        if ($needsResize) {
+            // Calculate aspect ratio preserving dimensions
+            $aspectRatio = $originalWidth / $originalHeight;
+            
+            if ($originalWidth > $originalHeight) {
+                $newWidth = min($maxWidth, $originalWidth);
+                $newHeight = (int) round($newWidth / $aspectRatio);
+            } else {
+                $newHeight = min($maxHeight, $originalHeight);
+                $newWidth = (int) round($newHeight * $aspectRatio);
+            }
+        } else {
+            $newWidth = $originalWidth;
+            $newHeight = $originalHeight;
+        }
+        
+        // Generate unique filename
+        $filename = sprintf(
+            'design_%d_thumbnail_%s.%s',
+            $designId,
+            uniqid(),
+            $extension
+        );
+        
+        // Create thumbnails directory if it doesn't exist
+        $uploadsDir = $this->getParameter('app.upload_directory');
+        $thumbnailsDir = $uploadsDir . '/thumbnails';
+        
+        if (!is_dir($thumbnailsDir)) {
+            if (!mkdir($thumbnailsDir, 0755, true)) {
+                fclose($tempFile);
+                throw new \RuntimeException('Failed to create thumbnails directory');
+            }
+        }
+        
+        $outputPath = $thumbnailsDir . '/' . $filename;
+        
+        try {
+            // Use MediaProcessingService for image processing and optimization
+            $config = new ImageProcessingConfig(
+                width: $newWidth,
+                height: $newHeight,
+                quality: $quality,
+                format: $extension,
+                maintainAspectRatio: true,
+                preserveTransparency: true,
+                stripMetadata: true, // Remove metadata for smaller file size
+                progressive: true    // Progressive JPEG for better loading
+            );
+            
+            $result = $this->mediaProcessingService->processImage(
+                $tempPath,
+                $outputPath,
+                $config
+            );
+            
+            if (!$result->isSuccess()) {
+                throw new \RuntimeException('MediaProcessing failed: ' . $result->getErrorMessage());
+            }
+            
+            // Verify the processed file exists and has content
+            if (!file_exists($outputPath) || filesize($outputPath) === 0) {
+                throw new \RuntimeException('Processed thumbnail file is empty or missing');
+            }
+            
+        } catch (\Exception $e) {
+            // Clean up temporary file
+            fclose($tempFile);
+            
+            // Clean up output file if it was created
+            if (file_exists($outputPath)) {
+                @unlink($outputPath);
+            }
+            
+            throw new \RuntimeException('Failed to process thumbnail: ' . $e->getMessage());
+        }
+        
+        // Clean up temporary file
+        fclose($tempFile);
+        
+        // Return relative path for storage in database
+        return '/uploads/thumbnails/' . $filename;
     }
 }
