@@ -24,7 +24,8 @@ class UserResponseDTO
         public readonly ?string $lastLoginAt = null,
         public readonly ?string $updatedAt = null,
         public readonly ?array $settings = null,
-        public readonly ?array $stats = null
+        public readonly ?array $stats = null,
+        public readonly ?array $socialLinks = null
     ) {}
 
     public function toArray(): array
@@ -61,6 +62,9 @@ class UserResponseDTO
         }
         if ($this->stats !== null) {
             $data['stats'] = $this->stats;
+        }
+        if ($this->socialLinks !== null) {
+            $data['socialLinks'] = $this->socialLinks;
         }
 
         return $data;

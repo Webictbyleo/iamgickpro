@@ -73,23 +73,31 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       height: layer.height
     })
 
-    // Update image source if changed
+    // Only reload image if src has changed
     if (properties.src && (!imageNode || (imageNode.image() as HTMLImageElement)?.src !== properties.src)) {
       const placeholder = node.findOne('Rect') as Konva.Rect
       const loadingText = node.findOne('Text') as Konva.Text
       
       this.loadImage(properties.src, layer, node, placeholder, loadingText)
+      return // Exit early since loadImage will handle the rest
     }
 
     // Update transforms and positioning if image exists
     if (imageNode) {
+      // Update image dimensions first
+      imageNode.setAttrs({
+        width: layer.width,
+        height: layer.height
+      })
+      
+      // Apply transforms (including flip) to the group, not the image node
+      this.applyImageTransforms(node, layer, properties)
+      
       // Re-apply scaling with new layer dimensions for proper clipping
       const img = imageNode.image() as HTMLImageElement
       if (img) {
         this.applyImageScaling(imageNode, img, layer, properties)
       }
-      
-      this.applyImageTransforms(imageNode, layer, properties)
       
       // Always clear any existing border radius first, then apply new one if needed
       this.clearBorderRadius(imageNode)
@@ -126,8 +134,8 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     src: string, 
     layer: LayerNode, 
     group: Konva.Group, 
-    placeholder: Konva.Rect, 
-    loadingText: Konva.Text
+    placeholder?: Konva.Rect, 
+    loadingText?: Konva.Text
   ): Promise<void> {
     try {
       let img = this.imageCache.get(src)
@@ -145,8 +153,9 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         this.imageCache.set(src, img)
       }
 
-      placeholder.destroy()
-      loadingText.destroy()
+      // Safely destroy placeholder elements if they exist
+      if (placeholder) placeholder.destroy()
+      if (loadingText) loadingText.destroy()
 
       const imageNode = new Konva.Image({
         id: layer.id.toString(), // Convert number ID to string for Konva
@@ -180,7 +189,7 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       }
 
       this.applyImageScaling(imageNode, img, layer, properties)
-      this.applyImageTransforms(imageNode, layer, properties)
+      this.applyImageTransforms(group, layer, properties)
 
       // Always apply image filters to ensure proper clearing when reset to defaults
       this.applyImageFilters(imageNode, properties)
@@ -190,9 +199,13 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
 
     } catch (error) {
       console.error('Failed to load image:', error)
-      loadingText.text('Failed to load')
-      loadingText.fill('#e74c3c')
-      placeholder.fill('#fee')
+      if (loadingText) {
+        loadingText.text('Failed to load')
+        loadingText.fill('#e74c3c')
+      }
+      if (placeholder) {
+        placeholder.fill('#fee')
+      }
     }
   }
 
@@ -465,7 +478,7 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
   }
 
   private applyImageTransforms(
-    imageNode: Konva.Image,
+    group: Konva.Group,
     layer: LayerNode,
     properties: ImageLayerProperties
   ): void {
@@ -474,19 +487,19 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     let offsetX = 0
     let offsetY = 0
 
-    // Handle flip transformations
+    // Handle flip transformations - apply to the group to avoid conflicts with image scaling
     if (properties.flipX) {
       scaleX = -1
-      offsetX = imageNode.width()
+      offsetX = layer.width // Use layer width, not image width
     }
 
     if (properties.flipY) {
       scaleY = -1
-      offsetY = imageNode.height()
+      offsetY = layer.height // Use layer height, not image height
     }
 
     // Always apply transformations to ensure proper reset when flips are disabled
-    imageNode.setAttrs({
+    group.setAttrs({
       scaleX,
       scaleY,
       offsetX,

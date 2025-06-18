@@ -98,11 +98,9 @@ class UserController extends AbstractController
             
             $updatedUser = $this->userService->updateProfile($user, $updateDTO->toArray());
             
-            return $this->successResponse(
-                $this->responseDTOFactory->createSuccessResponse(
-                    'Profile updated successfully'
-                )
-            );
+            // Return the updated user data for frontend compatibility
+            $profileResponse = $this->responseDTOFactory->createUserProfileResponse($updatedUser);
+            return $this->userProfileResponse($profileResponse);
         } catch (\InvalidArgumentException $e) {
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse($e->getMessage()),

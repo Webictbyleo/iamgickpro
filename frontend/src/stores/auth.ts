@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authAPI } from '@/services/api'
+import { authAPI, userAPI } from '@/services/api'
 import { useNotifications } from '@/composables/useNotifications'
 import type { User, LoginCredentials, RegisterData, ResetPasswordData } from '@/types'
 
@@ -124,7 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     
     try {
-      const response = await authAPI.updateProfile(data)
+      const response = await userAPI.updateProfile(data)
       user.value = response.data.user
       success('Profile Updated', 'Profile updated successfully!')
       return { success: true }
@@ -208,7 +208,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     
     try {
-      const response = await authAPI.updateProfile(data)
+      const response = await userAPI.updateProfile(data)
       user.value = response.data.user
       success('Profile Updated', 'Profile updated successfully!')
       return { success: true }

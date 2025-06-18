@@ -84,10 +84,6 @@ export const authAPI = {
   // GET /auth/me
   getCurrentUser: () => api.get<{user:User}>('/auth/me'),
 
-  // PUT /auth/profile
-  updateProfile: (data: Partial<User>) =>
-    api.put<UpdatedUserApiResponse>('/auth/profile', data),
-
   // PUT /auth/change-password
   changePassword: (data: ChangePasswordData) =>
     api.put<ApiResponse<{ message: string }>>('/auth/change-password', data),
@@ -511,7 +507,7 @@ export const userAPI = {
     timezone?: string
     language?: string
     settings?: any
-  }) => api.put<ApiResponse<User>>('/user/profile', data),
+  }) => api.put<UpdatedUserApiResponse>('/user/profile', data),
 
   // DELETE /user/settings/privacy/delete
   deleteAccount: () => api.delete<ApiResponse<{ message: string }>>('/user/settings/privacy/delete'),

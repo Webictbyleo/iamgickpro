@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\DTO\RegisterRequestDTO;
 use App\DTO\LoginRequestDTO;
-use App\DTO\UpdateProfileRequestDTO;
 use App\DTO\ChangePasswordRequestDTO;
 use App\DTO\Response\AuthResponseDTO;
 use App\DTO\Response\ErrorResponseDTO;
@@ -213,98 +212,6 @@ class AuthController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to retrieve user profile',
-                [$e->getMessage()]
-            );
-            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Update user profile information
-     * 
-     * Updates the authenticated user's profile data such as name, username, avatar, and settings.
-     * Validates uniqueness of username if provided.
-     * 
-     * @param UpdateProfileRequestDTO $dto Profile update data
-     * @return JsonResponse<UserProfileResponseDTO|ErrorResponseDTO> Updated user profile data or error response
-     */
-    #[Route('/profile', name: 'update_profile', methods: ['PUT'])]
-    #[IsGranted('ROLE_USER')]
-    public function updateProfile(UpdateProfileRequestDTO $dto): JsonResponse
-    {
-        try {
-            $user = $this->getUser();
-
-            if (!$user instanceof User) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if at least one field is provided for update
-            if (!$dto->hasAnyData()) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'No valid fields provided for update'
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            // Update allowed fields with sanitization
-            if ($dto->firstName !== null) {
-                $user->setFirstName($this->sanitizeInput($dto->firstName));
-            }
-
-            if ($dto->lastName !== null) {
-                $user->setLastName($this->sanitizeInput($dto->lastName));
-            }
-
-            if ($dto->username !== null) {
-                // Username doesn't need HTML sanitization, but validate format
-                $sanitizedUsername = trim($dto->username);
-                // Check if username is already taken
-                $existingUser = $this->userRepository->findOneBy(['username' => $sanitizedUsername]);
-                if ($existingUser && $existingUser->getId() !== $user->getId()) {
-                    $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                        'Username is already taken'
-                    );
-                    return $this->errorResponse($errorResponse, Response::HTTP_CONFLICT);
-                }
-                $user->setUsername($sanitizedUsername);
-            }
-
-            if ($dto->avatar !== null) {
-                $user->setAvatar($dto->avatar);
-            }
-
-            if ($dto->settings !== null) {
-                $user->setSettings($dto->getSettingsArray());
-            }
-
-            // Entity validation (additional business rules)
-            $errors = $this->validator->validate($user);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'User validation failed',
-                    $errorMessages
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->flush();
-
-            // For profile updates, we return a user profile response instead of auth response
-            $profileResponse = $this->responseDTOFactory->createUserProfileResponse($user);
-            return $this->userProfileResponse($profileResponse);
-
-        } catch (BadRequestHttpException $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
-            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-        } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Profile update failed',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);

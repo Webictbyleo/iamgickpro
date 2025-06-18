@@ -101,7 +101,19 @@ final readonly class ImageLayerProperties extends LayerProperties
          */
         #[Assert\Type(type: 'float', message: 'Blur must be a number')]
         #[Assert\PositiveOrZero(message: 'Blur must be positive or zero')]
-        public float $blur = 0.0
+        public float $blur = 0.0,
+        /**
+         * Whether to flip the image horizontally
+         * @var bool $flipX
+         */
+        #[Assert\Type(type: 'bool', message: 'FlipX must be a boolean')]
+        public bool $flipX = false,
+        /**
+         * Whether to flip the image vertically
+         * @var bool $flipY
+         */
+        #[Assert\Type(type: 'bool', message: 'FlipY must be a boolean')]
+        public bool $flipY = false
     ) {}
 
     public function toArray(): array
@@ -116,6 +128,8 @@ final readonly class ImageLayerProperties extends LayerProperties
             'contrast' => $this->contrast,
             'saturation' => $this->saturation,
             'blur' => $this->blur,
+            'flipX' => $this->flipX,
+            'flipY' => $this->flipY,
         ];
     }
 
