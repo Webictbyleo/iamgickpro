@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import { designAPI } from '@/services/api'
 import { designRenderer } from '@/editor/sdk/DesignRenderer'
+import { GeometryUtils } from '@/utils/GeometryUtils'
 import type { Design } from '@/types'
 
 export function useDesignPreview() {
@@ -119,9 +120,29 @@ export function useDesignPreview() {
    * Generate a quick preview for dashboard/list views
    */
   const generateQuickPreview = async (design?: Design): Promise<string | null> => {
-    return generateAndSaveThumbnail(design, {
-      width: 240,
-      height: 160,
+    const targetDesign = design || currentDesign.value
+    if (!targetDesign) {
+      return null
+    }
+
+    // Calculate proper thumbnail dimensions for quick preview while preserving aspect ratio
+    const designDimensions = {
+      width: targetDesign.width || 800,
+      height: targetDesign.height || 600
+    }
+    
+    // Target maximum size for quick previews (smaller than main thumbnails)
+    const maxQuickPreviewSize = { width: 240, height: 160 }
+    
+    // Use GeometryUtils to calculate dimensions that preserve aspect ratio
+    const previewResult = GeometryUtils.resize(designDimensions, maxQuickPreviewSize, {
+      mode: 'contain',
+      allowUpscaling: false // Don't upscale small designs
+    })
+
+    return generateAndSaveThumbnail(targetDesign, {
+      width: Math.round(previewResult.width),
+      height: Math.round(previewResult.height),
       format: 'jpeg',
       quality: 0.7,
       updateBackend: false // Don't save quick previews to backend
@@ -164,9 +185,24 @@ export function useDesignPreview() {
     // Simple debouncing - in production you might want to use a more sophisticated approach
     setTimeout(async () => {
       if (currentDesign.value && !isGenerating.value) {
+        // Calculate proper thumbnail dimensions while preserving aspect ratio
+        const designDimensions = {
+          width: currentDesign.value.width || 800,
+          height: currentDesign.value.height || 600
+        }
+        
+        // Target maximum thumbnail size
+        const maxThumbnailSize = { width: 400, height: 300 }
+        
+        // Use GeometryUtils to calculate dimensions that preserve aspect ratio
+        const thumbnailResult = GeometryUtils.resize(designDimensions, maxThumbnailSize, {
+          mode: 'contain',
+          allowUpscaling: false // Don't upscale small designs
+        })
+
         await generateAndSaveThumbnail(currentDesign.value, {
-          width: 300,
-          height: 200,
+          width: Math.round(thumbnailResult.width),
+          height: Math.round(thumbnailResult.height),
           format: 'jpeg',
           quality: 0.8,
           updateBackend: true

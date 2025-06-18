@@ -5,6 +5,7 @@ import { useDesignHistory } from '@/composables/useDesignHistory'
 import { useDesignPreview } from '@/composables/useDesignPreview'
 import { EditorSDK } from '@/editor/sdk/EditorSDK'
 import { layerAPI } from '@/services/api'
+import { GeometryUtils } from '@/utils/GeometryUtils'
 import type { EditorConfig } from '@/editor/sdk/types'
 import type { Layer } from '@/types'
 
@@ -51,10 +52,26 @@ export function useDesignEditor() {
       if (currentDesign && currentDesign.id && !editorSDK.value?.isLoading()) {
         try {
           console.log('🖼️ Generating design thumbnail...')
+          
+          // Calculate proper thumbnail dimensions while preserving aspect ratio
+          const designDimensions = {
+            width: currentDesign.width || 800,
+            height: currentDesign.height || 600
+          }
+          
+          // Target maximum thumbnail size (we want thumbnails to fit within 400x300)
+          const maxThumbnailSize = { width: 400, height: 300 }
+          
+          // Use GeometryUtils to calculate dimensions that preserve aspect ratio
+          const thumbnailResult = GeometryUtils.resize(designDimensions, maxThumbnailSize, {
+            mode: 'contain',
+            allowUpscaling: false // Don't upscale small designs
+          })
+          
           await generateAndSaveThumbnail(currentDesign, {
-            width: 300,
-            height: 200,
-            format: 'png',
+            width: Math.round(thumbnailResult.width),
+            height: Math.round(thumbnailResult.height),
+            format: 'jpeg',
             quality: 0.8,
             updateBackend: true
           })
