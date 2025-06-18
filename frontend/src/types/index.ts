@@ -172,6 +172,7 @@ export interface Layer {
   transform: Transform
   zIndex: number
   properties: LayerProperties
+  plugins?: Record<string, any>
 }
 
 export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg'
@@ -1304,4 +1305,145 @@ export interface TestIntegrationResult {
   data?: Record<string, any>
 }
 
+export interface PluginCommandRequest {
+  pluginId: string
+  command: string
+  layerId: number
+  parameters?: Record<string, any>
+  options?: Record<string, any>
+}
 
+export interface PluginEvent{
+  pluginId: string
+  event: string
+  options?: Record<string, any>
+}
+
+
+
+export interface PluginLayerUpdate{
+  layerId: number
+  plugins: Record<string, any>
+  updates?: Partial<{
+  properties: Record<string, any>
+  transform: Transform
+ }>
+}
+
+
+export interface PluginCommandResult {
+  success: boolean
+  result: any
+  layer: {
+    id: number
+    plugins: Record<string, any>
+  }
+}
+
+export interface InstalledPlugin {
+  id: string
+  name: string
+  description: string
+  icon: string
+  version: string
+  commands: string[]
+  requirements: {
+    integrations?: string[]
+    layer_types?: string[]
+    permissions?: string[]
+  }
+}
+
+// ============================================================================
+// REMOVEBG PLUGIN TYPES
+// ============================================================================
+
+/**
+ * RemoveBG Plugin Data Structure
+ * This represents what's stored in layer.plugins.removebg
+ */
+export interface RemoveBgPluginData {
+  original_image?: {
+    src: string
+    properties: Record<string, any>
+    stored_at: string
+  }
+  processed_images?: {
+    removed_bg?: {
+      src: string
+      created_at: string
+      parameters: Record<string, any>
+      api_response_info: {
+        detected_type?: string
+        width?: string
+        height?: string
+        credits_charged?: string
+      }
+    }
+  }
+  current_state?: 'not_processed' | 'background_removed' | 'background_original'
+  last_updated?: string
+}
+
+/**
+ * RemoveBG Plugin Command Results (what the plugin methods return)
+ */
+export interface RemoveBgRemoveResult {
+  success: boolean
+  message: string
+  processed_image: string
+  credits_used: number
+  can_restore: boolean
+  cached?: boolean
+}
+
+export interface RemoveBgRestoreResult {
+  success: boolean
+  message: string
+  restored_image: string
+  can_remove: boolean
+}
+
+export interface RemoveBgPreviewResult {
+  success: boolean
+  preview_url?: string
+  cached: boolean
+  message?: string
+}
+
+export interface RemoveBgStatusResult {
+  status: 'not_processed' | 'background_removed' | 'background_original' | 'unknown'
+  can_remove: boolean
+  can_restore: boolean
+  processed_at?: string
+  available_images?: string[]
+}
+
+export interface RemoveBgClearCacheResult {
+  success: boolean
+  message: string
+  cleared: boolean
+}
+
+/**
+ * Plugin Service Response Structure (what PluginService.executeCommand returns)
+ */
+export interface PluginServiceResponse {
+  success: boolean
+  result: RemoveBgRemoveResult | RemoveBgRestoreResult | RemoveBgPreviewResult | RemoveBgStatusResult | RemoveBgClearCacheResult
+  layer: {
+    id: number
+    plugins: Record<string, any>
+  }
+}
+
+/**
+ * Complete API Response (wrapped in standard API response format)
+ */
+export interface RemoveBgApiResponse extends ApiResponse<PluginServiceResponse> {
+  // Inherits from ApiResponse<T> which provides:
+  // data: PluginServiceResponse
+  // success: boolean
+  // message: string
+  // timestamp: string
+}

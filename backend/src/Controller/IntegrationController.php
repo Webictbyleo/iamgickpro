@@ -83,7 +83,7 @@ class IntegrationController extends AbstractController
             /** @var User $user */
             $user = $this->getUser();
             
-            $integration = $this->integrationService->saveCredentials(
+            $this->integrationService->saveCredentials(
                 $user,
                 $dto->serviceName,
                 $dto->credentials,

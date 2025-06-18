@@ -61,7 +61,11 @@
       <ModernButton
         variant="ghost"
         size="sm"
-        @click="$emit('remove-background')"
+        @click="$emit('plugin-tool', { 
+          pluginId: 'removebg', 
+          event: 'remove-background',
+          options: {}
+        })"
         tooltip="Remove Image Background (AI)"
         class="hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 flex items-center space-x-1.5"
       >
@@ -87,6 +91,7 @@
 import IconDropdown from '@/components/ui/IconDropdown.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
 import { PencilSquareIcon, ArrowsRightLeftIcon, ArrowsUpDownIcon, ScissorsIcon } from '@heroicons/vue/24/outline'
+import type { PluginEvent } from '@/types'
 
 interface Props {
   alt?: string
@@ -135,6 +140,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   update: [properties: Partial<Props>]
   'edit-image': []
-  'remove-background': []
+  'plugin-tool': [event: PluginEvent]
 }>()
 </script>

@@ -40,6 +40,8 @@ export function useDesignEditor() {
   // Auto-save functionality
   let autoSaveInterval: ReturnType<typeof setInterval>
   let thumbnailUpdateTimeout: ReturnType<typeof setTimeout>
+  let layerUpdateTimeout: ReturnType<typeof setTimeout>
+  const pendingLayerUpdates = new Map<number, Layer>() // Store pending updates by layer ID
 
   // Debounced thumbnail generation to avoid excessive API calls
   const debouncedThumbnailGeneration = () => {
@@ -80,6 +82,39 @@ export function useDesignEditor() {
         }
       }
     }, 3000) // Wait 3 seconds after last change before generating thumbnail
+  }
+
+  // Debounced layer update to avoid excessive API calls during slider interactions
+  const debouncedLayerUpdate = (layer: Layer) => {
+    // Store the latest layer state
+    pendingLayerUpdates.set(layer.id, layer)
+    
+    if (layerUpdateTimeout) {
+      clearTimeout(layerUpdateTimeout)
+    }
+    
+    layerUpdateTimeout = setTimeout(async () => {
+      console.log('🔄 Processing debounced layer updates...')
+      
+      // Process all pending layer updates
+      const updates = Array.from(pendingLayerUpdates.entries())
+      pendingLayerUpdates.clear()
+      
+      for (const [layerId, layerData] of updates) {
+        try {
+          await designStore.updateLayer(layerId, layerData, { skipPersistence: false })
+          console.log('📦 Layer updated in store with backend persistence (debounced):', layerId)
+        } catch (error) {
+          console.error('Failed to update layer:', layerId, error)
+        }
+      }
+      
+      hasUnsavedChanges.value = true
+      saveError.value = false // Clear previous save errors
+      
+      // Trigger thumbnail generation after all layer updates
+      debouncedThumbnailGeneration()
+    }, 500) // Wait 500ms after last change before persisting to backend
   }
 
   const initializeEditor = async (container: HTMLElement) => {
@@ -185,15 +220,13 @@ export function useDesignEditor() {
       
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
-        designStore.updateLayer(layer.id, layer, { skipPersistence: false })
-        hasUnsavedChanges.value = true
-        saveError.value = false // Clear previous save errors
-        console.log('📦 Layer updated in store with backend persistence')
+        // Update the local store immediately for UI responsiveness
+        designStore.updateLayer(layer.id, layer, { skipPersistence: true })
         
-        // Trigger thumbnail generation
-        debouncedThumbnailGeneration()
+        // Use debounced update for backend persistence
+        debouncedLayerUpdate(layer)
         
-        // Add to history
+        // Add to history (immediate for better UX)
         if (designStore.currentDesign) {
           addLayerHistoryEntry(designStore.currentDesign, 'modify', layer.name || `${layer.type} layer`)
         }
@@ -498,6 +531,7 @@ export function useDesignEditor() {
       if (hasUnsavedChanges.value && designStore.currentDesign && !editorSDK.value?.isLoading()) {
         console.log('🔄 Auto-saving design...')
         saveDesign(false) // Don't show notifications for autosave
+        debouncedThumbnailGeneration() // Trigger thumbnail generation after auto-save
       }
     }, 30000) // Auto-save every 30 seconds
     console.log('✅ Auto-save started')
@@ -517,6 +551,15 @@ export function useDesignEditor() {
       thumbnailUpdateTimeout = null as any
       console.log('🛑 Thumbnail generation stopped')
     }
+    
+    if (layerUpdateTimeout) {
+      clearTimeout(layerUpdateTimeout)
+      layerUpdateTimeout = null as any
+      console.log('🛑 Layer update debouncing stopped')
+    }
+    
+    // Clear any pending layer updates
+    pendingLayerUpdates.clear()
   }
 
   const loadDesign = async (designId?: string) => {

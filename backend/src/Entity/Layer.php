@@ -94,6 +94,10 @@ class Layer
     #[Groups(['layer:read', 'layer:write'])]
     private ?array $mask = null;
 
+    #[ORM\Column(type: 'json')]
+    #[Groups(['layer:read', 'layer:write'])]
+    private ?array $plugins = [];
+
     public function __construct()
     {
         $this->uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
@@ -289,6 +293,42 @@ class Layer
         $this->mask = $mask;
         $this->touch();
         return $this;
+    }
+
+    public function getPlugins(): array
+    {
+        return $this->plugins ?? [];
+    }
+
+    public function setPlugins(array $plugins): self
+    {
+        $this->plugins = $plugins;
+        $this->touch();
+        return $this;
+    }
+
+    public function addPluginData(string $pluginId, array $data): self
+    {
+        $this->plugins[$pluginId] = $data;
+        $this->touch();
+        return $this;
+    }
+
+    public function removePluginData(string $pluginId): self
+    {
+        unset($this->plugins[$pluginId]);
+        $this->touch();
+        return $this;
+    }
+
+    public function getPluginData(string $pluginId): ?array
+    {
+        return $this->plugins[$pluginId] ?? null;
+    }
+
+    public function hasPluginData(string $pluginId): bool
+    {
+        return isset($this->plugins[$pluginId]);
     }
 
     private function touch(): void

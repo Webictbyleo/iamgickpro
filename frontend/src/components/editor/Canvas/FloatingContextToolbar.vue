@@ -53,6 +53,7 @@
         :shadowEnabled="selectedLayer.properties?.shadow?.enabled"
         @update="(props) => $emit('tool-update', 'image', props)"
         @edit-image="$emit('toggle-panel', 'image-editing', selectedLayer)"
+        @plugin-tool="(props) => $emit('plugin-tool', props)"
       />
       
       <!-- Tool-specific Toolbar (when no layer selected but tool is active) -->
@@ -290,7 +291,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Component } from 'vue'
-import type { Layer } from '@/types'
+import type { Layer, PluginEvent } from '@/types'
 import { 
   DocumentDuplicateIcon, 
   TrashIcon, 
@@ -333,6 +334,7 @@ const emit = defineEmits<{
   'toggle-panel': [panelType: string, data?: any]
   'position-preset': [preset: string]
   'update-layer-opacity': [opacity: number]
+  'plugin-tool': [event: PluginEvent]
 }>()
 
 // Opacity presets for quick selection

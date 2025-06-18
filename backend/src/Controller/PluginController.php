@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Request\CreatePluginRequestDTO;
+use App\DTO\Request\PluginCommandRequestDTO;
 use App\DTO\Request\RejectPluginRequestDTO;
 use App\DTO\Request\UpdatePluginRequestDTO;
 use App\DTO\Request\UploadPluginFileRequestDTO;
@@ -14,9 +15,11 @@ use App\DTO\Response\PluginResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\Entity\Plugin;
 use App\Repository\PluginRepository;
+use App\Service\Plugin\PluginService;
 use App\Service\ResponseDTOFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -42,9 +45,11 @@ class PluginController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PluginRepository $pluginRepository,
+        private readonly PluginService $pluginService,
         private readonly ValidatorInterface $validator,
         private readonly ResponseDTOFactory $responseDTOFactory,
-        private readonly string $pluginUploadDirectory = '/var/www/html/uploads/plugins'
+        #[Autowire('%kernel.project_dir%/public/uploads/plugins')]
+        private readonly string $pluginUploadDirectory
     ) {}
 
     /**
@@ -541,6 +546,71 @@ class PluginController extends AbstractController
         } catch (\Exception $e) {
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse('Failed to reject plugin'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Execute a plugin command
+     * 
+     * Executes a command on a specific plugin for a layer. This endpoint provides
+     * a secure way for plugins to interact with the platform through predefined commands.
+     * 
+     * @param PluginCommandRequestDTO $dto Command execution data
+     * @return JsonResponse Command execution result or error response
+     */
+    #[Route('/execute-command', name: 'execute_command', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function executeCommand(PluginCommandRequestDTO $dto): JsonResponse
+    {
+        try {
+            /** @var \App\Entity\User $user */
+            $user = $this->getUser();
+            
+            $result = $this->pluginService->executeCommand($user, $dto);
+            
+            return new JsonResponse([
+                'success' => true,
+                'data' => $result
+            ], Response::HTTP_OK);
+            
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse(
+                    'Plugin command execution failed: ' . $e->getMessage()
+                ),
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+    }
+
+    /**
+     * Get available plugins for user
+     * 
+     * Returns a list of plugins available to the authenticated user,
+     * including their capabilities and requirements.
+     * 
+     * @return JsonResponse List of available plugins
+     */
+    #[Route('/available', name: 'available', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function getAvailablePlugins(): JsonResponse
+    {
+        try {
+            /** @var \App\Entity\User $user */
+            $user = $this->getUser();
+            
+            $plugins = $this->pluginService->getAvailablePlugins($user);
+            
+            return new JsonResponse([
+                'success' => true,
+                'data' => $plugins
+            ], Response::HTTP_OK);
+            
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to retrieve available plugins'),
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }

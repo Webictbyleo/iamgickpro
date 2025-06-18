@@ -11,6 +11,7 @@ parameters:
     app.plugin_directory: '%app.upload_directory%/plugins'
     app.plugin_extract_directory: '%kernel.project_dir%/var/plugins'
     app.export_directory: '%kernel.project_dir%/var/exports'
+    app.encryption_key: '%env(APP_SECRET)%'
 
 imports:
     - { resource: services/svg.yaml }

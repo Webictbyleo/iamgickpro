@@ -28,14 +28,6 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
   render(layerData: LayerNode): Konva.Node {
     const props = this.getTextProperties(layerData.properties as Partial<TextLayerProperties>)
     
-    // Debug logging for layer positioning
-    console.log('🔍 TextLayerRenderer.render:', {
-      layerId: layerData.id,
-      position: { x: layerData.x, y: layerData.y },
-      size: { width: layerData.width, height: layerData.height },
-      text: props.text.substring(0, 20) + '...'
-    })
-    
     // Following Konva docs exactly - NEVER set height for text wrapping
     const textNode = new Konva.Text({
       id: layerData.id.toString(), // Convert number ID to string for Konva

@@ -171,7 +171,8 @@ export const useDesignStore = defineStore('design', () => {
           height: transform.height,
           rotation: transform.rotation,
           scaleX: transform.scaleX,
-          scaleY: transform.scaleY
+          scaleY: transform.scaleY,
+          opacity: transform.opacity !== undefined ? transform.opacity : 1 // Default opacity to 1 if not provided
         }
       }
     }

@@ -364,6 +364,23 @@ export const pluginAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
+
+  // POST /plugins/execute-command - Execute plugin command
+  executeCommand: (data: {
+    pluginId: string
+    command: string
+    layerId: number
+    parameters?: Record<string, any>
+  }) => api.post<ApiResponse<{
+    layer: {
+      id: number
+      plugins: Record<string, any>
+    }
+    result?: any
+  }>>('/plugins/execute-command', data),
+
+  // GET /plugins/available - Get available plugins for user
+  getAvailablePlugins: () => api.get<ApiResponse<any[]>>('/plugins/available'),
 }
 
 // Project API - aligned with ProjectController (8 endpoints)

@@ -105,6 +105,14 @@
               @reorder-layers="reorderLayers"
               @update-layer-name="handleUpdateLayerName"
             />
+            <!-- Plugin Panel Manager -->
+            <PluginPanelManager 
+              v-if="activePanelModal && isPluginPanel(activePanelModal) && selectedLayer"
+              :plugin-id="activePanelModal.slice(7)" 
+              :selected-layer="selectedLayer"
+              @layer-updated="handlePluginLayerUpdate"
+              @close="handleCancelPanelModal"
+            />
 
             <!-- Contextual Panels -->
             <ImageEditingPanel
@@ -138,6 +146,7 @@
               @layer-context-menu="handleLayerContextMenu"
               @toggle-visibility="toggleLayerVisibility"
               @clear-selection="handleClearSelection"
+              @plugin-tool="handlePluginToolPanel"
             />
 
             <!-- Zoom Controls -->
@@ -192,7 +201,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template, PluginEvent, PluginLayerUpdate } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
@@ -213,6 +222,7 @@ import ColorsPanel from './Panels/ColorsPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
 import ImageEditingPanel from './Panels/ImageEditingPanel.vue'
 import DesignEditorContextMenu from './ContextMenu/DesignEditorContextMenu.vue'
+import PluginPanelManager from './plugins/PluginPanelManager.vue'
 
 // Icons
 import { XMarkIcon } from '@heroicons/vue/24/outline'
@@ -307,7 +317,9 @@ const {
   isPanelActive,
   cachePanelData,
   getCachedPanelData,
-  cleanCache
+  cleanCache,
+  openPluginPanel,
+  isPluginPanel,
 } = usePanelManagement()
 
 // Panel context for context-aware panels
@@ -486,6 +498,7 @@ watch(selectedLayer, (newLayer, oldLayer) => {
   } else {
     // Auto-close contextual panel when no layer is selected
     closeContextualPanels()
+    closeAllPanels()
   }
 })
 
@@ -657,7 +670,10 @@ const handleUpdateLayerOpacity = (opacity: number) => {
     return
   }
   
-  // Update layer opacity directly at the layer level
+  console.log('🎨 Updating layer opacity:', opacity, 'for layer:', selectedLayer.value.id)
+  
+  // Update layer opacity directly through LayerManager
+  // This will update the LayerNode and emit the layer:updated event
   editorSDK.value.layers.updateLayer(selectedLayer.value.id, { opacity })
 }
 
@@ -1115,6 +1131,12 @@ const handleTogglePanel = (panelType: string, data?: any) => {
   } else {
     handleToggleContextualPanel(panelType, data)
   }
+}
+
+const handlePluginToolPanel = (event: PluginEvent) => {
+  if(!selectedLayer.value)return;
+  // Use PluginPanelManager to handle plugin-specific panels
+  openPluginPanel(event.pluginId, selectedLayer.value.id, event.options)
 }
 
 const handleCancelPanelModal = () => {
@@ -1711,33 +1733,39 @@ const loadImageDimensions = (url: string): Promise<{ width: number; height: numb
   })
 }
 
-// Fallback function to get image dimensions when CORS fails
-const getImageDimensionsFromAPI = async (url: string): Promise<{ width: number; height: number }> => {
-  try {
-    // Try to get dimensions via a backend proxy endpoint if available
-    const response = await fetch(`/api/utils/image-info`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url })
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      return {
-        width: data.width || 800,
-        height: data.height || 600
-      }
+
+
+// Plugin layer update handler
+const handlePluginLayerUpdate = (update: PluginLayerUpdate) => {
+  if (!editorSDK.value) return
+  
+  console.log('🔌 Handling plugin layer update:', update)
+  
+  // Update layer plugins
+  if (update.plugins) {
+   // Find layer from the store
+    const layer = layers.value.find(layer => layer.id === update.layerId)
+    if (!layer) {
+      console.warn(`Layer not found for update: ${update.layerId}`)
+      return
     }
-  } catch (error) {
-    console.warn('Failed to get image dimensions from API:', error)
+    // Update plugins for the layer
+    layer.plugins = {
+      ...layer.plugins || {},
+      ...update.plugins
+    }
+    console.log(`Updated plugins for layer ${layer.id}:`, layer.plugins)
   }
   
-  // Return default dimensions if all else fails
-  return {
-    width: 800,
-    height: 600
+  // Apply any additional updates (properties, transform, etc.)
+  if (update.updates) {
+    const updates: Partial<Layer> = {
+      properties: {
+        ...selectedLayer.value.properties,
+        ...update.updates.properties
+      }
+    }
+    updateLayerProperties(update.layerId, updates)
   }
 }
 </script>

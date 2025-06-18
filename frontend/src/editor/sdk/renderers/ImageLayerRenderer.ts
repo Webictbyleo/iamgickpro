@@ -67,20 +67,74 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     const properties = layer.properties as ImageLayerProperties
     const imageNode = node.findOne('Image') as Konva.Image
 
+    console.log('🎨 ImageLayerRenderer.update called:', {
+      layerId: layer.id,
+      newSrc: properties.src,
+      currentSrc: (imageNode?.image() as HTMLImageElement)?.src,
+      hasImageNode: !!imageNode,
+      dimensions: { width: layer.width, height: layer.height }
+    })
+
     // Update group dimensions
     node.setAttrs({
       width: layer.width,
       height: layer.height
     })
 
-    // Only reload image if src has changed
-    if (properties.src && (!imageNode || (imageNode.image() as HTMLImageElement)?.src !== properties.src)) {
+    // Check if we need to reload the image
+    const needsImageReload = this.needsImageReload(imageNode, properties.src)
+    
+    if (properties.src && needsImageReload) {
+      console.log('🔄 Image src changed, reloading:', {
+        newSrc: properties.src,
+        currentSrc: (imageNode?.image() as HTMLImageElement)?.src,
+        hasImageNode: !!imageNode,
+        layerId: layer.id,
+        reason: !imageNode ? 'no_image_node' : 'src_changed'
+      })
+      
+      // Remove existing image node if it exists
+      if (imageNode) {
+        imageNode.destroy()
+      }
+      
       const placeholder = node.findOne('Rect') as Konva.Rect
       const loadingText = node.findOne('Text') as Konva.Text
       
-      this.loadImage(properties.src, layer, node, placeholder, loadingText)
+      // If no placeholder exists, create one for loading state
+      if (!placeholder) {
+        const newPlaceholder = new Konva.Rect({
+          width: layer.width,
+          height: layer.height,
+          fill: '#f0f0f0',
+          stroke: '#ddd',
+          strokeWidth: 1,
+          dash: [5, 5]
+        })
+        
+        const newLoadingText = new Konva.Text({
+          x: 0,
+          y: layer.height / 2 - 8,
+          width: layer.width,
+          height: 16,
+          text: 'Loading...',
+          fontSize: 12,
+          fontFamily: 'Arial',
+          fill: '#999',
+          align: 'center'
+        })
+        
+        node.add(newPlaceholder)
+        node.add(newLoadingText)
+        
+        this.loadImage(properties.src, layer, node, newPlaceholder, newLoadingText)
+      } else {
+        this.loadImage(properties.src, layer, node, placeholder, loadingText)
+      }
       return // Exit early since loadImage will handle the rest
     }
+
+    console.log('🔧 Updating existing image layer properties:', layer.id)
 
     // Update transforms and positioning if image exists
     if (imageNode) {
@@ -104,6 +158,9 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       
       // Always apply image filters to ensure proper clearing when reset to defaults
       this.applyImageFilters(imageNode, properties)
+      
+      // Force canvas redraw after all updates
+      node.getLayer()?.batchDraw()
     }
   }
 
@@ -138,25 +195,44 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     loadingText?: Konva.Text
   ): Promise<void> {
     try {
+      console.log('🖼️ Loading image:', { src, layerId: layer.id })
+      
       let img = this.imageCache.get(src)
       
       if (!img) {
+        console.log('📥 Image not in cache, loading from URL:', src)
         img = new Image()
         img.crossOrigin = 'anonymous'
         
         await new Promise((resolve, reject) => {
-          img!.onload = resolve
-          img!.onerror = reject
+          img!.onload = () => {
+            console.log('✅ Image loaded successfully:', src)
+            resolve(img)
+          }
+          img!.onerror = (error) => {
+            console.error('❌ Image failed to load:', src, error)
+            reject(error)
+          }
           img!.src = src
         })
         
+        // Cache the loaded image
         this.imageCache.set(src, img)
+        console.log('💾 Image cached:', src)
+      } else {
+        console.log('🎯 Using cached image:', src)
       }
 
       // Safely destroy placeholder elements if they exist
-      if (placeholder) placeholder.destroy()
-      if (loadingText) loadingText.destroy()
-
+      if (placeholder) {
+        placeholder.destroy()
+      }
+      if (loadingText) {
+        loadingText.destroy()
+      }
+      
+      console.log('🎨 Creating Konva Image node:', { layerId: layer.id, imgWidth: img.width, imgHeight: img.height })
+      
       const imageNode = new Konva.Image({
         id: layer.id.toString(), // Convert number ID to string for Konva
         x: 0,
@@ -174,18 +250,11 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         properties.originalWidth = img.width
         properties.originalHeight = img.height
         
-        // Update layer dimensions to match image aspect ratio if not explicitly set
-        /* if (!properties.explicitDimensions) {
-          const aspectRatio = img.width / img.height
-          if (layer.width / layer.height !== aspectRatio) {
-            // Adjust dimensions to maintain aspect ratio, keeping the larger dimension
-            if (layer.width / aspectRatio > layer.height) {
-              layer.height = layer.width / aspectRatio
-            } else {
-              layer.width = layer.height * aspectRatio
-            }
-          }
-        } */
+        console.log('📐 Set original image dimensions:', {
+          layerId: layer.id,
+          originalWidth: img.width,
+          originalHeight: img.height
+        })
       }
 
       this.applyImageScaling(imageNode, img, layer, properties)
@@ -195,16 +264,30 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       this.applyImageFilters(imageNode, properties)
 
       group.add(imageNode)
-      group.getLayer()?.batchDraw()
+      
+      // Force canvas redraw
+      const stage = group.getStage()
+      if (stage) {
+        stage.batchDraw()
+        console.log('🎬 Canvas redrawn after image load')
+      } else {
+        console.warn('⚠️ No stage found for canvas redraw')
+      }
 
     } catch (error) {
-      console.error('Failed to load image:', error)
+      console.error('💥 Failed to load image:', { src, error, layerId: layer.id })
       if (loadingText) {
         loadingText.text('Failed to load')
         loadingText.fill('#e74c3c')
       }
       if (placeholder) {
         placeholder.fill('#fee')
+      }
+      
+      // Force canvas redraw even on error to show error state
+      const stage = group.getStage()
+      if (stage) {
+        stage.batchDraw()
       }
     }
   }
@@ -616,6 +699,61 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       case 'center':
       default:
         return 'center-middle'
+    }
+  }
+
+  private needsImageReload(imageNode: Konva.Image | null, newSrc: string | undefined): boolean {
+    if (!newSrc) return false
+    if (!imageNode) return true
+    
+    const currentImg = imageNode.image() as HTMLImageElement
+    if (!currentImg) return true
+    
+    // Normalize URLs for comparison to handle relative vs absolute URLs
+    const normalizeUrl = (url: string): string => {
+      try {
+        // Create a URL object to normalize the URL
+        const urlObj = new URL(url, window.location.origin)
+        return urlObj.href
+      } catch {
+        // If URL construction fails, use original URL
+        return url
+      }
+    }
+    
+    const currentSrc = normalizeUrl(currentImg.src)
+    const nextSrc = normalizeUrl(newSrc)
+    
+    const isDifferent = currentSrc !== nextSrc
+    
+    if (isDifferent) {
+      console.log('🔍 URL comparison:', {
+        currentSrc,
+        nextSrc,
+        originalCurrentSrc: currentImg.src,
+        originalNextSrc: newSrc,
+        isDifferent
+      })
+    }
+    
+    return isDifferent
+  }
+
+  /**
+   * Clear the image cache - useful for debugging image reload issues
+   */
+  clearImageCache(): void {
+    console.log('🗑️ Clearing image cache:', this.imageCache.size, 'entries')
+    this.imageCache.clear()
+  }
+
+  /**
+   * Get cache statistics for debugging
+   */
+  getCacheStats(): { size: number; urls: string[] } {
+    return {
+      size: this.imageCache.size,
+      urls: Array.from(this.imageCache.keys())
     }
   }
 }

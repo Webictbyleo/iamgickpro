@@ -24,6 +24,7 @@
           @toggle-panel="(panelType, data) => $emit('toggle-panel', panelType, data)"
           @position-preset="(preset) => $emit('position-preset', preset)"
           @update-layer-opacity="(opacity) => $emit('update-layer-opacity', opacity)"
+          @plugin-tool="(pluginData) => $emit('plugin-tool', pluginData)"
         />
       </Transition>
     </div>
@@ -81,7 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
-import type { Layer } from '@/types'
+import type { Layer, PluginEvent } from '@/types'
 import FloatingContextToolbar from './FloatingContextToolbar.vue'
 
 interface Props {
@@ -114,7 +115,8 @@ const emit = defineEmits<{
   'update-layer-opacity': [opacity: number]
   'layer-context-menu': [event: MouseEvent, layer?: Layer | null]
   'toggle-visibility': [layerId: number]
-  'clear-selection': []
+  'clear-selection': [],
+  'plugin-tool': [pluginData: PluginEvent]
 }>()
 
 const canvasContainer = ref<HTMLElement>()

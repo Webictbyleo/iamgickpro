@@ -23,6 +23,9 @@ export function usePanelManagement() {
   // Regular panels that appear in the left sidebar
   const leftPanels = ['elements', 'templates', 'uploads', 'media', 'layers', 'properties', 'animation', 'colors']
   
+  // Plugin panels - these are loaded dynamically
+  const pluginPanels = ref<string[]>([])
+  
   // State
   const activePanel = ref<string | null>('elements')
   const activePanelModal = ref<string | null>(null)
@@ -49,9 +52,11 @@ export function usePanelManagement() {
       'image-editing': 'Image Settings',
       'text-editing': 'Text Settings',
       'shape-editing': 'Shape Settings',
-      'layer-properties': 'Properties'
+      'layer-properties': 'Properties',
+      // Plugin panels
+      'plugin-removebg': 'Background Remover'
     }
-    return titles[panel] || 'Panel'
+    return titles[panel] || panel.replace('plugin-', '').replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
   
   /**
@@ -59,6 +64,51 @@ export function usePanelManagement() {
    */
   const isLeftPanel = (panelType: string): boolean => {
     return leftPanels.includes(panelType)
+  }
+  
+  /**
+   * Check if a panel is a plugin panel
+   */
+  const isPluginPanel = (panelType: string): boolean => {
+    return panelType.startsWith('plugin-') || pluginPanels.value.includes(panelType)
+  }
+  
+  /**
+   * Register a plugin panel
+   */
+  const registerPluginPanel = (pluginId: string) => {
+    const panelId = `plugin-${pluginId}`
+    if (!pluginPanels.value.includes(panelId)) {
+      pluginPanels.value.push(panelId)
+    }
+  }
+  
+  /**
+   * Unregister a plugin panel
+   */
+  const unregisterPluginPanel = (pluginId: string) => {
+    const panelId = `plugin-${pluginId}`
+    const index = pluginPanels.value.indexOf(panelId)
+    if (index > -1) {
+      pluginPanels.value.splice(index, 1)
+    }
+  }
+  
+  /**
+   * Open a plugin panel
+   */
+  const openPluginPanel = (pluginId: string, layerId?: number, data?: any) => {
+    const panelId = `plugin-${pluginId}`
+    registerPluginPanel(pluginId)
+    
+    // Close regular panels when opening plugin panel
+    activePanel.value = null
+    activePanelModal.value = panelId
+    
+    // Cache plugin data
+    if (data || layerId) {
+      cachePanelData(panelId, 'plugin', layerId, { pluginId, layerId, ...data })
+    }
   }
   
   /**
@@ -151,6 +201,10 @@ export function usePanelManagement() {
       if (activePanel.value) {
         activePanelModal.value = null
       }
+    } else if (isPluginPanel(panel)) {
+      // Handle plugin panel
+      activePanel.value = null
+      activePanelModal.value = activePanelModal.value === panel ? null : panel
     } else {
       // This is a contextual panel
       handleToggleContextualPanel(panel)
@@ -223,7 +277,16 @@ export function usePanelManagement() {
    * Close contextual panels only
    */
   const closeContextualPanels = () => {
-    if (activePanelModal.value && !isLeftPanel(activePanelModal.value)) {
+    if (activePanelModal.value && !isLeftPanel(activePanelModal.value) && !isPluginPanel(activePanelModal.value)) {
+      activePanelModal.value = null
+    }
+  }
+  
+  /**
+   * Close plugin panels only
+   */
+  const closePluginPanels = () => {
+    if (activePanelModal.value && isPluginPanel(activePanelModal.value)) {
       activePanelModal.value = null
     }
   }
@@ -236,7 +299,8 @@ export function usePanelManagement() {
     activePanelModal: activePanelModal.value,
     hasAnyPanel: !!(activePanel.value || activePanelModal.value),
     hasLeftPanel: !!(activePanel.value && isLeftPanel(activePanel.value)),
-    hasContextualPanel: !!(activePanelModal.value && !isLeftPanel(activePanelModal.value))
+    hasContextualPanel: !!(activePanelModal.value && !isLeftPanel(activePanelModal.value) && !isPluginPanel(activePanelModal.value)),
+    hasPluginPanel: !!(activePanelModal.value && isPluginPanel(activePanelModal.value))
   }))
   
   /**
@@ -252,6 +316,7 @@ export function usePanelManagement() {
     activePanelModal,
     currentPanelState,
     leftPanels,
+    pluginPanels,
     
     // Settings
     autoCloseContextual,
@@ -259,12 +324,17 @@ export function usePanelManagement() {
     // Methods
     getPanelTitle,
     isLeftPanel,
+    isPluginPanel,
+    registerPluginPanel,
+    unregisterPluginPanel,
+    openPluginPanel,
     getContextualPanelForLayer,
     handlePanelChange,
     handleToggleContextualPanel,
     handleLayerSelectionChange,
     closeAllPanels,
     closeContextualPanels,
+    closePluginPanels,
     isPanelActive,
     
     // Cache methods
