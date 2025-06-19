@@ -339,83 +339,60 @@ export class EditorSDK extends EventEmitter {
 
   /**
    * Export design as image in specified format
-   * Uses a temporary hidden stage to avoid visual flashing during export
+   * Simple and direct export using Konva's built-in toDataURL method
    */
-  async exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): Promise<string> {
+  exportAsImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality: number = 1): string {
+    if (!this.stage) {
+      throw new Error('Stage not initialized')
+    }
+
     try {
-      // Get the original canvas dimensions (design size, not viewport size)
+      // Get the original canvas dimensions for consistent export
       const canvasSize = this.canvasManager.getSize()
       
-      // Create a temporary hidden container for export
-      const tempContainer = document.createElement('div')
-      tempContainer.style.position = 'absolute'
-      tempContainer.style.left = '-99999px'
-      tempContainer.style.top = '-99999px'
-      tempContainer.style.width = `${canvasSize.width}px`
-      tempContainer.style.height = `${canvasSize.height}px`
-      tempContainer.style.pointerEvents = 'none'
-      document.body.appendChild(tempContainer)
-
-      // Create a temporary stage with the original canvas dimensions
-      const tempStage = new Konva.Stage({
-        container: tempContainer,
-        width: canvasSize.width,
-        height: canvasSize.height,
-      })
-
-      // Clone all layers from the original stage to the temporary stage
-      // This preserves all layer content without affecting the visible stage
-      const clonedLayers: Konva.Layer[] = []
-      this.stage.children.forEach((child) => {
-        if (child instanceof Konva.Layer) {
-          try {
-            const clonedLayer = child.clone()
-            clonedLayers.push(clonedLayer)
-            tempStage.add(clonedLayer)
-          } catch (cloneError) {
-            console.warn('🎨 EditorSDK: Failed to clone layer:', cloneError)
-          }
-        }
-      })
-
-      // Force a render cycle to ensure all content is properly drawn
-      tempStage.batchDraw()
+      // Store current stage transform state
+      const currentScale = this.stage.scaleX()
+      const currentX = this.stage.x()
+      const currentY = this.stage.y()
       
-      // Small delay to ensure rendering is complete
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      // Export from the temporary stage at original dimensions
-      const dataURL = tempStage.toDataURL({
+      // Temporarily reset stage transform for export
+      this.stage.scale({ x: 1, y: 1 })
+      this.stage.position({ x: 0, y: 0 })
+      this.stage.batchDraw()
+      
+      // Export at original canvas size without any viewport scaling
+      const dataURL = this.stage.toDataURL({
         mimeType: `image/${format}`,
-        quality: quality,
-        pixelRatio: 1, // Higher resolution for better quality
+        quality: format === 'jpeg' ? quality : 1,
+        pixelRatio: 1, // Use 1:1 pixel ratio for exact canvas size
         x: 0,
         y: 0,
         width: canvasSize.width,
-        height: canvasSize.height,
+        height: canvasSize.height
       })
-
-      // Clean up temporary stage and container
-      tempStage.destroy()
-      document.body.removeChild(tempContainer)
-
+      
+      // Restore original stage transform
+      this.stage.scale({ x: currentScale, y: currentScale })
+      this.stage.position({ x: currentX, y: currentY })
+      this.stage.batchDraw()
+      
       return dataURL
     } catch (error) {
       console.error('🎨 EditorSDK: Failed to export design as image:', error)
-      throw error
+      throw new Error(`Failed to export as ${format.toUpperCase()}: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
   /**
    * Download design as image file
    */
-  async downloadAsImage(
+  downloadAsImage(
     format: 'png' | 'jpeg' | 'webp' = 'png', 
     filename?: string, 
     quality: number = 1
-  ): Promise<void> {
+  ): void {
     try {
-      const dataURL = await this.exportAsImage(format, quality)
+      const dataURL = this.exportAsImage(format, quality)
       
       // Create download link
       const link = document.createElement('a')

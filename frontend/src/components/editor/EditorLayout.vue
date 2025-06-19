@@ -771,7 +771,7 @@ const handleExport = async (format: string) => {
     const filename = `${sanitizedName}.${format}`
     
     console.log(`Exporting design as ${format}...`)
-    await editorSDK.value.downloadAsImage(format as 'png' | 'jpeg' | 'webp', filename)
+    editorSDK.value.downloadAsImage(format as 'png' | 'jpeg' | 'webp', filename)
     console.log(`Export completed: ${filename}`)
   } catch (error) {
     console.error('Export failed:', error)

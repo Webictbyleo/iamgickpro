@@ -220,8 +220,6 @@ export function useDesignEditor() {
       
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
-        // Update the local store immediately for UI responsiveness
-        designStore.updateLayer(layer.id, layer, { skipPersistence: true })
         
         // Use debounced update for backend persistence
         debouncedLayerUpdate(layer)
@@ -271,6 +269,7 @@ export function useDesignEditor() {
         
         // Add to history
         if (designStore.currentDesign) {
+           debouncedThumbnailGeneration()
           addCanvasHistoryEntry(designStore.currentDesign, 'settings')
         }
       }
@@ -531,7 +530,7 @@ export function useDesignEditor() {
       if (hasUnsavedChanges.value && designStore.currentDesign && !editorSDK.value?.isLoading()) {
         console.log('🔄 Auto-saving design...')
         saveDesign(false) // Don't show notifications for autosave
-        debouncedThumbnailGeneration() // Trigger thumbnail generation after auto-save
+       
       }
     }, 30000) // Auto-save every 30 seconds
     console.log('✅ Auto-save started')
