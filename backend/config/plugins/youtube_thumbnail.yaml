@@ -1,12 +1,13 @@
 # Plugin Configuration for YouTube Thumbnail Generator Plugin
 
+id: "youtube_thumbnail"
 name: "YouTube Thumbnail Generator"
 description: "Generate 1-10 AI-powered thumbnail variations using the original YouTube thumbnail as reference with OpenAI gpt-image-1"
 version: "1.0.0"
 icon: "/icons/plugins/youtube-thumbnail.svg"
 type: "standalone"
 
-supported_commands:
+commands:
   - "analyze_video"
   - "generate_thumbnail_variations"
   - "get_video_info"
@@ -38,6 +39,12 @@ internet:
   rate_limit:
     requests_per_minute: 10
     requests_per_hour: 100
+  allowed_domains:
+    - "api.openai.com"
+    - "www.youtube.com"
+    - "youtube.com"
+  timeout: 30
+  max_redirects: 2
 
 requirements:
   permissions:

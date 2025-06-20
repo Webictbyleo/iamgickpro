@@ -196,3 +196,8 @@ services:
     App\Command\ClearMediaCommand:
         arguments:
             $uploadDirectory: '%app.upload_directory%'
+
+    # Plugin Configuration Loader
+    App\Service\Plugin\Config\PluginConfigLoader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'

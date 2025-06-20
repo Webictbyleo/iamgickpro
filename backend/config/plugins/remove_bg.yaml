@@ -1,12 +1,13 @@
 # Plugin Configuration for Remove Background Plugin
 
+id: "removebg"
 name: "Background Remover"
 description: "Remove and restore image backgrounds using AI-powered background removal"
 version: "1.0.0"
 icon: "/icons/plugins/remove-bg.svg"
 type: "layer_based"
 
-supported_commands:
+commands:
   - "remove_background"
   - "restore_background"
   - "preview_background_removal"
@@ -33,6 +34,10 @@ internet:
   rate_limit:
     requests_per_minute: 50
     requests_per_month: 500
+  allowed_domains:
+    - "api.remove.bg"
+  timeout: 30
+  max_redirects: 3
 
 requirements:
   layer_types:

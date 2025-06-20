@@ -14,6 +14,7 @@ use App\Service\Plugin\Plugins\PluginInterface;
 use App\Service\Plugin\Plugins\AbstractPlugin;
 use App\Service\Plugin\Plugins\RemoveBgPlugin;
 use App\Service\Plugin\Plugins\YoutubeThumbnailPlugin;
+use App\Service\Plugin\Config\PluginConfigLoader;
 use App\Service\MediaProcessing\MediaProcessingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
@@ -38,6 +39,7 @@ class PluginService
         private readonly PluginRepository $pluginRepository,
         private readonly SecureRequestBuilder $requestBuilder,
         private readonly MediaProcessingService $mediaProcessingService,
+        private readonly PluginConfigLoader $configLoader,
         private readonly LoggerInterface $logger,
         private readonly RequestStack $requestStack,
         private readonly CacheItemPoolInterface $cache,
@@ -59,6 +61,7 @@ class PluginService
         try {
             // Get plugin instance
             $plugin = $this->getPlugin($dto->pluginId);
+            
             if (!$plugin) {
                 throw new \RuntimeException(sprintf('Plugin not found: %s', $dto->pluginId));
             }
@@ -192,7 +195,7 @@ class PluginService
     private function initializeBuiltInPlugins(): void
     {
         // Register RemoveBG plugin
-        $this->registerPlugin('removebg', new RemoveBgPlugin(
+        $removeBgPlugin = new RemoveBgPlugin(
             $this->requestBuilder,
             $this,
             $this->requestStack,
@@ -200,10 +203,21 @@ class PluginService
             $this->cache,
             $this->environment,
             $this->projectDir
-        ));
+        );
+        
+        try {
+            $removeBgConfig = $this->configLoader->loadConfig('remove_bg');
+            $removeBgPlugin->setConfig($removeBgConfig);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to load config for RemoveBG plugin, using defaults', [
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        $this->registerPlugin('removebg', $removeBgPlugin);
 
         // Register YouTube Thumbnail Generator plugin
-        $this->registerPlugin('youtube_thumbnail', new YoutubeThumbnailPlugin(
+        $youtubePlugin = new YoutubeThumbnailPlugin(
             $this->requestBuilder,
             $this,
             $this->mediaProcessingService,
@@ -212,7 +226,18 @@ class PluginService
             $this->cache,
             $this->environment,
             $this->projectDir
-        ));
+        );
+        
+        try {
+            $youtubeConfig = $this->configLoader->loadConfig('youtube_thumbnail');
+            $youtubePlugin->setConfig($youtubeConfig);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to load config for YouTube Thumbnail plugin, using defaults', [
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        $this->registerPlugin('youtube_thumbnail', $youtubePlugin);
     }
 
     /**

@@ -376,6 +376,7 @@ onUnmounted(() => {
 // Update dimensions when panels change
 watch([activePanel, activePanelModal], (newValues, oldValues) => {
   nextTick(() => {
+    
     updateCanvasViewportDimensions()
     
     // Only auto-fit to screen when panels open/close, not when switching between panels
@@ -493,6 +494,10 @@ const selectedLayer = computed(() => selectedLayers.value[0] || null)
 
 // Watch for layer selection changes and auto-close contextual panels
 watch(selectedLayer, (newLayer, oldLayer) => {
+  if(newLayer && newLayer.id === oldLayer?.id) {
+    // No change in selection, do nothing
+    return
+  }
   if (newLayer) {
     // When a layer is selected, automatically switch to select tool
     // This ensures the layer-specific toolbar will show instead of tool toolbar

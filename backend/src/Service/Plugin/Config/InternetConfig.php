@@ -19,7 +19,11 @@ readonly class InternetConfig
         public string $authType = 'api_key',
         public array $permissions = [],
         public array $rateLimit = [],
-        public array $metadata = []
+        public array $metadata = [],
+        public array $allowedDomains = [],
+        public array $blockedDomains = [],
+        public ?int $timeout = null,
+        public ?int $maxRedirects = null
     ) {}
 
     /**
@@ -35,7 +39,11 @@ readonly class InternetConfig
             authType: $config['auth_type'] ?? 'api_key',
             permissions: $config['permissions'] ?? [],
             rateLimit: $config['rate_limit'] ?? [],
-            metadata: $config['metadata'] ?? []
+            metadata: $config['metadata'] ?? [],
+            allowedDomains: $config['allowed_domains'] ?? [],
+            blockedDomains: $config['blocked_domains'] ?? [],
+            timeout: $config['timeout'] ?? null,
+            maxRedirects: $config['max_redirects'] ?? null
         );
     }
 
@@ -65,5 +73,37 @@ readonly class InternetConfig
     public function getRateLimit(): array
     {
         return $this->rateLimit;
+    }
+
+    /**
+     * Get allowed domains
+     */
+    public function getAllowedDomains(): array
+    {
+        return $this->allowedDomains;
+    }
+
+    /**
+     * Get blocked domains
+     */
+    public function getBlockedDomains(): array
+    {
+        return $this->blockedDomains;
+    }
+
+    /**
+     * Get timeout
+     */
+    public function getTimeout(): ?int
+    {
+        return $this->timeout;
+    }
+
+    /**
+     * Get max redirects
+     */
+    public function getMaxRedirects(): ?int
+    {
+        return $this->maxRedirects;
     }
 }

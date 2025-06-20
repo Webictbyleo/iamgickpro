@@ -201,7 +201,8 @@ export function useDesignEditor() {
           // Update the design store immediately
           const layerIndex = designStore.currentDesign.layers?.findIndex(l => l.id === layer.id)
           if (layerIndex !== undefined && layerIndex >= 0 && designStore.currentDesign.layers) {
-            designStore.currentDesign.layers[layerIndex] = { ...layer }
+            //designStore.currentDesign.layers[layerIndex] = { ...layer }
+            console.log('Updating layer with object:', layer)
             designStore.currentDesign.updatedAt = new Date().toISOString()
           }
         }

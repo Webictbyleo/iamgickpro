@@ -94,7 +94,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             }
 
             // Get video info from YouTube (using oEmbed API which doesn't require API key)
-            $videoInfo = $this->getYouTubeVideoInfo($videoId);
+            $videoInfo = $this->getYouTubeVideoInfo($user, $videoId);
             
             // Store in cache for 1 hour
             $cachedItem->set($videoInfo);
@@ -145,7 +145,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 
         try {
             // Get video info first (includes original thumbnail URL)
-            $videoInfo = $this->getYouTubeVideoInfo($videoId);
+            $videoInfo = $this->getYouTubeVideoInfo($user, $videoId);
             
             if (!isset($videoInfo['thumbnail_url'])) {
                 throw new \RuntimeException('Original thumbnail URL not found for video');
@@ -200,7 +200,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         }
 
         try {
-            $videoInfo = $this->getYouTubeVideoInfo($videoId);
+            $videoInfo = $this->getYouTubeVideoInfo($user, $videoId);
             
             return [
                 'success' => true,
@@ -261,13 +261,13 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     /**
      * Get video information from YouTube using oEmbed API
      */
-    private function getYouTubeVideoInfo(string $videoId): array
+    private function getYouTubeVideoInfo(User $user, string $videoId): array
     {
         try {
             // Use YouTube oEmbed API (no API key required)
             $oembedUrl = sprintf('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=%s&format=json', $videoId);
             
-            $response = $this->requestBuilder->forService($this->getSystemUser(), 'youtube')
+            $response = $this->requestBuilder->forService($user, 'youtube', $this->getInternetConfig())
                 ->get($oembedUrl, [
                     'headers' => [
                         'User-Agent' => 'IGPro/1.0'
@@ -379,7 +379,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 ]
             ];
 
-            $response = $this->requestBuilder->forService($user, 'openai')
+            $response = $this->requestBuilder->forService($user, 'openai', $this->getInternetConfig())
                 ->post(self::OPENAI_API_URL . '/images/edits', [
                     'headers' => [
                         'Accept' => 'application/json',
@@ -612,17 +612,6 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     }
 
     /**
-     * Get system user for API calls that don't require user credentials
-     */
-    private function getSystemUser(): User
-    {
-        // For oEmbed calls, we create a temporary user object
-        // In a real implementation, you might want to have a dedicated system user
-        $systemUser = new User();
-        return $systemUser;
-    }
-
-    /**
      * Validate thumbnail generation parameters
      */
     private function validateThumbnailParameters(array $parameters): array
@@ -653,5 +642,43 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         }
         
         return $errors;
+    }
+
+    protected function getDefaultName(): string
+    {
+        return 'YouTube Thumbnail Generator';
+    }
+
+    protected function getDefaultDescription(): string
+    {
+        return 'Generate 1-10 AI-powered thumbnail variations using the original YouTube thumbnail as reference with OpenAI gpt-image-1';
+    }
+
+    protected function getDefaultVersion(): string
+    {
+        return '1.0.0';
+    }
+
+    protected function getDefaultIcon(): string
+    {
+        return '/icons/plugins/youtube-thumbnail.svg';
+    }
+
+    protected function getDefaultSupportedCommands(): array
+    {
+        return [
+            'analyze_video',
+            'generate_thumbnail_variations',
+            'get_video_info',
+            'clear_cache'
+        ];
+    }
+
+    protected function getDefaultRequirements(): array
+    {
+        return [
+            'integrations' => ['youtube', 'openai'],
+            'permissions' => ['api.access']
+        ];
     }
 }

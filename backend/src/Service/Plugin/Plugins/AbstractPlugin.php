@@ -7,6 +7,7 @@ namespace App\Service\Plugin\Plugins;
 use App\Entity\Layer;
 use App\Entity\User;
 use App\Service\Plugin\Config\PluginConfig;
+use App\Service\Plugin\Config\InternetConfig;
 use App\Service\Plugin\PluginService;
 use Psr\Log\LoggerInterface;
 
@@ -46,27 +47,27 @@ abstract class AbstractPlugin implements PluginInterface
     // Base implementation methods from PluginInterface
     public function getName(): string
     {
-        return $this->config->name;
+        return isset($this->config) ? $this->config->name : $this->getDefaultName();
     }
 
     public function getDescription(): string
     {
-        return $this->config->description;
+        return isset($this->config) ? $this->config->description : $this->getDefaultDescription();
     }
 
     public function getVersion(): string
     {
-        return $this->config->version;
+        return isset($this->config) ? $this->config->version : $this->getDefaultVersion();
     }
 
     public function getIcon(): string
     {
-        return $this->config->icon;
+        return isset($this->config) ? $this->config->icon : $this->getDefaultIcon();
     }
 
     public function getSupportedCommands(): array
     {
-        return $this->config->supportedCommands;
+        return isset($this->config) ? $this->config->supportedCommands : $this->getDefaultSupportedCommands();
     }
 
     public function supportsCommand(string $command): bool
@@ -76,7 +77,7 @@ abstract class AbstractPlugin implements PluginInterface
 
     public function getRequirements(): array
     {
-        return $this->config->requirements;
+        return isset($this->config) ? $this->config->requirements : $this->getDefaultRequirements();
     }
 
     public function isAvailableForUser(User $user): bool
@@ -91,6 +92,14 @@ abstract class AbstractPlugin implements PluginInterface
     {
         $basePath = $this->pluginService->getPluginDirectory($this->config->id);
         return $subPath ? $basePath . '/' . $subPath : $basePath;
+    }
+
+    /**
+     * Get internet configuration for this plugin
+     */
+    public function getInternetConfig(): ?InternetConfig
+    {
+        return $this->config?->internet;
     }
 
     /**
@@ -120,4 +129,12 @@ abstract class AbstractPlugin implements PluginInterface
     // Abstract methods that must be implemented by concrete plugins
     abstract public function executeCommand(User $user, ?Layer $layer, string $command, array $parameters = [], array $options = []): array;
     abstract public function validateRequirements(User $user): bool;
+
+    // Abstract methods for default values (used as fallback when config is not loaded)
+    abstract protected function getDefaultName(): string;
+    abstract protected function getDefaultDescription(): string;
+    abstract protected function getDefaultVersion(): string;
+    abstract protected function getDefaultIcon(): string;
+    abstract protected function getDefaultSupportedCommands(): array;
+    abstract protected function getDefaultRequirements(): array;
 }

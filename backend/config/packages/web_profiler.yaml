@@ -1,11 +1,25 @@
 when@dev:
     web_profiler:
         toolbar: true
+        intercept_redirects: false
 
     framework:
         profiler:
-            collect_serializer_data: true
+            # Reduced data collection to minimize file I/O issues
+            collect_serializer_data: false
+            # Store profiles in a clean directory
+            dsn: 'file:%kernel.cache_dir%/profiler'
+            # Only collect main requests to reduce file creation
+            only_main_requests: true
+            only_exceptions: false
 
 when@test:
     framework:
         profiler: { collect: false }
+
+# Completely disable profiler in production
+when@prod:
+    framework:
+        profiler: 
+            collect: false
+            enabled: false

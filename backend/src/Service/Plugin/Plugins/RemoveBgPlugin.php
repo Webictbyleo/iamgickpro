@@ -43,27 +43,27 @@ class RemoveBgPlugin extends AbstractLayerPlugin
         parent::__construct($pluginService, $logger, $environment, $projectDir);
     }
 
-    public function getName(): string
+    protected function getDefaultName(): string
     {
         return 'Background Remover';
     }
 
-    public function getDescription(): string
+    protected function getDefaultDescription(): string
     {
         return 'Remove and restore image backgrounds using AI-powered background removal';
     }
 
-    public function getVersion(): string
+    protected function getDefaultVersion(): string
     {
         return '1.0.0';
     }
 
-    public function getIcon(): string
+    protected function getDefaultIcon(): string
     {
         return '/icons/plugins/removebg.svg';
     }
 
-    public function getSupportedCommands(): array
+    protected function getDefaultSupportedCommands(): array
     {
         return [
             'remove_background',
@@ -74,9 +74,13 @@ class RemoveBgPlugin extends AbstractLayerPlugin
         ];
     }
 
-    public function supportsCommand(string $command): bool
+    protected function getDefaultRequirements(): array
     {
-        return in_array($command, $this->getSupportedCommands(), true);
+        return [
+            'integrations' => ['removebg'],
+            'layer_types' => ['image'],
+            'permissions' => ['layer.edit']
+        ];
     }
 
     protected function executeLayerCommand(User $user, Layer $layer, string $command, array $parameters = [], array $options = []): array
@@ -98,15 +102,6 @@ class RemoveBgPlugin extends AbstractLayerPlugin
     public function isAvailableForUser(User $user): bool
     {
         return true; // Available to all users, but requires API key configuration
-    }
-
-    public function getRequirements(): array
-    {
-        return [
-            'integrations' => ['removebg'],
-            'layer_types' => ['image'],
-            'permissions' => ['layer.edit']
-        ];
     }
 
     public function validateRequirements(User $user): bool
@@ -214,7 +209,7 @@ class RemoveBgPlugin extends AbstractLayerPlugin
                 $fileData = $this->getLocalFileContent($relativePath);
                 
                 // Use multipart form data for file upload
-                $response = $this->requestBuilder->forService($user, 'removebg')->post(self::API_URL, [
+                $response = $this->requestBuilder->forService($user, 'removebg', $this->getInternetConfig())->post(self::API_URL, [
                     'body' => [
                         'image_file' => $fileData['content'],
                         'size' => $parameters['size'] ?? 'auto',
@@ -233,7 +228,7 @@ class RemoveBgPlugin extends AbstractLayerPlugin
                 ]);
             } else {
                 // Use URL-based processing (production/staging environment)
-                $response = $this->requestBuilder->forService($user, 'removebg')->post(self::API_URL, [
+                $response = $this->requestBuilder->forService($user, 'removebg', $this->getInternetConfig())->post(self::API_URL, [
                     'body' => [
                         'image_url' => $normalizedImageUrl,
                         'size' => $parameters['size'] ?? 'auto',
