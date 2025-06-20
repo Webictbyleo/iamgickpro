@@ -194,6 +194,11 @@ const emit = defineEmits<{
   'custom-resize': []
 }>()
 
+const props = defineProps<{
+  canvasWidth: number
+  canvasHeight: number
+}>()
+
 const quickSizes = [
   { name: 'Instagram Post', width: 1080, height: 1080, aspect: 'square' },
   { name: 'Instagram Story', width: 1080, height: 1920, aspect: 'tall' },
@@ -211,8 +216,26 @@ const moreSizes = [
 ]
 const designStore = useDesignStore()
 // Custom size state
-const customWidth = ref<number>(designStore.currentDesign?.width || 1080)
-const customHeight = ref<number>(designStore.currentDesign?.height || 1080)
+const customWidth = computed({
+  get: () => designStore.currentDesign?.width || props.canvasWidth,
+  set: (value: number) => {
+    if (designStore.currentDesign) {
+      designStore.currentDesign.width = value
+    }
+  }
+})
+const customHeight = computed({
+  get: () => designStore.currentDesign?.height || props.canvasHeight,
+  set: (value: number) => {
+    if (designStore.currentDesign) {
+      designStore.currentDesign.height = value
+    }
+  }
+})
+
+
+
+console.log('Initial custom size:', customWidth.value, customHeight.value)
 const aspectRatioLocked = ref(false)
 const originalAspectRatio = ref<number>(1)
 

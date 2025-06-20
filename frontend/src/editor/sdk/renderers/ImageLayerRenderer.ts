@@ -67,14 +67,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     const properties = layer.properties as ImageLayerProperties
     const imageNode = node.findOne('Image') as Konva.Image
 
-    console.log('🎨 ImageLayerRenderer.update called:', {
-      layerId: layer.id,
-      newSrc: properties.src,
-      currentSrc: (imageNode?.image() as HTMLImageElement)?.src,
-      hasImageNode: !!imageNode,
-      dimensions: { width: layer.width, height: layer.height }
-    })
-
     // Update group dimensions
     node.setAttrs({
       width: layer.width,
@@ -85,14 +77,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     const needsImageReload = this.needsImageReload(imageNode, properties.src)
     
     if (properties.src && needsImageReload) {
-      console.log('🔄 Image src changed, reloading:', {
-        newSrc: properties.src,
-        currentSrc: (imageNode?.image() as HTMLImageElement)?.src,
-        hasImageNode: !!imageNode,
-        layerId: layer.id,
-        reason: !imageNode ? 'no_image_node' : 'src_changed'
-      })
-      
       // Remove existing image node if it exists
       if (imageNode) {
         imageNode.destroy()
@@ -133,8 +117,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       }
       return // Exit early since loadImage will handle the rest
     }
-
-    console.log('🔧 Updating existing image layer properties:', layer.id)
 
     // Update transforms and positioning if image exists
     if (imageNode) {
@@ -195,18 +177,14 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     loadingText?: Konva.Text
   ): Promise<void> {
     try {
-      console.log('🖼️ Loading image:', { src, layerId: layer.id })
-      
       let img = this.imageCache.get(src)
       
       if (!img) {
-        console.log('📥 Image not in cache, loading from URL:', src)
         img = new Image()
         img.crossOrigin = 'anonymous'
         
         await new Promise((resolve, reject) => {
           img!.onload = () => {
-            console.log('✅ Image loaded successfully:', src)
             resolve(img)
           }
           img!.onerror = (error) => {
@@ -218,9 +196,8 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
         
         // Cache the loaded image
         this.imageCache.set(src, img)
-        console.log('💾 Image cached:', src)
       } else {
-        console.log('🎯 Using cached image:', src)
+        // Using cached image
       }
 
       // Safely destroy placeholder elements if they exist
@@ -230,8 +207,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       if (loadingText) {
         loadingText.destroy()
       }
-      
-      console.log('🎨 Creating Konva Image node:', { layerId: layer.id, imgWidth: img.width, imgHeight: img.height })
       
       const imageNode = new Konva.Image({
         id: layer.id.toString(), // Convert number ID to string for Konva
@@ -249,12 +224,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       if (!properties.originalWidth || !properties.originalHeight) {
         properties.originalWidth = img.width
         properties.originalHeight = img.height
-        
-        console.log('📐 Set original image dimensions:', {
-          layerId: layer.id,
-          originalWidth: img.width,
-          originalHeight: img.height
-        })
       }
 
       this.applyImageScaling(imageNode, img, layer, properties)
@@ -269,9 +238,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
       const stage = group.getStage()
       if (stage) {
         stage.batchDraw()
-        console.log('🎬 Canvas redrawn after image load')
-      } else {
-        console.warn('⚠️ No stage found for canvas redraw')
       }
 
     } catch (error) {
@@ -726,16 +692,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
     
     const isDifferent = currentSrc !== nextSrc
     
-    if (isDifferent) {
-      console.log('🔍 URL comparison:', {
-        currentSrc,
-        nextSrc,
-        originalCurrentSrc: currentImg.src,
-        originalNextSrc: newSrc,
-        isDifferent
-      })
-    }
-    
     return isDifferent
   }
 
@@ -743,7 +699,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
    * Clear the image cache - useful for debugging image reload issues
    */
   clearImageCache(): void {
-    console.log('🗑️ Clearing image cache:', this.imageCache.size, 'entries')
     this.imageCache.clear()
   }
 

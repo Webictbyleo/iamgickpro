@@ -226,6 +226,7 @@ export function useDesignEditor() {
         
         // Add to history (immediate for better UX)
         if (designStore.currentDesign) {
+          console.log('📦 Layer change addded to histroy:', layer.id)
           addLayerHistoryEntry(designStore.currentDesign, 'modify', layer.name || `${layer.type} layer`)
         }
       } else {

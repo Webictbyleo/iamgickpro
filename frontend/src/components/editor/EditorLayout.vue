@@ -19,6 +19,8 @@
         :can-redo="canRedo"
         :active-tool="activeTool || undefined"
         :selected-layer="selectedLayer"
+        :canvas-width="designWidth"
+        :canvas-height="designHeight"
         @save="handleSave"
         @export="handleExport"
         @resize="handleResize"
@@ -483,6 +485,9 @@ const backgroundColor = computed({
   }
 })
 
+const designWidth = ref<number>(600)
+const designHeight = ref<number>(400)
+
 const layers = computed(() => designStore.currentDesign?.layers || [])
 const selectedLayer = computed(() => selectedLayers.value[0] || null)
 
@@ -499,6 +504,19 @@ watch(selectedLayer, (newLayer, oldLayer) => {
     // Auto-close contextual panel when no layer is selected
     closeContextualPanels()
     closeAllPanels()
+  }
+})
+
+watch(() => [designStore.currentDesign?.width, designStore.currentDesign?.height], (newValues) => {
+  const [newWidth, newHeight] = newValues
+  console.log('🎯 EditorLayout: Design dimensions updated:', { newWidth, newHeight })
+  if (newWidth && newHeight) {
+    designWidth.value = newWidth
+    designHeight.value = newHeight
+  }else if(newWidth) {
+    designWidth.value = newWidth
+  } else if(newHeight) {
+    designHeight.value = newHeight
   }
 })
 
@@ -797,7 +815,7 @@ const handleResize = (width: number, height: number) => {
   console.log('Canvas resized to:', width, 'x', height)
   
   // Auto-fit to screen after resize
-  autoFitToScreen()
+  //autoFitToScreen()
 }
 
 const handleAddMedia = (mediaData: any) => {
