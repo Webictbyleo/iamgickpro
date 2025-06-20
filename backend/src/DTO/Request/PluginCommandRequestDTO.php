@@ -17,7 +17,7 @@ class PluginCommandRequestDTO
 {
     public function __construct(
         #[Assert\NotBlank(message: 'Plugin identifier is required')]
-        #[Assert\Regex(pattern: '/^[a-z0-9\-]+$/', message: 'Plugin identifier must contain only lowercase letters, numbers, and hyphens')]
+        #[Assert\Regex(pattern: '/^[a-z0-9\-_]+$/', message: 'Plugin identifier must contain only lowercase letters, numbers, underscore and hyphens')]
         public readonly string $pluginId,
 
         #[Assert\NotBlank(message: 'Command is required')]

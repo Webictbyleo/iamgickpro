@@ -23,28 +23,48 @@ dependencies:
 
 internet:
   required: true
-  requires_auth: true
-  auth_type: "api_key"
   integrations:
-    - "openai"
-    - "youtube"  # For oEmbed API (no auth required)
-  endpoints:
-    - "https://api.openai.com/v1/images/edits"
-    - "https://www.youtube.com/oembed"
-  permissions:
-    - "api.call"
-    - "image.generate"
-    - "image.process"
-    - "file.store"
-  rate_limit:
-    requests_per_minute: 10
-    requests_per_hour: 100
-  allowed_domains:
-    - "api.openai.com"
-    - "www.youtube.com"
-    - "youtube.com"
-  timeout: 30
-  max_redirects: 2
+    openai:
+      auth:
+        required: true
+        type: "bearer_token"
+        credential_key: "api_key"
+        inject_as: "headers.Authorization"
+        inject_pattern: "Bearer {credential}"
+      endpoints:
+        - "https://api.openai.com/v1/images/edits"
+        - "https://api.openai.com/v1/images/generations"
+      permissions:
+        - "api.call"
+        - "image.generate"
+        - "image.process"
+      rate_limits:
+        per_minute: 10
+        per_hour: 100
+    youtube:
+      auth:
+        required: false
+        type: "none"
+      endpoints:
+        - "https://www.youtube.com/oembed"
+        - "https://youtube.com/oembed"
+      permissions:
+        - "api.call"
+      rate_limits:
+        per_minute: 60
+        per_hour: 1000
+  domains:
+    allow:
+      - "api.openai.com"
+      - "*.youtube.com"
+      - "youtube.com"
+      - "api.unsplash.com"
+    block:
+      - "malicious.com"
+  constraints:
+    timeout: 30
+    max_redirects: 2
+    max_response_size: 52428800  # 50MB for image operations
 
 requirements:
   permissions:

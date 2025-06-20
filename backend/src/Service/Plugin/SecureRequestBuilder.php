@@ -54,7 +54,7 @@ class SecureRequestBuilder
         $credentials = $this->getDecryptedCredentials($user, $serviceName, $internetConfig);
         
         // Merge authentication into request options
-        $secureOptions = $this->mergeAuthenticationOptions($options, $credentials, $serviceName, $internetConfig);
+        $secureOptions = $this->mergeAuthenticationOptions($options, $credentials, $serviceName, $user, $internetConfig);
         
         // Apply internet config constraints to request options
         if ($internetConfig !== null) {
@@ -84,74 +84,41 @@ class SecureRequestBuilder
             return;
         }
         
-        // Check if authentication is required
-        if ($config->requiresAuth) {
-            // Verify that the service has credentials configured
-            $hasCredentials = false;
+        // Validate each integration individually
+        $hasValidCredentials = false;
+        
+        foreach ($config->integrations as $integration) {
+            $authConfig = $config->getIntegrationAuth($integration);
             
-            // Check each required integration
-            foreach ($config->integrations as $integration) {
-                try {
-                    $credentials = $this->integrationService->getCredentials($user, $integration);
-                    if ($credentials !== null && !empty($credentials)) {
-                        $hasCredentials = true;
-                        break;
-                    }
-                } catch (\Exception $e) {
-                    // Continue checking other integrations
+            if (!$authConfig['required']) {
+                // This integration doesn't require auth, continue to next
+                continue;
+            }
+            
+            try {
+                $credentials = $this->integrationService->getCredentials($user, $integration);
+                if ($credentials === null || empty($credentials)) {
                     continue;
                 }
-            }
-            
-            if (!$hasCredentials) {
-                throw new \RuntimeException(sprintf(
-                    'Authentication required for %s but no valid credentials found. Required integrations: %s',
-                    $serviceName,
-                    implode(', ', $config->integrations)
-                ));
-            }
-            
-            // Validate auth type requirements
-            $authType = $config->authType;
-            if ($authType === 'api_key') {
-                // For API key auth, ensure we have an API key
-                $validApiKey = false;
-                foreach ($config->integrations as $integration) {
-                    try {
-                        $credentials = $this->integrationService->getCredentials($user, $integration);
-                        if (isset($credentials['api_key']) && !empty($credentials['api_key'])) {
-                            $validApiKey = true;
-                            break;
-                        }
-                    } catch (\Exception $e) {
-                        continue;
-                    }
-                }
                 
-                if (!$validApiKey) {
-                    throw new \RuntimeException(sprintf(
-                        'API key authentication required for %s but no valid API key found',
-                        $serviceName
-                    ));
+                // Check if required credential key exists
+                $credentialKey = $authConfig['credential_key'];
+                if (isset($credentials[$credentialKey]) && !empty($credentials[$credentialKey])) {
+                    $hasValidCredentials = true;
+                    break;
                 }
-            } elseif ($authType === 'oauth') {
-                // For OAuth, we might need different validation
-                // This can be extended based on specific OAuth requirements
-                throw new \RuntimeException(sprintf(
-                    'OAuth authentication required for %s but OAuth validation not yet implemented',
-                    $serviceName
-                ));
+            } catch (\Exception $e) {
+                // Continue checking other integrations
+                continue;
             }
         }
         
-        // Validate permissions if specified
-        if (!empty($config->permissions)) {
-            // For now, we'll log the required permissions
-            // This could be extended to integrate with a permission system
-            foreach ($config->permissions as $permission) {
-                // Log or validate specific permissions
-                // This is a placeholder for future permission validation
-            }
+        if (!$hasValidCredentials) {
+            throw new \RuntimeException(sprintf(
+                'Authentication required for %s but no valid credentials found. Required integrations: %s',
+                $serviceName,
+                implode(', ', $config->integrations)
+            ));
         }
     }
 
@@ -161,7 +128,7 @@ class SecureRequestBuilder
     private function getDecryptedCredentials(User $user, string $serviceName, ?InternetConfig $internetConfig = null): array
     {
         // If InternetConfig is provided and authentication is not required, return empty credentials
-        if ($internetConfig !== null && !$internetConfig->requiresAuth) {
+        if ($internetConfig !== null && !$internetConfig->required) {
             return [];
         }
         
@@ -179,12 +146,16 @@ class SecureRequestBuilder
         
         $credentials = $this->integrationService->getCredentials($user, $targetIntegration);
         
-        // If InternetConfig requires auth, we must have credentials
-        if ($internetConfig !== null && $internetConfig->requiresAuth && $credentials === null) {
-            throw new \RuntimeException(sprintf(
-                'Authentication required by plugin configuration but no credentials found for integration: %s',
-                $targetIntegration
-            ));
+        // Enhanced integration validation
+        if ($internetConfig !== null) {
+            $authConfig = $internetConfig->getIntegrationAuth($targetIntegration);
+            
+            if ($authConfig['required'] && $credentials === null) {
+                throw new \RuntimeException(sprintf(
+                    'Authentication required by plugin configuration but no credentials found for integration: %s',
+                    $targetIntegration
+                ));
+            }
         }
         
         // Legacy behavior: throw if no credentials (when no InternetConfig)
@@ -198,117 +169,37 @@ class SecureRequestBuilder
     /**
      * Merge authentication options based on service type and InternetConfig
      */
-    private function mergeAuthenticationOptions(array $options, array $credentials, string $serviceName, ?InternetConfig $internetConfig = null): array
+    private function mergeAuthenticationOptions(array $options, array $credentials, string $serviceName, User $user, ?InternetConfig $internetConfig = null): array
     {
-        // If InternetConfig specifies no auth required, skip authentication
-        if ($internetConfig !== null && !$internetConfig->requiresAuth) {
+        // If no InternetConfig or credentials, skip authentication
+        if ($internetConfig === null || empty($credentials)) {
             return $options;
         }
         
-        // If we have InternetConfig, use its auth type preference
-        if ($internetConfig !== null && !empty($credentials)) {
-            return $this->applyAuthenticationByType($options, $credentials, $internetConfig->authType, $serviceName);
+        // Use enhanced per-integration authentication
+        // Find the first integration that requires auth and has credentials
+        foreach ($internetConfig->integrations as $integration) {
+            $authConfig = $internetConfig->getIntegrationAuth($integration);
+            
+            if (!$authConfig['required']) {
+                continue;
+            }
+            
+            // Try to get credentials for this specific integration
+            try {
+                $integrationCredentials = $this->integrationService->getCredentials($user, $integration);
+                
+                if ($integrationCredentials !== null && !empty($integrationCredentials)) {
+                    // Apply enhanced authentication using the InternetConfig method
+                    return $internetConfig->applyIntegrationAuth($integration, $options, $integrationCredentials);
+                }
+            } catch (\Exception $e) {
+                // Continue to next integration
+                continue;
+            }
         }
         
-        // Legacy service-specific authentication (fallback)
-        return $this->applyLegacyAuthentication($options, $credentials, $serviceName);
-    }
-
-    /**
-     * Apply authentication based on the specified auth type
-     */
-    private function applyAuthenticationByType(array $options, array $credentials, string $authType, string $serviceName): array
-    {
-        switch ($authType) {
-            case 'api_key':
-                // Generic API key authentication
-                if (isset($credentials['api_key'])) {
-                    // Try service-specific header first
-                    if ($serviceName === 'removebg') {
-                        $options['headers']['X-Api-Key'] = $credentials['api_key'];
-                    } elseif ($serviceName === 'openai') {
-                        $options['headers']['Authorization'] = 'Bearer ' . $credentials['api_key'];
-                    } elseif ($serviceName === 'unsplash') {
-                        $options['headers']['Authorization'] = 'Client-ID ' . $credentials['api_key'];
-                    } elseif ($serviceName === 'pexels') {
-                        $options['headers']['Authorization'] = $credentials['api_key'];
-                    } else {
-                        // Default to Bearer token
-                        $options['headers']['Authorization'] = 'Bearer ' . $credentials['api_key'];
-                    }
-                }
-                break;
-                
-            case 'oauth':
-                // OAuth token authentication
-                if (isset($credentials['access_token'])) {
-                    $options['headers']['Authorization'] = 'Bearer ' . $credentials['access_token'];
-                }
-                break;
-                
-            case 'basic':
-                // Basic authentication
-                if (isset($credentials['username']) && isset($credentials['password'])) {
-                    $options['auth_basic'] = [$credentials['username'], $credentials['password']];
-                }
-                break;
-                
-            default:
-                // Fallback to legacy authentication
-                return $this->applyLegacyAuthentication($options, $credentials, $serviceName);
-        }
-        
-        return $options;
-    }
-
-    /**
-     * Apply legacy service-specific authentication
-     */
-    private function applyLegacyAuthentication(array $options, array $credentials, string $serviceName): array
-    {
-        switch ($serviceName) {
-            case 'removebg':
-                $options['headers'] = array_merge($options['headers'] ?? [], [
-                    'X-Api-Key' => $credentials['api_key'] ?? '',
-                ]);
-                break;
-                
-            case 'openai':
-                $options['headers'] = array_merge($options['headers'] ?? [], [
-                    'Authorization' => 'Bearer ' . ($credentials['api_key'] ?? ''),
-                ]);
-                break;
-                
-            case 'youtube':
-                // YouTube oEmbed doesn't require authentication
-                // Just ensure we have proper headers
-                $options['headers'] = array_merge($options['headers'] ?? [], [
-                    'Accept' => 'application/json',
-                ]);
-                break;
-                
-            case 'unsplash':
-                $options['headers'] = array_merge($options['headers'] ?? [], [
-                    'Authorization' => 'Client-ID ' . ($credentials['access_key'] ?? ''),
-                ]);
-                break;
-                
-            case 'pexels':
-                $options['headers'] = array_merge($options['headers'] ?? [], [
-                    'Authorization' => $credentials['api_key'] ?? '',
-                ]);
-                break;
-                
-            default:
-                // Generic API key handling
-                if (isset($credentials['api_key'])) {
-                    $options['headers'] = array_merge($options['headers'] ?? [], [
-                        'Authorization' => 'Bearer ' . $credentials['api_key'],
-                    ]);
-                }
-                break;
-        }
-        
+        // If no enhanced integration worked, return original options
         return $options;
     }
 

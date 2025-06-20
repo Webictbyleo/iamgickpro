@@ -1144,7 +1144,6 @@ export interface YouTubeVideoInfo {
   title: string
   description: string
   thumbnailUrl: string
-  duration: number
   channelTitle: string
   publishedAt: string
   viewCount: number
@@ -1426,9 +1425,9 @@ export interface RemoveBgClearCacheResult {
 }
 
 /**
- * Plugin Service Response Structure (what PluginService.executeCommand returns)
+ * RemoveBg Plugin Service Response Structure
  */
-export interface PluginServiceResponse {
+export interface RemoveBgPluginServiceResponse {
   success: boolean
   result: RemoveBgRemoveResult | RemoveBgRestoreResult | RemoveBgPreviewResult | RemoveBgStatusResult | RemoveBgClearCacheResult
   layer: {
@@ -1440,10 +1439,86 @@ export interface PluginServiceResponse {
 /**
  * Complete API Response (wrapped in standard API response format)
  */
-export interface RemoveBgApiResponse extends ApiResponse<PluginServiceResponse> {
+export interface RemoveBgApiResponse extends ApiResponse<RemoveBgPluginServiceResponse> {
   // Inherits from ApiResponse<T> which provides:
   // data: PluginServiceResponse
   // success: boolean
   // message: string
   // timestamp: string
+}
+
+/**
+ * YouTube video info from analyze_video command (actual backend response structure)
+ */
+export interface YouTubeVideoAnalysisResult {
+  video_id: string
+  title: string
+  author_name: string
+  author_url: string
+  thumbnail_url: string
+  thumbnail_width: number
+  thumbnail_height: number
+  view_count: number | null
+  description: string | null
+  fetched_at: string
+}
+
+/**
+ * YouTube Thumbnail Plugin - Thumbnail Generation Response
+ */
+export interface YouTubeThumbnailGenerationResult {
+  success: true
+  thumbnail_variations: YouTubeThumbnailVariation[]
+  original_thumbnail: string
+  video_info: YouTubeVideoAnalysisResult
+  generation_parameters: {
+    custom_prompt?: string
+    thumbnail_count: number
+    style: string
+    generated_at: string
+  }
+}
+
+/**
+ * Individual thumbnail variation from AI generation (actual backend response)
+ */
+export interface YouTubeThumbnailVariation {
+  id: string
+  title: string
+  prompt: string
+  image_url: string
+  local_path: string
+  preview_url: string
+  preview_path: string
+  thumbnail_url: string
+  thumbnail_path: string
+  original_size: string
+  youtube_size: string
+  style: string
+  created_at: string
+}
+
+/**
+ * Simplified thumbnail data for UI display (no design data needed)
+ */
+export interface YouTubeThumbnailDisplay {
+  id: string
+  title: string
+  previewUrl: string  // For displaying in the UI
+  fullImageUrl: string  // For download/full view
+  thumbnailUrl: string  // Small thumbnail
+  style: string
+  createdAt: string
+}
+
+/**
+ * Generic Plugin Service Response structure
+ */
+export interface PluginServiceResponse {
+  success: boolean
+  result: any // Can be any plugin result
+  layer?: {
+    id: number
+    plugins: Record<string, any>
+  }
 }

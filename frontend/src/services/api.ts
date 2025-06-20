@@ -365,19 +365,16 @@ export const pluginAPI = {
     })
   },
 
-  // POST /plugins/execute-command - Execute plugin command
+  // POST /plugins/execute-command - Execute plugin command (supports both layer-based and standalone)
+  // For layer-based plugins: provide layerId
+  // For standalone plugins: set layerId to null
   executeCommand: (data: {
     pluginId: string
     command: string
-    layerId: number
+    layerId?: number | null // Optional for standalone plugins
     parameters?: Record<string, any>
-  }) => api.post<ApiResponse<{
-    layer: {
-      id: number
-      plugins: Record<string, any>
-    }
-    result?: any
-  }>>('/plugins/execute-command', data),
+    options?: Record<string, any>
+  }) => api.post<ApiResponse<any>>('/plugins/execute-command', data),
 
   // GET /plugins/available - Get available plugins for user
   getAvailablePlugins: () => api.get<ApiResponse<any[]>>('/plugins/available'),

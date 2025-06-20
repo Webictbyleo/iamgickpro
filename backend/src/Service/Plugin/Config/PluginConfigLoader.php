@@ -53,21 +53,7 @@ class PluginConfigLoader
         // Create InternetConfig if present
         $internetConfig = null;
         if (isset($data['internet'])) {
-            $internetData = $data['internet'];
-            $internetConfig = new InternetConfig(
-                required: $internetData['required'] ?? true,
-                integrations: $internetData['integrations'] ?? [],
-                endpoints: $internetData['endpoints'] ?? [],
-                requiresAuth: $internetData['requires_auth'] ?? true,
-                authType: $internetData['auth_type'] ?? 'api_key',
-                permissions: $internetData['permissions'] ?? [],
-                rateLimit: $internetData['rate_limit'] ?? [],
-                metadata: $internetData['metadata'] ?? [],
-                allowedDomains: $internetData['allowed_domains'] ?? [],
-                blockedDomains: $internetData['blocked_domains'] ?? [],
-                timeout: $internetData['timeout'] ?? null,
-                maxRedirects: $internetData['max_redirects'] ?? null
-            );
+            $internetConfig = InternetConfig::fromArray($data['internet']);
         }
 
         return new PluginConfig(

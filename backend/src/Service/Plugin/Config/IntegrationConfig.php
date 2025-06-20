@@ -13,13 +13,10 @@ readonly class IntegrationConfig
 {
     public function __construct(
         public string $name,
-        public string $authType = 'none',
-        public bool $authRequired = false,
-        public array $credentials = [],
-        public InjectionConfig $injection = new InjectionConfig(),
+        public IntegrationAuthConfig $auth,
         public array $endpoints = [],
         public array $permissions = [],
-        public array $rateLimit = []
+        public array $rateLimits = []
     ) {}
 
     /**
@@ -27,17 +24,14 @@ readonly class IntegrationConfig
      */
     public static function fromArray(string $name, array $config): self
     {
-        $injectionConfig = InjectionConfig::fromArray($config['injection'] ?? []);
-        
+        $authConfig = IntegrationAuthConfig::fromArray($config['auth'] ?? []);
+
         return new self(
             name: $name,
-            authType: $config['auth_type'] ?? 'none',
-            authRequired: $config['auth_required'] ?? false,
-            credentials: $config['credentials'] ?? [],
-            injection: $injectionConfig,
+            auth: $authConfig,
             endpoints: $config['endpoints'] ?? [],
             permissions: $config['permissions'] ?? [],
-            rateLimit: $config['rate_limit'] ?? []
+            rateLimits: $config['rate_limits'] ?? []
         );
     }
 
@@ -46,15 +40,31 @@ readonly class IntegrationConfig
      */
     public function requiresAuthentication(): bool
     {
-        return $this->authRequired && $this->authType !== 'none';
+        return $this->auth->isRequired();
     }
 
     /**
-     * Get credential key name for a specific type
+     * Get authentication type
      */
-    public function getCredentialKey(string $type = 'api_key'): ?string
+    public function getAuthType(): string
     {
-        return $this->credentials[$type] ?? null;
+        return $this->auth->type;
+    }
+
+    /**
+     * Get credential key name
+     */
+    public function getCredentialKey(): string
+    {
+        return $this->auth->credentialKey;
+    }
+
+    /**
+     * Apply authentication to HTTP options
+     */
+    public function applyAuthToHttpOptions(array $httpOptions, array $credentials): array
+    {
+        return $this->auth->applyToHttpOptions($httpOptions, $credentials);
     }
 
     /**
@@ -65,13 +75,13 @@ readonly class IntegrationConfig
         if (empty($this->endpoints)) {
             return true; // No restrictions
         }
-        
+
         foreach ($this->endpoints as $allowedEndpoint) {
             if (str_starts_with($url, $allowedEndpoint)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -80,6 +90,14 @@ readonly class IntegrationConfig
      */
     public function getRateLimit(string $period): ?int
     {
-        return $this->rateLimit[$period] ?? null;
+        return $this->rateLimits[$period] ?? null;
+    }
+
+    /**
+     * Check if permission is granted
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->permissions, true);
     }
 }
