@@ -1,0 +1,64 @@
+# Plugin Configuration for YouTube Thumbnail Generator Plugin
+
+name: "YouTube Thumbnail Generator"
+description: "Generate 1-10 AI-powered thumbnail variations using the original YouTube thumbnail as reference with OpenAI gpt-image-1"
+version: "1.0.0"
+icon: "/icons/plugins/youtube-thumbnail.svg"
+type: "standalone"
+
+supported_commands:
+  - "analyze_video"
+  - "generate_thumbnail_variations"
+  - "get_video_info"
+  - "clear_cache"
+
+dependencies:
+  - "SecureRequestBuilder"
+  - "PluginService"
+  - "MediaProcessingService"
+  - "RequestStack"
+  - "LoggerInterface"
+  - "CacheItemPoolInterface"
+
+internet:
+  required: true
+  requires_auth: true
+  auth_type: "api_key"
+  integrations:
+    - "openai"
+    - "youtube"  # For oEmbed API (no auth required)
+  endpoints:
+    - "https://api.openai.com/v1/images/edits"
+    - "https://www.youtube.com/oembed"
+  permissions:
+    - "api.call"
+    - "image.generate"
+    - "image.process"
+    - "file.store"
+  rate_limit:
+    requests_per_minute: 10
+    requests_per_hour: 100
+
+requirements:
+  permissions:
+    - "plugin.execute"
+  integrations:
+    - "openai"
+
+metadata:
+  ai_provider: "openai"
+  ai_model: "gpt-image-1"
+  processing_type: "image_generation"
+  output_formats:
+    - "png"
+    - "webp"
+  image_sizes:
+    full_size: "1792x1024"
+    preview: "896x512"
+    thumbnail: "320x180"
+  openai_parameters:
+    size: "1536x1024"
+    output_format: "png"
+    quality: "high"
+    background: "opaque"
+    max_images: 10

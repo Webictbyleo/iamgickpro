@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Repository\LayerRepository;
 use App\Repository\PluginRepository;
 use App\Service\Plugin\Plugins\PluginInterface;
+use App\Service\Plugin\Plugins\AbstractPlugin;
 use App\Service\Plugin\Plugins\RemoveBgPlugin;
 use App\Service\Plugin\Plugins\YoutubeThumbnailPlugin;
 use App\Service\MediaProcessing\MediaProcessingService;
@@ -28,7 +29,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 class PluginService
 {
-    /** @var array<string, PluginInterface> */
+    /** @var array<string, AbstractPlugin> */
     private array $plugins = [];
 
     public function __construct(
@@ -56,9 +57,6 @@ class PluginService
     public function executeCommand(User $user, PluginCommandRequestDTO $dto): array
     {
         try {
-            // Validate layer ownership
-            $layer = $this->validateLayerAccess($user, $dto->layerId);
-            
             // Get plugin instance
             $plugin = $this->getPlugin($dto->pluginId);
             if (!$plugin) {
@@ -68,6 +66,15 @@ class PluginService
             // Validate command
             if (!$plugin->supportsCommand($dto->command)) {
                 throw new \RuntimeException(sprintf('Command not supported by plugin %s: %s', $dto->pluginId, $dto->command));
+            }
+
+            // Validate layer access if plugin requires a layer
+            $layer = null;
+            if ($plugin->requiresLayer()) {
+                if (!$dto->layerId) {
+                    throw new \RuntimeException(sprintf('Layer ID is required for plugin %s', $dto->pluginId));
+                }
+                $layer = $this->validateLayerAccess($user, $dto->layerId);
             }
 
             // Execute command
@@ -83,14 +90,20 @@ class PluginService
                 'user_id' => $user->getId()
             ]);
 
-            return [
+            $response = [
                 'success' => true,
-                'result' => $result,
-                'layer' => [
+                'result' => $result
+            ];
+
+            // Include layer info if layer was involved
+            if ($layer) {
+                $response['layer'] = [
                     'id' => $layer->getId(),
                     'plugins' => $layer->getPlugins()
-                ]
-            ];
+                ];
+            }
+
+            return $response;
             
         } catch (\Exception $e) {
             $this->logger->error('Plugin command execution failed', [
@@ -131,7 +144,7 @@ class PluginService
     /**
      * Get plugin instance by ID
      */
-    public function getPlugin(string $pluginId): ?PluginInterface
+    public function getPlugin(string $pluginId): ?AbstractPlugin
     {
         return $this->plugins[$pluginId] ?? null;
     }
@@ -139,7 +152,7 @@ class PluginService
     /**
      * Register a plugin instance
      */
-    public function registerPlugin(string $pluginId, PluginInterface $plugin): void
+    public function registerPlugin(string $pluginId, AbstractPlugin $plugin): void
     {
         $this->plugins[$pluginId] = $plugin;
     }

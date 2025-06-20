@@ -1,0 +1,51 @@
+# Plugin Configuration for Remove Background Plugin
+
+name: "Background Remover"
+description: "Remove and restore image backgrounds using AI-powered background removal"
+version: "1.0.0"
+icon: "/icons/plugins/remove-bg.svg"
+type: "layer_based"
+
+supported_commands:
+  - "remove_background"
+  - "restore_background"
+  - "preview_background_removal"
+  - "clear_cache"
+
+dependencies:
+  - "SecureRequestBuilder"
+  - "PluginService"
+  - "RequestStack"
+  - "LoggerInterface"
+  - "CacheItemPoolInterface"
+
+internet:
+  required: true
+  requires_auth: true
+  auth_type: "api_key"
+  integrations:
+    - "removebg"
+  endpoints:
+    - "https://api.remove.bg/v1.0/removebg"
+  permissions:
+    - "api.call"
+    - "image.process"
+  rate_limit:
+    requests_per_minute: 50
+    requests_per_month: 500
+
+requirements:
+  layer_types:
+    - "image"
+  permissions:
+    - "layer.edit"
+  integrations:
+    - "removebg"
+
+metadata:
+  api_provider: "remove.bg"
+  processing_type: "background_removal"
+  supported_formats:
+    - "png"
+    - "jpg"
+    - "jpeg"

@@ -6,6 +6,7 @@ namespace App\Service\Plugin\Plugins;
 
 use App\Entity\Layer;
 use App\Entity\User;
+use App\Service\Plugin\Plugins\AbstractLayerPlugin;
 use App\Service\Plugin\PluginService;
 use App\Service\Plugin\SecureRequestBuilder;
 use Psr\Cache\CacheItemPoolInterface;
@@ -21,22 +22,26 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
  * Implements background removal functionality using the remove.bg API.
  * Provides commands to remove and restore image backgrounds while maintaining
  * the original image data for reversible operations.
+ * 
+ * This is a layer-based plugin that requires an image layer as input.
  */
-class RemoveBgPlugin implements PluginInterface
+class RemoveBgPlugin extends AbstractLayerPlugin
 {
     private const API_URL = 'https://api.remove.bg/v1.0/removebg';
     
     public function __construct(
         private readonly SecureRequestBuilder $requestBuilder,
-        private readonly PluginService $pluginService,
+        PluginService $pluginService,
         private readonly RequestStack $requestStack,
-        private readonly LoggerInterface $logger,
+        LoggerInterface $logger,
         private readonly CacheItemPoolInterface $cache,
         #[Autowire('%kernel.environment%')]
-        private readonly string $environment,
+        string $environment,
         #[Autowire('%kernel.project_dir%')]
-        private readonly string $projectDir
-    ) {}
+        string $projectDir
+    ) {
+        parent::__construct($pluginService, $logger, $environment, $projectDir);
+    }
 
     public function getName(): string
     {
@@ -74,7 +79,7 @@ class RemoveBgPlugin implements PluginInterface
         return in_array($command, $this->getSupportedCommands(), true);
     }
 
-    public function executeCommand(User $user, Layer $layer, string $command, array $parameters = [], array $options = []): array
+    protected function executeLayerCommand(User $user, Layer $layer, string $command, array $parameters = [], array $options = []): array
     {
         if (!$this->validateRequirements($user)) {
             throw new \RuntimeException('RemoveBG API key not configured. Please configure your API key in settings.');
@@ -782,5 +787,10 @@ class RemoveBgPlugin implements PluginInterface
             'message' => 'Cached background removal results cleared',
             'cleared' => true
         ];
+    }
+
+    protected function getSupportedLayerTypes(): array
+    {
+        return ['image']; // Only support image layers
     }
 }

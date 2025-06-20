@@ -12,6 +12,8 @@ use App\Entity\User;
  * 
  * Defines the contract that all plugins must implement to integrate with the platform.
  * Provides methods for command execution, capability declaration, and user access control.
+ * 
+ * Note: Layer parameter is nullable to support both layer-based and standalone plugins
  */
 interface PluginInterface
 {
@@ -49,13 +51,13 @@ interface PluginInterface
      * Execute a plugin command
      * 
      * @param User $user The user executing the command
-     * @param Layer $layer The target layer
+     * @param Layer|null $layer The target layer (null for standalone plugins)
      * @param string $command The command to execute
      * @param array $parameters Command parameters
      * @param array $options Command options
      * @return array Command execution result
      */
-    public function executeCommand(User $user, Layer $layer, string $command, array $parameters = [], array $options = []): array;
+    public function executeCommand(User $user, ?Layer $layer, string $command, array $parameters = [], array $options = []): array;
 
     /**
      * Check if plugin is available for a specific user
@@ -71,4 +73,9 @@ interface PluginInterface
      * Validate if user meets plugin requirements
      */
     public function validateRequirements(User $user): bool;
+
+    /**
+     * Check if plugin requires layer input
+     */
+    public function requiresLayer(): bool;
 }

@@ -6,7 +6,7 @@ namespace App\Service\Plugin\Plugins;
 
 use App\Entity\Layer;
 use App\Entity\User;
-use App\Service\Plugin\Plugins\PluginInterface;
+use App\Service\Plugin\Plugins\AbstractStandalonePlugin;
 use App\Service\Plugin\PluginService;
 use App\Service\Plugin\SecureRequestBuilder;
 use App\Service\MediaProcessing\MediaProcessingService;
@@ -23,87 +23,42 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
  * Implements YouTube video analysis and AI-powered thumbnail generation using OpenAI.
  * Uses the original YouTube thumbnail as reference and generates improved versions
  * using OpenAI's gpt-image-1 model with the edits endpoint.
+ * 
+ * This is a standalone plugin that doesn't require a design layer.
  */
-class YoutubeThumbnailPlugin implements PluginInterface
+class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 {
     private const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3';
     private const OPENAI_API_URL = 'https://api.openai.com/v1';
     
     public function __construct(
         private readonly SecureRequestBuilder $requestBuilder,
-        private readonly PluginService $pluginService,
+        PluginService $pluginService,
         private readonly MediaProcessingService $mediaProcessingService,
         private readonly RequestStack $requestStack,
-        private readonly LoggerInterface $logger,
+        LoggerInterface $logger,
         private readonly CacheItemPoolInterface $cache,
         #[Autowire('%kernel.environment%')]
-        private readonly string $environment,
+        string $environment,
         #[Autowire('%kernel.project_dir%')]
-        private readonly string $projectDir
-    ) {}
-
-    public function getName(): string
-    {
-        return 'YouTube Thumbnail Generator';
+        string $projectDir
+    ) {
+        parent::__construct($pluginService, $logger, $environment, $projectDir);
     }
 
-    public function getDescription(): string
-    {
-        return 'Generate 1-10 AI-powered thumbnail variations using the original YouTube thumbnail as reference with OpenAI gpt-image-1';
-    }
-
-    public function getVersion(): string
-    {
-        return '1.0.0';
-    }
-
-    public function getIcon(): string
-    {
-        return '/icons/plugins/youtube-thumbnail.svg';
-    }
-
-    public function getSupportedCommands(): array
-    {
-        return [
-            'analyze_video',
-            'generate_thumbnail_variations',
-            'get_video_info',
-            'clear_cache'
-        ];
-    }
-
-    public function supportsCommand(string $command): bool
-    {
-        return in_array($command, $this->getSupportedCommands(), true);
-    }
-
-    public function executeCommand(User $user, Layer $layer, string $command, array $parameters = [], array $options = []): array
+    protected function executeStandaloneCommand(User $user, string $command, array $parameters = [], array $options = []): array
     {
         if (!$this->validateRequirements($user)) {
             throw new \RuntimeException('OpenAI API key not configured. Please configure your API key in settings.');
         }
 
         return match ($command) {
-            'analyze_video' => $this->analyzeVideo($user, $layer, $parameters, $options),
-            'generate_thumbnail_variations' => $this->generateThumbnailVariations($user, $layer, $parameters, $options),
-            'get_video_info' => $this->getVideoInfo($user, $layer, $parameters, $options),
-            'clear_cache' => $this->clearCachedResults($user, $layer, $parameters, $options),
+            'analyze_video' => $this->analyzeVideo($user, $parameters, $options),
+            'generate_thumbnail_variations' => $this->generateThumbnailVariations($user, $parameters, $options),
+            'get_video_info' => $this->getVideoInfo($user, $parameters, $options),
+            'clear_cache' => $this->clearCachedResults($user, $parameters, $options),
             default => throw new \RuntimeException(sprintf('Unsupported command: %s', $command))
         };
-    }
-
-    public function isAvailableForUser(User $user): bool
-    {
-        return true; // Available to all users, but requires OpenAI API key configuration
-    }
-
-    public function getRequirements(): array
-    {
-        return [
-            'integrations' => ['openai'],
-            'layer_types' => ['image'],
-            'permissions' => ['layer.edit']
-        ];
     }
 
     public function validateRequirements(User $user): bool
@@ -116,7 +71,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     /**
      * Analyze YouTube video and extract basic information
      */
-    private function analyzeVideo(User $user, Layer $layer, array $parameters, array $options): array
+    private function analyzeVideo(User $user, array $parameters, array $options): array
     {
         $videoUrl = $parameters['video_url'] ?? null;
         if (!$videoUrl) {
@@ -146,12 +101,6 @@ class YoutubeThumbnailPlugin implements PluginInterface
             $cachedItem->expiresAfter(3600);
             $this->cache->save($cachedItem);
 
-            // Store video info in plugin data
-            $pluginData = $layer->getPluginData('youtube_thumbnail') ?? [];
-            $pluginData['video_info'] = $videoInfo;
-            $pluginData['analyzed_at'] = (new \DateTimeImmutable())->format('c');
-            $layer->addPluginData('youtube_thumbnail', $pluginData);
-
             $this->logger->info('YouTube video analyzed successfully', ['video_id' => $videoId]);
 
             return [
@@ -172,7 +121,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     /**
      * Generate thumbnail variations using OpenAI with original thumbnail as reference
      */
-    private function generateThumbnailVariations(User $user, Layer $layer, array $parameters, array $options): array
+    private function generateThumbnailVariations(User $user, array $parameters, array $options): array
     {
         $videoUrl = $parameters['video_url'] ?? null;
         $customPrompt = $parameters['custom_prompt'] ?? null;
@@ -208,18 +157,6 @@ class YoutubeThumbnailPlugin implements PluginInterface
             // Generate thumbnail variations using OpenAI edits endpoint with original as reference
             $thumbnailVariations = $this->generateThumbnailVariationsWithAI($user, $videoInfo, $originalThumbnailPath, $customPrompt, $thumbnailCount, $style);
             
-            // Store results in plugin data
-            $pluginData = $layer->getPluginData('youtube_thumbnail') ?? [];
-            $pluginData['thumbnail_variations'] = $thumbnailVariations;
-            $pluginData['original_thumbnail'] = $originalThumbnailPath;
-            $pluginData['generation_parameters'] = [
-                'custom_prompt' => $customPrompt,
-                'thumbnail_count' => $thumbnailCount,
-                'style' => $style,
-                'generated_at' => (new \DateTimeImmutable())->format('c')
-            ];
-            $layer->addPluginData('youtube_thumbnail', $pluginData);
-
             $this->logger->info('Thumbnail variations generated successfully', [
                 'video_id' => $videoId,
                 'thumbnail_count' => count($thumbnailVariations)
@@ -229,7 +166,13 @@ class YoutubeThumbnailPlugin implements PluginInterface
                 'success' => true,
                 'thumbnail_variations' => $thumbnailVariations,
                 'original_thumbnail' => $originalThumbnailPath,
-                'video_info' => $videoInfo
+                'video_info' => $videoInfo,
+                'generation_parameters' => [
+                    'custom_prompt' => $customPrompt,
+                    'thumbnail_count' => $thumbnailCount,
+                    'style' => $style,
+                    'generated_at' => (new \DateTimeImmutable())->format('c')
+                ]
             ];
 
         } catch (\Exception $e) {
@@ -244,7 +187,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     /**
      * Get basic video information
      */
-    private function getVideoInfo(User $user, Layer $layer, array $parameters, array $options): array
+    private function getVideoInfo(User $user, array $parameters, array $options): array
     {
         $videoUrl = $parameters['video_url'] ?? null;
         if (!$videoUrl) {
@@ -277,7 +220,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     /**
      * Clear cached results
      */
-    private function clearCachedResults(User $user, Layer $layer, array $parameters, array $options): array
+    private function clearCachedResults(User $user, array $parameters, array $options): array
     {
         $videoUrl = $parameters['video_url'] ?? null;
         
@@ -288,9 +231,6 @@ class YoutubeThumbnailPlugin implements PluginInterface
                 $this->cache->deleteItem($cacheKey);
             }
         }
-
-        // Clear plugin data
-        $layer->removePluginData('youtube_thumbnail');
 
         return [
             'success' => true,
@@ -366,7 +306,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     {
         try {
             // Create directory for this video's thumbnails
-            $pluginDir = $this->pluginService->getPluginDirectory('youtube_thumbnail');
+            $pluginDir = $this->getPluginDirectory();
             $videoDir = $pluginDir . '/' . $videoId;
             if (!is_dir($videoDir)) {
                 mkdir($videoDir, 0755, true);
@@ -544,7 +484,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     {
         try {
             // Create directory for this plugin
-            $pluginDir = $this->pluginService->getPluginDirectory('youtube_thumbnail');
+            $pluginDir = $this->getPluginDirectory();
             $videoDir = $pluginDir . '/' . $videoId;
             if (!is_dir($videoDir)) {
                 mkdir($videoDir, 0755, true);
@@ -591,7 +531,7 @@ class YoutubeThumbnailPlugin implements PluginInterface
     {
         try {
             // Create directory for this video's thumbnails
-            $pluginDir = $this->pluginService->getPluginDirectory('youtube_thumbnail');
+            $pluginDir = $this->getPluginDirectory();
             $videoDir = $pluginDir . '/' . $videoId;
             if (!is_dir($videoDir)) {
                 mkdir($videoDir, 0755, true);

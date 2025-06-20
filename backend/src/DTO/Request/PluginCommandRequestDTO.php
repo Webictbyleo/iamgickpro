@@ -24,8 +24,7 @@ class PluginCommandRequestDTO
         #[Assert\Length(max: 100, maxMessage: 'Command must not exceed 100 characters')]
         public readonly string $command,
 
-        #[Assert\NotBlank(message: 'Layer ID is required')]
-        public readonly int $layerId,
+        public readonly ?int $layerId,
 
         #[Assert\Type(type: 'array', message: 'Parameters must be an array')]
         public readonly array $parameters = [],
