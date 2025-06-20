@@ -12,6 +12,8 @@ use App\Repository\LayerRepository;
 use App\Repository\PluginRepository;
 use App\Service\Plugin\Plugins\PluginInterface;
 use App\Service\Plugin\Plugins\RemoveBgPlugin;
+use App\Service\Plugin\Plugins\YoutubeThumbnailPlugin;
+use App\Service\MediaProcessing\MediaProcessingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
@@ -34,6 +36,7 @@ class PluginService
         private readonly LayerRepository $layerRepository,
         private readonly PluginRepository $pluginRepository,
         private readonly SecureRequestBuilder $requestBuilder,
+        private readonly MediaProcessingService $mediaProcessingService,
         private readonly LoggerInterface $logger,
         private readonly RequestStack $requestStack,
         private readonly CacheItemPoolInterface $cache,
@@ -179,6 +182,18 @@ class PluginService
         $this->registerPlugin('removebg', new RemoveBgPlugin(
             $this->requestBuilder,
             $this,
+            $this->requestStack,
+            $this->logger,
+            $this->cache,
+            $this->environment,
+            $this->projectDir
+        ));
+
+        // Register YouTube Thumbnail Generator plugin
+        $this->registerPlugin('youtube_thumbnail', new YoutubeThumbnailPlugin(
+            $this->requestBuilder,
+            $this,
+            $this->mediaProcessingService,
             $this->requestStack,
             $this->logger,
             $this->cache,

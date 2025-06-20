@@ -22,7 +22,7 @@ export function useDesignHistory(initialDesign?: Design, config: DesignHistoryCo
     maxEntries: 50,
     enableSnapshots: true,
     snapshotInterval: 5,
-    debounceMs: 500,
+    debounceMs: 100,
     excludePaths: [
       '/updatedAt', // Don't track timestamp changes
       '/viewportSettings/zoom', // Don't track zoom changes
@@ -73,9 +73,9 @@ export function useDesignHistory(initialDesign?: Design, config: DesignHistoryCo
   /**
    * Add a new history entry with a descriptive label
    */
-  const addHistoryEntry = (design: Design, action: string, details?: string) => {
+  const addHistoryEntry = (design: Design, action: string, details?: string, force: boolean = false) => {
     const label = details ? `${action}: ${details}` : action
-    historyService.addEntry(design, label)
+    historyService.addEntry(design, label, force)
   }
 
   /**
@@ -91,7 +91,8 @@ export function useDesignHistory(initialDesign?: Design, config: DesignHistoryCo
       reorder: 'Reorder Layers'
     }
     
-    addHistoryEntry(design, actionLabels[action], layerInfo)
+    // Force immediate execution for layer changes to provide better UX
+    addHistoryEntry(design, actionLabels[action], layerInfo, true)
   }
 
   /**

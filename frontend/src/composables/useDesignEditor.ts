@@ -181,6 +181,74 @@ export function useDesignEditor() {
     }
   }
 
+  // Helper function to handle layer changes with proper history tracking
+  const handleLayerChangeWithHistory = (
+    action: 'add' | 'update' | 'delete', 
+    layerOrId: Layer | number, 
+    additionalUpdates?: () => void
+  ) => {
+    if (!designStore.currentDesign) return
+
+    let layerName = ''
+    
+    // Handle different actions
+    switch (action) {
+      case 'update':
+        if (typeof layerOrId === 'object') {
+          const layer = layerOrId as Layer
+          layerName = layer.name || `${layer.type} layer`
+          
+          // Update the design store immediately
+          const layerIndex = designStore.currentDesign.layers?.findIndex(l => l.id === layer.id)
+          if (layerIndex !== undefined && layerIndex >= 0 && designStore.currentDesign.layers) {
+            designStore.currentDesign.layers[layerIndex] = { ...layer }
+            designStore.currentDesign.updatedAt = new Date().toISOString()
+          }
+        }
+        break
+        
+      case 'delete':
+        if (typeof layerOrId === 'number') {
+          const layerId = layerOrId as number
+          // Store layer name before deletion
+          layerName = designStore.currentDesign.layers?.find(l => l.id === layerId)?.name || 'Unknown layer'
+          
+          // Remove from store
+          designStore.removeLayer(layerId)
+        }
+        break
+        
+      case 'add':
+        if (typeof layerOrId === 'object') {
+          const layer = layerOrId as Layer
+          layerName = layer.name || `${layer.type} layer`
+          // Add logic is already handled in layer:created event
+        }
+        break
+    }
+    
+    // Execute any additional updates
+    if (additionalUpdates) {
+      additionalUpdates()
+    }
+    
+    // Mark as having unsaved changes
+    hasUnsavedChanges.value = true
+    saveError.value = false
+    
+    // Trigger thumbnail generation
+    debouncedThumbnailGeneration()
+    
+    // Add to history with updated design data
+    const actionMap = {
+      add: 'add' as const,
+      update: 'modify' as const, 
+      delete: 'delete' as const
+    }
+    
+    addLayerHistoryEntry(designStore.currentDesign, actionMap[action], layerName)
+  }
+
   const setupSDKEventListeners = () => {
     if (!editorSDK.value) return
 
@@ -217,18 +285,16 @@ export function useDesignEditor() {
     })
 
     editorSDK.value.on('layer:updated', (layer: Layer) => {
-      
+      console.log('🎯 Event received: layer:updated', layer)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
         
-        // Use debounced update for backend persistence
-        debouncedLayerUpdate(layer)
+        // Handle layer update with proper history tracking
+        handleLayerChangeWithHistory('update', layer, () => {
+          // Use debounced update for backend persistence
+          debouncedLayerUpdate(layer)
+        })
         
-        // Add to history (immediate for better UX)
-        if (designStore.currentDesign) {
-          console.log('📦 Layer change addded to histroy:', layer.id)
-          addLayerHistoryEntry(designStore.currentDesign, 'modify', layer.name || `${layer.type} layer`)
-        }
       } else {
         console.log('📦 Layer updated during loading (ignored to prevent circular saves)')
       }
@@ -238,20 +304,10 @@ export function useDesignEditor() {
       console.log('🎯 Event received: layer:deleted', layerId)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
-        // Store the layer name before deletion for history
-        const layerName = designStore.currentDesign?.layers?.find(l => l.id === layerId)?.name || 'Unknown layer'
         
-        designStore.removeLayer(layerId)
-        hasUnsavedChanges.value = true
-        saveError.value = false // Clear previous save errors
+        // Handle layer deletion with proper history tracking
+        handleLayerChangeWithHistory('delete', layerId)
         
-        // Trigger thumbnail generation
-        debouncedThumbnailGeneration()
-        
-        // Add to history
-        if (designStore.currentDesign) {
-          addLayerHistoryEntry(designStore.currentDesign, 'delete', layerName)
-        }
       }
     })
 

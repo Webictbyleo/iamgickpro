@@ -64,6 +64,11 @@ class SecureRequestBuilder
      */
     private function getDecryptedCredentials(User $user, string $serviceName): array
     {
+        // Some services don't require authentication
+        if (in_array($serviceName, ['youtube'], true)) {
+            return [];
+        }
+        
         $credentials = $this->integrationService->getCredentials($user, $serviceName);
         
         if ($credentials === null) {
@@ -88,6 +93,14 @@ class SecureRequestBuilder
             case 'openai':
                 $options['headers'] = array_merge($options['headers'] ?? [], [
                     'Authorization' => 'Bearer ' . ($credentials['api_key'] ?? ''),
+                ]);
+                break;
+                
+            case 'youtube':
+                // YouTube oEmbed doesn't require authentication
+                // Just ensure we have proper headers
+                $options['headers'] = array_merge($options['headers'] ?? [], [
+                    'Accept' => 'application/json',
                 ]);
                 break;
                 

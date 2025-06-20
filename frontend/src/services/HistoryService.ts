@@ -69,7 +69,23 @@ export class HistoryService<T = any> {
     this.history = []
     this.currentIndex = -1
     
-    this.addEntry(data, label, true)
+    // Create initial entry directly without comparison since there's no previous state
+    const initialEntry: HistoryEntry<T> = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      label,
+      patch: [], // Empty patch for initial state
+      data: this.config.enableSnapshots ? deepClone(data) : {} as T,
+      metadata: {
+        changeCount: 0,
+        size: JSON.stringify(data).length
+      }
+    }
+    
+    this.history.push(initialEntry)
+    this.currentIndex = 0
+    this.lastSnapshotIndex = 0
+    
     this.emit('history:change', this.getHistoryState())
   }
 
@@ -271,7 +287,8 @@ export class HistoryService<T = any> {
    * Check if undo is possible
    */
   public canUndo(): boolean {
-    return this.currentIndex > 0
+    // Can undo if we have more than just the initial entry and we're not at the initial state
+    return this.history.length > 1 && this.currentIndex >= 1
   }
 
   /**

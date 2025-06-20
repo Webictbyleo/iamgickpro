@@ -503,7 +503,10 @@ watch(selectedLayer, (newLayer, oldLayer) => {
   } else {
     // Auto-close contextual panel when no layer is selected
     closeContextualPanels()
-    closeAllPanels()
+    // If we have plugin panel active, switch to elements panel
+    if (activePanelModal.value && isPluginPanel(activePanelModal.value)) {
+      handlePanelChange('elements')
+    }
   }
 })
 
