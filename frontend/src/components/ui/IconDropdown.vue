@@ -57,7 +57,7 @@
         v-if="isOpen"
         :class="[
           'absolute z-50 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700',
-          'backdrop-blur-xl',
+          'backdrop-blur-xl dropdown-container',
           getPlacementClasses(),
           width
         ]"
@@ -151,3 +151,20 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleEscapeKey)
 })
 </script>
+
+<style scoped>
+/* Ensure nested popovers (like color pickers) appear above the dropdown */
+.dropdown-container :deep([data-headlessui-state="open"]) {
+  z-index: 9999 !important;
+}
+
+/* Alternative approach for popover panels */
+.dropdown-container :deep(.popover-panel) {
+  z-index: 9999 !important;
+}
+
+/* Ensure overflow doesn't clip nested elements */
+.dropdown-container {
+  overflow: visible !important;
+}
+</style>

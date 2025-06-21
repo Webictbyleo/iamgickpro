@@ -15,6 +15,7 @@ use App\Service\Svg\LayerRenderer\ShapeLayerRenderer;
 use App\Service\Svg\LayerRenderer\GroupLayerRenderer;
 use App\Service\Svg\LayerRenderer\VideoLayerRenderer;
 use App\Service\Svg\LayerRenderer\AudioLayerRenderer;
+use App\Service\Svg\LayerRenderer\SvgLayerRenderer;
 use App\Entity\Layer;
 use Psr\Log\NullLogger;
 
@@ -55,7 +56,8 @@ class ComprehensiveSvgLayerTest
             'shape' => new ShapeLayerRenderer($this->transformBuilder),
             'group' => new GroupLayerRenderer($this->transformBuilder),
             'video' => new VideoLayerRenderer($this->transformBuilder),
-            'audio' => new AudioLayerRenderer($this->transformBuilder)
+            'audio' => new AudioLayerRenderer($this->transformBuilder),
+            'svg' => new SvgLayerRenderer($this->transformBuilder)
         ];
     }
 

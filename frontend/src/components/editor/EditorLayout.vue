@@ -827,8 +827,14 @@ const handleResize = (width: number, height: number) => {
 }
 
 const handleAddMedia = (mediaData: any) => {
-  // Add new layer
-  addElement('image', mediaData)
+  // Handle new structured media data
+  if (mediaData.type && mediaData.data) {
+    // New format: { type: 'svg'|'image', data: properties }
+    addElement(mediaData.type, mediaData.data)
+  } else {
+    // Legacy format: direct properties (for backward compatibility)
+    addElement('image', mediaData)
+  }
 }
 
 // Animation Panel Event Handlers

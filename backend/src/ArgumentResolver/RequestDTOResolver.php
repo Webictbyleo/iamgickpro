@@ -651,6 +651,15 @@ class RequestDTOResolver implements ValueResolverInterface
                 if (isset($value['shapeType'])) $score += 50;
                 if (isset($value['fill'])) $score += 30;
                 break;
+            case 'App\DTO\ValueObject\SvgLayerProperties':
+                $svgFields = ['src', 'viewBox', 'preserveAspectRatio', 'fillColors', 'strokeColors', 'strokeWidths', 'originalWidth', 'originalHeight'];
+                foreach ($svgFields as $field) {
+                    if (isset($value[$field])) $score += 10;
+                }
+                // Bonus for SVG-specific fields
+                if (isset($value['src'])) $score += 50;
+                if (isset($value['viewBox'])) $score += 30;
+                break;
 
             case 'App\DTO\ValueObject\Transform':
                 $transformFields = ['x', 'y', 'width', 'height', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY', 'opacity'];

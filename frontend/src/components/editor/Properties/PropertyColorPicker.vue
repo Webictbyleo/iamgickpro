@@ -18,7 +18,7 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <PopoverPanel class="absolute z-10 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 p-4">
+      <PopoverPanel class="absolute z-[9999] mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 p-4 popover-panel">
         <!-- Color Picker Tabs -->
         <div class="flex space-x-1 mb-4">
           <button

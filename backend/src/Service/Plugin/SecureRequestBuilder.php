@@ -55,12 +55,12 @@ class SecureRequestBuilder
         
         // Merge authentication into request options
         $secureOptions = $this->mergeAuthenticationOptions($options, $credentials, $serviceName, $user, $internetConfig);
-        
+       
         // Apply internet config constraints to request options
         if ($internetConfig !== null) {
             $secureOptions = $this->applyInternetConfigConstraints($secureOptions, $internetConfig);
         }
-        
+         
         // Make the HTTP request
         return $this->httpClient->request($method, $url, $secureOptions);
     }
@@ -70,6 +70,7 @@ class SecureRequestBuilder
      */
     public function forService(User $user, string $serviceName, ?InternetConfig $internetConfig = null): ServiceRequestBuilder
     {
+        
         return new ServiceRequestBuilder($this, $user, $serviceName, $internetConfig);
     }
 
@@ -313,6 +314,7 @@ class ServiceRequestBuilder
 
     public function post(string $url, array $options = []): ResponseInterface
     {
+        
         return $this->requestBuilder->makeRequest($this->user, $this->serviceName, 'POST', $url, $options, $this->internetConfig);
     }
 

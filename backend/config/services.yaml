@@ -157,12 +157,15 @@ services:
             $cache: '@stock_media.cache'
         public: true
 
+    App\Service\StockMedia\ShapeService: ~
+
     App\Service\StockMedia\StockMediaService:
         arguments:
             $cacheService: '@App\Service\StockMedia\StockMediaCacheService'
             $unsplashService: '@App\Service\StockMedia\UnsplashService'
             $iconfinderService: '@App\Service\StockMedia\IconfinderService'
             $pexelsService: null
+            $shapeService: '@App\Service\StockMedia\ShapeService'
         public: true
 
     # Response DTO Factory service

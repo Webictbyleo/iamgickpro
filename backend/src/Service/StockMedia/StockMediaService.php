@@ -22,7 +22,8 @@ class StockMediaService
         private readonly ?StockMediaCacheService $cacheService = null,
         ?UnsplashService $unsplashService = null,
         ?IconfinderService $iconfinderService = null,
-        ?PexelsService $pexelsService = null
+        ?PexelsService $pexelsService = null,
+        ?ShapeService $shapeService = null
     ) {
         // Register available providers
         if ($unsplashService) {
@@ -33,6 +34,9 @@ class StockMediaService
         }
         if ($pexelsService) {
             $this->providers['pexels'] = $pexelsService;
+        }
+        if ($shapeService) {
+            $this->providers['shapes'] = $shapeService;
         }
     }
 

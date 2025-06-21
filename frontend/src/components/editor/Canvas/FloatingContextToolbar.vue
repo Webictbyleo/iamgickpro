@@ -56,6 +56,17 @@
         @plugin-tool="(props) => $emit('plugin-tool', props)"
       />
       
+      <!-- SVG Layer Toolbar -->
+      <SVGToolbar
+        v-else-if="selectedLayer && selectedLayer.type === 'svg'"
+        :src="selectedLayer.properties?.src"
+        :fillColors="selectedLayer.properties?.fillColors"
+        :strokeColors="selectedLayer.properties?.strokeColors"
+        :strokeWidths="selectedLayer.properties?.strokeWidths"
+        :preserveAspectRatio="selectedLayer.properties?.preserveAspectRatio"
+        @update="(props) => $emit('tool-update', 'svg', props)"
+      />
+      
       <!-- Tool-specific Toolbar (when no layer selected but tool is active) -->
       <component 
         v-else-if="!selectedLayer && activeTool && toolOptions[activeTool]"
@@ -306,6 +317,7 @@ import PropertySlider from '@/components/editor/Properties/PropertySlider.vue'
 import TextToolbar from '@/components/editor/Toolbar/TextToolbar.vue'
 import ShapeToolbar from '@/components/editor/Toolbar/ShapeToolbar.vue'
 import ImageToolbar from '@/components/editor/Toolbar/ImageToolbar.vue'
+import SVGToolbar from '@/components/editor/Toolbar/SVGToolbar.vue'
 
 interface ToolOption {
   component: Component
@@ -358,6 +370,10 @@ const toolOptions = computed((): Record<string, ToolOption> => ({
   },
   image: {
     component: ImageToolbar,
+    props: {}
+  },
+  svg: {
+    component: SVGToolbar,
     props: {}
   }
 }))

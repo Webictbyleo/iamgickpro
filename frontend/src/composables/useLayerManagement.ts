@@ -105,20 +105,22 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
         
         await editorSDK.value.layers.createLayer('image', imageLayer)
       } else if (type === 'svg') {
+        const svgProperties: SVGLayerProperties = {
+          src: properties.src, // src must be a URL
+          viewBox: properties.viewBox || '0 0 100 100',
+          preserveAspectRatio: properties.preserveAspectRatio || 'xMidYMid meet',
+          fillColors: properties.fillColors || {},
+          strokeColors: properties.strokeColors || {},
+          strokeWidths: properties.strokeWidths || {},
+          originalWidth: properties.originalWidth || 100,
+          originalHeight: properties.originalHeight || 100
+        }
+
         const svgLayer: Layer = {
           ...baseLayer,
           id: -Date.now() - 3, // Use negative timestamp as temporary ID, offset to avoid conflicts
           type: 'svg',
-          properties: {
-            svgContent: properties.svgContent || '<svg width="100" height="100"><rect width="100" height="100" fill="#3B82F6"/></svg>',
-            viewBox: properties.viewBox || '0 0 100 100',
-            preserveAspectRatio: properties.preserveAspectRatio || 'xMidYMid meet',
-            fillColors: properties.fillColors || {},
-            strokeColors: properties.strokeColors || {},
-            strokeWidths: properties.strokeWidths || {},
-            originalWidth: properties.originalWidth || 100,
-            originalHeight: properties.originalHeight || 100
-          } as SVGLayerProperties
+          properties: svgProperties
         }
         
         await editorSDK.value.layers.createLayer('svg', svgLayer)

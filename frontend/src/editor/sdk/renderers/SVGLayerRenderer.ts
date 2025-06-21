@@ -2,15 +2,20 @@ import Konva from 'konva'
 import type { KonvaLayerRenderer, LayerNode } from '../types'
 import type { Layer, SVGLayerProperties } from '../../../types'
 
+interface SVGImageCache {
+  originalSvg: string
+  customizedSvg: string
+  imageElement: HTMLImageElement
+  originalViewBox: { x: number; y: number; width: number; height: number }
+  lastCustomizations: string // JSON of customizations to detect changes
+}
+
 /**
- * SVG Layer Renderer - renders SVG vector graphics using Konva.Group with HTML/DOM elements
- * Provides ability to modify individual fill colors and other properties of vector elements
+ * SVG Layer Renderer - renders SVG vector graphics as Konva.Image with customization support
+ * Applies fill/stroke customizations to the SVG before rendering as image for better performance
  */
 export class SVGLayerRenderer implements KonvaLayerRenderer {
-  private svgCache: Map<string, {
-    elements: Element[]
-    originalSvg: string
-  }> = new Map()
+  private svgCache: Map<string, SVGImageCache> = new Map()
 
   canRender(layer: Layer): boolean {
     return layer.type === 'svg'
@@ -43,7 +48,7 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       y: layer.height / 2 - 8,
       width: layer.width,
       height: 16,
-      text: 'Processing SVG...',
+      text: 'Loading SVG...',
       fontSize: 11,
       fontFamily: 'Arial',
       fill: '#6c757d',
@@ -53,9 +58,9 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     group.add(placeholder)
     group.add(loadingText)
 
-    // Process SVG if content is provided
-    if (properties.svgContent) {
-      this.processSVG(properties.svgContent, layer, group, placeholder, loadingText)
+    // Load SVG if src is provided
+    if (properties.src) {
+      this.loadSVGAsImage(properties, layer, group, placeholder, loadingText)
     }
 
     this.setupInteractions(group, layer)
@@ -67,22 +72,60 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
 
     const properties = layer.properties as SVGLayerProperties
 
-    // Update group dimensions
+    console.log('🔄 SVGLayerRenderer: update called', {
+      layerId: layer.id,
+      dimensions: { width: layer.width, height: layer.height, x: layer.x, y: layer.y }
+    })
+
+    // Update group dimensions (x, y are handled by LayerManager)
     node.setAttrs({
       width: layer.width,
       height: layer.height
     })
 
-    // Check if SVG content has changed
-    const existingSvgNode = node.findOne('.svg-content') as Konva.Group
-    if (!existingSvgNode && properties.svgContent) {
-      // SVG content was added
+    // Find the SVG image
+    const svgImage = node.findOne('.svg-image') as Konva.Image
+    
+    // Check if we need to reload the SVG
+    const needsSvgReload = this.needsSvgReload(svgImage, properties)
+    
+    if (properties.src && needsSvgReload) {
+      console.log('� SVGLayerRenderer: SVG needs reload')
+      // Remove existing image node if it exists
+      if (svgImage) {
+        svgImage.destroy()
+      }
+      
       const placeholder = node.findOne('Rect') as Konva.Rect
       const loadingText = node.findOne('Text') as Konva.Text
-      this.processSVG(properties.svgContent, layer, node, placeholder, loadingText)
-    } else if (existingSvgNode && properties.svgContent) {
-      // Update existing SVG with new customizations
-      this.updateSVGCustomizations(existingSvgNode, properties)
+      
+      // If no placeholder exists, create one for loading state
+      if (!placeholder) {
+        this.createPlaceholdersAndLoad(properties, layer, node)
+      } else {
+        placeholder.setAttrs({
+          width: layer.width,
+          height: layer.height
+        })
+        this.loadSVGAsImage(properties, layer, node, placeholder, loadingText)
+      }
+      return // Exit early since loadSVGAsImage will handle the rest
+    }
+
+    // Update dimensions if SVG image exists
+    if (svgImage) {
+      console.log('✅ SVGLayerRenderer: Found SVG image, updating size')
+      // Update image size to match layer
+      svgImage.setAttrs({
+        width: layer.width,
+        height: layer.height
+      })
+
+      // Check if customizations changed and re-render if needed
+      this.updateCustomizations(properties, layer, node, svgImage)
+      
+      // Force canvas redraw after updates
+      node.getLayer()?.batchDraw()
     }
   }
 
@@ -102,318 +145,219 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     node.destroy()
   }
 
-  private processSVG(
-    svgContent: string,
+  private async loadSVGAsImage(
+    properties: SVGLayerProperties,
     layer: LayerNode,
     group: Konva.Group,
     placeholder: Konva.Rect,
     loadingText: Konva.Text
-  ): void {
+  ): Promise<void> {
+    const cacheKey = layer.id.toString()
+
     try {
-      // Parse SVG content
-      const parser = new DOMParser()
-      const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml')
-      const svgElement = svgDoc.documentElement
-
-      if (svgElement.tagName !== 'svg') {
-        throw new Error('Invalid SVG content')
+      console.log('📥 SVGLayerRenderer: Loading SVG from source')
+      loadingText.text('Loading SVG...')
+      
+      // Fetch SVG content
+      const response = await fetch(properties.src!)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch SVG: ${response.statusText}`)
       }
+      const originalSvg = await response.text()
 
-      // Extract viewBox and dimensions
-      const viewBox = svgElement.getAttribute('viewBox')
-      const svgWidth = parseFloat(svgElement.getAttribute('width') || '100')
-      const svgHeight = parseFloat(svgElement.getAttribute('height') || '100')
-
-      // Create a group to hold SVG elements
-      const svgGroup = new Konva.Group({
-        name: 'svg-content',
-        width: layer.width,
-        height: layer.height
+      // Parse viewBox
+      const viewBox = this.parseViewBox(originalSvg)
+      
+      // Apply customizations to SVG
+      loadingText.text('Applying customizations...')
+      const customizedSvg = this.applyCustomizationsToSvg(originalSvg, properties)
+      
+      // Create image element and load the customized SVG
+      loadingText.text('Rendering image...')
+      const imageElement = await this.createImageFromSvg(customizedSvg)
+      
+      const currentCustomizations = JSON.stringify({
+        fillColors: properties.fillColors,
+        strokeColors: properties.strokeColors,
+        strokeWidths: properties.strokeWidths
+      })
+      
+      // Cache the result
+      this.svgCache.set(cacheKey, {
+        originalSvg,
+        customizedSvg,
+        imageElement,
+        originalViewBox: viewBox,
+        lastCustomizations: currentCustomizations
       })
 
-      // Convert SVG elements to Konva shapes
-      this.convertSVGElementsToKonva(svgElement, svgGroup, layer, {
-        scaleX: layer.width / svgWidth,
-        scaleY: layer.height / svgHeight,
-        fillColors: (layer.properties as SVGLayerProperties).fillColors || {},
-        strokeColors: (layer.properties as SVGLayerProperties).strokeColors || {},
-        strokeWidths: (layer.properties as SVGLayerProperties).strokeWidths || {}
-      })
-
-      // Remove placeholder and add SVG content
-      placeholder.destroy()
-      loadingText.destroy()
-      group.add(svgGroup)
-
-      // Cache the processed SVG
-      this.svgCache.set(layer.id.toString(), {
-        elements: Array.from(svgElement.querySelectorAll('*')),
-        originalSvg: svgContent
-      })
+      // Create Konva image
+      this.createKonvaImageFromCache(this.svgCache.get(cacheKey)!, layer, group, placeholder, loadingText)
 
     } catch (error) {
-      console.error('Failed to process SVG:', error)
-      loadingText.text('Failed to load SVG')
+      console.error('Error loading SVG:', error)
+      this.showErrorState(placeholder, loadingText)
     }
   }
 
-  private convertSVGElementsToKonva(
-    element: Element,
-    parentGroup: Konva.Group,
+  private createKonvaImageFromCache(
+    cache: SVGImageCache,
     layer: LayerNode,
-    context: {
-      scaleX: number
-      scaleY: number
-      fillColors: Record<string, string>
-      strokeColors: Record<string, string>
-      strokeWidths: Record<string, number>
-    }
+    group: Konva.Group,
+    placeholder?: Konva.Rect,
+    loadingText?: Konva.Text
   ): void {
-    const children = Array.from(element.children)
+    const svgImage = new Konva.Image({
+      name: 'svg-image',
+      image: cache.imageElement,
+      width: layer.width,
+      height: layer.height,
+      x: 0,
+      y: 0
+    })
+
+    // Remove placeholder elements if they exist
+    if (placeholder) placeholder.destroy()
+    if (loadingText) loadingText.destroy()
+
+    // Add the image to the group
+    group.add(svgImage)
+
+    console.log('✅ SVGLayerRenderer: SVG image added to group')
+  }
+
+  private updateCustomizations(
+    properties: SVGLayerProperties,
+    layer: LayerNode,
+    group: Konva.Group,
+    svgImage: Konva.Image
+  ): void {
+    const cacheKey = layer.id.toString()
+    const currentCustomizations = JSON.stringify({
+      fillColors: properties.fillColors,
+      strokeColors: properties.strokeColors,
+      strokeWidths: properties.strokeWidths
+    })
+
+    const cached = this.svgCache.get(cacheKey)
+    if (!cached || cached.lastCustomizations === currentCustomizations) {
+      return // No changes needed
+    }
+
+    console.log('🎨 SVGLayerRenderer: Customizations changed, re-rendering')
     
-    for (const child of children) {
-      const tagName = child.tagName.toLowerCase()
+    // Apply new customizations and update image
+    const customizedSvg = this.applyCustomizationsToSvg(cached.originalSvg, properties)
+    
+    this.createImageFromSvg(customizedSvg).then(newImage => {
+      // Update cache
+      cached.customizedSvg = customizedSvg
+      cached.imageElement = newImage
+      cached.lastCustomizations = currentCustomizations
       
-      switch (tagName) {
-        case 'rect':
-          this.createKonvaRect(child, parentGroup, context)
-          break
-        case 'circle':
-          this.createKonvaCircle(child, parentGroup, context)
-          break
-        case 'ellipse':
-          this.createKonvaEllipse(child, parentGroup, context)
-          break
-        case 'path':
-          this.createKonvaPath(child, parentGroup, context)
-          break
-        case 'line':
-          this.createKonvaLine(child, parentGroup, context)
-          break
-        case 'polyline':
-        case 'polygon':
-          this.createKonvaPolygon(child, parentGroup, context)
-          break
-        case 'g':
-          // Create a group for nested elements
-          const group = new Konva.Group()
-          parentGroup.add(group)
-          this.convertSVGElementsToKonva(child, group, layer, context)
-          break
-        default:
-          // For unsupported elements, try to convert to path if possible
-          console.warn(`Unsupported SVG element: ${tagName}`)
-          break
+      // Update the Konva image
+      svgImage.image(newImage)
+      svgImage.getLayer()?.batchDraw()
+    }).catch(error => {
+      console.error('Error updating SVG customizations:', error)
+    })
+  }
+
+  private parseViewBox(svgContent: string): { x: number; y: number; width: number; height: number } {
+    const doc = new DOMParser().parseFromString(svgContent, 'image/svg+xml')
+    const svgElement = doc.documentElement
+
+    const viewBoxAttr = svgElement.getAttribute('viewBox')
+    if (viewBoxAttr) {
+      const [x, y, width, height] = viewBoxAttr.split(' ').map(Number)
+      return { x, y, width, height }
+    }
+
+    // Fallback to width/height attributes
+    const width = parseFloat(svgElement.getAttribute('width') || '100')
+    const height = parseFloat(svgElement.getAttribute('height') || '100')
+    return { x: 0, y: 0, width, height }
+  }
+
+  private applyCustomizationsToSvg(originalSvg: string, properties: SVGLayerProperties): string {
+    let customizedSvg = originalSvg
+
+    // Apply fill color customizations
+    if (properties.fillColors) {
+      for (const [selector, color] of Object.entries(properties.fillColors)) {
+        if (selector.startsWith('#')) {
+          // ID selector
+          const regex = new RegExp(`(<[^>]*id=["']${selector.slice(1)}["'][^>]*)(fill=["'][^"']*["'])?`, 'g')
+          customizedSvg = customizedSvg.replace(regex, `$1 fill="${color}"`)
+        } else {
+          // Class selector  
+          const regex = new RegExp(`(<[^>]*class=["'][^"']*${selector}[^"']*["'][^>]*)(fill=["'][^"']*["'])?`, 'g')
+          customizedSvg = customizedSvg.replace(regex, `$1 fill="${color}"`)
+        }
       }
     }
-  }
 
-  private createKonvaRect(element: Element, parent: Konva.Group, context: any): void {
-    const x = parseFloat(element.getAttribute('x') || '0') * context.scaleX
-    const y = parseFloat(element.getAttribute('y') || '0') * context.scaleY
-    const width = parseFloat(element.getAttribute('width') || '0') * context.scaleX
-    const height = parseFloat(element.getAttribute('height') || '0') * context.scaleY
-    
-    const rect = new Konva.Rect({
-      x,
-      y,
-      width,
-      height,
-      fill: this.getCustomizedFill(element, context),
-      stroke: this.getCustomizedStroke(element, context),
-      strokeWidth: this.getCustomizedStrokeWidth(element, context)
-    })
-    
-    parent.add(rect)
-  }
-
-  private createKonvaCircle(element: Element, parent: Konva.Group, context: any): void {
-    const cx = parseFloat(element.getAttribute('cx') || '0') * context.scaleX
-    const cy = parseFloat(element.getAttribute('cy') || '0') * context.scaleY
-    const r = parseFloat(element.getAttribute('r') || '0') * Math.min(context.scaleX, context.scaleY)
-    
-    const circle = new Konva.Circle({
-      x: cx,
-      y: cy,
-      radius: r,
-      fill: this.getCustomizedFill(element, context),
-      stroke: this.getCustomizedStroke(element, context),
-      strokeWidth: this.getCustomizedStrokeWidth(element, context)
-    })
-    
-    parent.add(circle)
-  }
-
-  private createKonvaEllipse(element: Element, parent: Konva.Group, context: any): void {
-    const cx = parseFloat(element.getAttribute('cx') || '0') * context.scaleX
-    const cy = parseFloat(element.getAttribute('cy') || '0') * context.scaleY
-    const rx = parseFloat(element.getAttribute('rx') || '0') * context.scaleX
-    const ry = parseFloat(element.getAttribute('ry') || '0') * context.scaleY
-    
-    const ellipse = new Konva.Ellipse({
-      x: cx,
-      y: cy,
-      radiusX: rx,
-      radiusY: ry,
-      fill: this.getCustomizedFill(element, context),
-      stroke: this.getCustomizedStroke(element, context),
-      strokeWidth: this.getCustomizedStrokeWidth(element, context)
-    })
-    
-    parent.add(ellipse)
-  }
-
-  private createKonvaPath(element: Element, parent: Konva.Group, context: any): void {
-    const d = element.getAttribute('d')
-    if (!d) return
-    
-    // Scale the path data
-    const scaledPath = this.scaleSVGPath(d, context.scaleX, context.scaleY)
-    
-    const path = new Konva.Path({
-      data: scaledPath,
-      fill: this.getCustomizedFill(element, context),
-      stroke: this.getCustomizedStroke(element, context),
-      strokeWidth: this.getCustomizedStrokeWidth(element, context)
-    })
-    
-    parent.add(path)
-  }
-
-  private createKonvaLine(element: Element, parent: Konva.Group, context: any): void {
-    const x1 = parseFloat(element.getAttribute('x1') || '0') * context.scaleX
-    const y1 = parseFloat(element.getAttribute('y1') || '0') * context.scaleY
-    const x2 = parseFloat(element.getAttribute('x2') || '0') * context.scaleX
-    const y2 = parseFloat(element.getAttribute('y2') || '0') * context.scaleY
-    
-    const line = new Konva.Line({
-      points: [x1, y1, x2, y2],
-      stroke: this.getCustomizedStroke(element, context),
-      strokeWidth: this.getCustomizedStrokeWidth(element, context)
-    })
-    
-    parent.add(line)
-  }
-
-  private createKonvaPolygon(element: Element, parent: Konva.Group, context: any): void {
-    const pointsAttr = element.getAttribute('points')
-    if (!pointsAttr) return
-    
-    const points = pointsAttr.trim().split(/[\s,]+/).map(Number)
-    const scaledPoints = points.map((point, index) => 
-      index % 2 === 0 ? point * context.scaleX : point * context.scaleY
-    )
-    
-    const polygon = new Konva.Line({
-      points: scaledPoints,
-      closed: element.tagName.toLowerCase() === 'polygon',
-      fill: this.getCustomizedFill(element, context),
-      stroke: this.getCustomizedStroke(element, context),
-      strokeWidth: this.getCustomizedStrokeWidth(element, context)
-    })
-    
-    parent.add(polygon)
-  }
-
-  private getCustomizedFill(element: Element, context: any): string {
-    const id = element.getAttribute('id')
-    const className = element.getAttribute('class')
-    
-    // Check for customized fill colors
-    if (id && context.fillColors[id]) {
-      return context.fillColors[id]
-    }
-    if (className && context.fillColors[className]) {
-      return context.fillColors[className]
-    }
-    
-    // Return original fill or default
-    return element.getAttribute('fill') || '#000000'
-  }
-
-  private getCustomizedStroke(element: Element, context: any): string {
-    const id = element.getAttribute('id')
-    const className = element.getAttribute('class')
-    
-    // Check for customized stroke colors
-    if (id && context.strokeColors[id]) {
-      return context.strokeColors[id]
-    }
-    if (className && context.strokeColors[className]) {
-      return context.strokeColors[className]
-    }
-    
-    // Return original stroke or default
-    return element.getAttribute('stroke') || 'transparent'
-  }
-
-  private getCustomizedStrokeWidth(element: Element, context: any): number {
-    const id = element.getAttribute('id')
-    const className = element.getAttribute('class')
-    
-    // Check for customized stroke widths
-    if (id && context.strokeWidths[id]) {
-      return context.strokeWidths[id]
-    }
-    if (className && context.strokeWidths[className]) {
-      return context.strokeWidths[className]
-    }
-    
-    // Return original stroke width or default
-    return parseFloat(element.getAttribute('stroke-width') || '1')
-  }
-
-  private scaleSVGPath(pathData: string, scaleX: number, scaleY: number): string {
-    // This is a simplified path scaling - in a production environment,
-    // you'd want to use a proper SVG path parser and transformer
-    return pathData.replace(/([ML])\s*(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)/g, 
-      (match, command, x, y) => {
-        const scaledX = parseFloat(x) * scaleX
-        const scaledY = parseFloat(y) * scaleY
-        return `${command} ${scaledX} ${scaledY}`
+    // Apply stroke color customizations
+    if (properties.strokeColors) {
+      for (const [selector, color] of Object.entries(properties.strokeColors)) {
+        if (selector.startsWith('#')) {
+          // ID selector
+          const regex = new RegExp(`(<[^>]*id=["']${selector.slice(1)}["'][^>]*)(stroke=["'][^"']*["'])?`, 'g')
+          customizedSvg = customizedSvg.replace(regex, `$1 stroke="${color}"`)
+        } else {
+          // Class selector
+          const regex = new RegExp(`(<[^>]*class=["'][^"']*${selector}[^"']*["'][^>]*)(stroke=["'][^"']*["'])?`, 'g')
+          customizedSvg = customizedSvg.replace(regex, `$1 stroke="${color}"`)
+        }
       }
-    )
+    }
+
+    // Apply stroke width customizations
+    if (properties.strokeWidths) {
+      for (const [selector, width] of Object.entries(properties.strokeWidths)) {
+        if (selector.startsWith('#')) {
+          // ID selector
+          const regex = new RegExp(`(<[^>]*id=["']${selector.slice(1)}["'][^>]*)(stroke-width=["'][^"']*["'])?`, 'g')
+          customizedSvg = customizedSvg.replace(regex, `$1 stroke-width="${width}"`)
+        } else {
+          // Class selector
+          const regex = new RegExp(`(<[^>]*class=["'][^"']*${selector}[^"']*["'][^>]*)(stroke-width=["'][^"']*["'])?`, 'g')
+          customizedSvg = customizedSvg.replace(regex, `$1 stroke-width="${width}"`)
+        }
+      }
+    }
+
+    return customizedSvg
   }
 
-  private updateSVGCustomizations(svgGroup: Konva.Group, properties: SVGLayerProperties): void {
-    // Update fill colors, stroke colors, and stroke widths based on properties
-    const shapes = svgGroup.find('Shape')
-    
-    shapes.forEach(shape => {
-      const konvaShape = shape as Konva.Shape
-      const id = konvaShape.id()
-      const className = konvaShape.className
+  private createImageFromSvg(svgContent: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const image = new Image()
       
-      // Update fill colors
-      if (properties.fillColors) {
-        if (id && properties.fillColors[id]) {
-          konvaShape.fill(properties.fillColors[id])
-        }
-        if (className && properties.fillColors[className]) {
-          konvaShape.fill(properties.fillColors[className])
-        }
+      image.onload = () => {
+        URL.revokeObjectURL(image.src) // Clean up blob URL
+        resolve(image)
       }
       
-      // Update stroke colors
-      if (properties.strokeColors) {
-        if (id && properties.strokeColors[id]) {
-          konvaShape.stroke(properties.strokeColors[id])
-        }
-        if (className && properties.strokeColors[className]) {
-          konvaShape.stroke(properties.strokeColors[className])
-        }
+      image.onerror = () => {
+        URL.revokeObjectURL(image.src) // Clean up blob URL
+        reject(new Error('Failed to load SVG as image'))
       }
-      
-      // Update stroke widths
-      if (properties.strokeWidths) {
-        if (id && properties.strokeWidths[id]) {
-          konvaShape.strokeWidth(properties.strokeWidths[id])
-        }
-        if (className && properties.strokeWidths[className]) {
-          konvaShape.strokeWidth(properties.strokeWidths[className])
-        }
-      }
+
+      // Create blob URL from SVG content
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+      image.src = URL.createObjectURL(blob)
     })
+  }
+
+  private showErrorState(placeholder: Konva.Rect, loadingText: Konva.Text): void {
+    // Show error state
+    loadingText.text('Failed to load SVG')
+    loadingText.fill('#dc3545')
+    
+    // Keep placeholder with error styling
+    placeholder.fill('#fee')
+    placeholder.stroke('#dc3545')
   }
 
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {
@@ -439,5 +383,60 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       // Emit selection event
       group.getStage()?.fire('layer:select', { layer })
     })
+  }
+
+  private createPlaceholdersAndLoad(
+    properties: SVGLayerProperties,
+    layer: LayerNode,
+    group: Konva.Group
+  ): void {
+    // Create placeholder while processing SVG
+    const placeholder = new Konva.Rect({
+      width: layer.width,
+      height: layer.height,
+      fill: '#f8f9fa',
+      stroke: '#e9ecef',
+      strokeWidth: 1,
+      dash: [3, 3]
+    })
+
+    const loadingText = new Konva.Text({
+      x: 0,
+      y: layer.height / 2 - 8,
+      width: layer.width,
+      height: 16,
+      text: 'Loading SVG...',
+      fontSize: 11,
+      fontFamily: 'Arial',
+      fill: '#6c757d',
+      align: 'center'
+    })
+
+    group.add(placeholder)
+    group.add(loadingText)
+
+    // Load SVG
+    this.loadSVGAsImage(properties, layer, group, placeholder, loadingText)
+  }
+
+  private needsSvgReload(svgImage: Konva.Image | null, properties: SVGLayerProperties): boolean {
+    if (!properties.src) return false
+    if (!svgImage) return true
+    
+    // Check if customizations changed
+    const cacheKey = (svgImage.getParent() as Konva.Group)?.id()
+    if (!cacheKey) return true
+    
+    const cached = this.svgCache.get(cacheKey)
+    if (!cached) return true
+    
+    const currentCustomizations = JSON.stringify({
+      fillColors: properties.fillColors,
+      strokeColors: properties.strokeColors,
+      strokeWidths: properties.strokeWidths
+    })
+    
+    // Reload if customizations changed
+    return cached.lastCustomizations !== currentCustomizations
   }
 }

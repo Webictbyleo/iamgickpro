@@ -35,6 +35,9 @@ services:
     App\Service\Svg\LayerRenderer\AudioLayerRenderer:
         tags: ['app.svg_layer_renderer']
 
+    App\Service\Svg\LayerRenderer\SvgLayerRenderer:
+        tags: ['app.svg_layer_renderer']
+
     # Main SVG Renderer Service
     App\Service\Svg\SvgRendererService:
         arguments:

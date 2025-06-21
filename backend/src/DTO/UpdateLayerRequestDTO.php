@@ -9,6 +9,7 @@ use App\DTO\ValueObject\LayerProperties;
 use App\DTO\ValueObject\TextLayerProperties;
 use App\DTO\ValueObject\ImageLayerProperties;
 use App\DTO\ValueObject\ShapeLayerProperties;
+use App\DTO\ValueObject\SvgLayerProperties;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -35,11 +36,11 @@ final readonly class UpdateLayerRequestDTO
         /**
          * Layer-specific visual and behavior properties
          * Contains type-specific attributes like text styling, image filters, or shape appearance
-         * Structure depends on layer type (text, image, shape, etc.)
+         * Structure depends on layer type (text, image, shape, svg, etc.)
          * 
-         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|null
+         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties|null
          */
-        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|null $properties = null,
+        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties|null $properties = null,
 
         /**
          * 2D transformation matrix for layer positioning and scaling

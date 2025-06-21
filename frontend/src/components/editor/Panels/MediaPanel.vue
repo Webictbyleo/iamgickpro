@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="p-4 border-b border-gray-200 bg-white">
       <h3 class="text-lg font-semibold text-gray-900">Stock Media</h3>
-      <p class="text-sm text-gray-600 mt-1">Browse photos, icons, shapes, and videos</p>
+      <p class="text-sm text-gray-600 mt-1">Browse photos, icons, and shapes</p>
     </div>
 
     <!-- Enhanced Search -->
@@ -348,106 +348,6 @@
       </div>
 
       <!-- Videos -->
-      <div v-if="activeTab === 'videos'" class="p-4">
-        <!-- Enhanced Loading State -->
-        <div v-if="isLoadingVideos && filteredVideos.length === 0" class="space-y-4">
-          <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-2 text-sm text-gray-600">Loading videos...</p>
-          </div>
-          <!-- Loading skeleton -->
-          <div class="grid grid-cols-2 gap-3">
-            <div v-for="i in 6" :key="i" class="aspect-video bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-        </div>
-        
-        <!-- Empty State for Videos -->
-        <div v-else-if="filteredVideos.length === 0 && !isLoadingVideos" class="text-center py-12">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No videos found</h3>
-          <p class="mt-1 text-sm text-gray-500">
-            {{ searchQuery ? 'Try adjusting your search terms' : 'Search for videos to get started' }}
-          </p>
-          <button
-            v-if="searchQuery"
-            @click="clearSearch"
-            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-          >
-            Clear Search
-          </button>
-        </div>
-        
-        <div v-else class="space-y-4">
-          <!-- Results header -->
-          <div v-if="searchQuery" class="flex items-center justify-between">
-            <h4 class="text-sm font-medium text-gray-900">{{ filteredVideos.length }} Videos</h4>
-            <button
-              @click="clearSearch"
-              class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Clear search
-            </button>
-          </div>
-          
-          <!-- Enhanced Grid -->
-          <div class="grid grid-cols-2 gap-3">
-            <div
-              v-for="video in filteredVideos"
-              :key="video.id"
-              @click="addMedia(video)"
-              class="relative group cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-            >
-              <div class="aspect-video bg-gray-900 flex items-center justify-center">
-                <img
-                  v-if="video.thumbnail"
-                  :src="video.thumbnail"
-                  :alt="video.alt"
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                  @error="handleImageError"
-                />
-                <svg v-else class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </div>
-              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
-                <div class="bg-white rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                  <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </div>
-              </div>
-              <!-- Video info overlay -->
-              <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p class="text-white text-xs truncate">{{ video.alt }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Enhanced Load More Button -->
-          <div v-if="hasMoreVideos && !isLoadingVideos" class="pt-2">
-            <button
-              @click="loadMoreVideos"
-              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-center space-x-2"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Load More Videos</span>
-            </button>
-          </div>
-          
-          <!-- Loading more indicator -->
-          <div v-if="isLoadingVideos && filteredVideos.length > 0" class="text-center py-4">
-            <div class="inline-flex items-center space-x-2">
-              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span class="text-sm text-gray-600">Loading more videos...</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     
     <!-- Global Tooltip -->
@@ -473,8 +373,7 @@ import type { MediaItem } from '@/types'
 import { 
   PhotoIcon,
   SparklesIcon,
-  Square3Stack3DIcon,
-  VideoCameraIcon
+  Square3Stack3DIcon
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
@@ -505,23 +404,18 @@ const {
   stockPhotos,
   stockIcons,
   stockShapes,
-  stockVideos,
   isLoadingPhotos,
   isLoadingIcons,
   isLoadingShapes,
-  isLoadingVideos,
   searchPhotos,
   searchIcons,
   searchShapes,
-  searchVideos,
   loadMorePhotos,
   loadMoreIcons,
   loadMoreShapes,
-  loadMoreVideos,
   hasMorePhotos,
   hasMoreIcons,
-  hasMoreShapes,
-  hasMoreVideos
+  hasMoreShapes
 } = useStockMedia()
 
 // Computed properties for loading states and results
@@ -530,7 +424,6 @@ const isCurrentTabLoading = computed(() => {
     case 'photos': return isLoadingPhotos.value
     case 'icons': return isLoadingIcons.value
     case 'shapes': return isLoadingShapes.value
-    case 'videos': return isLoadingVideos.value
     default: return false
   }
 })
@@ -540,7 +433,6 @@ const hasMoreForCurrentTab = computed(() => {
     case 'photos': return hasMorePhotos.value
     case 'icons': return hasMoreIcons.value
     case 'shapes': return hasMoreShapes.value
-    case 'videos': return hasMoreVideos.value
     default: return false
   }
 })
@@ -550,7 +442,6 @@ const getCurrentResults = () => {
     case 'photos': return filteredPhotos.value
     case 'icons': return filteredIcons.value
     case 'shapes': return filteredShapes.value
-    case 'videos': return filteredVideos.value
     default: return []
   }
 }
@@ -561,35 +452,30 @@ const getCurrentResults = () => {
 const filteredPhotos = computed(() => stockPhotos.value)
 const filteredIcons = computed(() => stockIcons.value)
 const filteredShapes = computed(() => stockShapes.value)
-const filteredVideos = computed(() => stockVideos.value)
 
 // Media addition
 const addMedia = (mediaData: any) => {
-  // Handle shapes from stock media
+  // Handle shapes from stock media as SVG layers
   if (activeTab.value === 'shapes') {
-    const shapeData = {
-      shapeType: 'custom',
+    const svgData = {
       src: mediaData.src || mediaData.thumbnail || mediaData.url,
       name: mediaData.alt || mediaData.name || 'Shape',
-      fill: {
-        type: 'solid',
-        color: '#3B82F6',
-        opacity: 1
-      },
-      stroke: '#1E40AF',
-      strokeWidth: 2,
-      strokeOpacity: 1,
-      strokeLineCap: 'round',
-      strokeLineJoin: 'round'
+      viewBox: '0 0 100 100', // Default viewBox, will be updated when SVG is loaded
+      preserveAspectRatio: 'xMidYMid meet',
+      fillColors: {},
+      strokeColors: {},
+      strokeWidths: {},
+      originalWidth: 100, // Default size, will be updated when SVG is loaded
+      originalHeight: 100
     }
-    emit('addMedia', shapeData)
+    emit('addMedia', { type: 'svg', data: svgData })
   } else {
     // Handle images and other media (both uploaded and stock)
     const imageData = {
       src: mediaData.src || mediaData.thumbnail || mediaData.url || mediaData.thumbnailUrl,
       alt: mediaData.alt || mediaData.name || 'Image'
     }
-    emit('addMedia', imageData)
+    emit('addMedia', { type: 'image', data: imageData })
   }
 }
 
@@ -609,9 +495,6 @@ const handleSearch = () => {
     case 'shapes':
       searchShapes(query)
       break
-    case 'videos':
-      searchVideos(query)
-      break
   }
 }
 
@@ -627,9 +510,6 @@ const clearSearch = () => {
       break
     case 'shapes':
       searchShapes('basic')
-      break
-    case 'videos':
-      searchVideos('design')
       break
   }
 }
@@ -655,7 +535,6 @@ onMounted(() => {
   searchPhotos('design')
   searchIcons('design') 
   searchShapes('basic')
-  searchVideos('design')
 })
 
 // Enhanced search with debouncing
@@ -684,8 +563,6 @@ watch(activeTab, (newTab) => {
     searchIcons('design')
   } else if (newTab === 'shapes' && shouldLoad && stockShapes.value.length === 0) {
     searchShapes('basic')
-  } else if (newTab === 'videos' && shouldLoad && stockVideos.value.length === 0) {
-    searchVideos('design')
   }
 })
 

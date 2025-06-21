@@ -764,10 +764,6 @@ class MediaController extends AbstractController
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
                 sprintf('Bulk delete completed: %d deleted, %d failed', $deleted, count($failed)),
-                [
-                    'deleted' => $deleted,
-                    'failed' => $failed,
-                ]
             );
             return $this->successResponse($successResponse);
 

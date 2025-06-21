@@ -8,6 +8,7 @@ use App\DTO\ValueObject\Transform;
 use App\DTO\ValueObject\TextLayerProperties;
 use App\DTO\ValueObject\ImageLayerProperties;
 use App\DTO\ValueObject\ShapeLayerProperties;
+use App\DTO\ValueObject\SvgLayerProperties;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -32,12 +33,12 @@ final readonly class CreateLayerRequestDTO
         /**
          * Type of layer being created
          * Determines which properties and behaviors the layer will have
-         * Valid values: text, image, shape, group, video, audio
+         * Valid values: text, image, shape, group, video, audio, svg
          */
         #[Assert\NotBlank(message: 'Layer type is required')]
         #[Assert\Choice(
-            choices: ['text', 'image', 'shape', 'group', 'video', 'audio'],
-            message: 'Invalid layer type. Must be one of: text, image, shape, group, video, audio'
+            choices: ['text', 'image', 'shape', 'group', 'video', 'audio', 'svg'],
+            message: 'Invalid layer type. Must be one of: text, image, shape, group, video, audio, svg'
         )]
         public string $type,
 
@@ -58,9 +59,9 @@ final readonly class CreateLayerRequestDTO
          * Contains type-specific attributes like text styling, image src, or shape appearance
          * Structure depends on layer type and is validated accordingly
          * 
-         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties
+         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties
          */
-        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties $properties,
+        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties $properties,
 
         /**
          * 2D transformation matrix for initial layer positioning

@@ -353,7 +353,7 @@ export interface AudioLayerProperties extends BaseLayerProperties {
 
 // SVG vector layer properties
 export interface SVGLayerProperties extends BaseLayerProperties {
-  svgContent: string // The raw SVG content
+  src: string // URL or inline SVG content
   viewBox?: string // SVG viewBox attribute
   preserveAspectRatio?: string // SVG preserveAspectRatio attribute
   fillColors?: Record<string, string> // Map of element IDs/classes to fill colors for customization

@@ -417,7 +417,7 @@ export class TransformManager {
   }
 
   private handleTransform(): void {
-    // Handle real-time transformations for images, text, and shapes
+    // Handle real-time transformations for images and text
     this.selectedLayers.forEach(layer => {
       if (!layer.konvaNode) return
 
@@ -425,9 +425,8 @@ export class TransformManager {
         this.handleImageTransformRealtime(layer)
       } else if (layer.type === 'text') {
         this.handleTextTransformRealtime(layer)
-      } else if (layer.type === 'shape') {
-        this.handleShapeTransformRealtime(layer)
       }
+      // Shapes and SVG don't need special real-time handling
     })
   }
 
@@ -610,13 +609,13 @@ export class TransformManager {
         this.handleTextTransform(layer)
       } else if (layer.type === 'image') {
         this.handleImageTransform(layer)
-      } else {
-        this.handleDefaultTransform(layer)
+      } else if (layer.type === 'svg') {
+        this.handleSvgTransform(layer)
       }
 
-      // For non-text, non-image layers, reset scale to 1 and apply to width/height
-      // Text and image layers are handled in their specific transform methods
-      if (layer.type !== 'image' && layer.type !== 'text' && (node.scaleX() !== 1 || node.scaleY() !== 1)) {
+      // For non-text, non-image, non-svg layers (shapes), reset scale to 1 and apply to width/height
+      // Text, image, and SVG layers are handled in their specific transform methods above
+      if (layer.type !== 'image' && layer.type !== 'text' && layer.type !== 'svg' && (node.scaleX() !== 1 || node.scaleY() !== 1)) {
         layer.width = layer.width * Math.abs(node.scaleX())
         layer.height = layer.height * Math.abs(node.scaleY())
         layer.scaleX = 1
@@ -672,6 +671,9 @@ export class TransformManager {
       // Clear transform states
       this.transformStartStates.clear()
     }
+
+    // Update transformer to reflect new node dimensions
+    this.updateTransformer()
 
     this.stage.batchDraw()
   }
@@ -768,6 +770,48 @@ export class TransformManager {
 
     // Apply final crop with current object position
     this.applyCrop(imageNode, layer.properties?.objectPosition || 'center-middle')
+  }
+
+  private handleSvgTransform(layer: LayerNode): void {
+    // Handle SVG-specific transformations
+    if (!layer.konvaNode || layer.type !== 'svg') {
+      console.warn('handleSvgTransform: Invalid layer or not an SVG layer')
+      return
+    }
+
+    // For SVG layers, the konvaNode is a Group containing the SVG Image node
+    let svgImage: Konva.Image | null = null
+    
+    if (layer.konvaNode instanceof Konva.Group) {
+      // Find the SVG Image node within the group
+      svgImage = layer.konvaNode.findOne('.svg-image') as Konva.Image
+    }
+    
+    const node = layer.konvaNode
+    
+    // Update layer dimensions based on the current node size and scale
+    if (node.scaleX() !== 1 || node.scaleY() !== 1) {
+      layer.width = layer.width * Math.abs(node.scaleX())
+      layer.height = layer.height * Math.abs(node.scaleY())
+      layer.scaleX = 1
+      layer.scaleY = 1
+
+      // Update the group dimensions and reset scale
+      node.setAttrs({
+        width: layer.width,
+        height: layer.height,
+        scaleX: 1,
+        scaleY: 1
+      })
+
+      // Update the SVG image to match the group size if it exists
+      if (svgImage) {
+        svgImage.setAttrs({
+          width: layer.width,
+          height: layer.height
+        })
+      }
+    }
   }
 
   private handleDefaultTransform(layer: LayerNode): void {

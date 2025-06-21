@@ -144,6 +144,13 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         }
 
         try {
+            $this->logger->info('Starting thumbnail generation', [
+                'video_id' => $videoId,
+                'thumbnail_count' => $thumbnailCount,
+                'style' => $style,
+                'custom_prompt' => $customPrompt ? substr($customPrompt, 0, 100) . '...' : null
+            ]);
+
             // Get video info first (includes original thumbnail URL)
             $videoInfo = $this->getYouTubeVideoInfo($user, $videoId);
             
@@ -151,8 +158,23 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 throw new \RuntimeException('Original thumbnail URL not found for video');
             }
             
+            $this->logger->info('Video info retrieved', [
+                'video_id' => $videoId,
+                'title' => $videoInfo['title'] ?? 'Unknown',
+                'thumbnail_url' => $videoInfo['thumbnail_url']
+            ]);
+            
             // Download original thumbnail to use as reference
             $originalThumbnailPath = $this->downloadOriginalThumbnail($videoInfo['thumbnail_url'], $videoId);
+            if (!file_exists($originalThumbnailPath)) {
+                throw new \RuntimeException('Failed to download original thumbnail image');
+            }
+            
+            $this->logger->info('Original thumbnail downloaded', [
+                'video_id' => $videoId,
+                'path' => $originalThumbnailPath,
+                'file_size' => filesize($originalThumbnailPath)
+            ]);
             
             // Generate thumbnail variations using OpenAI edits endpoint with original as reference
             $thumbnailVariations = $this->generateThumbnailVariationsWithAI($user, $videoInfo, $originalThumbnailPath, $customPrompt, $thumbnailCount, $style);
@@ -331,6 +353,64 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     }
 
     /**
+     * Convert thumbnail to PNG format for better OpenAI compatibility
+     */
+    private function convertThumbnailToPng(string $originalPath, string $videoId): string
+    {
+        try {
+            // If already PNG, just return the path
+            $imageInfo = getimagesize($originalPath);
+            if ($imageInfo && $imageInfo[2] === IMAGETYPE_PNG) {
+                return $originalPath;
+            }
+            
+            // Create PNG version
+            $pngPath = str_replace(['.jpg', '.jpeg'], '.png', $originalPath);
+            
+            // Load the image based on type
+            $image = null;
+            if ($imageInfo) {
+                switch ($imageInfo[2]) {
+                    case IMAGETYPE_JPEG:
+                        $image = imagecreatefromjpeg($originalPath);
+                        break;
+                    case IMAGETYPE_GIF:
+                        $image = imagecreatefromgif($originalPath);
+                        break;
+                    case IMAGETYPE_WEBP:
+                        $image = imagecreatefromwebp($originalPath);
+                        break;
+                }
+            }
+            
+            if (!$image) {
+                // If we can't convert, just use the original
+                $this->logger->warning('Could not convert thumbnail to PNG, using original', [
+                    'video_id' => $videoId,
+                    'original_path' => $originalPath
+                ]);
+                return $originalPath;
+            }
+            
+            // Save as PNG
+            if (imagepng($image, $pngPath)) {
+                imagedestroy($image);
+                return $pngPath;
+            } else {
+                imagedestroy($image);
+                return $originalPath;
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to convert thumbnail to PNG', [
+                'video_id' => $videoId,
+                'error' => $e->getMessage()
+            ]);
+            return $originalPath;
+        }
+    }
+
+    /**
      * Generate thumbnail variations using OpenAI gpt-image-1 with edits endpoint
      * Uses correct OpenAI parameters and processes base64 responses with media processing
      */
@@ -342,43 +422,38 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             
             $prompt = $this->buildEditPrompt($videoInfo, $customPrompt, $style);
             
-            // Prepare multipart form data for the edits endpoint (based on OpenAI docs)
+            $this->logger->info('Preparing OpenAI request', [
+                'prompt_length' => strlen($prompt),
+                'image_count' => $count,
+                'original_thumbnail_size' => filesize($originalThumbnailPath),
+                'prompt_preview' => substr($prompt, 0, 200) . '...'
+            ]);
+            
+            // Prepare multipart form data for the edits endpoint (corrected according to OpenAI docs)
+            
             $multipartData = [
-                [
-                    'name' => 'image',
-                    'contents' => fopen($originalThumbnailPath, 'r'),
-                    'filename' => 'original.jpg'
-                ],
-                [
-                    'name' => 'prompt',
-                    'contents' => $prompt
-                ],
-                [
-                    'name' => 'model',
-                    'contents' => 'gpt-image-1'
-                ],
-                [
-                    'name' => 'size',
-                    'contents' => '1536x1024' // OpenAI landscape format (not 1792x1024)
-                ],
-                [
-                    'name' => 'n',
-                    'contents' => (string)$count
-                ],
-                [
-                    'name' => 'output_format',
-                    'contents' => 'png' // Best quality for thumbnails
-                ],
-                [
-                    'name' => 'quality',
-                    'contents' => 'high' // High quality for better thumbnails
-                ],
-                [
-                    'name' => 'background',
-                    'contents' => 'opaque' // Solid background for YouTube thumbnails
-                ]
+                'image' => fopen($originalThumbnailPath, 'r'),
+                'prompt' => $prompt,
+                'model' => 'gpt-image-1',
+                'size' => '1536x1024', // gpt-image-1 supports: 1024x1024, 1536x1024 (landscape), 1024x1536 (portrait), or auto
+                'n' => (string)$count,
+                'output_format' => 'png', // gpt-image-1 supports: png, jpeg, webp
+                'quality' => 'high', // gpt-image-1 supports: high, medium, low
+                'background' => 'opaque' // gpt-image-1 supports: transparent, opaque, auto
             ];
 
+            $this->logger->info('Sending request to OpenAI', [
+                'endpoint' => self::OPENAI_API_URL . '/images/edits',
+                'parameters' => [
+                    'model' => 'gpt-image-1',
+                    'size' => '1536x1024',
+                    'n' => $count,
+                    'output_format' => 'png',
+                    'quality' => 'high',
+                    'background' => 'opaque'
+                ]
+            ]);
+            
             $response = $this->requestBuilder->forService($user, 'openai', $this->getInternetConfig())
                 ->post(self::OPENAI_API_URL . '/images/edits', [
                     'headers' => [
@@ -388,11 +463,28 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 ]);
 
             if ($response->getStatusCode() !== 200) {
+                $errorContent = $response->getContent(false);
                 $this->logger->error('OpenAI image edit generation failed', [
                     'status_code' => $response->getStatusCode(),
-                    'response' => $response->getContent(false)
+                    'response' => $errorContent,
+                    'request_url' => self::OPENAI_API_URL . '/images/edits',
+                    'prompt' => $prompt,
+                    'count' => $count,
+                    'style' => $style
                 ]);
-                throw new \RuntimeException('Failed to generate thumbnail variations with OpenAI');
+                
+                // Try to parse error details from OpenAI response
+                $errorDetails = 'Unknown error';
+                try {
+                    $errorData = json_decode($errorContent, true);
+                    if (isset($errorData['error']['message'])) {
+                        $errorDetails = $errorData['error']['message'];
+                    }
+                } catch (\Exception $e) {
+                    // Ignore JSON parsing errors
+                }
+                
+                throw new \RuntimeException(sprintf('OpenAI API Error (HTTP %d): %s', $response->getStatusCode(), $errorDetails));
             }
 
             $data = $response->toArray();
@@ -469,9 +561,9 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         // Add technical specifications for thumbnails
         $prompt .= ' Make sure all designs will be clearly visible at small sizes, with high contrast text that\'s easy to read. Include engaging visual elements that would make someone want to click. Aspect ratio should be 16:9 for YouTube thumbnails.';
 
-        // Ensure prompt doesn't exceed DALL-E limits (around 4000 characters)
-        if (strlen($prompt) > 3500) {
-            $prompt = substr($prompt, 0, 3500) . '...';
+        // Ensure prompt doesn't exceed gpt-image-1 limits (32000 characters max)
+        if (strlen($prompt) > 31000) {
+            $prompt = substr($prompt, 0, 31000) . '...';
         }
 
         return $prompt;
@@ -637,10 +729,10 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         if (isset($parameters['style'])) {
             $validStyles = ['modern', 'dramatic', 'minimalist', 'colorful', 'professional'];
             if (!in_array($parameters['style'], $validStyles, true)) {
-                $errors[] = sprintf('Invalid style. Must be one of: %s', implode(', ', $validStyles));
+                $errors[] = 'Invalid style. Must be one of: ' . implode(', ', $validStyles);
             }
         }
-        
+
         return $errors;
     }
 
@@ -651,7 +743,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 
     protected function getDefaultDescription(): string
     {
-        return 'Generate 1-10 AI-powered thumbnail variations using the original YouTube thumbnail as reference with OpenAI gpt-image-1';
+        return 'AI-powered YouTube thumbnail generator using OpenAI';
     }
 
     protected function getDefaultVersion(): string
@@ -661,24 +753,16 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 
     protected function getDefaultIcon(): string
     {
-        return '/icons/plugins/youtube-thumbnail.svg';
+        return 'youtube';
     }
 
     protected function getDefaultSupportedCommands(): array
     {
-        return [
-            'analyze_video',
-            'generate_thumbnail_variations',
-            'get_video_info',
-            'clear_cache'
-        ];
+        return ['analyze_video', 'generate_thumbnail_variations', 'get_video_info', 'clear_cache'];
     }
 
     protected function getDefaultRequirements(): array
     {
-        return [
-            'integrations' => ['youtube', 'openai'],
-            'permissions' => ['api.access']
-        ];
+        return ['openai_api_key'];
     }
 }
