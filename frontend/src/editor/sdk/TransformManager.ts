@@ -187,6 +187,7 @@ export class TransformManager {
     const allText = layerTypes.every(type => type === 'text')
     const allImages = layerTypes.every(type => type === 'image')
     const allShapes = layerTypes.every(type => type === 'shape')
+    const allSvg = layerTypes.every(type => type === 'svg')
     const mixed = layerTypes.length > 1 && new Set(layerTypes).size > 1
 
     if (allText) {
@@ -195,6 +196,8 @@ export class TransformManager {
       this.configureImageTransformer()
     } else if (allShapes) {
       this.configureShapeTransformer()
+    } else if (allSvg) {
+      this.configureSvgTransformer()
     } else if (mixed) {
       this.configureMixedTransformer()
     } else {
@@ -356,6 +359,34 @@ export class TransformManager {
         }
       })
     }
+  }
+
+  private configureSvgTransformer(): void {
+    if (!this.transformer) return
+
+    // Configure transformer for SVG layers - similar to images but optimized for vector graphics
+    this.transformer.setAttrs({
+      enabledAnchors: [
+        'top-left', 'top-center', 'top-right',
+        'middle-left', 'middle-right',
+        'bottom-left', 'bottom-center', 'bottom-right'
+      ],
+      keepRatio: false, // Allow non-proportional scaling for SVG graphics
+      rotateEnabled: true,
+      borderEnabled: true,
+      anchorSize: 8,
+      boundBoxFunc: (oldBox: Box, newBox: Box) => {
+        const minSize = 20
+        
+        // Ensure minimum size for SVG layers
+        if (newBox.width < minSize || newBox.height < minSize) {
+          newBox.width = Math.max(minSize, newBox.width)
+          newBox.height = Math.max(minSize, newBox.height)
+        }
+        
+        return newBox
+      }
+    })
   }
 
   private setupTransformEventHandlers(): void {
@@ -773,26 +804,24 @@ export class TransformManager {
   }
 
   private handleSvgTransform(layer: LayerNode): void {
-    // Handle SVG-specific transformations
+    // Handle SVG-specific transformations for path-based SVG rendering
     if (!layer.konvaNode || layer.type !== 'svg') {
       console.warn('handleSvgTransform: Invalid layer or not an SVG layer')
       return
     }
 
-    // For SVG layers, the konvaNode is a Group containing the SVG Image node
-    let svgImage: Konva.Image | null = null
-    
-    if (layer.konvaNode instanceof Konva.Group) {
-      // Find the SVG Image node within the group
-      svgImage = layer.konvaNode.findOne('.svg-image') as Konva.Image
-    }
-    
     const node = layer.konvaNode
     
     // Update layer dimensions based on the current node size and scale
     if (node.scaleX() !== 1 || node.scaleY() !== 1) {
-      layer.width = layer.width * Math.abs(node.scaleX())
-      layer.height = layer.height * Math.abs(node.scaleY())
+      const oldWidth = layer.width
+      const oldHeight = layer.height
+      const scaleX = Math.abs(node.scaleX())
+      const scaleY = Math.abs(node.scaleY())
+      
+      // Calculate new dimensions
+      layer.width = oldWidth * scaleX
+      layer.height = oldHeight * scaleY
       layer.scaleX = 1
       layer.scaleY = 1
 
@@ -804,12 +833,34 @@ export class TransformManager {
         scaleY: 1
       })
 
-      // Update the SVG image to match the group size if it exists
-      if (svgImage) {
-        svgImage.setAttrs({
-          width: layer.width,
-          height: layer.height
-        })
+      // For SVG layers with path-based rendering, we need to update the individual path scales
+      if (layer.konvaNode instanceof Konva.Group) {
+        // Find all SVG path elements within the group
+        const svgPaths = layer.konvaNode.find('.svg-path') as Konva.Path[]
+        
+        if (svgPaths.length > 0) {
+          console.log(`🔄 SVGTransform: Updating ${svgPaths.length} path elements with new scale`)
+          
+          // Update each path's scale to maintain the overall size
+          svgPaths.forEach(path => {
+            const currentScaleX = path.scaleX() || 1
+            const currentScaleY = path.scaleY() || 1
+            
+            // Apply the new scale to maintain the group's transformed size
+            path.setAttrs({
+              scaleX: currentScaleX * scaleX,
+              scaleY: currentScaleY * scaleY
+            })
+          })
+          
+          console.log(`✅ SVGTransform: Updated SVG paths for layer ${layer.id}`, {
+            oldDimensions: { width: oldWidth, height: oldHeight },
+            newDimensions: { width: layer.width, height: layer.height },
+            scaleFactors: { scaleX, scaleY }
+          })
+        } else {
+          console.log('⚠️ SVGTransform: No SVG paths found in group - may be loading or error state')
+        }
       }
     }
   }
