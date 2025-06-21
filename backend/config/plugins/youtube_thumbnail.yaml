@@ -2,14 +2,17 @@
 
 id: "youtube_thumbnail"
 name: "YouTube Thumbnail Generator"
-description: "Generate 1-10 AI-powered thumbnail variations using the original YouTube thumbnail as reference with OpenAI gpt-image-1"
-version: "1.0.0"
+description: "Generate 1-10 AI-powered thumbnail variations using OpenAI GPT-4 Vision or Replicate Imagen 4 Ultra. Supports both sync and async processing with real-time progress tracking."
+version: "2.0.0"
 icon: "/icons/plugins/youtube-thumbnail.svg"
 type: "standalone"
 
 commands:
   - "analyze_video"
   - "generate_thumbnail_variations"
+  - "generate_thumbnail_variations_async"
+  - "get_job_status"
+  - "cancel_job"
   - "get_video_info"
   - "clear_cache"
 
@@ -17,6 +20,8 @@ dependencies:
   - "SecureRequestBuilder"
   - "PluginService"
   - "MediaProcessingService"
+  - "AsyncMediaProcessingService"
+  - "MessageBusInterface"
   - "RequestStack"
   - "LoggerInterface"
   - "CacheItemPoolInterface"
@@ -41,6 +46,23 @@ internet:
       rate_limits:
         per_minute: 10
         per_hour: 100
+    replicate:
+      auth:
+        required: false  # Optional - uses system env REPLICATE_API_TOKEN
+        type: "bearer_token"
+        credential_key: "api_token"
+        inject_as: "headers.Authorization"
+        inject_pattern: "Bearer {credential}"
+      endpoints:
+        - "https://api.replicate.com/v1/models/google-deepmind/imagen-3/predictions"
+        - "https://api.replicate.com/v1/predictions"
+      permissions:
+        - "api.call"
+        - "image.generate"
+        - "model.run"
+      rate_limits:
+        per_minute: 5
+        per_hour: 50
     youtube:
       auth:
         required: false
@@ -56,26 +78,38 @@ internet:
   domains:
     allow:
       - "api.openai.com"
+      - "api.replicate.com"
       - "*.youtube.com"
       - "youtube.com"
       - "api.unsplash.com"
     block:
       - "malicious.com"
   constraints:
-    timeout: 30
+    timeout: 60  # Increased for long-running Replicate operations
     max_redirects: 2
     max_response_size: 52428800  # 50MB for image operations
 
 requirements:
   permissions:
     - "plugin.execute"
+    - "background.jobs"  # For async processing
   integrations:
     - "openai"
+    - "replicate"  # Optional integration
 
 metadata:
-  ai_provider: "openai"
-  ai_model: "gpt-image-1"
-  processing_type: "image_generation"
+  ai_providers:
+    - "openai"
+    - "replicate"
+  ai_models:
+    openai: "gpt-image-1"
+    replicate: "google-deepmind/imagen-3"
+  processing_types:
+    - "image_generation"
+    - "async_processing"
+  generation_methods:
+    - "sync"
+    - "async"
   output_formats:
     - "png"
     - "webp"
@@ -89,3 +123,16 @@ metadata:
     quality: "high"
     background: "opaque"
     max_images: 10
+  replicate_parameters:
+    size: "1536x864"  # 16:9 aspect ratio
+    aspect_ratio: "16:9"
+    output_format: "png"
+    output_quality: 90
+    num_inference_steps: 40
+    guidance_scale: 3.5
+    max_images: 1  # Replicate processes one at a time
+  async_processing:
+    max_job_time: 900  # 15 minutes
+    poll_interval: 4500  # 4.5 seconds
+    progress_updates: true
+    background_queue: true

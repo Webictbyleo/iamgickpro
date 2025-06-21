@@ -8,78 +8,65 @@
       </span>
     </div>
 
-    <!-- Customize Colors & Styles -->
+    <!-- Simple Path Styling -->
     <IconDropdown
       :icon="PaintBrushIcon"
-      tooltip="Customize SVG colors and styles"
+      tooltip="Style SVG paths"
       placement="bottom-end"
-      text="Customize"
-      width="w-80"
+      text="Style Paths"
+      width="w-72"
       :showChevron="false"
       buttonClass="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
       iconClass="w-3.5 h-3.5"
     >
       <template #default="{ close }">
-        <div class="p-4 space-y-4" style="overflow: visible;">
-          <!-- Fill Colors Section -->
-          <div>
-            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Fill Colors</div>
-            
-            <div v-if="availableElements.length === 0" class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-              No customizable elements found in this SVG
+        <div class="p-4 space-y-4">
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Path Styling
+            <div class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">
+              All SVG elements are rendered as paths for optimal performance
+            </div>
+          </div>
+          
+          <!-- Global Fill Color -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between space-x-3">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Fill Color:</span>
+              <PropertyColorPicker
+                :value="globalFillColor"
+                @update="updateGlobalFill"
+              />
             </div>
             
-            <div v-else class="space-y-3 max-h-32 overflow-y-auto color-picker-container">
-              <div 
-                v-for="element in availableElements.slice(0, 3)" 
-                :key="element.id + '-fill'"
-                class="flex items-center justify-between space-x-3"
-              >
-                <span class="text-sm text-gray-600 dark:text-gray-400 font-mono truncate flex-1">
-                  {{ element.label }}
-                </span>
-                <PropertyColorPicker
-                  :value="fillColors?.[element.id] || element.defaultFill || '#000000'"
-                  @update="(value: string) => updateFillColor(element.id, value)"
-                />
-              </div>
+            <!-- Global Stroke -->
+            <div class="flex items-center justify-between space-x-3">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Stroke Color:</span>
+              <PropertyColorPicker
+                :value="globalStrokeColor"
+                @update="updateGlobalStroke"
+              />
+            </div>
+            
+            <!-- Global Stroke Width -->
+            <div class="flex items-center justify-between space-x-3">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Stroke Width:</span>
+              <PropertyNumberInput
+                :value="globalStrokeWidth"
+                @update:value="updateGlobalStrokeWidth"
+                @change="updateGlobalStrokeWidth"
+                :min="0"
+                :max="20"
+                :step="0.5"
+                unit="px"
+                input-class="w-16"
+                placeholder="1"
+              />
             </div>
           </div>
 
-          <!-- Stroke Section -->
-          <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
-            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Stroke Settings</div>
-            
-            <div v-if="availableElements.length === 0" class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-              No customizable elements found in this SVG
-            </div>
-            
-            <div v-else class="space-y-3">
-              <!-- Stroke Color for main element -->
-              <div class="flex items-center justify-between space-x-3">
-                <span class="text-sm text-gray-600 dark:text-gray-400">Stroke Color:</span>
-                <PropertyColorPicker
-                  :value="strokeColors?.[availableElements[0]?.id] || '#000000'"
-                  @update="(value: string) => updateStrokeColor(availableElements[0]?.id, value)"
-                />
-              </div>
-              
-              <!-- Stroke Width -->
-              <div class="flex items-center justify-between space-x-3">
-                <span class="text-sm text-gray-600 dark:text-gray-400">Stroke Width:</span>
-                <PropertyNumberInput
-                  :value="strokeWidths?.[availableElements[0]?.id] || 1"
-                  @update:value="(value) => updateStrokeWidth(availableElements[0]?.id, value)"
-                  @change="(value) => updateStrokeWidth(availableElements[0]?.id, value)"
-                  :min="0"
-                  :max="10"
-                  :step="0.5"
-                  unit="px"
-                  input-class="w-16"
-                  placeholder="1"
-                />
-              </div>
-            </div>
+          <!-- Path Count Info -->
+          <div v-if="pathCount > 0" class="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+            Styling {{ pathCount }} path{{ pathCount === 1 ? '' : 's' }}
           </div>
 
           <!-- Reset Section -->
@@ -87,10 +74,10 @@
             <ModernButton
               variant="outline"
               size="sm"
-              @click="resetAllCustomizations"
+              @click="resetAllStyles"
               class="w-full"
             >
-              Reset All to Default
+              Reset to Original
             </ModernButton>
           </div>
         </div>
@@ -118,20 +105,21 @@ import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPic
 import IconDropdown from '@/components/ui/IconDropdown.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
 
-interface SVGElement {
-  id: string
-  label: string
-  defaultFill?: string
-  defaultStroke?: string
-  defaultStrokeWidth?: number
-}
-
 interface Props {
   src?: string
   fillColors?: Record<string, string>
   strokeColors?: Record<string, string>
   strokeWidths?: Record<string, number>
   preserveAspectRatio?: string
+  // SVG elements info (optional, used for path count)
+  svgElements?: Array<{
+    type: string
+    id?: string
+    className?: string
+    originalFill?: string
+    originalStroke?: string
+    originalStrokeWidth?: number
+  }>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -139,32 +127,37 @@ const props = withDefaults(defineProps<Props>(), {
   fillColors: () => ({}),
   strokeColors: () => ({}),
   strokeWidths: () => ({}),
-  preserveAspectRatio: 'xMidYMid meet'
+  preserveAspectRatio: 'xMidYMid meet',
+  svgElements: () => ([])
 })
 
 const emit = defineEmits<{
   update: [properties: Partial<Props>]
 }>()
 
-// Aspect ratio options for SVG scaling - simplified to most common options
+// Aspect ratio options for SVG scaling
 const aspectRatioOptions = [
   { label: 'Fit (Meet)', value: 'xMidYMid meet' },
   { label: 'Fill (Slice)', value: 'xMidYMid slice' },
   { label: 'Stretch', value: 'none' },
 ]
 
-// Mock available elements - in a real implementation, this would parse the SVG
-// For now, we'll provide common element types that users can customize
-const availableElements = computed((): SVGElement[] => {
-  // In a real implementation, we would parse the SVG content to find elements with IDs or classes
-  // For now, we'll provide some common element identifiers
-  return [
-    { id: 'path', label: 'Path Elements', defaultFill: '#000000', defaultStroke: 'none', defaultStrokeWidth: 1 },
-    { id: 'circle', label: 'Circle Elements', defaultFill: 'none', defaultStroke: '#000000', defaultStrokeWidth: 1 },
-    { id: 'rect', label: 'Rectangle Elements', defaultFill: '#000000', defaultStroke: 'none', defaultStrokeWidth: 1 },
-    { id: 'polygon', label: 'Polygon Elements', defaultFill: '#000000', defaultStroke: 'none', defaultStrokeWidth: 1 },
-    { id: 'line', label: 'Line Elements', defaultFill: 'none', defaultStroke: '#000000', defaultStrokeWidth: 1 },
-  ]
+// Global style values - use 'global' as the key for all paths
+const globalFillColor = computed(() => {
+  return props.fillColors?.['global'] || '#000000'
+})
+
+const globalStrokeColor = computed(() => {
+  return props.strokeColors?.['global'] || 'none'
+})
+
+const globalStrokeWidth = computed(() => {
+  return props.strokeWidths?.['global'] || 1
+})
+
+// Count of paths (for display purposes)
+const pathCount = computed(() => {
+  return props.svgElements?.length || 0
 })
 
 const getSvgLabel = (src: string): string => {
@@ -182,37 +175,30 @@ const getSvgLabel = (src: string): string => {
   return 'SVG Shape'
 }
 
-const updateFillColor = (elementId: string, color: string) => {
+// Global styling functions - apply to all paths using 'global' key
+const updateGlobalFill = (color: string) => {
+  console.log('🎨 SVGToolbar: Updating global fill color to:', color)
   const newFillColors = { ...props.fillColors }
-  newFillColors[elementId] = color
+  newFillColors['global'] = color
   emit('update', { fillColors: newFillColors })
 }
 
-const updateStrokeColor = (elementId: string, color: string) => {
+const updateGlobalStroke = (color: string) => {
+  console.log('🎨 SVGToolbar: Updating global stroke color to:', color)
   const newStrokeColors = { ...props.strokeColors }
-  newStrokeColors[elementId] = color
+  newStrokeColors['global'] = color
   emit('update', { strokeColors: newStrokeColors })
 }
 
-const updateStrokeWidth = (elementId: string, width: number) => {
+const updateGlobalStrokeWidth = (width: number) => {
+  console.log('🎨 SVGToolbar: Updating global stroke width to:', width)
   const newStrokeWidths = { ...props.strokeWidths }
-  newStrokeWidths[elementId] = width
+  newStrokeWidths['global'] = width
   emit('update', { strokeWidths: newStrokeWidths })
 }
 
-const resetFillColors = () => {
-  emit('update', { fillColors: {} })
-}
-
-const resetStrokeColors = () => {
-  emit('update', { strokeColors: {} })
-}
-
-const resetStrokeWidths = () => {
-  emit('update', { strokeWidths: {} })
-}
-
-const resetAllCustomizations = () => {
+const resetAllStyles = () => {
+  console.log('🎨 SVGToolbar: Resetting all styles to original')
   emit('update', { 
     fillColors: {}, 
     strokeColors: {}, 

@@ -361,6 +361,15 @@ export interface SVGLayerProperties extends BaseLayerProperties {
   strokeWidths?: Record<string, number> // Map of element IDs/classes to stroke widths
   originalWidth?: number // Original SVG width
   originalHeight?: number // Original SVG height
+  // Parsed SVG elements for toolbar integration (populated by renderer)
+  svgElements?: Array<{
+    type: string
+    id?: string
+    className?: string
+    originalFill?: string
+    originalStroke?: string
+    originalStrokeWidth?: number
+  }>
 }
 
 // Union type for all layer properties
@@ -1469,8 +1478,8 @@ export interface YouTubeVideoAnalysisResult {
 export interface YouTubeThumbnailGenerationResult {
   success: true
   thumbnail_variations: YouTubeThumbnailVariation[]
-  original_thumbnail: string
   video_info: YouTubeVideoAnalysisResult
+  generation_method: 'replicate' | 'openai'
   generation_parameters: {
     custom_prompt?: string
     thumbnail_count: number
@@ -1495,6 +1504,7 @@ export interface YouTubeThumbnailVariation {
   original_size: string
   youtube_size: string
   style: string
+  generation_method?: 'replicate' | 'openai'
   created_at: string
 }
 
@@ -1508,6 +1518,7 @@ export interface YouTubeThumbnailDisplay {
   fullImageUrl: string  // For download/full view
   thumbnailUrl: string  // Small thumbnail
   style: string
+  generationMethod?: 'replicate' | 'openai'
   createdAt: string
 }
 

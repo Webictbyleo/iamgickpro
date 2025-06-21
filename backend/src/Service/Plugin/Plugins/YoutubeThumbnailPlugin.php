@@ -6,14 +6,17 @@ namespace App\Service\Plugin\Plugins;
 
 use App\Entity\Layer;
 use App\Entity\User;
+use App\Message\ProcessYoutubeThumbnailMessage;
 use App\Service\Plugin\Plugins\AbstractStandalonePlugin;
 use App\Service\Plugin\PluginService;
 use App\Service\Plugin\SecureRequestBuilder;
 use App\Service\MediaProcessing\MediaProcessingService;
+use App\Service\MediaProcessing\AsyncMediaProcessingService;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
@@ -30,11 +33,14 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 {
     private const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3';
     private const OPENAI_API_URL = 'https://api.openai.com/v1';
+    private const REPLICATE_API_URL = 'https://api.replicate.com/v1';
     
     public function __construct(
         private readonly SecureRequestBuilder $requestBuilder,
         PluginService $pluginService,
         private readonly MediaProcessingService $mediaProcessingService,
+        private readonly AsyncMediaProcessingService $asyncService,
+        private readonly MessageBusInterface $messageBus,
         private readonly RequestStack $requestStack,
         LoggerInterface $logger,
         private readonly CacheItemPoolInterface $cache,
@@ -55,6 +61,9 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         return match ($command) {
             'analyze_video' => $this->analyzeVideo($user, $parameters, $options),
             'generate_thumbnail_variations' => $this->generateThumbnailVariations($user, $parameters, $options),
+            'generate_thumbnail_variations_async' => $this->generateThumbnailVariationsAsync($user, $parameters, $options),
+            'get_job_status' => $this->getJobStatus($user, $parameters, $options),
+            'cancel_job' => $this->cancelJob($user, $parameters, $options),
             'get_video_info' => $this->getVideoInfo($user, $parameters, $options),
             'clear_cache' => $this->clearCachedResults($user, $parameters, $options),
             default => throw new \RuntimeException(sprintf('Unsupported command: %s', $command))
@@ -63,9 +72,17 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 
     public function validateRequirements(User $user): bool
     {
-        // Check if user has OpenAI integration configured
-        // This is handled by SecureRequestBuilder, so we return true here
+        // Check if user has OpenAI integration configured or if Replicate is enabled
+        // This is handled by SecureRequestBuilder for OpenAI, and we check env for Replicate
         return true;
+    }
+
+    /**
+     * Check if Replicate API is available
+     */
+    private function isReplicateEnabled(): bool
+    {
+        return !empty($_ENV['REPLICATE_API_TOKEN'] ?? '');
     }
 
     /**
@@ -119,13 +136,13 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     }
 
     /**
-     * Generate thumbnail variations using OpenAI with original thumbnail as reference
+     * Generate thumbnail variations using either Replicate (preferred) or OpenAI
      */
     private function generateThumbnailVariations(User $user, array $parameters, array $options): array
     {
         $videoUrl = $parameters['video_url'] ?? null;
         $customPrompt = $parameters['custom_prompt'] ?? null;
-        $thumbnailCount = $parameters['thumbnail_count'] ?? 4; // OpenAI gpt-image-1 supports 1-10 images
+        $thumbnailCount = $parameters['thumbnail_count'] ?? 4;
         $style = $parameters['style'] ?? 'modern';
 
         if (!$videoUrl) {
@@ -148,10 +165,11 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 'video_id' => $videoId,
                 'thumbnail_count' => $thumbnailCount,
                 'style' => $style,
-                'custom_prompt' => $customPrompt ? substr($customPrompt, 0, 100) . '...' : null
+                'custom_prompt' => $customPrompt ? substr($customPrompt, 0, 100) . '...' : null,
+                'using_replicate' => $this->isReplicateEnabled()
             ]);
 
-            // Get video info first (includes original thumbnail URL)
+            // Get video info first
             $videoInfo = $this->getYouTubeVideoInfo($user, $videoId);
             
             if (!isset($videoInfo['thumbnail_url'])) {
@@ -164,31 +182,38 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 'thumbnail_url' => $videoInfo['thumbnail_url']
             ]);
             
-            // Download original thumbnail to use as reference
-            $originalThumbnailPath = $this->downloadOriginalThumbnail($videoInfo['thumbnail_url'], $videoId);
-            if (!file_exists($originalThumbnailPath)) {
-                throw new \RuntimeException('Failed to download original thumbnail image');
+            // Choose generation method based on availability
+            if ($this->isReplicateEnabled()) {
+                $thumbnailVariations = $this->generateThumbnailVariationsWithReplicate($user, $videoInfo, $customPrompt, $thumbnailCount, $style);
+                $generationMethod = 'replicate';
+            } else {
+                // Download original thumbnail for OpenAI (requires reference image)
+                $originalThumbnailPath = $this->downloadOriginalThumbnail($videoInfo['thumbnail_url'], $videoId);
+                if (!file_exists($originalThumbnailPath)) {
+                    throw new \RuntimeException('Failed to download original thumbnail image');
+                }
+                
+                $this->logger->info('Original thumbnail downloaded for OpenAI', [
+                    'video_id' => $videoId,
+                    'path' => $originalThumbnailPath,
+                    'file_size' => filesize($originalThumbnailPath)
+                ]);
+                
+                $thumbnailVariations = $this->generateThumbnailVariationsWithOpenAI($user, $videoInfo, $originalThumbnailPath, $customPrompt, $thumbnailCount, $style);
+                $generationMethod = 'openai';
             }
-            
-            $this->logger->info('Original thumbnail downloaded', [
-                'video_id' => $videoId,
-                'path' => $originalThumbnailPath,
-                'file_size' => filesize($originalThumbnailPath)
-            ]);
-            
-            // Generate thumbnail variations using OpenAI edits endpoint with original as reference
-            $thumbnailVariations = $this->generateThumbnailVariationsWithAI($user, $videoInfo, $originalThumbnailPath, $customPrompt, $thumbnailCount, $style);
             
             $this->logger->info('Thumbnail variations generated successfully', [
                 'video_id' => $videoId,
-                'thumbnail_count' => count($thumbnailVariations)
+                'thumbnail_count' => count($thumbnailVariations),
+                'generation_method' => $generationMethod
             ]);
 
             return [
                 'success' => true,
                 'thumbnail_variations' => $thumbnailVariations,
-                'original_thumbnail' => $originalThumbnailPath,
                 'video_info' => $videoInfo,
+                'generation_method' => $generationMethod,
                 'generation_parameters' => [
                     'custom_prompt' => $customPrompt,
                     'thumbnail_count' => $thumbnailCount,
@@ -198,11 +223,12 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             ];
 
         } catch (\Exception $e) {
-            $this->logger->error('Failed to generate thumbnail images', [
+            $this->logger->error('Failed to generate thumbnail variations', [
                 'video_id' => $videoId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'using_replicate' => $this->isReplicateEnabled()
             ]);
-            throw new \RuntimeException('Failed to generate thumbnail images: ' . $e->getMessage());
+            throw new \RuntimeException('Failed to generate thumbnail variations: ' . $e->getMessage());
         }
     }
 
@@ -414,7 +440,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
      * Generate thumbnail variations using OpenAI gpt-image-1 with edits endpoint
      * Uses correct OpenAI parameters and processes base64 responses with media processing
      */
-    private function generateThumbnailVariationsWithAI(User $user, array $videoInfo, string $originalThumbnailPath, ?string $customPrompt, int $count, string $style): array
+    private function generateThumbnailVariationsWithOpenAI(User $user, array $videoInfo, string $originalThumbnailPath, ?string $customPrompt, int $count, string $style): array
     {
         try {
             // Ensure count is within OpenAI limits (1-10 images)
@@ -525,6 +551,645 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     }
 
     /**
+     * Generate thumbnail variations using Replicate Google Imagen 4 Ultra
+     * Uses sequential processing with extended timeouts to avoid browser/server timeouts
+     * Note: This operation can take 5-10 minutes for multiple thumbnails
+     */
+    private function generateThumbnailVariationsWithReplicate(User $user, array $videoInfo, ?string $customPrompt, int $count, string $style): array
+    {
+        try {
+            $count = max(1, min(10, $count)); // Reasonable limits
+            
+            // Increase PHP execution time for this operation
+            $originalTimeLimit = ini_get('max_execution_time');
+            ini_set('max_execution_time', 600); // 10 minutes
+            
+            $this->logger->info('Starting Replicate thumbnail generation', [
+                'video_id' => $videoInfo['video_id'],
+                'count' => $count,
+                'style' => $style,
+                'execution_time_limit' => 600,
+                'original_time_limit' => $originalTimeLimit
+            ]);
+
+            $thumbnailVariations = [];
+            
+            // Use a single prompt for all variations to test if Replicate generates different images
+            $prompt = $this->buildReplicatePrompt($videoInfo, $customPrompt, $style);
+            
+            $this->logger->info('Using single prompt for all variations', [
+                'video_id' => $videoInfo['video_id'],
+                'prompt_length' => strlen($prompt),
+                'prompt_preview' => substr($prompt, 0, 200) . '...'
+            ]);
+            
+            // Use sequential processing instead of concurrent to avoid timeouts
+            for ($i = 1; $i <= $count; $i++) {
+                $this->sendProgressUpdate("Processing thumbnail variation $i of $count", [
+                    'video_id' => $videoInfo['video_id'],
+                    'variation' => $i,
+                    'total_count' => $count
+                ]);
+                
+                try {
+                    $imageUrl = $this->callReplicateAPISingle($user, $prompt, $i);
+                    
+                    if ($imageUrl) {
+                        $this->sendProgressUpdate("Downloading and processing image for variation $i");
+                        
+                        // Download and process the generated image
+                        $processedImages = $this->downloadAndProcessReplicateImage($imageUrl, $videoInfo['video_id'], $i);
+                        
+                        $thumbnailVariations[] = [
+                            'id' => uniqid('thumb_replicate_'),
+                            'title' => sprintf('Thumbnail Variation %d (Replicate)', $i),
+                            'prompt' => $prompt,
+                            'image_url' => $processedImages['full_size']['url'],
+                            'local_path' => $processedImages['full_size']['path'],
+                            'preview_url' => $processedImages['preview']['url'],
+                            'preview_path' => $processedImages['preview']['path'],
+                            'thumbnail_url' => $processedImages['thumbnail']['url'],
+                            'thumbnail_path' => $processedImages['thumbnail']['path'],
+                            'original_size' => '1536x864', // 16:9 aspect ratio from Imagen 4
+                            'youtube_size' => '1792x1024',  // YouTube optimal size
+                            'style' => $style,
+                            'generation_method' => 'replicate-imagen4',
+                            'created_at' => (new \DateTimeImmutable())->format('c')
+                        ];
+                        
+                        $this->sendProgressUpdate("Successfully completed variation $i");
+                    } else {
+                        $this->sendProgressUpdate("Failed to generate variation $i - skipping");
+                    }
+                } catch (\Exception $e) {
+                    $this->sendProgressUpdate("Error in variation $i: " . $e->getMessage());
+                    // Continue with next variation instead of failing completely
+                }
+                
+                // Add small delay between requests to be respectful
+                if ($i < $count) {
+                    $this->sendProgressUpdate("Waiting before next request...");
+                    sleep(2); // 2 second delay
+                }
+            }
+            
+            $this->logger->info('Replicate thumbnail generation completed', [
+                'video_id' => $videoInfo['video_id'],
+                'variations_generated' => count($thumbnailVariations),
+                'requested_count' => $count
+            ]);
+
+            // Restore original time limit
+            ini_set('max_execution_time', $originalTimeLimit);
+
+            return $thumbnailVariations;
+
+        } catch (\Exception $e) {
+            // Restore original time limit in case of error
+            if (isset($originalTimeLimit)) {
+                ini_set('max_execution_time', $originalTimeLimit);
+            }
+            
+            $this->logger->error('Failed to generate thumbnails with Replicate', [
+                'video_id' => $videoInfo['video_id'],
+                'error' => $e->getMessage()
+            ]);
+            throw new \RuntimeException('Failed to generate thumbnails with Replicate: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Call Replicate API to generate a single thumbnail
+     */
+    private function callReplicateAPI(User $user, string $prompt): ?string
+    {
+        try {
+            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
+            if (empty($replicateToken)) {
+                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
+            }
+
+            $requestData = [
+                'input' => [
+                    'prompt' => $prompt,
+                    'aspect_ratio' => '16:9'
+                ]
+            ];
+
+            $this->logger->info('Calling Replicate API', [
+                'model' => 'google/imagen-4-ultra',
+                'prompt_length' => strlen($prompt),
+                'aspect_ratio' => '16:9'
+            ]);
+
+            // Since we need to use the system token (not user credentials), we'll use curl directly
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $replicateToken,
+                    'Content-Type: application/json',
+                    'Prefer: wait'
+                ],
+                CURLOPT_POSTFIELDS => json_encode($requestData),
+                CURLOPT_TIMEOUT => 120, // 2 minute timeout for image generation
+                CURLOPT_USERAGENT => 'IGPro/1.0'
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            curl_close($curl);
+
+            if ($response === false || !empty($error)) {
+                $this->logger->error('cURL error in Replicate API request', [
+                    'error' => $error,
+                    'http_code' => $httpCode
+                ]);
+                throw new \RuntimeException('HTTP request failed: ' . $error);
+            }
+
+            if ($httpCode !== 200 && $httpCode !== 201) {
+                $this->logger->error('Replicate API request failed', [
+                    'status_code' => $httpCode,
+                    'response' => $response
+                ]);
+                throw new \RuntimeException(sprintf('Replicate API Error (HTTP %d): %s', $httpCode, $response));
+            }
+
+            $data = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \RuntimeException('Failed to decode JSON response from Replicate API');
+            }
+            
+            // Extract the image URL from the response
+            // Imagen 4 Ultra returns the image URL directly as a string in the output field
+            $imageUrl = null;
+            if (isset($data['output']) && is_string($data['output'])) {
+                $imageUrl = $data['output'];
+            } elseif (isset($data['urls']['get'])) {
+                // If the prediction is still processing, we might need to poll
+                $this->logger->warning('Replicate prediction requires polling - not implemented yet', [
+                    'prediction_id' => $data['id'] ?? 'unknown',
+                    'status' => $data['status'] ?? 'unknown'
+                ]);
+            }
+
+            if (!$imageUrl) {
+                $this->logger->error('No image URL found in Replicate response', [
+                    'response_data' => $data
+                ]);
+                return null;
+            }
+
+            $this->logger->info('Successfully generated image with Replicate', [
+                'image_url' => $imageUrl,
+                'prediction_id' => $data['id'] ?? 'unknown'
+            ]);
+
+            return $imageUrl;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Replicate API call failed', [
+                'error' => $e->getMessage(),
+                'prompt_length' => strlen($prompt)
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Call Replicate API for a single thumbnail with longer timeout
+     */
+    private function callReplicateAPISingle(User $user, string $prompt, int $variationNumber): ?string
+    {
+        try {
+            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
+            if (empty($replicateToken)) {
+                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
+            }
+
+            $requestData = [
+                'input' => [
+                    'prompt' => $prompt,
+                    'aspect_ratio' => '16:9'
+                ]
+            ];
+
+            $this->logger->info('Calling Replicate API (single request)', [
+                'variation' => $variationNumber,
+                'prompt_length' => strlen($prompt),
+                'aspect_ratio' => '16:9'
+            ]);
+
+            // Use longer timeout for individual requests
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $replicateToken,
+                    'Content-Type: application/json',
+                    'Prefer: wait'
+                ],
+                CURLOPT_POSTFIELDS => json_encode($requestData),
+                CURLOPT_TIMEOUT => 300, // 5 minute timeout for single request
+                CURLOPT_CONNECTTIMEOUT => 30, // 30 seconds to connect
+                CURLOPT_USERAGENT => 'IGPro/1.0',
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_VERBOSE => false
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            $totalTime = curl_getinfo($curl, CURLINFO_TOTAL_TIME);
+            curl_close($curl);
+
+            $this->logger->info('Replicate API response received', [
+                'variation' => $variationNumber,
+                'http_code' => $httpCode,
+                'total_time' => $totalTime,
+                'has_error' => !empty($error)
+            ]);
+
+            if ($response === false || !empty($error)) {
+                $this->logger->error('cURL error in Replicate API request', [
+                    'variation' => $variationNumber,
+                    'error' => $error,
+                    'http_code' => $httpCode
+                ]);
+                return null;
+            }
+
+            if ($httpCode !== 200 && $httpCode !== 201) {
+                $this->logger->error('Replicate API request failed', [
+                    'variation' => $variationNumber,
+                    'status_code' => $httpCode,
+                    'response' => substr($response, 0, 500)
+                ]);
+                return null;
+            }
+
+            $data = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error('Failed to decode JSON response from Replicate API', [
+                    'variation' => $variationNumber,
+                    'json_error' => json_last_error_msg()
+                ]);
+                return null;
+            }
+
+            // Extract the image URL from the response
+            $imageUrl = null;
+            if (isset($data['output']) && is_string($data['output'])) {
+                $imageUrl = $data['output'];
+            } elseif (isset($data['urls']['get'])) {
+                // If the prediction is still processing, we might need to poll
+                $this->logger->warning('Replicate prediction requires polling - not implemented yet', [
+                    'variation' => $variationNumber,
+                    'prediction_id' => $data['id'] ?? 'unknown',
+                    'status' => $data['status'] ?? 'unknown'
+                ]);
+                return null;
+            }
+
+            if (!$imageUrl) {
+                $this->logger->error('No image URL found in Replicate response', [
+                    'variation' => $variationNumber,
+                    'response_keys' => array_keys($data)
+                ]);
+                return null;
+            }
+
+            $this->logger->info('Successfully generated image with Replicate', [
+                'variation' => $variationNumber,
+                'image_url' => substr($imageUrl, 0, 100) . '...',
+                'prediction_id' => $data['id'] ?? 'unknown'
+            ]);
+
+            return $imageUrl;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Replicate API call failed', [
+                'variation' => $variationNumber,
+                'error' => $e->getMessage(),
+                'prompt_length' => strlen($prompt)
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Call Replicate API multiple times concurrently to generate multiple thumbnails
+     */
+    private function callReplicateAPIMultiple(User $user, array $prompts): array
+    {
+        try {
+            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
+            if (empty($replicateToken)) {
+                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
+            }
+
+            $this->logger->info('Starting concurrent Replicate API calls', [
+                'count' => count($prompts),
+                'model' => 'google/imagen-4-ultra'
+            ]);
+
+            // Initialize curl multi handle
+            $multiHandle = curl_multi_init();
+            $curlHandles = [];
+            $imageUrls = [];
+
+            // Create curl handles for each request
+            foreach ($prompts as $index => $prompt) {
+                $requestData = [
+                    'input' => [
+                        'prompt' => $prompt,
+                        'aspect_ratio' => '16:9'
+                    ]
+                ];
+
+                $curl = curl_init();
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_HTTPHEADER => [
+                        'Authorization: Bearer ' . $replicateToken,
+                        'Content-Type: application/json',
+                        'Prefer: wait'
+                    ],
+                    CURLOPT_POSTFIELDS => json_encode($requestData),
+                    CURLOPT_TIMEOUT => 180, // 3 minute timeout for image generation
+                    CURLOPT_USERAGENT => 'IGPro/1.0'
+                ]);
+
+                curl_multi_add_handle($multiHandle, $curl);
+                $curlHandles[$index] = $curl;
+            }
+
+            // Execute all requests concurrently
+            $running = null;
+            do {
+                curl_multi_exec($multiHandle, $running);
+                curl_multi_select($multiHandle);
+            } while ($running > 0);
+
+            // Collect responses
+            foreach ($curlHandles as $index => $curl) {
+                $response = curl_multi_getcontent($curl);
+                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                $error = curl_error($curl);
+
+                curl_multi_remove_handle($multiHandle, $curl);
+                curl_close($curl);
+
+                if ($response === false || !empty($error)) {
+                    $this->logger->error('cURL error in Replicate API request', [
+                        'index' => $index,
+                        'error' => $error,
+                        'http_code' => $httpCode
+                    ]);
+                    $imageUrls[$index] = null;
+                    continue;
+                }
+
+                if ($httpCode !== 200 && $httpCode !== 201) {
+                    $this->logger->error('Replicate API request failed', [
+                        'index' => $index,
+                        'status_code' => $httpCode,
+                        'response' => substr($response, 0, 500)
+                    ]);
+                    $imageUrls[$index] = null;
+                    continue;
+                }
+
+                $data = json_decode($response, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->logger->error('Failed to decode JSON response from Replicate API', [
+                        'index' => $index,
+                        'json_error' => json_last_error_msg()
+                    ]);
+                    $imageUrls[$index] = null;
+                    continue;
+                }
+
+                // Extract the image URL (Imagen 4 Ultra returns a string, not array)
+                if (isset($data['output']) && is_string($data['output'])) {
+                    $imageUrls[$index] = $data['output'];
+                    $this->logger->info('Successfully generated image with Replicate', [
+                        'index' => $index,
+                        'image_url' => substr($data['output'], 0, 100) . '...',
+                        'prediction_id' => $data['id'] ?? 'unknown'
+                    ]);
+                } else {
+                    $this->logger->error('No valid image URL found in Replicate response', [
+                        'index' => $index,
+                        'response_data' => $data
+                    ]);
+                    $imageUrls[$index] = null;
+                }
+            }
+
+            curl_multi_close($multiHandle);
+
+            $successCount = count(array_filter($imageUrls, fn($url) => $url !== null));
+            $this->logger->info('Completed concurrent Replicate API calls', [
+                'total_requests' => count($prompts),
+                'successful_requests' => $successCount,
+                'failed_requests' => count($prompts) - $successCount
+            ]);
+
+            return $imageUrls;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Multiple Replicate API calls failed', [
+                'error' => $e->getMessage(),
+                'prompt_count' => count($prompts)
+            ]);
+            // Return array with nulls if everything fails
+            return array_fill_keys(array_keys($prompts), null);
+        }
+    }
+
+    /**
+     * Validate thumbnail generation parameters
+     */
+    private function validateThumbnailParameters(array $parameters): array
+    {
+        $errors = [];
+        
+        // Validate thumbnail count
+        $thumbnailCount = $parameters['thumbnail_count'] ?? 4;
+        if (!is_int($thumbnailCount) && !is_numeric($thumbnailCount)) {
+            $errors[] = 'thumbnail_count must be a number';
+        } else {
+            $thumbnailCount = (int) $thumbnailCount;
+            if ($thumbnailCount < 1 || $thumbnailCount > 10) {
+                $errors[] = 'thumbnail_count must be between 1 and 10';
+            }
+        }
+        
+        // Validate style
+        $style = $parameters['style'] ?? 'modern';
+        $validStyles = ['modern', 'dramatic', 'minimalist', 'colorful', 'professional'];
+        if (!in_array($style, $validStyles)) {
+            $errors[] = 'style must be one of: ' . implode(', ', $validStyles);
+        }
+        
+        // Validate custom prompt length
+        $customPrompt = $parameters['custom_prompt'] ?? null;
+        if ($customPrompt !== null && strlen($customPrompt) > 500) {
+            $errors[] = 'custom_prompt must be less than 500 characters';
+        }
+        
+        return $errors;
+    }
+
+    /**
+     * Process base64 image from OpenAI and create multiple sizes
+     */
+    private function processAndStoreImage(string $base64Image, string $videoId, int $variationNumber): array
+    {
+        try {
+            // Create directory for this video
+            $pluginDir = $this->getPluginDirectory();
+            $videoDir = $pluginDir . '/' . $videoId;
+            if (!is_dir($videoDir)) {
+                mkdir($videoDir, 0755, true);
+            }
+            
+            // Decode base64 image
+            $imageData = base64_decode($base64Image);
+            if ($imageData === false) {
+                throw new \RuntimeException('Failed to decode base64 image');
+            }
+            
+            // Generate filename
+            $filename = sprintf('thumbnail_%s_openai_%d_%s.png', $videoId, $variationNumber, uniqid());
+            $fullSizePath = $videoDir . '/' . $filename;
+            
+            // Save the full-size image
+            if (file_put_contents($fullSizePath, $imageData) === false) {
+                throw new \RuntimeException('Failed to save full-size image');
+            }
+            
+            // Create different sizes for YouTube
+            $sizes = [
+                'preview' => ['width' => 640, 'height' => 360],    // Preview size
+                'thumbnail' => ['width' => 320, 'height' => 180],  // Thumbnail size
+                'youtube' => ['width' => 1792, 'height' => 1024]   // YouTube optimal size
+            ];
+            
+            $processedImages = [
+                'full_size' => [
+                    'path' => $fullSizePath,
+                    'url' => $this->getFileUrl($fullSizePath),
+                    'width' => 1536,
+                    'height' => 1024
+                ]
+            ];
+            
+            // Create resized versions using GD
+            $sourceImage = imagecreatefrompng($fullSizePath);
+            if (!$sourceImage) {
+                throw new \RuntimeException('Failed to create image resource from PNG');
+            }
+            
+            foreach ($sizes as $sizeName => $dimensions) {
+                $resizedPath = str_replace('.png', '_' . $sizeName . '.png', $fullSizePath);
+                
+                // Create resized image
+                $resizedImage = imagecreatetruecolor($dimensions['width'], $dimensions['height']);
+                imagealphablending($resizedImage, false);
+                imagesavealpha($resizedImage, true);
+                
+                if (imagecopyresampled(
+                    $resizedImage, $sourceImage,
+                    0, 0, 0, 0,
+                    $dimensions['width'], $dimensions['height'],
+                    1536, 1024  // Source dimensions from OpenAI
+                )) {
+                    imagepng($resizedImage, $resizedPath);
+                    
+                    $processedImages[$sizeName] = [
+                        'path' => $resizedPath,
+                        'url' => $this->getFileUrl($resizedPath),
+                        'width' => $dimensions['width'],
+                        'height' => $dimensions['height']
+                    ];
+                }
+                
+                imagedestroy($resizedImage);
+            }
+            
+            imagedestroy($sourceImage);
+            
+            return $processedImages;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to process and store OpenAI image', [
+                'video_id' => $videoId,
+                'variation' => $variationNumber,
+                'error' => $e->getMessage()
+            ]);
+            throw new \RuntimeException('Failed to process image: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Convert file path to accessible URL
+     */
+    private function getFileUrl(string $filePath): string
+    {
+        // Convert absolute path to relative URL
+        $relativePath = str_replace($this->projectDir . '/public', '', $filePath);
+        $request = $this->requestStack->getCurrentRequest();
+        
+        if ($request) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+            return $baseUrl . $relativePath;
+        }
+        
+        return $relativePath;
+    }
+
+    protected function getDefaultName(): string
+    {
+        return 'YouTube Thumbnail Generator';
+    }
+
+    protected function getDefaultDescription(): string
+    {
+        return 'AI-powered YouTube thumbnail generator using Replicate (Google Imagen 4 Ultra) or OpenAI';
+    }
+
+    protected function getDefaultVersion(): string
+    {
+        return '1.0.0';
+    }
+
+    protected function getDefaultIcon(): string
+    {
+        return 'youtube';
+    }
+
+    protected function getDefaultSupportedCommands(): array
+    {
+        return ['analyze_video', 'generate_thumbnail_variations', 'get_video_info', 'clear_cache'];
+    }
+
+    protected function getDefaultRequirements(): array
+    {
+        return ['openai_api_key'];
+    }
+
+    /**
      * Build edit prompt for OpenAI image edits
      */
     private function buildEditPrompt(array $videoInfo, ?string $customPrompt, string $style): string
@@ -570,12 +1235,163 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     }
 
     /**
-     * Download image from OpenAI and store locally
+     * Build prompt for Replicate Google Imagen 4 Ultra
+     * Note: Replicate/Imagen does not support image variations or reference images
      */
-    private function downloadAndStoreImage(string $imageUrl, string $videoId, int $variationNumber): array
+    private function buildReplicatePrompt(array $videoInfo, ?string $customPrompt, string $style, ?int $variationIndex = null, ?int $totalVariations = null): string
+    {
+        $title = $videoInfo['title'] ?? 'Unknown Title';
+        $channel = $videoInfo['author_name'] ?? 'Unknown Channel';
+        
+        // Base prompt for YouTube thumbnail - more descriptive since no reference image
+        $basePrompt = sprintf(
+            "Create a high-quality YouTube thumbnail image for a video titled '%s' by '%s'. ",
+            $title,
+            $channel
+        );
+
+        // Style-specific prompts adapted for Imagen 4 Ultra
+        $stylePrompts = [
+            'modern' => 'Modern, clean design with bold sans-serif typography, vibrant gradient colors, minimalist layout, and professional aesthetic. Sharp focus, high contrast.',
+            'dramatic' => 'Dramatic cinematic lighting with deep shadows and bright highlights, intense saturated colors, emotional facial expressions, and dynamic composition. Film-like quality.',
+            'minimalist' => 'Minimalist design with simple geometric elements, clean sans-serif typography, plenty of white space, and muted color palette. Elegant and refined.',
+            'colorful' => 'Bright, vivid colors with rainbow gradients, dynamic energetic composition, bold graphic elements, and playful design. Eye-catching and vibrant.',
+            'professional' => 'Professional, corporate aesthetic with sophisticated color scheme, balanced composition, clean typography, and premium visual quality. Polished and refined.'
+        ];
+
+        $styleInstruction = $stylePrompts[$style] ?? $stylePrompts['modern'];
+        $prompt = $basePrompt . $styleInstruction;
+        
+        if ($customPrompt) {
+            $prompt .= sprintf(' Additional requirements: %s', $customPrompt);
+        }
+
+        // Add variation specifics to create different compositions for each iteration (only if specified)
+        if ($variationIndex !== null && $totalVariations !== null) {
+            $variationPrompts = [
+                1 => ' Focus on large, bold text overlay with the title prominently displayed.',
+                2 => ' Feature split-screen or comparison-style layout with contrasting elements.',
+                3 => ' Emphasize action or movement with dynamic angles and energy.',
+                4 => ' Create emotional appeal with expressive faces or compelling scenes.',
+                5 => ' Use geometric shapes and modern graphic design elements.',
+            ];
+            
+            $variationPrompt = $variationPrompts[$variationIndex] ?? $variationPrompts[($variationIndex % 5) + 1];
+            $prompt .= $variationPrompt;
+        }
+
+        // Add technical specifications for YouTube thumbnails
+        $prompt .= ' High resolution, 16:9 aspect ratio, optimized for small viewing sizes with high contrast and readability. Professional quality suitable for YouTube platform.';
+
+        // Imagen 4 Ultra has shorter prompt limits compared to OpenAI
+        if (strlen($prompt) > 500) {
+            $prompt = substr($prompt, 0, 500);
+        }
+
+        return $prompt;
+    }
+
+    /**
+     * Process image from Replicate and create multiple sizes
+     */
+    private function processReplicateImage(string $imagePath, string $videoId, int $variationNumber): array
     {
         try {
-            // Create directory for this plugin
+            // Get image dimensions
+            $imageInfo = getimagesize($imagePath);
+            if (!$imageInfo) {
+                throw new \RuntimeException('Failed to get image information');
+            }
+            
+            $originalWidth = $imageInfo[0];
+            $originalHeight = $imageInfo[1];
+            
+            // Create different sizes for YouTube
+            $sizes = [
+                'preview' => ['width' => 640, 'height' => 360],    // Preview size
+                'thumbnail' => ['width' => 320, 'height' => 180],  // Thumbnail size
+                'youtube' => ['width' => 1792, 'height' => 1024]   // YouTube optimal size
+            ];
+            
+            $processedImages = [
+                'full_size' => [
+                    'path' => $imagePath,
+                    'url' => $this->getFileUrl($imagePath),
+                    'width' => $originalWidth,
+                    'height' => $originalHeight
+                ]
+            ];
+            
+            // Load source image based on type
+            $sourceImage = null;
+            switch ($imageInfo[2]) {
+                case IMAGETYPE_JPEG:
+                    $sourceImage = imagecreatefromjpeg($imagePath);
+                    break;
+                case IMAGETYPE_PNG:
+                    $sourceImage = imagecreatefrompng($imagePath);
+                    break;
+                case IMAGETYPE_WEBP:
+                    $sourceImage = imagecreatefromwebp($imagePath);
+                    break;
+                default:
+                    throw new \RuntimeException('Unsupported image format');
+            }
+            
+            if (!$sourceImage) {
+                throw new \RuntimeException('Failed to create image resource');
+            }
+            
+            // Create resized versions
+            foreach ($sizes as $sizeName => $dimensions) {
+                $resizedPath = str_replace('.png', '_' . $sizeName . '.png', $imagePath);
+                
+                // Create resized image
+                $resizedImage = imagecreatetruecolor($dimensions['width'], $dimensions['height']);
+                imagealphablending($resizedImage, false);
+                imagesavealpha($resizedImage, true);
+                
+                if (imagecopyresampled(
+                    $resizedImage, $sourceImage,
+                    0, 0, 0, 0,
+                    $dimensions['width'], $dimensions['height'],
+                    $originalWidth, $originalHeight
+                )) {
+                    imagepng($resizedImage, $resizedPath);
+                    
+                    $processedImages[$sizeName] = [
+                        'path' => $resizedPath,
+                        'url' => $this->getFileUrl($resizedPath),
+                        'width' => $dimensions['width'],
+                        'height' => $dimensions['height']
+                    ];
+                }
+                
+                imagedestroy($resizedImage);
+            }
+            
+            imagedestroy($sourceImage);
+            
+            return $processedImages;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to process Replicate image', [
+                'image_path' => $imagePath,
+                'video_id' => $videoId,
+                'variation' => $variationNumber,
+                'error' => $e->getMessage()
+            ]);
+            throw new \RuntimeException('Failed to process Replicate image: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download and process image from Replicate
+     */
+    private function downloadAndProcessReplicateImage(string $imageUrl, string $videoId, int $variationNumber): array
+    {
+        try {
+            // Create directory for this video
             $pluginDir = $this->getPluginDirectory();
             $videoDir = $pluginDir . '/' . $videoId;
             if (!is_dir($videoDir)) {
@@ -585,11 +1401,11 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             // Download the image
             $imageContent = file_get_contents($imageUrl);
             if ($imageContent === false) {
-                throw new \RuntimeException('Failed to download image from OpenAI');
+                throw new \RuntimeException('Failed to download image from Replicate');
             }
             
             // Generate filename
-            $filename = sprintf('thumbnail_%s_concept_%d_%s.png', $videoId, $variationNumber, uniqid());
+            $filename = sprintf('thumbnail_%s_replicate_%d_%s.png', $videoId, $variationNumber, uniqid());
             $localPath = $videoDir . '/' . $filename;
             
             // Save locally
@@ -597,172 +1413,364 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 throw new \RuntimeException('Failed to save image locally');
             }
             
-            // Generate public URL
-            $relativePath = 'uploads/plugins/youtube_thumbnail/' . $videoId . '/' . $filename;
-            $publicUrl = '/' . $relativePath;
-            
-            return [
-                'path' => $localPath,
-                'url' => $publicUrl,
-                'filename' => $filename
-            ];
-            
+            // Process the image to create different sizes
+            return $this->processReplicateImage($localPath, $videoId, $variationNumber);
+
         } catch (\Exception $e) {
-            $this->logger->error('Failed to download and store image', [
+            $this->logger->error('Failed to download and process Replicate image', [
                 'image_url' => $imageUrl,
+                'video_id' => $videoId,
+                'variation' => $variationNumber,
                 'error' => $e->getMessage()
             ]);
-            throw new \RuntimeException('Failed to download and store image: ' . $e->getMessage());
+            throw new \RuntimeException('Failed to process Replicate image: ' . $e->getMessage());
         }
     }
 
     /**
-     * Process base64 image from OpenAI and create multiple sizes for different uses
+     * Call Replicate API multiple times with the same prompt for variations
      */
-    private function processAndStoreImage(string $base64Image, string $videoId, int $variationNumber): array
+    private function callMultipleReplicateAPI(User $user, string $prompt, int $count): array
     {
         try {
-            // Create directory for this video's thumbnails
-            $pluginDir = $this->getPluginDirectory();
-            $videoDir = $pluginDir . '/' . $videoId;
-            if (!is_dir($videoDir)) {
-                mkdir($videoDir, 0755, true);
+            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
+            if (empty($replicateToken)) {
+                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
             }
-            
-            // Decode base64 image
-            $imageData = base64_decode($base64Image);
-            if ($imageData === false) {
-                throw new \RuntimeException('Failed to decode base64 image from OpenAI');
-            }
-            
-            // Save original OpenAI image (1536x1024)
-            $originalFilename = sprintf('openai_original_%s_var_%d_%s.png', $videoId, $variationNumber, uniqid());
-            $originalPath = $videoDir . '/' . $originalFilename;
-            file_put_contents($originalPath, $imageData);
-            
-            // Process different sizes using MediaProcessingService
-            $sizes = [
-                'full_size' => ['width' => 1792, 'height' => 1024], // YouTube optimal size
-                'preview' => ['width' => 896, 'height' => 512],     // Preview size
-                'thumbnail' => ['width' => 320, 'height' => 180]    // Small thumbnail
+
+            $requestData = [
+                'input' => [
+                    'prompt' => $prompt,
+                    'aspect_ratio' => '16:9'
+                ]
             ];
-            
-            $processedImages = [];
-            
-            foreach ($sizes as $sizeKey => $dimensions) {
-                $filename = sprintf('thumb_%s_var_%d_%s_%s.webp', $videoId, $variationNumber, $sizeKey, uniqid());
-                $outputPath = $videoDir . '/' . $filename;
+
+            $this->logger->info('Making multiple concurrent Replicate API calls', [
+                'count' => $count,
+                'prompt_length' => strlen($prompt),
+                'aspect_ratio' => '16:9'
+            ]);
+
+            // Prepare multiple curl handles
+            $multiHandle = curl_multi_init();
+            $curlHandles = [];
+            $imageUrls = [];
+
+            // Initialize all curl handles
+            for ($i = 0; $i < $count; $i++) {
+                $curl = curl_init();
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_HTTPHEADER => [
+                        'Authorization: Bearer ' . $replicateToken,
+                        'Content-Type: application/json',
+                        'Prefer: wait'
+                    ],
+                    CURLOPT_POSTFIELDS => json_encode($requestData),
+                    CURLOPT_TIMEOUT => 120, // 2 minute timeout for image generation
+                    CURLOPT_USERAGENT => 'IGPro/1.0'
+                ]);
                 
-                // Use MediaProcessingService to resize and optimize
-                $result = $this->mediaProcessingService->processImage(
-                    $originalPath,
-                    $outputPath,
-                    new \App\Service\MediaProcessing\Config\ImageProcessingConfig(
-                        $dimensions['width'],
-                        $dimensions['height'],
-                        85, // Quality
-                        'webp', // Format for better compression
-                        true // Maintain aspect ratio
-                    )
-                );
+                curl_multi_add_handle($multiHandle, $curl);
+                $curlHandles[$i] = $curl;
+            }
+
+            // Execute all requests concurrently
+            $running = null;
+            do {
+                curl_multi_exec($multiHandle, $running);
+                curl_multi_select($multiHandle);
+            } while ($running > 0);
+
+            // Collect all responses
+            for ($i = 0; $i < $count; $i++) {
+                $response = curl_multi_getcontent($curlHandles[$i]);
+                $httpCode = curl_getinfo($curlHandles[$i], CURLINFO_HTTP_CODE);
+                $error = curl_error($curlHandles[$i]);
                 
-                if ($result->isSuccess()) {
-                    // Generate public URL
-                    $relativePath = 'uploads/plugins/youtube_thumbnail/' . $videoId . '/' . $filename;
-                    $publicUrl = '/' . $relativePath;
-                    
-                    $processedImages[$sizeKey] = [
-                        'path' => $outputPath,
-                        'url' => $publicUrl,
-                        'filename' => $filename,
-                        'width' => $dimensions['width'],
-                        'height' => $dimensions['height']
-                    ];
+                if ($response !== false && empty($error) && ($httpCode === 200 || $httpCode === 201)) {
+                    $data = json_decode($response, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        // Extract the image URL from the response
+                        $imageUrl = null;
+                        if (isset($data['output']) && is_string($data['output'])) {
+                            $imageUrl = $data['output'];
+                        }
+                        
+                        if ($imageUrl) {
+                            $imageUrls[] = $imageUrl;
+                            $this->logger->info('Successfully generated image with Replicate', [
+                                'request_index' => $i,
+                                'image_url' => substr($imageUrl, 0, 100) . '...',
+                                'prediction_id' => $data['id'] ?? 'unknown'
+                            ]);
+                        } else {
+                            $this->logger->warning('No image URL found in Replicate response', [
+                                'request_index' => $i,
+                                'response_data' => $data
+                            ]);
+                        }
+                    } else {
+                        $this->logger->error('Failed to decode JSON response from Replicate API', [
+                            'request_index' => $i,
+                            'response' => substr($response, 0, 500)
+                        ]);
+                    }
                 } else {
-                    $this->logger->error('Failed to process image size', [
-                        'size_key' => $sizeKey,
-                        'error' => $result->getErrorMessage()
+                    $this->logger->error('Replicate API request failed', [
+                        'request_index' => $i,
+                        'http_code' => $httpCode,
+                        'error' => $error,
+                        'response' => substr($response ?: '', 0, 500)
                     ]);
                 }
+                
+                curl_multi_remove_handle($multiHandle, $curlHandles[$i]);
+                curl_close($curlHandles[$i]);
             }
-            
-            // Clean up original temporary file
-            if (file_exists($originalPath)) {
-                unlink($originalPath);
-            }
-            
-            return $processedImages;
-            
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to process and store image', [
-                'video_id' => $videoId,
-                'variation_number' => $variationNumber,
-                'error' => $e->getMessage()
+
+            curl_multi_close($multiHandle);
+
+            $this->logger->info('Completed multiple Replicate API calls', [
+                'requested_count' => $count,
+                'successful_count' => count($imageUrls)
             ]);
-            throw new \RuntimeException('Failed to process and store image: ' . $e->getMessage());
+
+            return $imageUrls;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Multiple Replicate API calls failed', [
+                'error' => $e->getMessage(),
+                'count' => $count,
+                'prompt_length' => strlen($prompt)
+            ]);
+            return [];
         }
     }
 
     /**
-     * Validate thumbnail generation parameters
+     * Generate thumbnail variations asynchronously using background jobs
      */
-    private function validateThumbnailParameters(array $parameters): array
+    private function generateThumbnailVariationsAsync(User $user, array $parameters, array $options): array
     {
-        $errors = [];
-        
-        // Validate video URL
-        if (empty($parameters['video_url'])) {
-            $errors[] = 'YouTube video URL is required';
-        } elseif (!$this->extractVideoId($parameters['video_url'])) {
-            $errors[] = 'Invalid YouTube video URL format';
+        $validationErrors = $this->validateThumbnailParameters($parameters);
+        if (!empty($validationErrors)) {
+            throw new \RuntimeException(implode(', ', $validationErrors));
         }
+
+        $videoUrl = $parameters['video_url'];
+        $thumbnailCount = $parameters['thumbnail_count'] ?? 3;
+        $style = $parameters['style'] ?? 'professional';
+        $customPrompt = $parameters['custom_prompt'] ?? null;
+
+        try {
+            // Generate unique job ID
+            $jobId = 'yt_thumb_' . uniqid() . '_' . time();
+
+            // Create and dispatch async message
+            $message = new ProcessYoutubeThumbnailMessage(
+                jobId: $jobId,
+                userId: $user->getId(),
+                videoUrl: $videoUrl,
+                thumbnailCount: $thumbnailCount,
+                style: $style,
+                customPrompt: $customPrompt
+            );
+
+            $this->messageBus->dispatch($message);
+
+            // Initialize job status
+            $this->asyncService->updateJobStatus($jobId, [
+                'status' => 'queued',
+                'message' => 'YouTube thumbnail generation job queued',
+                'progress' => 0,
+                'total_variations' => $thumbnailCount,
+                'current_variation' => 0,
+                'generation_method' => 'determining...',
+                'queued_at' => date('c')
+            ]);
+
+            $this->logger->info('YouTube thumbnail generation job queued', [
+                'job_id' => $jobId,
+                'user_id' => $user->getId(),
+                'video_url' => $videoUrl,
+                'thumbnail_count' => $thumbnailCount
+            ]);
+
+            return [
+                'success' => true,
+                'job_id' => $jobId,
+                'status' => 'queued',
+                'message' => 'Thumbnail generation started in background',
+                'estimated_completion_time' => 'varies (2-15 minutes depending on method)',
+                'poll_url' => '/api/plugins/youtube-thumbnail/job-status/' . $jobId
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to queue YouTube thumbnail generation job', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            throw new \RuntimeException('Failed to start thumbnail generation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get status of an async thumbnail generation job
+     */
+    private function getJobStatus(User $user, array $parameters, array $options): array
+    {
+        $jobId = $parameters['job_id'] ?? null;
+        if (!$jobId) {
+            throw new \RuntimeException('Job ID is required');
+        }
+
+        try {
+            $status = $this->asyncService->getJobStatus($jobId);
+            
+            $this->logger->info('Retrieved job status', [
+                'job_id' => $jobId,
+                'user_id' => $user->getId(),
+                'status' => $status['status'] ?? 'unknown'
+            ]);
+
+            return [
+                'success' => true,
+                'job_id' => $jobId,
+                ...$status
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get job status', [
+                'job_id' => $jobId,
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => 'Failed to get job status: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Cancel an async thumbnail generation job
+     */
+    private function cancelJob(User $user, array $parameters, array $options): array
+    {
+        $jobId = $parameters['job_id'] ?? null;
+        if (!$jobId) {
+            throw new \RuntimeException('Job ID is required');
+        }
+
+        try {
+            $cancelled = $this->asyncService->cancelJob($jobId);
+            
+            $this->logger->info('Job cancellation attempted', [
+                'job_id' => $jobId,
+                'user_id' => $user->getId(),
+                'cancelled' => $cancelled
+            ]);
+
+            return [
+                'success' => $cancelled,
+                'job_id' => $jobId,
+                'message' => $cancelled ? 'Job cancelled successfully' : 'Failed to cancel job'
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to cancel job', [
+                'job_id' => $jobId,
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => 'Failed to cancel job: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    // ...existing code...
+
+    /**
+     * You can override this method if you need to perform any actions after the plugin is executed
+     */
+    protected function onAfterExecute(User $user, string $command, array $parameters, array $options, array $result): void
+    {
+        // Example: Send a progress update after thumbnail generation
+        if ($command === 'generate_thumbnail_variations' && !empty($result['thumbnail_variations'])) {
+            $this->sendProgressUpdate('Thumbnail generation completed', [
+                'video_id' => $result['video_id'],
+                'thumbnail_count' => count($result['thumbnail_variations']),
+                'generation_method' => $result['generation_method']
+            ]);
+        }
+    }
+
+    /**
+     * Send progress update to prevent browser timeout and update async job status
+     */
+    private function sendProgressUpdate(string $message, array $data = []): void
+    {
+        // Check if we're running in async mode
+        $asyncJobId = $this->getCurrentAsyncJobId();
         
-        // Validate thumbnail count
-        if (isset($parameters['thumbnail_count'])) {
-            $count = (int)$parameters['thumbnail_count'];
-            if ($count < 1 || $count > 10) {
-                $errors[] = 'Thumbnail count must be between 1 and 10 (OpenAI gpt-image-1 limit)';
+        if ($asyncJobId) {
+            // Update async job status with progress
+            $progress = $this->calculateProgress($data);
+            $this->asyncService->updateJobStatus($asyncJobId, [
+                'status' => 'processing',
+                'message' => $message,
+                'progress' => $progress,
+                'current_variation' => $data['variation'] ?? null,
+                'total_variations' => $data['total_count'] ?? null,
+                'generation_method' => $data['generation_method'] ?? 'unknown',
+                'updated_at' => date('c')
+            ]);
+        } else {
+            // Send HTML comment for direct sync requests (backward compatibility)
+            if (ob_get_level()) {
+                echo "<!-- Progress: $message -->\n";
+                ob_flush();
+                flush();
             }
         }
         
-        // Validate style
-        if (isset($parameters['style'])) {
-            $validStyles = ['modern', 'dramatic', 'minimalist', 'colorful', 'professional'];
-            if (!in_array($parameters['style'], $validStyles, true)) {
-                $errors[] = 'Invalid style. Must be one of: ' . implode(', ', $validStyles);
-            }
+        $this->logger->info($message, $data);
+    }
+
+    /**
+     * Get current async job ID from request context
+     */
+    private function getCurrentAsyncJobId(): ?string
+    {
+        // This would be set in the options when called from async handler
+        return $this->currentAsyncJobId ?? null;
+    }
+
+    /**
+     * Calculate progress percentage from data
+     */
+    private function calculateProgress(array $data): int
+    {
+        if (isset($data['variation'], $data['total_count'])) {
+            return min(95, (int)(($data['variation'] / $data['total_count']) * 100));
         }
-
-        return $errors;
+        return 0;
     }
 
-    protected function getDefaultName(): string
-    {
-        return 'YouTube Thumbnail Generator';
-    }
+    private ?string $currentAsyncJobId = null;
 
-    protected function getDefaultDescription(): string
+    /**
+     * Set the current async job ID for progress tracking
+     */
+    public function setAsyncJobId(?string $jobId): void
     {
-        return 'AI-powered YouTube thumbnail generator using OpenAI';
-    }
-
-    protected function getDefaultVersion(): string
-    {
-        return '1.0.0';
-    }
-
-    protected function getDefaultIcon(): string
-    {
-        return 'youtube';
-    }
-
-    protected function getDefaultSupportedCommands(): array
-    {
-        return ['analyze_video', 'generate_thumbnail_variations', 'get_video_info', 'clear_cache'];
-    }
-
-    protected function getDefaultRequirements(): array
-    {
-        return ['openai_api_key'];
+        $this->currentAsyncJobId = $jobId;
     }
 }

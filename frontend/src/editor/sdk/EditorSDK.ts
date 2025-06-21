@@ -108,6 +108,11 @@ export class EditorSDK extends EventEmitter {
     
     // Connect CanvasManager with LayerManager for background integration
     this.canvasManager.setLayerManager(this.layerManager)
+    
+    // Connect viewport changes to transform manager for responsive anchors
+    this.on('viewport:changed', () => {
+      this.transformManager.updateTransformerForZoom()
+    })
   }
 
   // ============================================================================

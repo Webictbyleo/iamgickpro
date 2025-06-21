@@ -1,5 +1,6 @@
 // filepath: /var/www/html/iamgickpro/frontend/src/services/api.ts
-import { api } from '../utils/api'
+import { api, apiWithOptions } from '../utils/api'
+import type { AxiosRequestConfig } from 'axios'
 import type { 
   Design, 
   Template, 
@@ -181,7 +182,8 @@ export const exportAPI = {
     transparent?: boolean
     backgroundColor?: string
     animationSettings?: any[]
-  }) => api.post<ApiResponse<ExportJob>>('/export-jobs', data),
+  }, requestOptions?: AxiosRequestConfig) => 
+    apiWithOptions.post<ApiResponse<ExportJob>>('/export-jobs', data, requestOptions),
 
   // GET /export-jobs/queue-status
   getQueueStatus: () => api.get<ApiResponse<{
@@ -213,8 +215,11 @@ export const exportAPI = {
   cancelExportJob: (id: string) => api.post<ApiResponse<ExportJob>>(`/export-jobs/${id}/cancel`),
 
   // GET /export-jobs/{id}/download
-  downloadExport: (id: string) => 
-    api.get(`/export-jobs/${id}/download`, { responseType: 'blob' }),
+  downloadExport: (id: string, requestOptions?: AxiosRequestConfig) => 
+    apiWithOptions.get(`/export-jobs/${id}/download`, { 
+      responseType: 'blob', 
+      ...requestOptions 
+    }),
 
   // POST /export-jobs/{id}/retry
   retryExportJob: (id: string) => api.post<ApiResponse<ExportJob>>(`/export-jobs/${id}/retry`),
@@ -258,13 +263,13 @@ export const mediaAPI = {
   // POST /media/upload
   uploadMedia: (file: File, data?: {
     name?: string
-  }) => {
+  }, requestOptions?: AxiosRequestConfig) => {
     const formData = new FormData()
     formData.append('file', file)
     if (data?.name) formData.append('name', data.name)
     
     // Don't set Content-Type header - let browser set it automatically with boundary
-    return api.post<MediaApiResponse>('/media/upload', formData)
+    return apiWithOptions.post<MediaApiResponse>('/media/upload', formData, requestOptions)
   },
 
   // DELETE /media/bulk/delete
@@ -374,7 +379,8 @@ export const pluginAPI = {
     layerId?: number | null // Optional for standalone plugins
     parameters?: Record<string, any>
     options?: Record<string, any>
-  }) => api.post<ApiResponse<any>>('/plugins/execute-command', data),
+  }, requestOptions?: AxiosRequestConfig) => 
+    apiWithOptions.post<ApiResponse<any>>('/plugins/execute-command', data, requestOptions),
 
   // GET /plugins/available - Get available plugins for user
   getAvailablePlugins: () => api.get<ApiResponse<any[]>>('/plugins/available'),

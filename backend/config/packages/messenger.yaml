@@ -16,3 +16,4 @@ framework:
         routing:
             App\Message\ExportDesignMessage: async
             App\Message\ProcessMediaUploadMessage: async
+            App\Message\ProcessYoutubeThumbnailMessage: async

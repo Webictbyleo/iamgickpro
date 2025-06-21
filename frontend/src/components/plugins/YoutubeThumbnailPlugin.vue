@@ -72,6 +72,19 @@
     <div v-if="videoInfo" class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
       <h4 class="text-md font-semibold text-gray-900 mb-4">Generation Options</h4>
       
+      <!-- AI Generation Info -->
+      <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <div class="flex items-center space-x-2">
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-sm text-blue-700">
+            <strong>AI-Powered Generation:</strong> 
+            Uses Google Imagen 4 Ultra (Replicate) or OpenAI GPT-4 Vision for high-quality thumbnail creation.
+          </p>
+        </div>
+      </div>
+      
       <div class="space-y-4">
         <!-- Thumbnail Style Selection -->
         <div>
@@ -221,8 +234,23 @@
           </svg>
         </div>
         <div class="flex-1">
-          <h4 class="text-sm font-medium text-gray-900">Generating Thumbnails</h4>
+          <h4 class="text-sm font-medium text-gray-900">
+            {{ currentJob.method === 'replicate' ? 'Generating with AI (Replicate)' : 'Generating with AI (OpenAI)' }}
+          </h4>
           <p class="text-sm text-gray-600">{{ getProgressMessage() }}</p>
+        </div>
+      </div>
+      
+      <!-- Extended timeout warning for Replicate -->
+      <div v-if="currentJob.method === 'replicate'" class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+        <div class="flex items-center space-x-2">
+          <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.864-.833-2.634 0L4.232 15.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p class="text-sm text-amber-700">
+            <strong>High-quality AI generation in progress.</strong> 
+            This may take 3-8 minutes for {{ maxThumbnails }} thumbnails using Google Imagen 4 Ultra.
+          </p>
         </div>
       </div>
       
@@ -235,6 +263,11 @@
       <div class="flex justify-between text-xs text-gray-500 mt-1">
         <span>{{ currentJob.progress || 0 }}% Complete</span>
         <span>{{ currentJob.status || 'processing' }}</span>
+      </div>
+      
+      <!-- Progress details for Replicate -->
+      <div v-if="currentJob.method === 'replicate' && currentJob.currentVariation" class="mt-2 text-xs text-gray-600">
+        Processing variation {{ currentJob.currentVariation }} of {{ maxThumbnails }}
       </div>
     </div>
 
@@ -264,7 +297,7 @@
             
             <div class="flex items-center justify-between mt-2 mb-3">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                AI Generated
+                {{ thumbnail.generationMethod === 'replicate' ? 'Imagen 4 Ultra' : 'GPT-4 Vision' }}
               </span>
               <span class="text-xs text-gray-500">{{ thumbnail.style }}</span>
             </div>
@@ -352,7 +385,7 @@ const customPrompt = ref('')
 // Track polling interval for cleanup
 let pollInterval: NodeJS.Timeout | null = null
 
-// Enhanced thumbnail style options
+// Enhanced thumbnail style options (matching backend)
 const thumbnailStyles = [
   { 
     value: 'modern', 
@@ -370,30 +403,15 @@ const thumbnailStyles = [
     description: 'Bright, energetic colors'
   },
   { 
-    value: 'minimal', 
+    value: 'minimalist', 
     label: 'Minimal & Professional',
     description: 'Simple, elegant design'
   },
   { 
-    value: 'gaming', 
-    label: 'Gaming Style',
-    description: 'Dynamic gaming-oriented design'
-  },
-  { 
-    value: 'educational', 
-    label: 'Educational',
-    description: 'Clear, instructional layout'
-  },
-  { 
-    value: 'lifestyle', 
-    label: 'Lifestyle & Vlog',
-    description: 'Personal, warm, inviting'
-  },
-  { 
-    value: 'tech', 
-    label: 'Tech & Reviews',
-    description: 'Modern, tech-focused design'
-  },
+    value: 'professional', 
+    label: 'Professional & Polished',
+    description: 'Corporate, sophisticated design'
+  }
 ] as const
 
 // Function to get appropriate icon component for each style
@@ -435,7 +453,7 @@ const getStyleIcon = (styleValue: string) => {
         d: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z'
       })
     ]),
-    minimal: () => h('svg', {
+    minimalist: () => h('svg', {
       fill: 'none',
       stroke: 'currentColor',
       viewBox: '0 0 24 24'
@@ -447,7 +465,7 @@ const getStyleIcon = (styleValue: string) => {
         d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
       })
     ]),
-    gaming: () => h('svg', {
+    professional: () => h('svg', {
       fill: 'none',
       stroke: 'currentColor',
       viewBox: '0 0 24 24'
@@ -456,43 +474,7 @@ const getStyleIcon = (styleValue: string) => {
         'stroke-linecap': 'round',
         'stroke-linejoin': 'round',
         'stroke-width': '2',
-        d: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a1 1 0 01-1-1V9a1 1 0 011-1h1a2 2 0 100-4H4a1 1 0 01-1-1V5a1 1 0 011-1h3a1 1 0 001-1v-1z'
-      })
-    ]),
-    educational: () => h('svg', {
-      fill: 'none',
-      stroke: 'currentColor',
-      viewBox: '0 0 24 24'
-    }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'
-      })
-    ]),
-    lifestyle: () => h('svg', {
-      fill: 'none',
-      stroke: 'currentColor',
-      viewBox: '0 0 24 24'
-    }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'
-      })
-    ]),
-    tech: () => h('svg', {
-      fill: 'none',
-      stroke: 'currentColor',
-      viewBox: '0 0 24 24'
-    }, [
-      h('path', {
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-        'stroke-width': '2',
-        d: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+        d: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6'
       })
     ])
   }
@@ -547,10 +529,90 @@ const extractVideoInfo = async (): Promise<void> => {
 const generateThumbnails = async (): Promise<void> => {
   if (!videoInfo.value) return
   
+  let progressInterval: NodeJS.Timeout | null = null
+  
   try {
     isProcessing.value = true
     errorMessage.value = ''
     
+    // Initialize progress tracking
+    currentJob.value = {
+      progress: 0,
+      status: 'starting',
+      method: 'unknown',
+      currentVariation: null,
+      startTime: Date.now()
+    }
+    
+    // Try async mode first (better for long-running operations)
+    try {
+      await generateThumbnailsAsync()
+    } catch (asyncError) {
+      console.warn('Async mode failed, falling back to sync mode:', asyncError)
+      await generateThumbnailsSync()
+    }
+    
+  } catch (error: any) {
+    console.error('Failed to generate thumbnails:', error)
+    const errorMsg = error?.response?.data?.message || 'Failed to generate thumbnails. Please try again.'
+    errorMessage.value = errorMsg
+    emit('error', errorMsg)
+  } finally {
+    if (progressInterval) {
+      clearInterval(progressInterval)
+    }
+    isProcessing.value = false
+  }
+}
+
+const generateThumbnailsAsync = async (): Promise<void> => {
+  // Start async job
+  const response = await pluginAPI.executeCommand({
+    pluginId: 'youtube_thumbnail',
+    command: 'generate_thumbnail_variations_async',
+    layerId: null,
+    parameters: {
+      video_url: videoUrl.value,
+      thumbnail_count: maxThumbnails.value,
+      style: selectedThumbnailStyle.value,
+      custom_prompt: customPrompt.value || null
+    }
+  })
+  
+  console.log('Async response structure:', JSON.stringify(response.data, null, 2))
+  
+  if (!response.data?.success || !(response.data as any)?.data?.result?.success) {
+    throw new Error('Failed to start async thumbnail generation')
+  }
+  
+  const jobId = (response.data as any).data.result.job_id
+  
+  if (!jobId) {
+    console.error('No job_id found in response:', response.data)
+    throw new Error('No job_id returned from async command')
+  }
+  
+  console.log('Extracted job_id:', jobId)
+  currentJob.value.status = 'queued'
+  currentJob.value.progress = 5
+  
+  // Poll for progress
+  await pollJobProgress(jobId)
+}
+
+const generateThumbnailsSync = async (): Promise<void> => {
+  // Simulate progress for sync mode
+  const progressInterval = setInterval(() => {
+    if (currentJob.value && currentJob.value.progress < 90) {
+      const increment = Math.random() * 8 + 2 // 2-10% increments
+      currentJob.value.progress = Math.min(90, currentJob.value.progress + increment)
+      
+      const estimatedVariation = Math.ceil((currentJob.value.progress / 90) * maxThumbnails.value)
+      currentJob.value.currentVariation = estimatedVariation
+    }
+  }, 3000)
+  
+  try {
     const response = await pluginAPI.executeCommand({
       pluginId: 'youtube_thumbnail',
       command: 'generate_thumbnail_variations',
@@ -559,32 +621,94 @@ const generateThumbnails = async (): Promise<void> => {
         video_url: videoUrl.value,
         thumbnail_count: maxThumbnails.value,
         style: selectedThumbnailStyle.value,
-        custom_prompt: customPrompt.value
+        custom_prompt: customPrompt.value || null
       }
+    }, {
+      timeout: 700000 // 11+ minutes timeout to accommodate Replicate processing
     })
     
+    clearInterval(progressInterval)
+    
     if (response.data?.success && response.data.data.success) {
-      const generationResult = response.data.data.result as YouTubeThumbnailGenerationResult
-      generatedThumbnails.value = generationResult.thumbnail_variations.map((thumb) => ({
-        id: thumb.id,
-        title: thumb.title,
-        previewUrl: thumb.preview_url,     // For UI display
-        fullImageUrl: thumb.image_url,     // For download/full view
-        thumbnailUrl: thumb.thumbnail_url, // Small thumbnail
-        style: thumb.style,
-        createdAt: thumb.created_at
-      }))
-      emit('thumbnails-generated', generatedThumbnails.value)
+      processGenerationResult(response.data.data.result as YouTubeThumbnailGenerationResult)
     } else {
-      throw new Error('Failed to generate thumbnails')
+      throw new Error('Sync generation failed')
     }
-  } catch (error: any) {
-    console.error('Failed to generate thumbnails:', error)
-    const errorMsg = error?.response?.data?.message || 'Failed to generate thumbnails. Please try again.'
-    errorMessage.value = errorMsg
-    emit('error', errorMsg)
-    isProcessing.value = false
+  } catch (error) {
+    clearInterval(progressInterval)
+    throw error
   }
+}
+
+const pollJobProgress = async (jobId: string): Promise<void> => {
+  const maxPolls = 200 // ~15 minutes with 4.5 second intervals
+  let polls = 0
+  
+  while (polls < maxPolls) {
+    await new Promise(resolve => setTimeout(resolve, 4500)) // 4.5 second intervals
+    polls++
+    
+    try {
+      const statusResponse = await pluginAPI.executeCommand({
+        pluginId: 'youtube_thumbnail',
+        command: 'get_job_status',
+        layerId: null,
+        parameters: { job_id: jobId }
+      })
+      
+      if (statusResponse.data?.success) {
+        const jobStatus = statusResponse.data.data.result
+        
+        // Update progress from backend
+        if (currentJob.value) {
+          currentJob.value.progress = jobStatus.progress || 0
+          currentJob.value.status = jobStatus.message || jobStatus.status || 'processing'
+          currentJob.value.method = jobStatus.generation_method || 'unknown'
+          currentJob.value.currentVariation = jobStatus.current_variation || null
+        }
+        
+        if (jobStatus.status === 'completed' && jobStatus.result) {
+          processGenerationResult(jobStatus.result as YouTubeThumbnailGenerationResult)
+          return
+        } else if (jobStatus.status === 'failed') {
+          throw new Error(jobStatus.message || 'Job failed')
+        } else if (jobStatus.status === 'cancelled') {
+          throw new Error('Job was cancelled')
+        }
+      }
+    } catch (pollError) {
+      console.error('Error polling job status:', pollError)
+      // Continue polling unless it's a fatal error
+    }
+  }
+  
+  throw new Error('Job timeout - took longer than expected')
+}
+
+const processGenerationResult = (generationResult: YouTubeThumbnailGenerationResult): void => {
+  // Update final job info
+  if (currentJob.value) {
+    currentJob.value.method = generationResult.generation_method || 'unknown'
+    currentJob.value.progress = 100
+    currentJob.value.status = 'completed'
+  }
+  
+  generatedThumbnails.value = generationResult.thumbnail_variations.map((thumb) => ({
+    id: thumb.id,
+    title: thumb.title,
+    previewUrl: thumb.preview_url,
+    fullImageUrl: thumb.image_url,
+    thumbnailUrl: thumb.thumbnail_url,
+    style: thumb.style,
+    createdAt: thumb.created_at,
+    generationMethod: thumb.generation_method || generationResult.generation_method
+  }))
+  
+  emit('thumbnails-generated', generatedThumbnails.value)
+  
+  // Show success message with generation method
+  const methodName = generationResult.generation_method === 'replicate' ? 'Replicate (Imagen 4 Ultra)' : 'OpenAI (GPT-4 Vision)'
+  console.log(`Successfully generated ${generatedThumbnails.value.length} thumbnails using ${methodName}`)
 }
 
 const previewThumbnail = (thumbnail: YouTubeThumbnailDisplay): void => {
@@ -650,11 +774,31 @@ const getProgressMessage = (): string => {
   if (!currentJob.value) return ''
   
   const progress = currentJob.value.progress || 0
-  if (progress < 25) return 'Extracting key frames and analyzing video content...'
-  if (progress < 50) return 'Identifying best moments and visual elements...'
-  if (progress < 75) return 'Generating thumbnail designs with AI...'
-  if (progress < 100) return 'Finalizing layouts and preparing previews...'
-  return 'Thumbnail generation complete!'
+  const method = currentJob.value.method
+  
+  if (method === 'replicate') {
+    // Progress messages for Replicate (longer process)
+    if (progress < 10) return 'Initializing Google Imagen 4 Ultra...'
+    if (progress < 30) return 'Analyzing video content and extracting key elements...'
+    if (progress < 60) return 'Generating high-quality thumbnails with AI...'
+    if (progress < 90) return 'Processing and optimizing images...'
+    if (progress < 100) return 'Finalizing thumbnail variations...'
+    return 'Thumbnail generation complete!'
+  } else if (method === 'openai') {
+    // Progress messages for OpenAI (faster process)
+    if (progress < 20) return 'Preparing original thumbnail for AI processing...'
+    if (progress < 50) return 'Generating variations with GPT-4 Vision...'
+    if (progress < 80) return 'Processing and creating multiple sizes...'
+    if (progress < 100) return 'Finalizing thumbnail previews...'
+    return 'Thumbnail generation complete!'
+  } else {
+    // Generic progress messages
+    if (progress < 25) return 'Extracting key frames and analyzing video content...'
+    if (progress < 50) return 'Identifying best moments and visual elements...'
+    if (progress < 75) return 'Generating thumbnail designs with AI...'
+    if (progress < 100) return 'Finalizing layouts and preparing previews...'
+    return 'Thumbnail generation complete!'
+  }
 }
 
 // Auto-analyze on mount if props specify

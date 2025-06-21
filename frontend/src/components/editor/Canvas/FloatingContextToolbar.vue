@@ -64,6 +64,7 @@
         :strokeColors="selectedLayer.properties?.strokeColors"
         :strokeWidths="selectedLayer.properties?.strokeWidths"
         :preserveAspectRatio="selectedLayer.properties?.preserveAspectRatio"
+        :svgElements="selectedLayer.properties?.svgElements"
         @update="(props) => $emit('tool-update', 'svg', props)"
       />
       

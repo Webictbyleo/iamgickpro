@@ -204,3 +204,10 @@ services:
     App\Service\Plugin\Config\PluginConfigLoader:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    # Plugin Command Execution Service (distinct from zip-based PluginService)
+    App\Service\Plugin\PluginService:
+        arguments:
+            $environment: '%kernel.environment%'
+            $projectDir: '%kernel.project_dir%'
+            $pluginDirectory: '%app.plugin_directory%'

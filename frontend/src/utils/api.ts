@@ -1,9 +1,10 @@
 import axios from 'axios'
+import type { AxiosRequestConfig } from 'axios'
 
 // Create axios instance with base configuration
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 10000,
+  timeout: 60000, // Increased to 60 seconds for long-running operations like Replicate API
 })
 
 
@@ -54,5 +55,23 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// Extended API instance with support for per-request options
+export const apiWithOptions = {
+  get: <T = any>(url: string, config?: AxiosRequestConfig) => 
+    api.get<T>(url, config),
+  
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+    api.post<T>(url, data, config),
+  
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+    api.put<T>(url, data, config),
+  
+  delete: <T = any>(url: string, config?: AxiosRequestConfig) => 
+    api.delete<T>(url, config),
+  
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+    api.patch<T>(url, data, config),
+}
 
 export default api

@@ -216,7 +216,7 @@ export class TransformManager {
       keepRatio: false,
       rotateEnabled: true,
       borderEnabled: true,
-      anchorSize: 8,
+      anchorSize: this.getResponsiveAnchorSize(),
       boundBoxFunc: (oldBox: Box, newBox: Box) => {
         const activeAnchor = this.transformer?.getActiveAnchor()
         const minWidth = 50
@@ -250,7 +250,7 @@ export class TransformManager {
       keepRatio: false,
       rotateEnabled: true,
       borderEnabled: true,
-      anchorSize: 8,
+      anchorSize: this.getResponsiveAnchorSize(),
       boundBoxFunc: (oldBox: Box, newBox: Box) => {
         const activeAnchor = this.transformer?.getActiveAnchor()
         const minSize = 20
@@ -297,7 +297,7 @@ export class TransformManager {
       keepRatio: false,
       rotateEnabled: true,
       borderEnabled: true,
-      anchorSize: 8,
+      anchorSize: this.getResponsiveAnchorSize(),
       boundBoxFunc: (oldBox: Box, newBox: Box) => {
         return newBox.width < 5 || newBox.height < 5 ? oldBox : newBox
       }
@@ -325,7 +325,7 @@ export class TransformManager {
         keepRatio: true, // This maintains proportions during scaling
         rotateEnabled: true,
         borderEnabled: true,
-        anchorSize: 8,
+        anchorSize: this.getResponsiveAnchorSize(),
         boundBoxFunc: (oldBox: Box, newBox: Box) => {
           const minSize = 20
           
@@ -350,7 +350,7 @@ export class TransformManager {
         keepRatio: false,
         rotateEnabled: true,
         borderEnabled: true,
-        anchorSize: 8,
+        anchorSize: this.getResponsiveAnchorSize(),
         boundBoxFunc: (oldBox: Box, newBox: Box) => {
           const minSize = 20
           newBox.width = Math.max(minSize, newBox.width)
@@ -374,7 +374,7 @@ export class TransformManager {
       keepRatio: false, // Allow non-proportional scaling for SVG graphics
       rotateEnabled: true,
       borderEnabled: true,
-      anchorSize: 8,
+      anchorSize: this.getResponsiveAnchorSize(),
       boundBoxFunc: (oldBox: Box, newBox: Box) => {
         const minSize = 20
         
@@ -387,6 +387,24 @@ export class TransformManager {
         return newBox
       }
     })
+  }
+
+  private getResponsiveAnchorSize(): number {
+    const baseSize = 6
+    const scale = this.stage.scaleX() || 1
+    
+    // Calculate responsive size - anchors should maintain consistent screen size
+    // When zoomed in (scale > 1), we need larger values to maintain visual size
+    // When zoomed out (scale < 1), we need smaller values but with minimum
+    const responsiveSize = baseSize / scale
+    
+    // Ensure minimum size for usability and maximum size to prevent huge anchors
+    const finalSize = Math.max(10, Math.min(responsiveSize, 18))
+    
+    // Log anchor size changes for debugging
+    console.log(`🎯 TransformManager: Anchor size calculated - scale: ${scale.toFixed(2)}, size: ${finalSize.toFixed(1)}px`)
+    
+    return finalSize
   }
 
   private setupTransformEventHandlers(): void {
@@ -819,18 +837,24 @@ export class TransformManager {
       const scaleX = Math.abs(node.scaleX())
       const scaleY = Math.abs(node.scaleY())
       
+      // Preserve the current position to prevent jumping
+      const currentX = node.x()
+      const currentY = node.y()
+      
       // Calculate new dimensions
       layer.width = oldWidth * scaleX
       layer.height = oldHeight * scaleY
       layer.scaleX = 1
       layer.scaleY = 1
 
-      // Update the group dimensions and reset scale
+      // Update the group dimensions and reset scale while preserving position
       node.setAttrs({
         width: layer.width,
         height: layer.height,
         scaleX: 1,
-        scaleY: 1
+        scaleY: 1,
+        x: currentX,
+        y: currentY
       })
 
       // For SVG layers with path-based rendering, we need to update the individual path scales
@@ -1224,5 +1248,15 @@ export class TransformManager {
     }
     
     this.selectedLayers = []
+  }
+
+  /**
+   * Update transformer anchor sizes when zoom level changes
+   */
+  updateTransformerForZoom(): void {
+    if (this.transformer && this.selectedLayers.length > 0) {
+      // Reconfigure transformer with new anchor size
+      this.configureTransformerForLayers()
+    }
   }
 }

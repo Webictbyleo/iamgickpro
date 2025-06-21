@@ -16,11 +16,13 @@ use App\Service\Plugin\Plugins\RemoveBgPlugin;
 use App\Service\Plugin\Plugins\YoutubeThumbnailPlugin;
 use App\Service\Plugin\Config\PluginConfigLoader;
 use App\Service\MediaProcessing\MediaProcessingService;
+use App\Service\MediaProcessing\AsyncMediaProcessingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Plugin Service
@@ -43,6 +45,8 @@ class PluginService
         private readonly LoggerInterface $logger,
         private readonly RequestStack $requestStack,
         private readonly CacheItemPoolInterface $cache,
+        private readonly AsyncMediaProcessingService $asyncService,
+        private readonly MessageBusInterface $messageBus,
         #[Autowire('%kernel.environment%')]
         private readonly string $environment,
         #[Autowire('%kernel.project_dir%')]
@@ -50,7 +54,7 @@ class PluginService
         #[Autowire('%kernel.project_dir%/public/uploads/plugins')]
         private readonly string $pluginDirectory
     ) {
-        $this->initializeBuiltInPlugins();
+        // Built-in plugins are now loaded dynamically when needed
     }
 
     /**
@@ -145,11 +149,98 @@ class PluginService
     }
 
     /**
-     * Get plugin instance by ID
+     * Get plugin instance by ID - loads dynamically if not already cached
      */
     public function getPlugin(string $pluginId): ?AbstractPlugin
     {
-        return $this->plugins[$pluginId] ?? null;
+        // Return cached plugin if already loaded
+        if (isset($this->plugins[$pluginId])) {
+            return $this->plugins[$pluginId];
+        }
+
+        // Try to load built-in plugin dynamically
+        $plugin = $this->loadBuiltInPlugin($pluginId);
+        if ($plugin) {
+            $this->plugins[$pluginId] = $plugin;
+            return $plugin;
+        }
+
+        // Plugin not found
+        return null;
+    }
+
+    /**
+     * Load built-in plugin by ID
+     */
+    private function loadBuiltInPlugin(string $pluginId): ?AbstractPlugin
+    {
+        switch ($pluginId) {
+            case 'removebg':
+                return $this->createRemoveBgPlugin();
+            
+            case 'youtube_thumbnail':
+                return $this->createYouTubeThumbnailPlugin();
+            
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Create RemoveBG plugin instance
+     */
+    private function createRemoveBgPlugin(): RemoveBgPlugin
+    {
+        $plugin = new RemoveBgPlugin(
+            $this->requestBuilder,
+            $this,
+            $this->requestStack,
+            $this->logger,
+            $this->cache,
+            $this->environment,
+            $this->projectDir
+        );
+        
+        try {
+            $config = $this->configLoader->loadConfig('remove_bg');
+            $plugin->setConfig($config);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to load config for RemoveBG plugin, using defaults', [
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $plugin;
+    }
+
+    /**
+     * Create YouTube Thumbnail plugin instance
+     */
+    private function createYouTubeThumbnailPlugin(): YoutubeThumbnailPlugin
+    {
+        $plugin = new YoutubeThumbnailPlugin(
+            $this->requestBuilder,
+            $this,
+            $this->mediaProcessingService,
+            $this->asyncService,
+            $this->messageBus,
+            $this->requestStack,
+            $this->logger,
+            $this->cache,
+            $this->environment,
+            $this->projectDir
+        );
+        
+        try {
+            $config = $this->configLoader->loadConfig('youtube_thumbnail');
+            $plugin->setConfig($config);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to load config for YouTube Thumbnail plugin, using defaults', [
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $plugin;
     }
 
     /**
@@ -187,57 +278,6 @@ class PluginService
             mkdir($pluginDir, 0755, true);
         }
         return $pluginDir;
-    }
-
-    /**
-     * Initialize built-in plugins
-     */
-    private function initializeBuiltInPlugins(): void
-    {
-        // Register RemoveBG plugin
-        $removeBgPlugin = new RemoveBgPlugin(
-            $this->requestBuilder,
-            $this,
-            $this->requestStack,
-            $this->logger,
-            $this->cache,
-            $this->environment,
-            $this->projectDir
-        );
-        
-        try {
-            $removeBgConfig = $this->configLoader->loadConfig('remove_bg');
-            $removeBgPlugin->setConfig($removeBgConfig);
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to load config for RemoveBG plugin, using defaults', [
-                'error' => $e->getMessage()
-            ]);
-        }
-        
-        $this->registerPlugin('removebg', $removeBgPlugin);
-
-        // Register YouTube Thumbnail Generator plugin
-        $youtubePlugin = new YoutubeThumbnailPlugin(
-            $this->requestBuilder,
-            $this,
-            $this->mediaProcessingService,
-            $this->requestStack,
-            $this->logger,
-            $this->cache,
-            $this->environment,
-            $this->projectDir
-        );
-        
-        try {
-            $youtubeConfig = $this->configLoader->loadConfig('youtube_thumbnail');
-            $youtubePlugin->setConfig($youtubeConfig);
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to load config for YouTube Thumbnail plugin, using defaults', [
-                'error' => $e->getMessage()
-            ]);
-        }
-        
-        $this->registerPlugin('youtube_thumbnail', $youtubePlugin);
     }
 
     /**
