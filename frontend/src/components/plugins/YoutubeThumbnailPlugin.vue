@@ -423,6 +423,124 @@
         </div>
       </div>
 
+      <!-- Current Generation Results -->
+      <div v-if="generatedThumbnails.length > 0" class="relative mb-8">
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+        <div class="relative bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl rounded-3xl p-8">
+          
+          <!-- Results Header -->
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-3">
+              <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl blur opacity-75"></div>
+                <div class="relative bg-gradient-to-r from-indigo-500 to-purple-500 p-2 rounded-xl">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <h4 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  ✨ Generated Thumbnails
+                </h4>
+                <p class="text-gray-600 font-medium">{{ generatedThumbnails.length }} AI thumbnails for current video</p>
+              </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="flex items-center space-x-3">
+              <button
+                @click="downloadAllThumbnails"
+                class="group px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              >
+                <div class="flex items-center space-x-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Download All</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Thumbnails Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              v-for="(thumbnail, index) in generatedThumbnails"
+              :key="thumbnail.id"
+              class="group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-200/50 hover:border-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+            >
+              <!-- Image Container -->
+              <div class="aspect-video relative overflow-hidden">
+                <img
+                  :src="thumbnail.previewUrl"
+                  :alt="thumbnail.title"
+                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+                
+                <!-- Hover Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <!-- Subtle hover effect only -->
+                </div>
+                
+                <!-- Quality Badge -->
+                <div class="absolute top-3 left-3">
+                  <div class="px-3 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-full font-semibold">
+                    🤖 AI Quality
+                  </div>
+                </div>
+                
+                <!-- Index Badge -->
+                <div class="absolute top-3 right-3">
+                  <div class="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                    {{ index + 1 }}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Content Panel -->
+              <div class="p-5 space-y-4">
+                <!-- Title and Style -->
+                <div>
+                  <h5 class="font-bold text-gray-900 text-base truncate mb-1" :title="thumbnail.title">
+                    {{ thumbnail.title }}
+                  </h5>
+                  <div class="flex items-center space-x-2">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                      {{ thumbnail.style }} style
+                    </span>
+                    <span class="text-xs text-gray-500">{{ new Date(thumbnail.createdAt).toLocaleDateString() }}</span>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    @click="previewThumbnail(thumbnail)"
+                    class="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    @click="downloadThumbnail(thumbnail)"
+                    class="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 px-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Enhanced Recent Thumbnails Section -->
       <div class="relative mb-8">
         <div class="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-3xl blur-xl"></div>
@@ -560,124 +678,6 @@
                       <span>Download</span>
                     </a>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Current Generation Results -->
-      <div v-if="generatedThumbnails.length > 0" class="relative mb-8">
-        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-        <div class="relative bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl rounded-3xl p-8">
-          
-          <!-- Results Header -->
-          <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center space-x-3">
-              <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl blur opacity-75"></div>
-                <div class="relative bg-gradient-to-r from-indigo-500 to-purple-500 p-2 rounded-xl">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h4 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  ✨ Generated Thumbnails
-                </h4>
-                <p class="text-gray-600 font-medium">{{ generatedThumbnails.length }} AI thumbnails for current video</p>
-              </div>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="flex items-center space-x-3">
-              <button
-                @click="downloadAllThumbnails"
-                class="group px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-              >
-                <div class="flex items-center space-x-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Download All</span>
-                </div>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Thumbnails Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
-              v-for="(thumbnail, index) in generatedThumbnails"
-              :key="thumbnail.id"
-              class="group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-200/50 hover:border-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-            >
-              <!-- Image Container -->
-              <div class="aspect-video relative overflow-hidden">
-                <img
-                  :src="thumbnail.previewUrl"
-                  :alt="thumbnail.title"
-                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
-                
-                <!-- Hover Overlay -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <!-- Subtle hover effect only -->
-                </div>
-                
-                <!-- Quality Badge -->
-                <div class="absolute top-3 left-3">
-                  <div class="px-3 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-full font-semibold">
-                    🤖 AI Quality
-                  </div>
-                </div>
-                
-                <!-- Index Badge -->
-                <div class="absolute top-3 right-3">
-                  <div class="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                    {{ index + 1 }}
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Content Panel -->
-              <div class="p-5 space-y-4">
-                <!-- Title and Style -->
-                <div>
-                  <h5 class="font-bold text-gray-900 text-base truncate mb-1" :title="thumbnail.title">
-                    {{ thumbnail.title }}
-                  </h5>
-                  <div class="flex items-center space-x-2">
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-                      {{ thumbnail.style }} style
-                    </span>
-                    <span class="text-xs text-gray-500">{{ new Date(thumbnail.createdAt).toLocaleDateString() }}</span>
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="grid grid-cols-2 gap-3">
-                  <button
-                    @click="previewThumbnail(thumbnail)"
-                    class="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span>Preview</span>
-                  </button>
-                  <button
-                    @click="downloadThumbnail(thumbnail)"
-                    class="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 px-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Download</span>
-                  </button>
                 </div>
               </div>
             </div>
@@ -910,6 +910,11 @@ const getStyleIcon = (styleValue: string) => {
   }
   
   return iconComponents[styleValue as keyof typeof iconComponents] || iconComponents.modern
+}
+
+// Helper function to clear search when dropdown closes
+const clearStyleSearch = () => {
+  styleSearchQuery.value = ''
 }
 
 // Methods
