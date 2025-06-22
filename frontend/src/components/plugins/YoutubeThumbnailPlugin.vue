@@ -139,8 +139,7 @@
               <div>
                 <h5 class="font-semibold text-blue-900 mb-1">🤖 AI-Powered Generation</h5>
                 <p class="text-sm text-blue-700 leading-relaxed">
-                  Uses <strong>Google Imagen 4 Ultra</strong> (Replicate) or <strong>OpenAI GPT-4 Vision</strong> 
-                  for high-quality, contextual thumbnail creation.
+                  Uses advanced AI technology for high-quality, contextual thumbnail creation with intelligent design optimization.
                 </p>
               </div>
             </div>
@@ -327,7 +326,7 @@
               <p class="text-gray-700 font-medium">{{ getProgressMessage() }}</p>
               <div class="flex items-center space-x-2 mt-2">
                 <div class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                  {{ currentJob.method === 'replicate' ? '🧠 Imagen 4 Ultra' : '🤖 GPT-4 Vision' }}
+                  🤖 Advanced AI Processing
                 </div>
                 <div class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
                   {{ Math.round((Date.now() - currentJob.startTime) / 1000) }}s elapsed
@@ -349,7 +348,7 @@
               <div>
                 <h5 class="font-semibold text-amber-900 mb-1">⏱️ High-Quality AI Processing</h5>
                 <p class="text-sm text-amber-800 leading-relaxed">
-                  <strong>Google Imagen 4 Ultra</strong> creates exceptional thumbnails but takes 3-8 minutes for {{ maxThumbnails }} variations. 
+                  <strong>Advanced AI technology</strong> creates exceptional thumbnails but takes 3-8 minutes for {{ maxThumbnails }} variations. 
                   The wait is worth it! ✨
                 </p>
               </div>
@@ -413,7 +412,7 @@
                 </div>
               </div>
               <h4 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                📚 Recent Generations
+                📚 All Thumbnails
               </h4>
             </div>
             <button
@@ -438,7 +437,7 @@
           <div v-if="showRecentThumbnails" class="space-y-6">
             
             <!-- Empty State -->
-            <div v-if="recentThumbnails.length === 0 && !loadingRecentThumbnails" class="text-center py-12">
+            <div v-if="allThumbnails.length === 0 && !loadingRecentThumbnails" class="text-center py-12">
               <div class="relative inline-block mb-4">
                 <div class="absolute inset-0 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full blur opacity-75"></div>
                 <div class="relative bg-gradient-to-r from-gray-300 to-gray-400 p-4 rounded-full">
@@ -458,9 +457,9 @@
             </div>
             
             <!-- Thumbnail Grid -->
-            <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div
-                v-for="thumbnail in recentThumbnails"
+                v-for="thumbnail in allThumbnails"
                 :key="thumbnail.id"
                 class="group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-200/50 hover:border-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
               >
@@ -473,34 +472,33 @@
                   />
                   
                   <!-- Hover Overlay -->
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div class="absolute bottom-3 left-3 right-3 flex space-x-2">
-                      <a
-                        :href="thumbnail.image_url"
-                        target="_blank"
-                        class="flex-1 px-3 py-2 bg-white/90 backdrop-blur-sm text-gray-900 rounded-lg text-xs font-semibold hover:bg-white transition-colors text-center"
-                      >
-                        🔍 View Full
-                      </a>
-                    </div>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <!-- Subtle hover effect only -->
                   </div>
                   
                   <!-- AI Badge -->
-                  <div class="absolute top-2 left-2">
-                    <div class="px-2 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-lg font-medium">
-                      {{ thumbnail.generation_method === 'replicate' ? '🧠 Imagen' : '🤖 GPT-4' }}
+                  <div class="absolute top-3 left-3">
+                    <div class="px-3 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-full font-semibold">
+                      🤖 AI Generated
                     </div>
                   </div>
                 </div>
                 
-                <!-- Info Panel -->
-                <div class="p-3">
-                  <div class="mb-2">
-                    <h6 class="font-semibold text-gray-900 text-sm truncate" :title="thumbnail.video_title || thumbnail.video_id">
+                <!-- Content Panel -->
+                <div class="p-4 space-y-3">
+                  <!-- Title and Video Info -->
+                  <div>
+                    <h6 class="font-bold text-gray-900 text-base truncate mb-1" :title="thumbnail.video_title || thumbnail.video_id">
                       {{ thumbnail.video_title || thumbnail.video_id }}
                     </h6>
+                    <div class="flex items-center space-x-2">
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                        {{ thumbnail.style || 'custom' }} style
+                      </span>
+                    </div>
                   </div>
                   
+                  <!-- Meta Info -->
                   <div class="flex items-center justify-between text-xs text-gray-600">
                     <span class="flex items-center space-x-1">
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -510,6 +508,30 @@
                     </span>
                     <div class="w-2 h-2 bg-green-400 rounded-full"></div>
                   </div>
+                  
+                  <!-- Action Buttons -->
+                  <div class="grid grid-cols-2 gap-3">
+                    <button
+                      @click="previewRecentThumbnail(thumbnail)"
+                      class="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span>Preview</span>
+                    </button>
+                    <a
+                      :href="thumbnail.image_url"
+                      download
+                      class="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-2 px-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Download</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -517,8 +539,8 @@
         </div>
       </div>
 
-      <!-- Enhanced Generated Thumbnails -->
-      <div v-if="generatedThumbnails.length > 0" class="relative">
+      <!-- Current Generation Results -->
+      <div v-if="generatedThumbnails.length > 0" class="relative mb-8">
         <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
         <div class="relative bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl rounded-3xl p-8">
           
@@ -537,7 +559,7 @@
                 <h4 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                   ✨ Generated Thumbnails
                 </h4>
-                <p class="text-gray-600 font-medium">{{ generatedThumbnails.length }} high-quality AI thumbnails</p>
+                <p class="text-gray-600 font-medium">{{ generatedThumbnails.length }} AI thumbnails for current video</p>
               </div>
             </div>
             
@@ -574,11 +596,10 @@
                 
                 <!-- Hover Overlay -->
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div class="absolute bottom-4 left-4 right-4 space-y-3">
-                    <!-- Preview Button -->
+                  <div class="absolute bottom-4 left-4 right-4">
                     <button
                       @click="previewThumbnail(thumbnail)"
-                      class="w-full bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900 py-2 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      class="w-full bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900 py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                     >
                       🔍 Preview Full Size
                     </button>
@@ -588,7 +609,7 @@
                 <!-- Quality Badge -->
                 <div class="absolute top-3 left-3">
                   <div class="px-3 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-full font-semibold">
-                    {{ thumbnail.generationMethod === 'replicate' ? '🧠 Imagen 4 Ultra' : '🤖 GPT-4 Vision' }}
+                    🤖 AI Quality
                   </div>
                 </div>
                 
@@ -642,6 +663,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -697,8 +719,8 @@ const selectedThumbnailStyle = ref<string>('modern')
 const maxThumbnails = ref(5)
 const customPrompt = ref('')
 
-// Recent thumbnails
-const recentThumbnails = ref<any[]>([])
+// Recent thumbnails - combined with current generation
+const allThumbnails = ref<any[]>([])
 const showRecentThumbnails = ref(false)
 const loadingRecentThumbnails = ref(false)
 
@@ -1074,11 +1096,32 @@ const processGenerationResult = (generationResult: YouTubeThumbnailGenerationRes
     generationMethod: thumb.generation_method || generationResult.generation_method
   }))
   
+  // Merge new thumbnails with existing recent thumbnails
+  mergeWithRecentThumbnails(generatedThumbnails.value)
+  
   emit('thumbnails-generated', generatedThumbnails.value)
   
-  // Show success message with generation method
-  const methodName = generationResult.generation_method === 'replicate' ? 'Replicate (Imagen 4 Ultra)' : 'OpenAI (GPT-4 Vision)'
-  console.log(`Successfully generated ${generatedThumbnails.value.length} thumbnails using ${methodName}`)
+  // Show success message
+  console.log(`Successfully generated ${generatedThumbnails.value.length} thumbnails`)
+}
+
+const mergeWithRecentThumbnails = (newThumbnails: YouTubeThumbnailDisplay[]): void => {
+  // Convert new thumbnails to the format expected by allThumbnails
+  const formattedNewThumbnails = newThumbnails.map(thumb => ({
+    id: thumb.id,
+    preview_url: thumb.previewUrl,
+    image_url: thumb.fullImageUrl,
+    title: thumb.title,
+    video_title: videoInfo.value?.title || '',
+    video_id: videoInfo.value?.videoId || '',
+    video_channel: videoInfo.value?.channelTitle || '',
+    generation_method: thumb.generationMethod,
+    created_at: thumb.createdAt,
+    style: thumb.style
+  }))
+  
+  // Prepend new thumbnails to the beginning of allThumbnails
+  allThumbnails.value = [...formattedNewThumbnails, ...allThumbnails.value]
 }
 
 const previewThumbnail = (thumbnail: YouTubeThumbnailDisplay): void => {
@@ -1102,6 +1145,43 @@ const previewThumbnail = (thumbnail: YouTubeThumbnailDisplay): void => {
   img.src = thumbnail.fullImageUrl
   img.className = 'max-w-full max-h-full object-contain'
   img.alt = thumbnail.title
+  
+  const container = document.createElement('div')
+  container.className = 'relative max-w-4xl max-h-4xl p-4'
+  container.onclick = (e) => e.stopPropagation()
+  
+  const closeBtn = document.createElement('button')
+  closeBtn.innerHTML = '✕'
+  closeBtn.className = 'absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75'
+  closeBtn.onclick = closeOverlay
+  
+  container.appendChild(img)
+  container.appendChild(closeBtn)
+  overlay.appendChild(container)
+  document.body.appendChild(overlay)
+}
+
+const previewRecentThumbnail = (thumbnail: any): void => {
+  // Create a simple lightbox overlay to preview the image
+  const overlay = document.createElement('div')
+  overlay.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 cursor-pointer'
+  
+  const closeOverlay = () => {
+    overlay.remove()
+    document.removeEventListener('keydown', handleEscape)
+  }
+  
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') closeOverlay()
+  }
+  
+  overlay.onclick = closeOverlay
+  document.addEventListener('keydown', handleEscape)
+  
+  const img = document.createElement('img')
+  img.src = thumbnail.image_url
+  img.className = 'max-w-full max-h-full object-contain'
+  img.alt = thumbnail.title || thumbnail.video_title
   
   const container = document.createElement('div')
   container.className = 'relative max-w-4xl max-h-4xl p-4'
@@ -1176,17 +1256,17 @@ const getProgressMessage = (): string => {
   const method = currentJob.value.method
   
   if (method === 'replicate') {
-    // Progress messages for Replicate (longer process)
-    if (progress < 10) return 'Initializing Google Imagen 4 Ultra...'
+    // Progress messages for advanced AI (longer process)
+    if (progress < 10) return 'Initializing advanced AI processing...'
     if (progress < 30) return 'Analyzing video content and extracting key elements...'
     if (progress < 60) return 'Generating high-quality thumbnails with AI...'
     if (progress < 90) return 'Processing and optimizing images...'
     if (progress < 100) return 'Finalizing thumbnail variations...'
     return 'Thumbnail generation complete!'
   } else if (method === 'openai') {
-    // Progress messages for OpenAI (faster process)
+    // Progress messages for standard AI (faster process)
     if (progress < 20) return 'Preparing original thumbnail for AI processing...'
-    if (progress < 50) return 'Generating variations with GPT-4 Vision...'
+    if (progress < 50) return 'Generating variations with advanced AI...'
     if (progress < 80) return 'Processing and creating multiple sizes...'
     if (progress < 100) return 'Finalizing thumbnail previews...'
     return 'Thumbnail generation complete!'
@@ -1234,7 +1314,7 @@ const loadRecentThumbnails = async (): Promise<void> => {
         })
       })
       
-      recentThumbnails.value = flatThumbnails
+      allThumbnails.value = flatThumbnails
     } else {
       throw new Error('Failed to load recent thumbnails')
     }
@@ -1249,7 +1329,7 @@ const loadRecentThumbnails = async (): Promise<void> => {
 // Toggle recent thumbnails view
 const toggleRecentThumbnails = async (): Promise<void> => {
   showRecentThumbnails.value = !showRecentThumbnails.value
-  if (showRecentThumbnails.value && recentThumbnails.value.length === 0) {
+  if (showRecentThumbnails.value && allThumbnails.value.length === 0) {
     await loadRecentThumbnails()
   }
 }
