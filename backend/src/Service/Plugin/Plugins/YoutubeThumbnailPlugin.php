@@ -12,6 +12,7 @@ use App\Service\Plugin\PluginService;
 use App\Service\Plugin\SecureRequestBuilder;
 use App\Service\MediaProcessing\MediaProcessingService;
 use App\Service\MediaProcessing\AsyncMediaProcessingService;
+use App\Service\MediaProcessing\Config\ImageProcessingConfig;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -65,6 +66,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             'get_job_status' => $this->getJobStatus($user, $parameters, $options),
             'cancel_job' => $this->cancelJob($user, $parameters, $options),
             'get_video_info' => $this->getVideoInfo($user, $parameters, $options),
+            'get_recent_thumbnails' => $this->getRecentThumbnails($user, $parameters, $options),
             'clear_cache' => $this->clearCachedResults($user, $parameters, $options),
             default => throw new \RuntimeException(sprintf('Unsupported command: %s', $command))
         };
@@ -208,6 +210,9 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 'thumbnail_count' => count($thumbnailVariations),
                 'generation_method' => $generationMethod
             ]);
+
+            // Save to user history cache
+            $this->saveToUserHistory($user, $videoInfo, $thumbnailVariations, $style, $generationMethod);
 
             return [
                 'success' => true,
@@ -528,15 +533,9 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                     $thumbnailVariations[] = [
                         'id' => uniqid('thumb_'),
                         'title' => sprintf('Thumbnail Variation %d', $index + 1),
-                        'prompt' => $prompt,
                         'image_url' => $processedImages['full_size']['url'],
-                        'local_path' => $processedImages['full_size']['path'],
                         'preview_url' => $processedImages['preview']['url'],
-                        'preview_path' => $processedImages['preview']['path'],
                         'thumbnail_url' => $processedImages['thumbnail']['url'],
-                        'thumbnail_path' => $processedImages['thumbnail']['path'],
-                        'original_size' => '1536x1024', // OpenAI generated size
-                        'youtube_size' => '1792x1024',  // YouTube optimal size
                         'style' => $style,
                         'created_at' => (new \DateTimeImmutable())->format('c')
                     ];
@@ -602,16 +601,10 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                         
                         $thumbnailVariations[] = [
                             'id' => uniqid('thumb_replicate_'),
-                            'title' => sprintf('Thumbnail Variation %d (Replicate)', $i),
-                            'prompt' => $prompt,
+                            'title' => sprintf('Thumbnail Variation %d', $i),
                             'image_url' => $processedImages['full_size']['url'],
-                            'local_path' => $processedImages['full_size']['path'],
                             'preview_url' => $processedImages['preview']['url'],
-                            'preview_path' => $processedImages['preview']['path'],
                             'thumbnail_url' => $processedImages['thumbnail']['url'],
-                            'thumbnail_path' => $processedImages['thumbnail']['path'],
-                            'original_size' => '1536x864', // 16:9 aspect ratio from Imagen 4
-                            'youtube_size' => '1792x1024',  // YouTube optimal size
                             'style' => $style,
                             'generation_method' => 'replicate-imagen4',
                             'created_at' => (new \DateTimeImmutable())->format('c')
@@ -1027,7 +1020,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         // Validate thumbnail count
         $thumbnailCount = $parameters['thumbnail_count'] ?? 4;
         if (!is_int($thumbnailCount) && !is_numeric($thumbnailCount)) {
-            $errors[] = 'thumbnail_count must be a number';
+            $errors[] = 'thumbnail_count php a number';
         } else {
             $thumbnailCount = (int) $thumbnailCount;
             if ($thumbnailCount < 1 || $thumbnailCount > 10) {
@@ -1037,7 +1030,11 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         
         // Validate style
         $style = $parameters['style'] ?? 'modern';
-        $validStyles = ['modern', 'dramatic', 'minimalist', 'colorful', 'professional'];
+        $validStyles = [
+            'modern', 'dramatic', 'minimalist', 'colorful', 'professional',
+            'gaming', 'tech', 'educational', 'entertainment', 'business',
+            'lifestyle', 'vintage', 'neon', 'cinematic', 'cartoon'
+        ];
         if (!in_array($style, $validStyles)) {
             $errors[] = 'style must be one of: ' . implode(', ', $validStyles);
         }
@@ -1079,13 +1076,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 throw new \RuntimeException('Failed to save full-size image');
             }
             
-            // Create different sizes for YouTube
-            $sizes = [
-                'preview' => ['width' => 640, 'height' => 360],    // Preview size
-                'thumbnail' => ['width' => 320, 'height' => 180],  // Thumbnail size
-                'youtube' => ['width' => 1792, 'height' => 1024]   // YouTube optimal size
-            ];
-            
+            // Use MediaProcessingService to create different sizes
             $processedImages = [
                 'full_size' => [
                     'path' => $fullSizePath,
@@ -1095,50 +1086,59 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 ]
             ];
             
-            // Create resized versions using GD
-            $sourceImage = imagecreatefrompng($fullSizePath);
-            if (!$sourceImage) {
-                throw new \RuntimeException('Failed to create image resource from PNG');
-            }
+            // Create preview size (640x360)
+            $previewPath = $videoDir . '/' . sprintf('preview_%s_openai_%d_%s.png', $videoId, $variationNumber, uniqid());
+            $previewConfig = new ImageProcessingConfig(
+                width: 640,
+                height: 360,
+                quality: 85,
+                format: 'png',
+                maintainAspectRatio: true
+            );
             
-            foreach ($sizes as $sizeName => $dimensions) {
-                $resizedPath = str_replace('.png', '_' . $sizeName . '.png', $fullSizePath);
-                
-                // Create resized image
-                $resizedImage = imagecreatetruecolor($dimensions['width'], $dimensions['height']);
-                imagealphablending($resizedImage, false);
-                imagesavealpha($resizedImage, true);
-                
-                if (imagecopyresampled(
-                    $resizedImage, $sourceImage,
-                    0, 0, 0, 0,
-                    $dimensions['width'], $dimensions['height'],
-                    1536, 1024  // Source dimensions from OpenAI
-                )) {
-                    imagepng($resizedImage, $resizedPath);
-                    
-                    $processedImages[$sizeName] = [
-                        'path' => $resizedPath,
-                        'url' => $this->getFileUrl($resizedPath),
-                        'width' => $dimensions['width'],
-                        'height' => $dimensions['height']
-                    ];
-                }
-                
-                imagedestroy($resizedImage);
-            }
+            $this->mediaProcessingService->processImage($fullSizePath, $previewPath, $previewConfig);
             
-            imagedestroy($sourceImage);
+            $processedImages['preview'] = [
+                'path' => $previewPath,
+                'url' => $this->getFileUrl($previewPath),
+                'width' => 640,
+                'height' => 360
+            ];
+            
+            // Create thumbnail size (320x180)
+            $thumbnailPath = $videoDir . '/' . sprintf('thumb_%s_openai_%d_%s.png', $videoId, $variationNumber, uniqid());
+            $thumbnailConfig = new ImageProcessingConfig(
+                width: 320,
+                height: 180,
+                quality: 80,
+                format: 'png',
+                maintainAspectRatio: true
+            );
+            
+            $this->mediaProcessingService->processImage($fullSizePath, $thumbnailPath, $thumbnailConfig);
+            
+            $processedImages['thumbnail'] = [
+                'path' => $thumbnailPath,
+                'url' => $this->getFileUrl($thumbnailPath),
+                'width' => 320,
+                'height' => 180
+            ];
+            
+            $this->logger->info('Successfully processed OpenAI generated image', [
+                'video_id' => $videoId,
+                'variation' => $variationNumber,
+                'sizes_created' => ['full_size', 'preview', 'thumbnail']
+            ]);
             
             return $processedImages;
-            
+
         } catch (\Exception $e) {
             $this->logger->error('Failed to process and store OpenAI image', [
                 'video_id' => $videoId,
                 'variation' => $variationNumber,
                 'error' => $e->getMessage()
             ]);
-            throw new \RuntimeException('Failed to process image: ' . $e->getMessage());
+            throw new \RuntimeException('Failed to process generated image: ' . $e->getMessage());
         }
     }
 
@@ -1206,11 +1206,21 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 
         // Style-specific prompts
         $stylePrompts = [
-            'modern' => 'Modern design with bold typography, vibrant colors, clean layout, and professional look.',
-            'dramatic' => 'Dramatic lighting, high contrast, intense colors, emotional expressions, and cinematic feel.',
-            'minimalist' => 'Minimalist design with simple elements, clean typography, lots of white space, and subtle colors.',
-            'colorful' => 'Bright, eye-catching colors, dynamic compositions, energetic feel, and bold visual elements.',
-            'professional' => 'Professional, polished look with sophisticated typography, balanced composition, and premium feel.'
+            'modern' => 'Modern design with bold typography, vibrant gradients, clean layout, and contemporary aesthetic.',
+            'dramatic' => 'Dramatic lighting, high contrast, intense colors, emotional expressions, cinematic shadows, and powerful visual impact.',
+            'minimalist' => 'Minimalist design with simple elements, clean sans-serif typography, lots of white space, and subtle accent colors.',
+            'colorful' => 'Bright rainbow colors, dynamic compositions, energetic feel, bold visual elements, and vibrant contrasts.',
+            'professional' => 'Professional, polished look with sophisticated typography, balanced composition, corporate colors, and premium feel.',
+            'gaming' => 'Gaming-style with neon accents, digital effects, action-packed scenes, bold gaming fonts, and competitive energy.',
+            'tech' => 'Technology-focused with futuristic elements, circuit patterns, digital glows, modern interfaces, and tech-inspired colors.',
+            'educational' => 'Educational design with clear infographics, learning icons, academic colors, structured layouts, and knowledge-focused elements.',
+            'entertainment' => 'Entertainment-style with fun elements, playful colors, dynamic layouts, expressive characters, and engaging visuals.',
+            'business' => 'Business-oriented with professional charts, corporate aesthetics, success indicators, and authoritative design elements.',
+            'lifestyle' => 'Lifestyle-focused with organic shapes, warm colors, personal touch, authentic feel, and relatable imagery.',
+            'vintage' => 'Vintage aesthetic with retro colors, classic typography, aged textures, nostalgic elements, and timeless appeal.',
+            'neon' => 'Neon-style with glowing effects, electric colors, cyberpunk aesthetic, bright contrasts, and futuristic vibes.',
+            'cinematic' => 'Cinematic quality with movie-poster aesthetics, dramatic compositions, film-quality lighting, and epic storytelling elements.',
+            'cartoon' => 'Cartoon-style with animated characters, bright colors, playful illustrations, comic-book aesthetics, and fun expressions.'
         ];
 
         $styleInstruction = $stylePrompts[$style] ?? $stylePrompts['modern'];
@@ -1256,7 +1266,17 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             'dramatic' => 'Dramatic cinematic lighting with deep shadows and bright highlights, intense saturated colors, emotional facial expressions, and dynamic composition. Film-like quality.',
             'minimalist' => 'Minimalist design with simple geometric elements, clean sans-serif typography, plenty of white space, and muted color palette. Elegant and refined.',
             'colorful' => 'Bright, vivid colors with rainbow gradients, dynamic energetic composition, bold graphic elements, and playful design. Eye-catching and vibrant.',
-            'professional' => 'Professional, corporate aesthetic with sophisticated color scheme, balanced composition, clean typography, and premium visual quality. Polished and refined.'
+            'professional' => 'Professional, corporate aesthetic with sophisticated color scheme, balanced composition, clean typography, and premium visual quality. Polished and refined.',
+            'gaming' => 'Gaming-style with neon accents, digital effects, action-packed scenes, bold gaming fonts, competitive energy, and esports aesthetic.',
+            'tech' => 'Technology-focused with futuristic elements, circuit patterns, digital glows, modern interfaces, holographic effects, and sci-fi inspired design.',
+            'educational' => 'Educational design with clear infographics, learning icons, academic colors, structured layouts, and knowledge-focused elements.',
+            'entertainment' => 'Entertainment-style with fun elements, playful colors, dynamic layouts, expressive characters, and engaging show-business vibes.',
+            'business' => 'Business-oriented with professional charts, corporate aesthetics, success indicators, financial growth elements, and authoritative design.',
+            'lifestyle' => 'Lifestyle-focused with organic shapes, warm colors, personal touch, authentic feel, and relatable everyday imagery.',
+            'vintage' => 'Vintage aesthetic with retro colors, classic typography, aged textures, nostalgic elements, and timeless 80s-90s appeal.',
+            'neon' => 'Neon-style with glowing effects, electric colors, cyberpunk aesthetic, bright contrasts, synthwave vibes, and futuristic energy.',
+            'cinematic' => 'Cinematic quality with movie-poster aesthetics, dramatic compositions, film-quality lighting, and epic storytelling elements.',
+            'cartoon' => 'Cartoon-style with animated characters, bright colors, playful illustrations, comic-book aesthetics, and fun animated expressions.'
         ];
 
         $styleInstruction = $stylePrompts[$style] ?? $stylePrompts['modern'];
@@ -1294,97 +1314,6 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     /**
      * Process image from Replicate and create multiple sizes
      */
-    private function processReplicateImage(string $imagePath, string $videoId, int $variationNumber): array
-    {
-        try {
-            // Get image dimensions
-            $imageInfo = getimagesize($imagePath);
-            if (!$imageInfo) {
-                throw new \RuntimeException('Failed to get image information');
-            }
-            
-            $originalWidth = $imageInfo[0];
-            $originalHeight = $imageInfo[1];
-            
-            // Create different sizes for YouTube
-            $sizes = [
-                'preview' => ['width' => 640, 'height' => 360],    // Preview size
-                'thumbnail' => ['width' => 320, 'height' => 180],  // Thumbnail size
-                'youtube' => ['width' => 1792, 'height' => 1024]   // YouTube optimal size
-            ];
-            
-            $processedImages = [
-                'full_size' => [
-                    'path' => $imagePath,
-                    'url' => $this->getFileUrl($imagePath),
-                    'width' => $originalWidth,
-                    'height' => $originalHeight
-                ]
-            ];
-            
-            // Load source image based on type
-            $sourceImage = null;
-            switch ($imageInfo[2]) {
-                case IMAGETYPE_JPEG:
-                    $sourceImage = imagecreatefromjpeg($imagePath);
-                    break;
-                case IMAGETYPE_PNG:
-                    $sourceImage = imagecreatefrompng($imagePath);
-                    break;
-                case IMAGETYPE_WEBP:
-                    $sourceImage = imagecreatefromwebp($imagePath);
-                    break;
-                default:
-                    throw new \RuntimeException('Unsupported image format');
-            }
-            
-            if (!$sourceImage) {
-                throw new \RuntimeException('Failed to create image resource');
-            }
-            
-            // Create resized versions
-            foreach ($sizes as $sizeName => $dimensions) {
-                $resizedPath = str_replace('.png', '_' . $sizeName . '.png', $imagePath);
-                
-                // Create resized image
-                $resizedImage = imagecreatetruecolor($dimensions['width'], $dimensions['height']);
-                imagealphablending($resizedImage, false);
-                imagesavealpha($resizedImage, true);
-                
-                if (imagecopyresampled(
-                    $resizedImage, $sourceImage,
-                    0, 0, 0, 0,
-                    $dimensions['width'], $dimensions['height'],
-                    $originalWidth, $originalHeight
-                )) {
-                    imagepng($resizedImage, $resizedPath);
-                    
-                    $processedImages[$sizeName] = [
-                        'path' => $resizedPath,
-                        'url' => $this->getFileUrl($resizedPath),
-                        'width' => $dimensions['width'],
-                        'height' => $dimensions['height']
-                    ];
-                }
-                
-                imagedestroy($resizedImage);
-            }
-            
-            imagedestroy($sourceImage);
-            
-            return $processedImages;
-            
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to process Replicate image', [
-                'image_path' => $imagePath,
-                'video_id' => $videoId,
-                'variation' => $variationNumber,
-                'error' => $e->getMessage()
-            ]);
-            throw new \RuntimeException('Failed to process Replicate image: ' . $e->getMessage());
-        }
-    }
-
     /**
      * Download and process image from Replicate
      */
@@ -1406,15 +1335,62 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             
             // Generate filename
             $filename = sprintf('thumbnail_%s_replicate_%d_%s.png', $videoId, $variationNumber, uniqid());
-            $localPath = $videoDir . '/' . $filename;
+            $fullSizePath = $videoDir . '/' . $filename;
             
             // Save locally
-            if (file_put_contents($localPath, $imageContent) === false) {
+            if (file_put_contents($fullSizePath, $imageContent) === false) {
                 throw new \RuntimeException('Failed to save image locally');
             }
             
-            // Process the image to create different sizes
-            return $this->processReplicateImage($localPath, $videoId, $variationNumber);
+            // Use MediaProcessingService to create different sizes
+            $processedImages = [
+                'full_size' => [
+                    'path' => $fullSizePath,
+                    'url' => $this->getFileUrl($fullSizePath)
+                ]
+            ];
+            
+            // Create preview size (640x360)
+            $previewPath = $videoDir . '/' . sprintf('preview_%s_replicate_%d_%s.png', $videoId, $variationNumber, uniqid());
+            $previewConfig = new ImageProcessingConfig(
+                width: 640,
+                height: 360,
+                quality: 85,
+                format: 'png',
+                maintainAspectRatio: true
+            );
+            
+            $this->mediaProcessingService->processImage($fullSizePath, $previewPath, $previewConfig);
+            
+            $processedImages['preview'] = [
+                'path' => $previewPath,
+                'url' => $this->getFileUrl($previewPath)
+            ];
+            
+            // Create thumbnail size (320x180)
+            $thumbnailPath = $videoDir . '/' . sprintf('thumb_%s_replicate_%d_%s.png', $videoId, $variationNumber, uniqid());
+            $thumbnailConfig = new ImageProcessingConfig(
+                width: 320,
+                height: 180,
+                quality: 80,
+                format: 'png',
+                maintainAspectRatio: true
+            );
+            
+            $this->mediaProcessingService->processImage($fullSizePath, $thumbnailPath, $thumbnailConfig);
+            
+            $processedImages['thumbnail'] = [
+                'path' => $thumbnailPath,
+                'url' => $this->getFileUrl($thumbnailPath)
+            ];
+
+            $this->logger->info('Successfully processed Replicate generated image', [
+                'video_id' => $videoId,
+                'variation' => $variationNumber,
+                'sizes_created' => ['full_size', 'preview', 'thumbnail']
+            ]);
+
+            return $processedImages;
 
         } catch (\Exception $e) {
             $this->logger->error('Failed to download and process Replicate image', [
@@ -1695,7 +1671,103 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         }
     }
 
-    // ...existing code...
+    /**
+     * Get recent thumbnails generated by the user
+     */
+    private function getRecentThumbnails(User $user, array $parameters, array $options): array
+    {
+        try {
+            $limit = $parameters['limit'] ?? 10;
+            $limit = min(max((int) $limit, 1), 20); // Between 1 and 20 generations
+            
+            // Use cache to store and retrieve user's thumbnail generation history
+            $cacheKey = sprintf('user_thumbnail_history_%d', $user->getId());
+            $cachedItem = $this->cache->getItem($cacheKey);
+            
+            $recentGenerations = [];
+            if ($cachedItem->isHit()) {
+                $recentGenerations = $cachedItem->get() ?: [];
+            }
+            
+            // Sort by created_at timestamp (newest first) and limit results
+            usort($recentGenerations, function($a, $b) {
+                return strtotime($b['created_at']) - strtotime($a['created_at']);
+            });
+            
+            $recentGenerations = array_slice($recentGenerations, 0, $limit);
+            
+            // Validate that files still exist and update URLs
+            $validGenerations = [];
+            foreach ($recentGenerations as $generation) {
+                $validThumbnails = [];
+                
+                foreach ($generation['thumbnails'] as $thumbnail) {
+                    // Check if the full-size image still exists
+                    $pluginDir = $this->getPluginDirectory();
+                    $imagePath = $pluginDir . '/' . $generation['video_id'] . '/' . basename(parse_url($thumbnail['image_url'], PHP_URL_PATH));
+                    
+                    if (file_exists($imagePath)) {
+                        // Update URLs to ensure they're current
+                        $thumbnail['image_url'] = $this->getFileUrl($imagePath);
+                        
+                        // Check for preview and thumbnail files
+                        $baseFilename = pathinfo($imagePath, PATHINFO_FILENAME);
+                        $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
+                        $directory = dirname($imagePath);
+                        
+                        $previewPath = $directory . '/preview_' . substr($baseFilename, 10) . '.' . $extension; // Remove "thumbnail_" prefix
+                        $thumbPath = $directory . '/thumb_' . substr($baseFilename, 10) . '.' . $extension;
+                        
+                        if (file_exists($previewPath)) {
+                            $thumbnail['preview_url'] = $this->getFileUrl($previewPath);
+                        } else {
+                            $thumbnail['preview_url'] = $thumbnail['image_url'];
+                        }
+                        
+                        if (file_exists($thumbPath)) {
+                            $thumbnail['thumbnail_url'] = $this->getFileUrl($thumbPath);
+                        } else {
+                            $thumbnail['thumbnail_url'] = $thumbnail['image_url'];
+                        }
+                        
+                        $validThumbnails[] = $thumbnail;
+                    }
+                }
+                
+                // Only include generations that still have valid thumbnails
+                if (!empty($validThumbnails)) {
+                    $generation['thumbnails'] = $validThumbnails;
+                    $generation['thumbnail_count'] = count($validThumbnails);
+                    $validGenerations[] = $generation;
+                }
+            }
+            
+            $this->logger->info('Retrieved recent thumbnail generations', [
+                'user_id' => $user->getId(),
+                'generations_found' => count($validGenerations),
+                'limit' => $limit
+            ]);
+            
+            return [
+                'success' => true,
+                'generations' => $validGenerations,
+                'total_found' => count($validGenerations),
+                'limit' => $limit
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get recent thumbnails', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => 'Failed to retrieve recent thumbnails: ' . $e->getMessage(),
+                'generations' => []
+            ];
+        }
+    }
 
     /**
      * You can override this method if you need to perform any actions after the plugin is executed
@@ -1772,5 +1844,60 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     public function setAsyncJobId(?string $jobId): void
     {
         $this->currentAsyncJobId = $jobId;
+    }
+
+    /**
+     * Save thumbnail generation to user's history for recent thumbnails feature
+     */
+    private function saveToUserHistory(User $user, array $videoInfo, array $thumbnails, string $style, string $method): void
+    {
+        try {
+            $cacheKey = sprintf('user_thumbnail_history_%d', $user->getId());
+            $cachedItem = $this->cache->getItem($cacheKey);
+            
+            $history = [];
+            if ($cachedItem->isHit()) {
+                $history = $cachedItem->get() ?: [];
+            }
+            
+            // Create generation record
+            $generation = [
+                'id' => uniqid('gen_'),
+                'video_id' => $videoInfo['video_id'] ?? 'unknown',
+                'video_title' => $videoInfo['title'] ?? 'Unknown Video',
+                'video_channel' => $videoInfo['author_name'] ?? 'Unknown Channel',
+                'video_thumbnail' => $videoInfo['thumbnail_url'] ?? null,
+                'style' => $style,
+                'generation_method' => $method,
+                'thumbnail_count' => count($thumbnails),
+                'thumbnails' => $thumbnails,
+                'created_at' => (new \DateTimeImmutable())->format('c')
+            ];
+            
+            // Add to beginning of array (most recent first)
+            array_unshift($history, $generation);
+            
+            // Keep only last 50 generations to prevent cache bloat
+            $history = array_slice($history, 0, 50);
+            
+            // Save back to cache with 30-day expiration
+            $cachedItem->set($history);
+            $cachedItem->expiresAfter(30 * 24 * 3600); // 30 days
+            $this->cache->save($cachedItem);
+            
+            $this->logger->info('Saved thumbnail generation to user history', [
+                'user_id' => $user->getId(),
+                'video_id' => $videoInfo['video_id'] ?? 'unknown',
+                'thumbnail_count' => count($thumbnails),
+                'total_history_entries' => count($history)
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to save thumbnail generation to user history', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw - this is not critical functionality
+        }
     }
 }

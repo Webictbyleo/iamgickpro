@@ -271,6 +271,76 @@
       </div>
     </div>
 
+    <!-- Recent Thumbnails Section -->
+    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-md font-semibold text-gray-900">
+          Recent Thumbnails
+        </h4>
+        <button
+          @click="toggleRecentThumbnails"
+          :disabled="loadingRecentThumbnails"
+          class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2"
+        >
+          <svg v-if="loadingRecentThumbnails" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ showRecentThumbnails ? 'Hide' : 'Show' }} Recent</span>
+        </button>
+      </div>
+      
+      <!-- Recent Thumbnails Grid -->
+      <div v-if="showRecentThumbnails" class="space-y-4">
+        <div v-if="recentThumbnails.length === 0 && !loadingRecentThumbnails" class="text-center py-8">
+          <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <p class="text-gray-500">No recent thumbnails found</p>
+          <p class="text-sm text-gray-400 mt-1">Generate some thumbnails to see them here</p>
+        </div>
+        
+        <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div
+            v-for="thumbnail in recentThumbnails"
+            :key="thumbnail.id"
+            class="group relative bg-gray-50 rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
+          >
+            <div class="aspect-w-16 aspect-h-9">
+              <img
+                :src="thumbnail.preview_url"
+                :alt="thumbnail.title"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
+              <div class="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                <a
+                  :href="thumbnail.image_url"
+                  target="_blank"
+                  class="px-3 py-2 bg-white text-gray-900 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                >
+                  View Full
+                </a>
+              </div>
+            </div>
+            <div class="absolute bottom-2 left-2 right-2">
+              <div class="bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                <div class="font-medium truncate">{{ thumbnail.video_title || thumbnail.video_id }}</div>
+                <div class="flex items-center justify-between mt-1">
+                  <span class="text-gray-300">{{ thumbnail.generation_method }}</span>
+                  <span class="text-gray-300">{{ new Date(thumbnail.created_at).toLocaleDateString() }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Generated Thumbnails -->
     <div v-if="generatedThumbnails.length > 0" class="bg-white rounded-lg border border-gray-200 p-6">
       <h4 class="text-md font-semibold text-gray-900 mb-4">
@@ -382,6 +452,11 @@ const selectedThumbnailStyle = ref<string>('modern')
 const maxThumbnails = ref(5)
 const customPrompt = ref('')
 
+// Recent thumbnails
+const recentThumbnails = ref<any[]>([])
+const showRecentThumbnails = ref(false)
+const loadingRecentThumbnails = ref(false)
+
 // Track polling interval for cleanup
 let pollInterval: NodeJS.Timeout | null = null
 
@@ -390,27 +465,77 @@ const thumbnailStyles = [
   { 
     value: 'modern', 
     label: 'Modern & Clean',
-    description: 'Minimalist design with bold typography'
+    description: 'Contemporary design with bold typography'
   },
   { 
     value: 'dramatic', 
     label: 'Dramatic & Bold',
-    description: 'High-contrast, attention-grabbing'
+    description: 'High-contrast, cinematic feel'
   },
   { 
     value: 'colorful', 
     label: 'Vibrant & Colorful',
-    description: 'Bright, energetic colors'
+    description: 'Bright, energetic rainbow colors'
   },
   { 
     value: 'minimalist', 
     label: 'Minimal & Professional',
-    description: 'Simple, elegant design'
+    description: 'Simple, elegant design with white space'
   },
   { 
     value: 'professional', 
     label: 'Professional & Polished',
     description: 'Corporate, sophisticated design'
+  },
+  { 
+    value: 'gaming', 
+    label: 'Gaming & Esports',
+    description: 'Neon accents, competitive energy'
+  },
+  { 
+    value: 'tech', 
+    label: 'Tech & Futuristic',
+    description: 'Sci-fi inspired, digital elements'
+  },
+  { 
+    value: 'educational', 
+    label: 'Educational & Clear',
+    description: 'Learning-focused, informative design'
+  },
+  { 
+    value: 'entertainment', 
+    label: 'Entertainment & Fun',
+    description: 'Playful, engaging show-business vibes'
+  },
+  { 
+    value: 'business', 
+    label: 'Business & Success',
+    description: 'Professional growth, corporate success'
+  },
+  { 
+    value: 'lifestyle', 
+    label: 'Lifestyle & Personal',
+    description: 'Warm, relatable everyday imagery'
+  },
+  { 
+    value: 'vintage', 
+    label: 'Vintage & Retro',
+    description: 'Classic 80s-90s nostalgic appeal'
+  },
+  { 
+    value: 'neon', 
+    label: 'Neon & Cyberpunk',
+    description: 'Glowing effects, futuristic energy'
+  },
+  { 
+    value: 'cinematic', 
+    label: 'Cinematic & Epic',
+    description: 'Movie-quality, dramatic storytelling'
+  },
+  { 
+    value: 'cartoon', 
+    label: 'Cartoon & Animated',
+    description: 'Fun illustrations, comic-book style'
   }
 ] as const
 
@@ -798,6 +923,60 @@ const getProgressMessage = (): string => {
     if (progress < 75) return 'Generating thumbnail designs with AI...'
     if (progress < 100) return 'Finalizing layouts and preparing previews...'
     return 'Thumbnail generation complete!'
+  }
+}
+
+// Load recent thumbnails
+const loadRecentThumbnails = async (): Promise<void> => {
+  try {
+    loadingRecentThumbnails.value = true
+    errorMessage.value = ''
+    
+    const response = await pluginAPI.executeCommand({
+      pluginId: 'youtube_thumbnail',
+      command: 'get_recent_thumbnails',
+      layerId: null,
+      parameters: {
+        limit: 10
+      }
+    })
+    
+    if (response.data?.success && response.data.data?.result?.success) {
+      // Flatten generations into individual thumbnails for display
+      const generations = response.data.data.result.generations || []
+      const flatThumbnails: any[] = []
+      
+      generations.forEach((generation: any) => {
+        generation.thumbnails.forEach((thumbnail: any) => {
+          flatThumbnails.push({
+            ...thumbnail,
+            video_id: generation.video_id,
+            video_title: generation.video_title,
+            video_channel: generation.video_channel,
+            generation_id: generation.id,
+            generation_method: generation.generation_method,
+            created_at: generation.created_at
+          })
+        })
+      })
+      
+      recentThumbnails.value = flatThumbnails
+    } else {
+      throw new Error('Failed to load recent thumbnails')
+    }
+  } catch (error: any) {
+    console.error('Error loading recent thumbnails:', error)
+    errorMessage.value = 'Failed to load recent thumbnails: ' + (error.message || 'Unknown error')
+  } finally {
+    loadingRecentThumbnails.value = false
+  }
+}
+
+// Toggle recent thumbnails view
+const toggleRecentThumbnails = async (): Promise<void> => {
+  showRecentThumbnails.value = !showRecentThumbnails.value
+  if (showRecentThumbnails.value && recentThumbnails.value.length === 0) {
+    await loadRecentThumbnails()
   }
 }
 
