@@ -111,7 +111,7 @@
       <!-- Generation Options with Modern Design -->
       <div v-if="videoInfo" class="relative mb-8">
         <div class="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-3xl blur-xl"></div>
-        <div class="relative bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl rounded-3xl p-8">
+        <div class="relative bg-white/60  border border-white/20 shadow-xl rounded-3xl p-8">
           <div class="flex items-center space-x-3 mb-6">
             <div class="relative">
               <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-75"></div>
