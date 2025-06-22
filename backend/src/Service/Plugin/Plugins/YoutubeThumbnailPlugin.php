@@ -10,6 +10,8 @@ use App\Message\ProcessYoutubeThumbnailMessage;
 use App\Service\Plugin\Plugins\AbstractStandalonePlugin;
 use App\Service\Plugin\PluginService;
 use App\Service\Plugin\SecureRequestBuilder;
+use App\Service\Plugin\Config\InternetConfig;
+use App\Service\IntegrationService;
 use App\Service\MediaProcessing\MediaProcessingService;
 use App\Service\MediaProcessing\AsyncMediaProcessingService;
 use App\Service\MediaProcessing\Config\ImageProcessingConfig;
@@ -58,6 +60,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         if (!$this->validateRequirements($user)) {
             throw new \RuntimeException('OpenAI API key not configured. Please configure your API key in settings.');
         }
+        
 
         return match ($command) {
             'analyze_video' => $this->analyzeVideo($user, $parameters, $options),
@@ -80,11 +83,14 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     }
 
     /**
-     * Check if Replicate API is available
+     * Check if Replicate API is available for user
      */
-    private function isReplicateEnabled(): bool
+    private function isReplicateEnabled(User $user): bool
     {
-        return !empty($_ENV['REPLICATE_API_TOKEN'] ?? '');
+        // Use SecureRequestBuilder to check if user has valid Replicate credentials
+        // This is efficient and doesn't make any API calls
+        $internetConfig = $this->getInternetConfig();
+        return $this->requestBuilder->isServiceAvailable($user, 'replicate', $internetConfig);
     }
 
     /**
@@ -168,7 +174,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 'thumbnail_count' => $thumbnailCount,
                 'style' => $style,
                 'custom_prompt' => $customPrompt ? substr($customPrompt, 0, 100) . '...' : null,
-                'using_replicate' => $this->isReplicateEnabled()
+                'using_replicate' => $this->isReplicateEnabled($user)
             ]);
 
             // Get video info first
@@ -185,7 +191,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             ]);
             
             // Choose generation method based on availability
-            if ($this->isReplicateEnabled()) {
+            if ($this->isReplicateEnabled($user)) {
                 $thumbnailVariations = $this->generateThumbnailVariationsWithReplicate($user, $videoInfo, $customPrompt, $thumbnailCount, $style);
                 $generationMethod = 'replicate';
             } else {
@@ -231,7 +237,7 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
             $this->logger->error('Failed to generate thumbnail variations', [
                 'video_id' => $videoId,
                 'error' => $e->getMessage(),
-                'using_replicate' => $this->isReplicateEnabled()
+                'using_replicate' => $this->isReplicateEnabled($user)
             ]);
             throw new \RuntimeException('Failed to generate thumbnail variations: ' . $e->getMessage());
         }
@@ -657,11 +663,6 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     private function callReplicateAPI(User $user, string $prompt): ?string
     {
         try {
-            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
-            if (empty($replicateToken)) {
-                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
-            }
-
             $requestData = [
                 'input' => [
                     'prompt' => $prompt,
@@ -675,46 +676,33 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 'aspect_ratio' => '16:9'
             ]);
 
-            // Since we need to use the system token (not user credentials), we'll use curl directly
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Bearer ' . $replicateToken,
-                    'Content-Type: application/json',
-                    'Prefer: wait'
+            // Use SecureRequestBuilder for Replicate API call
+            $internetConfig = $this->getInternetConfig();
+            $response = $this->requestBuilder->makeRequest(
+                $user,
+                'replicate',
+                'POST',
+                self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                [
+                    'json' => $requestData,
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'Prefer' => 'wait'
+                    ],
+                    'timeout' => 120, // 2 minute timeout for image generation
                 ],
-                CURLOPT_POSTFIELDS => json_encode($requestData),
-                CURLOPT_TIMEOUT => 120, // 2 minute timeout for image generation
-                CURLOPT_USERAGENT => 'IGPro/1.0'
-            ]);
+                $internetConfig
+            );
 
-            $response = curl_exec($curl);
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $error = curl_error($curl);
-            curl_close($curl);
+            $data = $response->toArray();
+            $statusCode = $response->getStatusCode();
 
-            if ($response === false || !empty($error)) {
-                $this->logger->error('cURL error in Replicate API request', [
-                    'error' => $error,
-                    'http_code' => $httpCode
-                ]);
-                throw new \RuntimeException('HTTP request failed: ' . $error);
-            }
-
-            if ($httpCode !== 200 && $httpCode !== 201) {
+            if ($statusCode !== 200 && $statusCode !== 201) {
                 $this->logger->error('Replicate API request failed', [
-                    'status_code' => $httpCode,
-                    'response' => $response
+                    'status_code' => $statusCode,
+                    'response' => substr(json_encode($data), 0, 500)
                 ]);
-                throw new \RuntimeException(sprintf('Replicate API Error (HTTP %d): %s', $httpCode, $response));
-            }
-
-            $data = json_decode($response, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \RuntimeException('Failed to decode JSON response from Replicate API');
+                throw new \RuntimeException(sprintf('Replicate API Error (HTTP %d): %s', $statusCode, json_encode($data)));
             }
             
             // Extract the image URL from the response
@@ -759,11 +747,6 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
     private function callReplicateAPISingle(User $user, string $prompt, int $variationNumber): ?string
     {
         try {
-            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
-            if (empty($replicateToken)) {
-                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
-            }
-
             $requestData = [
                 'input' => [
                     'prompt' => $prompt,
@@ -777,62 +760,38 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 'aspect_ratio' => '16:9'
             ]);
 
-            // Use longer timeout for individual requests
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Bearer ' . $replicateToken,
-                    'Content-Type: application/json',
-                    'Prefer: wait'
+            // Use SecureRequestBuilder for Replicate API call
+            $internetConfig = $this->getInternetConfig();
+            $response = $this->requestBuilder->makeRequest(
+                $user,
+                'replicate',
+                'POST',
+                self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                [
+                    'json' => $requestData,
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'Prefer' => 'wait'
+                    ],
+                    'timeout' => 300, // 5 minute timeout for single request
                 ],
-                CURLOPT_POSTFIELDS => json_encode($requestData),
-                CURLOPT_TIMEOUT => 300, // 5 minute timeout for single request
-                CURLOPT_CONNECTTIMEOUT => 30, // 30 seconds to connect
-                CURLOPT_USERAGENT => 'IGPro/1.0',
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_VERBOSE => false
-            ]);
+                $internetConfig
+            );
 
-            $response = curl_exec($curl);
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $error = curl_error($curl);
-            $totalTime = curl_getinfo($curl, CURLINFO_TOTAL_TIME);
-            curl_close($curl);
+            $data = $response->toArray();
+            $statusCode = $response->getStatusCode();
 
             $this->logger->info('Replicate API response received', [
                 'variation' => $variationNumber,
-                'http_code' => $httpCode,
-                'total_time' => $totalTime,
-                'has_error' => !empty($error)
+                'http_code' => $statusCode,
+                'has_output' => isset($data['output'])
             ]);
 
-            if ($response === false || !empty($error)) {
-                $this->logger->error('cURL error in Replicate API request', [
-                    'variation' => $variationNumber,
-                    'error' => $error,
-                    'http_code' => $httpCode
-                ]);
-                return null;
-            }
-
-            if ($httpCode !== 200 && $httpCode !== 201) {
+            if ($statusCode !== 200 && $statusCode !== 201) {
                 $this->logger->error('Replicate API request failed', [
                     'variation' => $variationNumber,
-                    'status_code' => $httpCode,
-                    'response' => substr($response, 0, 500)
-                ]);
-                return null;
-            }
-
-            $data = json_decode($response, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->logger->error('Failed to decode JSON response from Replicate API', [
-                    'variation' => $variationNumber,
-                    'json_error' => json_last_error_msg()
+                    'status_code' => $statusCode,
+                    'response' => substr(json_encode($data), 0, 500)
                 ]);
                 return null;
             }
@@ -870,129 +829,98 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
         } catch (\Exception $e) {
             $this->logger->error('Replicate API call failed', [
                 'variation' => $variationNumber,
-                'error' => $e->getMessage(),
-                'prompt_length' => strlen($prompt)
+                'error' => $e->getMessage()
             ]);
             return null;
         }
     }
 
     /**
-     * Call Replicate API multiple times concurrently to generate multiple thumbnails
+     * Call Replicate API multiple times to generate multiple thumbnails
+     * Note: Changed from concurrent to sequential calls to use SecureRequestBuilder
      */
     private function callReplicateAPIMultiple(User $user, array $prompts): array
     {
         try {
-            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
-            if (empty($replicateToken)) {
-                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
-            }
-
-            $this->logger->info('Starting concurrent Replicate API calls', [
+            $this->logger->info('Starting sequential Replicate API calls', [
                 'count' => count($prompts),
                 'model' => 'google/imagen-4-ultra'
             ]);
 
-            // Initialize curl multi handle
-            $multiHandle = curl_multi_init();
-            $curlHandles = [];
+            $internetConfig = $this->getInternetConfig();
             $imageUrls = [];
 
-            // Create curl handles for each request
+            // Make sequential API calls
             foreach ($prompts as $index => $prompt) {
-                $requestData = [
-                    'input' => [
-                        'prompt' => $prompt,
-                        'aspect_ratio' => '16:9'
-                    ]
-                ];
+                try {
+                    $requestData = [
+                        'input' => [
+                            'prompt' => $prompt,
+                            'aspect_ratio' => '16:9'
+                        ]
+                    ];
 
-                $curl = curl_init();
-                curl_setopt_array($curl, [
-                    CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST => true,
-                    CURLOPT_HTTPHEADER => [
-                        'Authorization: Bearer ' . $replicateToken,
-                        'Content-Type: application/json',
-                        'Prefer: wait'
-                    ],
-                    CURLOPT_POSTFIELDS => json_encode($requestData),
-                    CURLOPT_TIMEOUT => 180, // 3 minute timeout for image generation
-                    CURLOPT_USERAGENT => 'IGPro/1.0'
-                ]);
-
-                curl_multi_add_handle($multiHandle, $curl);
-                $curlHandles[$index] = $curl;
-            }
-
-            // Execute all requests concurrently
-            $running = null;
-            do {
-                curl_multi_exec($multiHandle, $running);
-                curl_multi_select($multiHandle);
-            } while ($running > 0);
-
-            // Collect responses
-            foreach ($curlHandles as $index => $curl) {
-                $response = curl_multi_getcontent($curl);
-                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-                $error = curl_error($curl);
-
-                curl_multi_remove_handle($multiHandle, $curl);
-                curl_close($curl);
-
-                if ($response === false || !empty($error)) {
-                    $this->logger->error('cURL error in Replicate API request', [
+                    $this->logger->info('Making Replicate API call', [
                         'index' => $index,
-                        'error' => $error,
-                        'http_code' => $httpCode
+                        'prompt_length' => strlen($prompt)
                     ]);
-                    $imageUrls[$index] = null;
-                    continue;
-                }
 
-                if ($httpCode !== 200 && $httpCode !== 201) {
-                    $this->logger->error('Replicate API request failed', [
-                        'index' => $index,
-                        'status_code' => $httpCode,
-                        'response' => substr($response, 0, 500)
-                    ]);
-                    $imageUrls[$index] = null;
-                    continue;
-                }
+                    $response = $this->requestBuilder->makeRequest(
+                        $user,
+                        'replicate',
+                        'POST',
+                        self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                        [
+                            'json' => $requestData,
+                            'headers' => [
+                                'Content-Type' => 'application/json',
+                                'Prefer' => 'wait'
+                            ],
+                            'timeout' => 180, // 3 minute timeout for image generation
+                        ],
+                        $internetConfig
+                    );
 
-                $data = json_decode($response, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $this->logger->error('Failed to decode JSON response from Replicate API', [
-                        'index' => $index,
-                        'json_error' => json_last_error_msg()
-                    ]);
-                    $imageUrls[$index] = null;
-                    continue;
-                }
+                    $data = $response->toArray();
+                    $statusCode = $response->getStatusCode();
 
-                // Extract the image URL (Imagen 4 Ultra returns a string, not array)
-                if (isset($data['output']) && is_string($data['output'])) {
-                    $imageUrls[$index] = $data['output'];
-                    $this->logger->info('Successfully generated image with Replicate', [
+                    if ($statusCode !== 200 && $statusCode !== 201) {
+                        $this->logger->error('Replicate API request failed', [
+                            'index' => $index,
+                            'status_code' => $statusCode,
+                            'response' => substr(json_encode($data), 0, 500)
+                        ]);
+                        $imageUrls[$index] = null;
+                        continue;
+                    }
+
+                    // Extract the image URL (Imagen 4 Ultra returns a string, not array)
+                    if (isset($data['output']) && is_string($data['output'])) {
+                        $imageUrls[$index] = $data['output'];
+                        $this->logger->info('Successfully generated image with Replicate', [
+                            'index' => $index,
+                            'image_url' => substr($data['output'], 0, 100) . '...',
+                            'prediction_id' => $data['id'] ?? 'unknown'
+                        ]);
+                    } else {
+                        $this->logger->error('No valid image URL found in Replicate response', [
+                            'index' => $index,
+                            'response_data' => $data
+                        ]);
+                        $imageUrls[$index] = null;
+                    }
+
+                } catch (\Exception $e) {
+                    $this->logger->error('Replicate API call failed for index', [
                         'index' => $index,
-                        'image_url' => substr($data['output'], 0, 100) . '...',
-                        'prediction_id' => $data['id'] ?? 'unknown'
-                    ]);
-                } else {
-                    $this->logger->error('No valid image URL found in Replicate response', [
-                        'index' => $index,
-                        'response_data' => $data
+                        'error' => $e->getMessage()
                     ]);
                     $imageUrls[$index] = null;
                 }
             }
-
-            curl_multi_close($multiHandle);
 
             $successCount = count(array_filter($imageUrls, fn($url) => $url !== null));
-            $this->logger->info('Completed concurrent Replicate API calls', [
+            $this->logger->info('Completed sequential Replicate API calls', [
                 'total_requests' => count($prompts),
                 'successful_requests' => $successCount,
                 'failed_requests' => count($prompts) - $successCount
@@ -1405,15 +1333,11 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
 
     /**
      * Call Replicate API multiple times with the same prompt for variations
+     * Note: Changed from concurrent to sequential calls to use SecureRequestBuilder
      */
     private function callMultipleReplicateAPI(User $user, string $prompt, int $count): array
     {
         try {
-            $replicateToken = $_ENV['REPLICATE_API_TOKEN'] ?? '';
-            if (empty($replicateToken)) {
-                throw new \RuntimeException('REPLICATE_API_TOKEN not configured');
-            }
-
             $requestData = [
                 'input' => [
                     'prompt' => $prompt,
@@ -1421,54 +1345,43 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                 ]
             ];
 
-            $this->logger->info('Making multiple concurrent Replicate API calls', [
+            $this->logger->info('Making multiple sequential Replicate API calls', [
                 'count' => $count,
                 'prompt_length' => strlen($prompt),
                 'aspect_ratio' => '16:9'
             ]);
 
-            // Prepare multiple curl handles
-            $multiHandle = curl_multi_init();
-            $curlHandles = [];
+            $internetConfig = $this->getInternetConfig();
             $imageUrls = [];
 
-            // Initialize all curl handles
+            // Make sequential API calls with the same prompt for variations
             for ($i = 0; $i < $count; $i++) {
-                $curl = curl_init();
-                curl_setopt_array($curl, [
-                    CURLOPT_URL => self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST => true,
-                    CURLOPT_HTTPHEADER => [
-                        'Authorization: Bearer ' . $replicateToken,
-                        'Content-Type: application/json',
-                        'Prefer: wait'
-                    ],
-                    CURLOPT_POSTFIELDS => json_encode($requestData),
-                    CURLOPT_TIMEOUT => 120, // 2 minute timeout for image generation
-                    CURLOPT_USERAGENT => 'IGPro/1.0'
-                ]);
-                
-                curl_multi_add_handle($multiHandle, $curl);
-                $curlHandles[$i] = $curl;
-            }
+                try {
+                    $this->logger->info('Making Replicate API call for variation', [
+                        'variation' => $i + 1,
+                        'total' => $count
+                    ]);
 
-            // Execute all requests concurrently
-            $running = null;
-            do {
-                curl_multi_exec($multiHandle, $running);
-                curl_multi_select($multiHandle);
-            } while ($running > 0);
+                    $response = $this->requestBuilder->makeRequest(
+                        $user,
+                        'replicate',
+                        'POST',
+                        self::REPLICATE_API_URL . '/models/google/imagen-4-ultra/predictions',
+                        [
+                            'json' => $requestData,
+                            'headers' => [
+                                'Content-Type' => 'application/json',
+                                'Prefer' => 'wait'
+                            ],
+                            'timeout' => 120, // 2 minute timeout for image generation
+                        ],
+                        $internetConfig
+                    );
 
-            // Collect all responses
-            for ($i = 0; $i < $count; $i++) {
-                $response = curl_multi_getcontent($curlHandles[$i]);
-                $httpCode = curl_getinfo($curlHandles[$i], CURLINFO_HTTP_CODE);
-                $error = curl_error($curlHandles[$i]);
-                
-                if ($response !== false && empty($error) && ($httpCode === 200 || $httpCode === 201)) {
-                    $data = json_decode($response, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
+                    $data = $response->toArray();
+                    $statusCode = $response->getStatusCode();
+
+                    if ($statusCode === 200 || $statusCode === 201) {
                         // Extract the image URL from the response
                         $imageUrl = null;
                         if (isset($data['output']) && is_string($data['output'])) {
@@ -1489,25 +1402,20 @@ class YoutubeThumbnailPlugin extends AbstractStandalonePlugin
                             ]);
                         }
                     } else {
-                        $this->logger->error('Failed to decode JSON response from Replicate API', [
+                        $this->logger->error('Replicate API request failed', [
                             'request_index' => $i,
-                            'response' => substr($response, 0, 500)
+                            'http_code' => $statusCode,
+                            'response' => substr(json_encode($data), 0, 500)
                         ]);
                     }
-                } else {
-                    $this->logger->error('Replicate API request failed', [
+
+                } catch (\Exception $e) {
+                    $this->logger->error('Replicate API call failed for variation', [
                         'request_index' => $i,
-                        'http_code' => $httpCode,
-                        'error' => $error,
-                        'response' => substr($response ?: '', 0, 500)
+                        'error' => $e->getMessage()
                     ]);
                 }
-                
-                curl_multi_remove_handle($multiHandle, $curlHandles[$i]);
-                curl_close($curlHandles[$i]);
             }
-
-            curl_multi_close($multiHandle);
 
             $this->logger->info('Completed multiple Replicate API calls', [
                 'requested_count' => $count,

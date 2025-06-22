@@ -17,12 +17,12 @@ class SaveIntegrationRequestDTO
     /**
      * Service name for the integration.
      * 
-     * Supported services: openai, removebg, unsplash, pexels
+     * Supported services: openai, removebg, unsplash, pexels, replicate
      */
     #[Assert\NotBlank(message: 'Service name is required')]
     #[Assert\Choice(
-        choices: ['openai', 'removebg', 'unsplash', 'pexels'],
-        message: 'Invalid service name. Supported: openai, removebg, unsplash, pexels'
+        choices: ['openai', 'removebg', 'unsplash', 'pexels', 'replicate'],
+        message: 'Invalid service name. Supported: openai, removebg, unsplash, pexels, replicate'
     )]
     public readonly string $serviceName;
 

@@ -29,7 +29,7 @@ class UserIntegration
 
     #[ORM\Column(type: 'string', length: 50)]
     #[Assert\NotBlank]
-    #[Assert\Choice(['openai', 'removebg', 'unsplash', 'pexels'])]
+    #[Assert\Choice(['openai', 'removebg', 'unsplash', 'pexels', 'replicate'])]
     private string $serviceName;
 
     #[ORM\Column(type: 'text')]

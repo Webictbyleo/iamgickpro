@@ -71,7 +71,7 @@ class IntegrationController extends AbstractController
      * Save integration credentials
      * 
      * Stores encrypted API credentials for a third-party service.
-     * Supports OpenAI, Remove.bg, Unsplash, and Pexels integrations.
+     * Supports OpenAI, Remove.bg, Unsplash, Pexels, and Replicate integrations.
      * 
      * @param SaveIntegrationRequestDTO $dto Integration credentials and settings
      * @return JsonResponse Success confirmation or error response

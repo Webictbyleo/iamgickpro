@@ -14,7 +14,7 @@ use Psr\Log\LoggerInterface;
  * Integration Service
  * 
  * Handles third-party API credentials encryption, storage, and retrieval.
- * Supports various services like OpenAI, Remove.bg, Unsplash, Pexels.
+ * Supports various services like OpenAI, Remove.bg, Unsplash, Pexels, and Replicate.
  */
 readonly class IntegrationService
 {
@@ -184,6 +184,7 @@ readonly class IntegrationService
                 'removebg' => $this->testRemoveBg($credentials),
                 'unsplash' => $this->testUnsplash($credentials),
                 'pexels' => $this->testPexels($credentials),
+                'replicate' => $this->testReplicate($credentials),
                 default => ['success' => false, 'error' => 'Unsupported service']
             };
 
@@ -294,5 +295,28 @@ readonly class IntegrationService
         }
 
         return ['success' => true, 'message' => 'API key format is valid'];
+    }
+
+    /**
+     * Test Replicate API credentials
+     */
+    private function testReplicate(array $credentials): array
+    {
+        $apiKey = $credentials['api_key'] ?? '';
+        if (empty($apiKey)) {
+            return ['success' => false, 'error' => 'API key is required'];
+        }
+
+        // Basic validation for Replicate API keys (they start with 'r8_')
+        if (!str_starts_with($apiKey, 'r8_')) {
+            return ['success' => false, 'error' => 'Invalid Replicate API key format - should start with r8_'];
+        }
+
+        // Additional length validation
+        if (strlen($apiKey) < 30) {
+            return ['success' => false, 'error' => 'Invalid API key format - too short'];
+        }
+
+        return ['success' => true, 'message' => 'Replicate API key format is valid'];
     }
 }

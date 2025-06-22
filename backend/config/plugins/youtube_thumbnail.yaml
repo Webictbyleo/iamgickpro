@@ -49,9 +49,9 @@ internet:
         per_hour: 100
     replicate:
       auth:
-        required: false  # Optional - uses system env REPLICATE_API_TOKEN
+        required: true  # Now required for user-specific tokens
         type: "bearer_token"
-        credential_key: "api_token"
+        credential_key: "api_key"  # Match our IntegrationService key
         inject_as: "headers.Authorization"
         inject_pattern: "Bearer {credential}"
       endpoints:

@@ -75,6 +75,58 @@ class SecureRequestBuilder
     }
 
     /**
+     * Check if a service is available for a user (has valid credentials)
+     * 
+     * @param User $user The user to check credentials for
+     * @param string $serviceName The service name to check
+     * @param InternetConfig|null $internetConfig Optional internet configuration
+     * @return bool True if service is available (has valid credentials), false otherwise
+     */
+    public function isServiceAvailable(User $user, string $serviceName, ?InternetConfig $internetConfig = null): bool
+    {
+        try {
+            // If no internet config provided, check credentials directly
+            if ($internetConfig === null) {
+                $credentials = $this->integrationService->getCredentials($user, $serviceName);
+                return $credentials !== null && !empty($credentials);
+            }
+
+            // If internet not required, assume available
+            if (!$internetConfig->required) {
+                return true;
+            }
+
+            // Check if the specific service has valid credentials
+            if (!in_array($serviceName, $internetConfig->integrations, true)) {
+                // Service not in config, check credentials directly
+                $credentials = $this->integrationService->getCredentials($user, $serviceName);
+                return $credentials !== null && !empty($credentials);
+            }
+
+            $authConfig = $internetConfig->getIntegrationAuth($serviceName);
+            
+            if (!$authConfig['required']) {
+                // This integration doesn't require auth, consider it available
+                return true;
+            }
+            
+            // Check if user has credentials for this specific service
+            $credentials = $this->integrationService->getCredentials($user, $serviceName);
+            if ($credentials === null || empty($credentials)) {
+                return false;
+            }
+            
+            // Check if required credential key exists and is not empty
+            $credentialKey = $authConfig['credential_key'];
+            return isset($credentials[$credentialKey]) && !empty($credentials[$credentialKey]);
+            
+        } catch (\Exception $e) {
+            // If any error occurs, assume service is not available
+            return false;
+        }
+    }
+
+    /**
      * Validate internet requirements from InternetConfig
      */
     private function validateInternetRequirements(User $user, string $serviceName, InternetConfig $config): void

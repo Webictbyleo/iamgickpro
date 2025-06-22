@@ -92,7 +92,15 @@
                       :type="showOpenAiKey ? 'text' : 'password'"
                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-20"
                       placeholder="sk-..."
-                      autocomplete="new-password"
+                      autocomplete="off"
+                      autocorrect="off"
+                      autocapitalize="off"
+                      spellcheck="false"
+                      data-lpignore="true"
+                      data-form-type="other"
+                      data-1p-ignore="true"
+                      readonly
+                      @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
                     />
                     <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                       <button
@@ -151,13 +159,15 @@
                     :type="showOpenAiKey ? 'text' : 'password'"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-20"
                     placeholder="sk-..."
-                    autocomplete="new-password"
+                    autocomplete="off"
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
                     data-lpignore="true"
                     data-form-type="other"
                     data-1p-ignore="true"
+                    readonly
+                    @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
                   />
                   <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                     <button
@@ -179,6 +189,175 @@
                 <button
                   @click="saveOpenAiKey"
                   :disabled="savingOpenAi || !openAiApiKey"
+                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
+                  Connect
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Replicate Integration -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <span class="text-white font-bold text-xs">R8</span>
+              </div>
+              <div class="ml-4">
+                <h4 class="text-lg font-semibold text-gray-900">Replicate</h4>
+                <p class="text-gray-600 text-sm">AI model hosting platform for advanced image generation</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span v-if="replicateConnected" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <component :is="icons.check" class="w-3 h-3 mr-1" />
+                Connected
+              </span>
+              <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Not Connected
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <!-- Connected State -->
+            <div v-if="replicateConnected" class="space-y-4">
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-center">
+                  <component :is="icons.check" class="w-5 h-5 text-green-600 mr-2" />
+                  <div>
+                    <p class="text-sm font-medium text-green-800">Replicate Connected</p>
+                    <p class="text-xs text-green-600">High-quality AI image generation enabled</p>
+                  </div>
+                </div>
+                <div class="mt-3 flex space-x-2">
+                  <button
+                    @click="testReplicateConnection"
+                    :disabled="testingReplicate"
+                    class="text-xs px-3 py-1 bg-white border border-green-300 text-green-700 rounded-md hover:bg-green-50 transition-colors disabled:opacity-50"
+                  >
+                    <component :is="icons.refresh" class="w-3 h-3 mr-1 inline" :class="{ 'animate-spin': testingReplicate }" />
+                    Test Connection
+                  </button>
+                  <button
+                    @click="disconnectReplicate"
+                    class="text-xs px-3 py-1 bg-red-50 border border-red-200 text-red-700 rounded-md hover:bg-red-100 transition-colors"
+                  >
+                    <component :is="icons.xMark" class="w-3 h-3 mr-1 inline" />
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+              
+              <div v-if="showUpdateReplicate" class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    API Token
+                  </label>
+                  <div class="relative">
+                    <input
+                      v-model="replicateApiKey"
+                      :type="showReplicateKey ? 'text' : 'password'"
+                      placeholder="r8_..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autocomplete="off"
+                      autocorrect="off"
+                      autocapitalize="off"
+                      spellcheck="false"
+                      data-lpignore="true"
+                      data-form-type="other"
+                      data-1p-ignore="true"
+                      readonly
+                      @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
+                    />
+                    <button
+                      type="button"
+                      @click="showReplicateKey = !showReplicateKey"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <component :is="showReplicateKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="text-xs text-gray-500">
+                  <a href="https://replicate.com/account/api-tokens" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                    Get a new Replicate API token
+                  </a>
+                </div>
+                
+                <div class="flex space-x-2">
+                  <button
+                    @click="saveReplicateKey"
+                    :disabled="savingReplicate || !replicateApiKey"
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
+                    Update Token
+                  </button>
+                  <button
+                    @click="cancelUpdateReplicate"
+                    class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              
+              <div v-else class="text-center">
+                <button
+                  @click="showUpdateReplicate = true"
+                  class="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Update API Token
+                </button>
+              </div>
+            </div>
+
+            <!-- Not Connected State -->
+            <div v-else class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  API Token
+                </label>
+                <div class="relative">
+                  <input
+                    v-model="replicateApiKey"
+                    :type="showReplicateKey ? 'text' : 'password'"
+                    placeholder="r8_..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    readonly
+                    @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
+                  />
+                  <button
+                    type="button"
+                    @click="showReplicateKey = !showReplicateKey"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <component :is="showReplicateKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                  <a href="https://replicate.com/account/api-tokens" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                    Get your Replicate API token
+                  </a>
+                </div>
+                <button
+                  @click="saveReplicateKey"
+                  :disabled="savingReplicate || !replicateApiKey"
                   class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
                   <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
@@ -273,7 +452,15 @@
                       :type="showRemoveBgKey ? 'text' : 'password'"
                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors pr-20"
                       placeholder="Enter your Remove.bg API key"
-                      autocomplete="new-password"
+                      autocomplete="off"
+                      autocorrect="off"
+                      autocapitalize="off"
+                      spellcheck="false"
+                      data-lpignore="true"
+                      data-form-type="other"
+                      data-1p-ignore="true"
+                      readonly
+                      @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
                     />
                     <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                       <button
@@ -332,13 +519,15 @@
                     :type="showRemoveBgKey ? 'text' : 'password'"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors pr-20"
                     placeholder="Enter your Remove.bg API key"
-                    autocomplete="new-password"
+                    autocomplete="off"
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
                     data-lpignore="true"
                     data-form-type="other"
                     data-1p-ignore="true"
+                    readonly
+                    @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
                   />
                   <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                     <button
@@ -418,6 +607,14 @@ const savingRemoveBg = ref(false)
 const testingRemoveBg = ref(false)
 const showUpdateRemoveBg = ref(false)
 
+// Replicate Integration
+const replicateApiKey = ref('')
+const showReplicateKey = ref(false)
+const replicateConnected = ref(false)
+const savingReplicate = ref(false)
+const testingReplicate = ref(false)
+const showUpdateReplicate = ref(false)
+
 // Load integrations on mount
 onMounted(async () => {
   await loadIntegrations()
@@ -432,9 +629,11 @@ const loadIntegrations = async () => {
     // Update connection status
     const openAiIntegration = integrations.value.find(i => i.service === 'openai')
     const removeBgIntegration = integrations.value.find(i => i.service === 'removebg')
+    const replicateIntegration = integrations.value.find(i => i.service === 'replicate')
     
     openAiConnected.value = openAiIntegration?.isConfigured || false
     removeBgConnected.value = removeBgIntegration?.isConfigured || false
+    replicateConnected.value = replicateIntegration?.isConfigured || false
   } catch (error) {
     console.error('Failed to load integrations:', error)
   } finally {
@@ -562,5 +761,65 @@ const cancelUpdateRemoveBg = () => {
   showUpdateRemoveBg.value = false
   removeBgApiKey.value = ''
   showRemoveBgKey.value = false
+}
+
+// Replicate Methods
+const saveReplicateKey = async () => {
+  if (!replicateApiKey.value) return
+  
+  savingReplicate.value = true
+  try {
+    await integrationsAPI.saveIntegration({
+      serviceName: 'replicate',
+      credentials: {
+        api_key: replicateApiKey.value
+      }
+    })
+    
+    replicateConnected.value = true
+    replicateApiKey.value = '' // Clear the key for security
+    console.log('Replicate API key saved successfully')
+  } catch (error) {
+    console.error('Failed to save Replicate API key:', error)
+  } finally {
+    savingReplicate.value = false
+  }
+}
+
+const testReplicateConnection = async () => {
+  testingReplicate.value = true
+  try {
+    const response = await integrationsAPI.testIntegration({
+      serviceName: 'replicate'
+    })
+    
+    if (response.data.data?.success) {
+      console.log('Replicate connection test successful:', response.data.data.message)
+    } else {
+      console.error('Replicate connection test failed:', response.data.data?.message)
+    }
+  } catch (error) {
+    console.error('Replicate connection test failed:', error)
+  } finally {
+    testingReplicate.value = false
+  }
+}
+
+const disconnectReplicate = async () => {
+  try {
+    await integrationsAPI.removeIntegration('replicate')
+    replicateConnected.value = false
+    replicateApiKey.value = ''
+    showUpdateReplicate.value = false
+    console.log('Replicate integration disconnected successfully')
+  } catch (error) {
+    console.error('Failed to disconnect Replicate integration:', error)
+  }
+}
+
+const cancelUpdateReplicate = () => {
+  showUpdateReplicate.value = false
+  replicateApiKey.value = ''
+  showReplicateKey.value = false
 }
 </script>
