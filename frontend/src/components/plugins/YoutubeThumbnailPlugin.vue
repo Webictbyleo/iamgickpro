@@ -180,13 +180,40 @@
                     leave-from-class="opacity-100 scale-100"
                     leave-to-class="opacity-0 scale-95"
                   >
-                    <ListboxOptions class="absolute z-20 mt-2 max-h-80 w-full overflow-auto rounded-2xl bg-white/95 backdrop-blur-md py-2 shadow-2xl ring-1 ring-black/5 focus:outline-none">
-                      <ListboxOption
-                        v-for="style in thumbnailStyles"
-                        :key="style.value"
-                        :value="style.value"
-                        v-slot="{ active, selected }"
-                      >
+                    <ListboxOptions class="absolute z-20 mt-2 max-h-96 w-full overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md shadow-2xl ring-1 ring-black/5 focus:outline-none">
+                      <!-- Search Input -->
+                      <div class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50 p-3">
+                        <div class="relative">
+                          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                          <input
+                            v-model="styleSearchQuery"
+                            type="text"
+                            placeholder="Search styles..."
+                            class="block w-full pl-10 pr-3 py-2 border border-gray-200/50 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 text-sm"
+                            @click.stop
+                          />
+                        </div>
+                      </div>
+                      
+                      <!-- Styles List -->
+                      <div class="max-h-64 overflow-y-auto py-2">
+                        <!-- No Results Message -->
+                        <div v-if="filteredThumbnailStyles.length === 0" class="px-4 py-6 text-center text-gray-500">
+                          <div class="text-sm">No styles found matching "{{ styleSearchQuery }}"</div>
+                          <div class="text-xs text-gray-400 mt-1">Try a different search term</div>
+                        </div>
+                        
+                        <!-- Style Options -->
+                        <ListboxOption
+                          v-for="style in filteredThumbnailStyles"
+                          :key="style.value"
+                          :value="style.value"
+                          v-slot="{ active, selected }"
+                        >
                         <li
                           :class="[
                             active ? 'bg-purple-50/80 text-purple-900' : 'text-gray-900',
@@ -234,6 +261,7 @@
                           </div>
                         </li>
                       </ListboxOption>
+                      </div>
                     </ListboxOptions>
                   </transition>
                 </div>
@@ -596,14 +624,7 @@
                 
                 <!-- Hover Overlay -->
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div class="absolute bottom-4 left-4 right-4">
-                    <button
-                      @click="previewThumbnail(thumbnail)"
-                      class="w-full bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900 py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                    >
-                      🔍 Preview Full Size
-                    </button>
-                  </div>
+                  <!-- Subtle hover effect only -->
                 </div>
                 
                 <!-- Quality Badge -->
@@ -640,7 +661,7 @@
                 <div class="grid grid-cols-2 gap-3">
                   <button
                     @click="previewThumbnail(thumbnail)"
-                    class="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105"
+                    class="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -650,7 +671,7 @@
                   </button>
                   <button
                     @click="downloadThumbnail(thumbnail)"
-                    class="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    class="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 px-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -669,7 +690,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, onUnmounted } from 'vue'
+import { ref, h, onUnmounted, computed } from 'vue'
 import {
   Listbox,
   ListboxButton,
@@ -718,6 +739,9 @@ const generatedThumbnails = ref<YouTubeThumbnailDisplay[]>([])
 const selectedThumbnailStyle = ref<string>('modern')
 const maxThumbnails = ref(5)
 const customPrompt = ref('')
+
+// Style dropdown search functionality
+const styleSearchQuery = ref('')
 
 // Recent thumbnails - combined with current generation
 const allThumbnails = ref<any[]>([])
@@ -805,6 +829,20 @@ const thumbnailStyles = [
     description: 'Fun illustrations, comic-book style'
   }
 ] as const
+
+// Computed property for filtered styles based on search
+const filteredThumbnailStyles = computed(() => {
+  if (!styleSearchQuery.value.trim()) {
+    return thumbnailStyles
+  }
+  
+  const query = styleSearchQuery.value.toLowerCase().trim()
+  return thumbnailStyles.filter(style => 
+    style.label.toLowerCase().includes(query) ||
+    style.description.toLowerCase().includes(query) ||
+    style.value.toLowerCase().includes(query)
+  )
+})
 
 // Function to get appropriate icon component for each style
 const getStyleIcon = (styleValue: string) => {
