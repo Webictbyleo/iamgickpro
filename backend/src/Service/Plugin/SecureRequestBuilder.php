@@ -60,6 +60,9 @@ class SecureRequestBuilder
         if ($internetConfig !== null) {
             $secureOptions = $this->applyInternetConfigConstraints($secureOptions, $internetConfig);
         }
+
+        
+        
          
         // Make the HTTP request
         return $this->httpClient->request($method, $url, $secureOptions);
@@ -190,23 +193,19 @@ class SecureRequestBuilder
             return [];
         }
         
-        // Determine which integration to use based on InternetConfig
-        $targetIntegration = $serviceName; // Default to service name
-        if ($internetConfig !== null && !empty($internetConfig->integrations)) {
-            // Use the first integration from the config
-            $targetIntegration = $internetConfig->integrations[0];
-        }
+        // Always use the requested serviceName - don't override with first integration
+        $targetIntegration = $serviceName;
         
         $credentials = $this->integrationService->getCredentials($user, $targetIntegration);
         
         // Enhanced integration validation
-        if ($internetConfig !== null) {
-            $authConfig = $internetConfig->getIntegrationAuth($targetIntegration);
+        if ($internetConfig !== null && in_array($serviceName, $internetConfig->integrations, true)) {
+            $authConfig = $internetConfig->getIntegrationAuth($serviceName);
             
             if ($authConfig['required'] && $credentials === null) {
                 throw new \RuntimeException(sprintf(
                     'Authentication required by plugin configuration but no credentials found for integration: %s',
-                    $targetIntegration
+                    $serviceName
                 ));
             }
         }
@@ -229,30 +228,20 @@ class SecureRequestBuilder
             return $options;
         }
         
-        // Use enhanced per-integration authentication
-        // Find the first integration that requires auth and has credentials
-        foreach ($internetConfig->integrations as $integration) {
-            $authConfig = $internetConfig->getIntegrationAuth($integration);
+        // Look specifically for the requested serviceName in the integrations
+        if (in_array($serviceName, $internetConfig->integrations, true)) {
+            $authConfig = $internetConfig->getIntegrationAuth($serviceName);
             
-            if (!$authConfig['required']) {
-                continue;
-            }
-            
-            // Try to get credentials for this specific integration
-            try {
-                $integrationCredentials = $this->integrationService->getCredentials($user, $integration);
-                
-                if ($integrationCredentials !== null && !empty($integrationCredentials)) {
-                    // Apply enhanced authentication using the InternetConfig method
-                    return $internetConfig->applyIntegrationAuth($integration, $options, $integrationCredentials);
+            if ($authConfig['required']) {
+                // Use the provided credentials (already fetched for this specific service)
+                if (!empty($credentials)) {
+                    // Apply authentication using the InternetConfig method for the specific service
+                    return $internetConfig->applyIntegrationAuth($serviceName, $options, $credentials);
                 }
-            } catch (\Exception $e) {
-                // Continue to next integration
-                continue;
             }
         }
         
-        // If no enhanced integration worked, return original options
+        // If the specific service is not found or doesn't require auth, return original options
         return $options;
     }
 
