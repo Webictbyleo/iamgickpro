@@ -858,9 +858,7 @@ export interface RegisterData {
 
 export interface ResetPasswordData {
   token: string
-  email: string
-  password: string
-  confirmPassword: string
+  newPassword: string
 }
 
 export interface ChangePasswordData {

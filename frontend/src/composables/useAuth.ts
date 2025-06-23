@@ -91,9 +91,7 @@ export const useAuth = () => {
   // Reset password
   const resetPassword = async (data: {
     token: string
-    email: string
-    password: string
-    confirmPassword: string
+    newPassword: string
   }) => {
     try {
       const result = await authStore.resetPassword(data)

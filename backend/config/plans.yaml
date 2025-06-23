@@ -1,0 +1,91 @@
+plans:
+  free:
+    name: 'Free'
+    description: 'Perfect for personal projects and getting started'
+    pricing:
+      monthly: 0
+      yearly: 0
+      currency: 'USD'
+    limits:
+      projects: 5
+      storage: 104857600  # 100MB in bytes
+      exports: 10
+      collaborators: 1
+      templates: 10
+    features:
+      basic_templates: true
+      basic_export: true
+      cloud_storage: true
+      premium_templates: false
+      advanced_export: false
+      collaboration: false
+      api_access: false
+      priority_support: false
+      custom_branding: false
+      team_management: false
+
+  pro:
+    name: 'Pro'
+    description: 'Best for professionals and growing businesses'
+    pricing:
+      monthly: 19
+      yearly: 190  # ~16.67/month
+      currency: 'USD'
+    limits:
+      projects: 100
+      storage: 10737418240  # 10GB in bytes
+      exports: 500
+      collaborators: 5
+      templates: -1  # unlimited
+    features:
+      basic_templates: true
+      basic_export: true
+      cloud_storage: true
+      premium_templates: true
+      advanced_export: true
+      collaboration: true
+      api_access: true
+      priority_support: true
+      custom_branding: false
+      team_management: false
+
+  business:
+    name: 'Business'
+    description: 'Advanced features for teams and enterprises'
+    pricing:
+      monthly: 49
+      yearly: 490  # ~40.83/month
+      currency: 'USD'
+    limits:
+      projects: -1  # unlimited
+      storage: 107374182400  # 100GB in bytes
+      exports: -1  # unlimited
+      collaborators: -1  # unlimited
+      templates: -1  # unlimited
+    features:
+      basic_templates: true
+      basic_export: true
+      cloud_storage: true
+      premium_templates: true
+      advanced_export: true
+      collaboration: true
+      api_access: true
+      priority_support: true
+      custom_branding: true
+      team_management: true
+
+# Default plan for new users
+default_plan: 'free'
+
+# Plan upgrade/downgrade rules
+upgrade_rules:
+  immediate_upgrade: true
+  downgrade_at_period_end: true
+  prorating: true
+
+# Feature flags for entire platform
+global_features:
+  maintenance_mode: false
+  new_registrations: true
+  api_access: true
+  third_party_integrations: true

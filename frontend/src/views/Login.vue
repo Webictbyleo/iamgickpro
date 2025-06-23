@@ -14,6 +14,14 @@
 
       <!-- Login Form -->
       <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <!-- Success Message -->
+        <div v-if="successMessage" class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <CheckCircleIcon class="h-5 w-5 text-green-500 mr-2" />
+            <p class="text-sm text-green-800">{{ successMessage }}</p>
+          </div>
+        </div>
+
         <form @submit.prevent="handleLogin" class="space-y-6">
           <!-- Email Field -->
           <div>
@@ -133,17 +141,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import {
   EnvelopeIcon,
   LockClosedIcon,
   EyeIcon,
   EyeSlashIcon,
+  CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { useAuth } from '@/composables/useAuth'
 
 // Router
 const router = useRouter()
+const route = useRoute()
 
 // Auth composable
 const { login, isLoading, isAuthenticated } = useAuth()
@@ -158,6 +168,7 @@ const loginForm = ref({
 const showPassword = ref(false)
 const emailError = ref('')
 const passwordError = ref('')
+const successMessage = ref('')
 
 // Computed properties
 const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
@@ -220,8 +231,13 @@ const handleLogin = async () => {
   })
 
   if (result.success) {
-    // Redirect will be handled by the auth composable
-    console.log('Login successful')
+    successMessage.value = 'Login successful! Redirecting...'
+    setTimeout(() => {
+      // Redirect will be handled by the auth composable
+      router.push('/dashboard')
+    }, 2000)
+  } else {
+    successMessage.value = ''
   }
 }
 
@@ -230,6 +246,11 @@ onMounted(() => {
   // Redirect if already authenticated
   if (isAuthenticated.value) {
     router.push('/dashboard')
+  }
+  
+  // Check for success message from query params
+  if (route.query.message) {
+    successMessage.value = route.query.message as string
   }
 })
 

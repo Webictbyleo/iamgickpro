@@ -98,6 +98,37 @@ readonly class EmailService
     }
 
     /**
+     * Send password reset email
+     */
+    public function sendPasswordResetEmail(User $user, string $resetToken): void
+    {
+        try {
+            $resetUrl = $this->frontendUrl . '/reset-password?token=' . $resetToken;
+            $email = (new TemplatedEmail())
+                ->from(new Address($this->fromEmail, $this->appName))
+                ->to(new Address($user->getEmail(), $user->getFirstName() . ' ' . $user->getLastName()))
+                ->subject('Reset your password')
+                ->htmlTemplate('emails/password_reset.html.twig')
+                ->context([
+                    'user' => $user,
+                    'reset_url' => $resetUrl,
+                    'app_name' => $this->appName
+                ]);
+            $this->mailer->send($email);
+            $this->logger->info('Password reset email sent', [
+                'user_id' => $user->getId(),
+                'email' => $user->getEmail()
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send password reset email', [
+                'user_id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Send welcome email
      */
     public function sendWelcome(User $user): void

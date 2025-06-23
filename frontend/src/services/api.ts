@@ -95,7 +95,7 @@ export const authAPI = {
   // Additional methods for compatibility
   refreshToken: () => api.post<ApiResponse<{ token: string }>>('/auth/refresh'),
   forgotPassword: (email: string) =>
-    api.post<ApiResponse<{ message: string }>>('/auth/forgot-password', { email }),
+    api.post<ApiResponse<{ message: string }>>('/auth/request-password-reset', { email }),
   resetPassword: (data: ResetPasswordData) => 
     api.post<ApiResponse<{ message: string }>>('/auth/reset-password', data),
   verifyEmail: (token: string) =>

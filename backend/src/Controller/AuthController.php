@@ -18,6 +18,7 @@ use App\Controller\Trait\TypedResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -26,6 +27,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use App\Service\UserService;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
  * Authentication Controller
@@ -45,6 +48,7 @@ class AuthController extends AbstractController
         private readonly SerializerInterface $serializer,
         private readonly JWTTokenManagerInterface $jwtManager,
         private readonly ResponseDTOFactory $responseDTOFactory,
+        private readonly UserService $userService,
     ) {}
 
     /**
@@ -59,70 +63,15 @@ class AuthController extends AbstractController
     public function register(RegisterRequestDTO $dto): JsonResponse
     {
         try {
-            // Check if user already exists
-            if ($this->userRepository->findOneBy(['email' => $dto->email])) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'User with this email already exists'
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_CONFLICT);
-            }
-
-            // Check if username is already taken (if provided)
-            if ($dto->username && $this->userRepository->findOneBy(['username' => $dto->username])) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Username is already taken'
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_CONFLICT);
-            }
-
-            $user = new User();
-            $user->setEmail($dto->email);
-            $user->setFirstName($this->sanitizeInput($dto->firstName));
-            $user->setLastName($this->sanitizeInput($dto->lastName));
-            
-            if ($dto->username) {
-                $user->setUsername(trim($dto->username)); // Username doesn't need HTML sanitization
-            }
-            
-            $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->password);
-            $user->setPassword($hashedPassword);
-
-            // Set default values
-            $user->setRoles(['ROLE_USER']);
-            $user->setIsActive(true);
-            $user->setEmailVerified(false);
-            // Note: createdAt is set automatically in constructor
-            // updatedAt is set automatically via touch() method in setters
-
-            // Validate entity (additional business rules)
-            $errors = $this->validator->validate($user);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'User validation failed',
-                    $errorMessages
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->persist($user);
-            $this->entityManager->flush();
-
-            // Generate JWT token
+            $user = $this->userService->registerUser($dto);
             $token = $this->jwtManager->create($user);
-
             $authResponse = $this->responseDTOFactory->createAuthResponse(
                 'User registered successfully',
                 $token,
                 $user
             );
-
             return $this->authResponse($authResponse, Response::HTTP_CREATED);
-
-        } catch (BadRequestHttpException $e) {
+        } catch (\InvalidArgumentException $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
             return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
@@ -147,34 +96,25 @@ class AuthController extends AbstractController
     public function login(LoginRequestDTO $dto): JsonResponse
     {
         try {
-            $user = $this->userRepository->findOneBy(['email' => $dto->email]);
-
-            if (!$user || !$this->passwordHasher->isPasswordValid($user, $dto->password)) {
+            $user = $this->userService->authenticateUser($dto->email, $dto->password);
+            if (!$user) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Invalid credentials');
                 return $this->errorResponse($errorResponse, Response::HTTP_UNAUTHORIZED);
             }
-
             if (!$user->getIsActive()) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('Account is deactivated');
                 return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
-
-            // Update last login timestamp
             $user->setLastLoginAt(new \DateTimeImmutable());
             $this->entityManager->flush();
-
-            // Generate JWT token
             $token = $this->jwtManager->create($user);
-
             $authResponse = $this->responseDTOFactory->createAuthResponse(
                 'Login successful',
                 $token,
                 $user
             );
-
             return $this->authResponse($authResponse);
-
-        } catch (BadRequestHttpException $e) {
+        } catch (\InvalidArgumentException $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
             return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
@@ -233,41 +173,19 @@ class AuthController extends AbstractController
     {
         try {
             $user = $this->getUser();
-
             if (!$user instanceof User) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
-
-            // Verify current password
-            if (!$this->passwordHasher->isPasswordValid($user, $dto->currentPassword)) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Current password is incorrect'
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            // Ensure new password is different from current
-            if ($this->passwordHasher->isPasswordValid($user, $dto->newPassword)) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'New password must be different from current password'
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            // Hash and set new password
-            $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->newPassword);
-            $user->setPassword($hashedPassword);
-
-            $this->entityManager->flush();
-
+            $this->userService->changePassword($user, $dto->currentPassword, $dto->newPassword);
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
                 'Password changed successfully'
             );
-
             return $this->successResponse($successResponse);
-
-        } catch (BadRequestHttpException $e) {
+        } catch (AccessDeniedException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        } catch (\InvalidArgumentException $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
             return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
@@ -306,6 +224,106 @@ class AuthController extends AbstractController
                 'Logout failed',
                 [$e->getMessage()]
             );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Request password reset (send reset email)
+     */
+    #[Route('/request-password-reset', name: 'request_password_reset', methods: ['POST'])]
+    public function requestPasswordReset(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $email = $data['email'] ?? null;
+        if (!$email) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Email is required');
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        }
+        $this->userService->requestPasswordReset($email);
+        $successResponse = $this->responseDTOFactory->createSuccessResponse('If your email exists, a reset link has been sent.');
+        return $this->successResponse($successResponse);
+    }
+
+    /**
+     * Reset password using token
+     */
+    #[Route('/reset-password', name: 'reset_password', methods: ['POST'])]
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $token = $data['token'] ?? null;
+        $newPassword = $data['newPassword'] ?? null;
+        if (!$token || !$newPassword) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Token and new password are required');
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        }
+        try {
+            $this->userService->resetPassword($token, $newPassword);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse('Password reset successful');
+            return $this->successResponse($successResponse);
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Password reset failed', [$e->getMessage()]);
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Verify email using token
+     */
+    #[Route('/verify-email', name: 'verify_email', methods: ['POST'])]
+    public function verifyEmail(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $token = $data['token'] ?? null;
+        
+        if (!$token) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Token is required');
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        }
+        
+        try {
+            $verified = $this->userService->verifyEmail($token);
+            
+            if ($verified) {
+                $successResponse = $this->responseDTOFactory->createSuccessResponse('Email verified successfully');
+                return $this->successResponse($successResponse);
+            } else {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Invalid or expired verification token');
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Email verification failed', [$e->getMessage()]);
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Resend email verification
+     */
+    #[Route('/resend-verification', name: 'resend_verification', methods: ['POST'])]
+    public function resendVerification(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $email = $data['email'] ?? null;
+        
+        if (!$email) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Email is required');
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        }
+        
+        try {
+            $this->userService->resendEmailVerification($email);
+            $successResponse = $this->responseDTOFactory->createSuccessResponse('If your email exists, a verification link has been sent.');
+            return $this->successResponse($successResponse);
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Failed to resend verification email', [$e->getMessage()]);
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

@@ -14,7 +14,7 @@ security:
             security: false
 
         auth_public:
-            pattern: ^/api/auth/(login|register)
+            pattern: ^/api/auth/(login|register|request-password-reset|reset-password|verify-email|resend-verification)
             stateless: true
             security: false
 
@@ -28,7 +28,7 @@ security:
             provider: app_user_provider
 
     access_control:
-        - { path: ^/api/auth/(login|register), roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(login|register|request-password-reset|reset-password|verify-email|resend-verification), roles: PUBLIC_ACCESS }
         - { path: ^/api/media/proxy, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 

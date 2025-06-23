@@ -12,6 +12,7 @@ parameters:
     app.plugin_extract_directory: '%kernel.project_dir%/var/plugins'
     app.export_directory: '%kernel.project_dir%/var/exports'
     app.encryption_key: '%env(APP_SECRET)%'
+    app.plans_config_file: '%kernel.project_dir%/config/plans.yaml'
 
 imports:
     - { resource: services/svg.yaml }
@@ -43,6 +44,11 @@ services:
             $fromEmail: '%env(MAIL_FROM_ADDRESS)%'
             $appName: '%env(APP_NAME)%'
             $frontendUrl: '%env(FRONTEND_URL)%'
+
+    # Plan Service Configuration
+    App\Service\PlanService:
+        arguments:
+            $plansConfigFile: '%app.plans_config_file%'
 
     # Integration Service Configuration
     App\Service\IntegrationService:

@@ -13,6 +13,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Psr\Log\LoggerInterface;
+use App\DTO\RegisterRequestDTO;
 
 readonly class UserService
 {
@@ -24,7 +25,8 @@ readonly class UserService
         private SluggerInterface $slugger,
         private LoggerInterface $logger,
         private EmailService $emailService,
-        private string $avatarUploadDirectory
+        private string $avatarUploadDirectory,
+        private PlanService $planService
     ) {
     }
 
@@ -230,9 +232,6 @@ readonly class UserService
     public function getSubscriptionData(User $user): array
     {
         $plan = $user->getPlan();
-        $limits = $this->getPlanLimits($plan);
-        $features = $this->getPlanFeatures($plan);
-        
         return [
             'plan' => $plan,
             'isActive' => $user->isActive(),
@@ -242,102 +241,176 @@ readonly class UserService
                 'exportJobs' => $user->getExportJobs()->count(),
                 'storageUsed' => $this->calculateStorageUsage($user),
             ],
-            'limits' => $limits,
-            'features' => $features,
+            'limits' => $this->planService->getPlanLimits($plan),
+            'features' => $this->planService->getPlanFeatures($plan),
             'planInfo' => [
-                'name' => $this->getPlanDisplayName($plan),
-                'description' => $this->getPlanDescription($plan),
-                'price' => $this->getPlanPricing($plan),
+                'name' => $this->planService->getPlanDisplayName($plan),
+                'description' => $this->planService->getPlanDescription($plan),
+                'price' => $this->planService->getPlanPricing($plan),
             ]
         ];
     }
 
-    private function getPlanLimits(string $plan): array
+    public function registerUser(RegisterRequestDTO $dto): User
     {
-        return match ($plan) {
-            'free' => [
-                'projects' => 5,
-                'storage' => 100 * 1024 * 1024, // 100MB
-                'exports' => 10,
-                'collaborators' => 1,
-                'templates' => 10,
-            ],
-            'pro' => [
-                'projects' => 100,
-                'storage' => 10 * 1024 * 1024 * 1024, // 10GB
-                'exports' => 500,
-                'collaborators' => 5,
-                'templates' => -1, // unlimited
-            ],
-            'business' => [
-                'projects' => -1, // unlimited
-                'storage' => 100 * 1024 * 1024 * 1024, // 100GB
-                'exports' => -1, // unlimited
-                'collaborators' => -1, // unlimited
-                'templates' => -1, // unlimited
-            ],
-            default => [
-                'projects' => 5,
-                'storage' => 100 * 1024 * 1024,
-                'exports' => 10,
-                'collaborators' => 1,
-                'templates' => 10,
-            ],
-        };
+        if ($this->userRepository->findOneBy(['email' => $dto->email])) {
+            throw new \InvalidArgumentException('User with this email already exists');
+        }
+        if ($dto->username && $this->userRepository->findOneBy(['username' => $dto->username])) {
+            throw new \InvalidArgumentException('Username is already taken');
+        }
+        $user = new User();
+        $user->setEmail($dto->email);
+        $user->setFirstName($this->sanitizeInput($dto->firstName));
+        $user->setLastName($this->sanitizeInput($dto->lastName));
+        if ($dto->username) {
+            $user->setUsername(trim($dto->username));
+        }
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->password);
+        $user->setPassword($hashedPassword);
+        $user->setRoles(['ROLE_USER']);
+        $user->setIsActive(true);
+        $user->setEmailVerified(false);
+        
+        // Generate email verification token
+        $verificationToken = bin2hex(random_bytes(32));
+        $user->setEmailVerificationToken($verificationToken);
+        $user->setEmailVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+        
+        $errors = $this->validator->validate($user);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            throw new \InvalidArgumentException(implode(", ", $errorMessages));
+        }
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+        
+        // Send welcome email
+        try {
+            $this->emailService->sendWelcome($user);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to send welcome email during registration', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        // Send email verification
+        try {
+            $this->emailService->sendEmailVerification($user, $verificationToken);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to send verification email during registration', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $user;
     }
 
-    private function getPlanFeatures(string $plan): array
+    public function authenticateUser(string $email, string $password): ?User
     {
-        return match ($plan) {
-            'free' => [
-                'basic_templates' => true,
-                'basic_export' => true,
-                'cloud_storage' => true,
-                'premium_templates' => false,
-                'advanced_export' => false,
-                'collaboration' => false,
-                'api_access' => false,
-                'priority_support' => false,
-                'custom_branding' => false,
-                'team_management' => false,
-            ],
-            'pro' => [
-                'basic_templates' => true,
-                'basic_export' => true,
-                'cloud_storage' => true,
-                'premium_templates' => true,
-                'advanced_export' => true,
-                'collaboration' => true,
-                'api_access' => true,
-                'priority_support' => true,
-                'custom_branding' => false,
-                'team_management' => false,
-            ],
-            'business' => [
-                'basic_templates' => true,
-                'basic_export' => true,
-                'cloud_storage' => true,
-                'premium_templates' => true,
-                'advanced_export' => true,
-                'collaboration' => true,
-                'api_access' => true,
-                'priority_support' => true,
-                'custom_branding' => true,
-                'team_management' => true,
-            ],
-            default => [
-                'basic_templates' => true,
-                'basic_export' => true,
-                'cloud_storage' => true,
-                'premium_templates' => false,
-                'advanced_export' => false,
-                'collaboration' => false,
-                'api_access' => false,
-                'priority_support' => false,
-                'custom_branding' => false,
-                'team_management' => false,
-            ],
-        };
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user || !$this->passwordHasher->isPasswordValid($user, $password)) {
+            return null;
+        }
+        return $user;
+    }
+
+    public function requestPasswordReset(string $email): void
+    {
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user) {
+            // Do not reveal user existence
+            return;
+        }
+        $token = bin2hex(random_bytes(32));
+        $user->setPasswordResetToken($token);
+        $user->setPasswordResetTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
+        $this->entityManager->flush();
+        $this->emailService->sendPasswordResetEmail($user, $token);
+    }
+
+    public function resetPassword(string $token, string $newPassword): void
+    {
+        $user = $this->userRepository->findOneBy(['passwordResetToken' => $token]);
+        if (!$user) {
+            throw new \InvalidArgumentException('Invalid or expired reset token');
+        }
+        $expiresAt = $user->getPasswordResetTokenExpiresAt();
+        if (!$expiresAt || $expiresAt < new \DateTimeImmutable()) {
+            throw new \InvalidArgumentException('Reset token expired');
+        }
+        if (strlen($newPassword) < 8) {
+            throw new \InvalidArgumentException('Password must be at least 8 characters long');
+        }
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $newPassword);
+        $user->setPassword($hashedPassword);
+        $user->setPasswordResetToken(null);
+        $user->setPasswordResetTokenExpiresAt(null);
+        $this->entityManager->flush();
+        $this->logger->info('User password reset', ['user_id' => $user->getId()]);
+    }
+
+    public function verifyEmail(string $token): bool
+    {
+        $user = $this->userRepository->findOneBy(['emailVerificationToken' => $token]);
+        if (!$user) {
+            return false;
+        }
+        
+        if (!$user->isEmailVerificationTokenValid()) {
+            return false;
+        }
+        
+        $user->setEmailVerified(true);
+        $user->setEmailVerificationToken(null);
+        $user->setEmailVerificationTokenExpiresAt(null);
+        
+        $this->entityManager->flush();
+        
+        $this->logger->info('Email verified successfully', [
+            'user_id' => $user->getId()
+        ]);
+        
+        return true;
+    }
+
+    public function resendEmailVerification(string $email): void
+    {
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user) {
+            // Don't reveal user existence
+            return;
+        }
+        
+        if ($user->getEmailVerified()) {
+            throw new \InvalidArgumentException('Email is already verified');
+        }
+        
+        // Generate new verification token
+        $verificationToken = bin2hex(random_bytes(32));
+        $user->setEmailVerificationToken($verificationToken);
+        $user->setEmailVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+        
+        $this->entityManager->flush();
+        
+        // Send verification email
+        $this->emailService->sendEmailVerification($user, $verificationToken);
+        
+        $this->logger->info('Email verification resent', [
+            'user_id' => $user->getId()
+        ]);
+    }
+
+    private function sanitizeInput(string $input): string
+    {
+        $sanitized = strip_tags(trim($input));
+        $sanitized = htmlspecialchars($sanitized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return $sanitized;
     }
 
     private function calculateStorageUsage(User $user): int
@@ -347,51 +420,5 @@ readonly class UserService
             $totalSize += $media->getSize();
         }
         return $totalSize;
-    }
-
-    private function getPlanDisplayName(string $plan): string
-    {
-        return match ($plan) {
-            'free' => 'Free',
-            'pro' => 'Pro',
-            'business' => 'Business',
-            default => 'Free',
-        };
-    }
-
-    private function getPlanDescription(string $plan): string
-    {
-        return match ($plan) {
-            'free' => 'Perfect for personal projects and getting started',
-            'pro' => 'Best for professionals and growing businesses',
-            'business' => 'Advanced features for teams and enterprises',
-            default => 'Basic plan with essential features',
-        };
-    }
-
-    private function getPlanPricing(string $plan): array
-    {
-        return match ($plan) {
-            'free' => [
-                'monthly' => 0,
-                'yearly' => 0,
-                'currency' => 'USD',
-            ],
-            'pro' => [
-                'monthly' => 19,
-                'yearly' => 190, // ~16.67/month
-                'currency' => 'USD',
-            ],
-            'business' => [
-                'monthly' => 49,
-                'yearly' => 490, // ~40.83/month
-                'currency' => 'USD',
-            ],
-            default => [
-                'monthly' => 0,
-                'yearly' => 0,
-                'currency' => 'USD',
-            ],
-        };
     }
 }
