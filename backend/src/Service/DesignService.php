@@ -10,10 +10,14 @@ use App\Entity\Project;
 use App\Entity\User;
 use App\Repository\DesignRepository;
 use App\Repository\LayerRepository;
+use App\Repository\ProjectRepository;
 use App\Service\Svg\SvgRendererService;
+use App\Service\MediaProcessing\MediaProcessingService;
+use App\Service\MediaProcessing\Config\ImageProcessingConfig;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * Service for managing designs and their operations
@@ -24,8 +28,11 @@ class DesignService
         private readonly EntityManagerInterface $entityManager,
         private readonly DesignRepository $designRepository,
         private readonly LayerRepository $layerRepository,
+        private readonly ProjectRepository $projectRepository,
         private readonly SvgRendererService $svgRendererService,
         private readonly LoggerInterface $logger,
+        private readonly ValidatorInterface $validator,
+        private readonly MediaProcessingService $mediaProcessingService,
         private readonly string $thumbnailDirectory,
     ) {
         // Ensure thumbnail directory exists
@@ -129,6 +136,27 @@ class DesignService
                  ->setMask($originalLayer->getMask());
 
         $this->entityManager->persist($newLayer);
+
+        return $newLayer;
+    }
+
+    /**
+     * Duplicate a single layer to a target design
+     */
+    private function duplicateLayerToDesign(Layer $originalLayer, Design $targetDesign): Layer
+    {
+        $newLayer = new Layer();
+        $newLayer->setName($originalLayer->getName())
+                 ->setType($originalLayer->getType())
+                 ->setDesign($targetDesign)
+                 ->setProperties($originalLayer->getProperties())
+                 ->setTransform($originalLayer->getTransform())
+                 ->setVisible($originalLayer->isVisible())
+                 ->setLocked($originalLayer->isLocked())
+                 ->setZIndex($originalLayer->getZIndex());
+
+        $this->entityManager->persist($newLayer);
+        $this->entityManager->flush();
 
         return $newLayer;
     }
@@ -364,5 +392,505 @@ class DesignService
             ],
             'layers' => $layersData,
         ];
+    }
+
+    /**
+     * Create a new design with enhanced logic
+     */
+    public function createDesignFromRequest(
+        User $user,
+        string $name,
+        int $width = 800,
+        int $height = 600,
+        ?string $description = null,
+        ?int $projectId = null,
+        array $data = []
+    ): Design {
+        // Validate and get/create project
+        $project = $this->resolveProject($user, $projectId);
+        
+        $design = new Design();
+        $design->setName($name);
+        $design->setWidth($width);
+        $design->setHeight($height);
+        $design->setCanvasWidth($width);
+        $design->setCanvasHeight($height);
+        $design->setData($data);
+        $design->setBackground(['type' => 'color', 'color' => '#ffffff']); // Default background
+        $design->setProject($project);
+        
+        if ($description) {
+            $design->setTitle($description);
+        }
+        
+        // Validate design
+        $errors = $this->validator->validate($design);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            throw new \InvalidArgumentException('Validation failed: ' . implode(', ', $errorMessages));
+        }
+        
+        $this->entityManager->persist($design);
+        $this->entityManager->flush();
+        
+        return $design;
+    }
+
+    /**
+     * Get paginated designs for user
+     */
+    public function getUserDesigns(
+        User $user,
+        int $page = 1,
+        int $limit = 20,
+        ?string $search = null,
+        ?int $projectId = null,
+        string $sortField = 'updatedAt',
+        string $sortOrder = 'DESC'
+    ): array {
+        $offset = ($page - 1) * $limit;
+        
+        if ($projectId) {
+            $project = $this->projectRepository->find($projectId);
+            if (!$project || ($project->getUser() !== $user && !$project->getIsPublic())) {
+                throw new \InvalidArgumentException('Project not found or access denied');
+            }
+            return $this->designRepository->findByProjectPaginated($project, $page, $limit);
+        }
+        
+        if ($search) {
+            return $this->designRepository->searchByUserPaginated($user, $search, $page, $limit);
+        }
+        
+        return $this->designRepository->findByUserPaginated($user, $page, $limit, $sortField);
+    }
+
+    /**
+     * Update design with validation
+     */
+    public function updateDesign(
+        Design $design,
+        ?string $name = null,
+        ?string $description = null,
+        ?array $data = null,
+        ?int $width = null,
+        ?int $height = null,
+        ?array $background = null
+    ): Design {
+        if ($name !== null) {
+            $design->setName($name);
+        }
+        
+        if ($description !== null) {
+            $design->setTitle($description);
+        }
+        
+        if ($data !== null) {
+            $design->setData($data);
+        }
+        
+        if ($width !== null && $height !== null) {
+            $design->setWidth($width);
+            $design->setHeight($height);
+            $design->setCanvasWidth($width);
+            $design->setCanvasHeight($height);
+        }
+        
+        if ($background !== null) {
+            $design->setBackground($background);
+        }
+        
+        // Validate design
+        $errors = $this->validator->validate($design);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            throw new \InvalidArgumentException('Validation failed: ' . implode(', ', $errorMessages));
+        }
+        
+        $this->entityManager->persist($design);
+        $this->entityManager->flush();
+        
+        return $design;
+    }
+
+    /**
+     * Delete design and cleanup
+     */
+    public function deleteDesign(Design $design): void
+    {
+        // Delete all layers first
+        $layers = $this->layerRepository->findBy(['design' => $design]);
+        foreach ($layers as $layer) {
+            $this->entityManager->remove($layer);
+        }
+        
+        // Delete thumbnail file if exists
+        $thumbnailPath = $this->getThumbnailPath($design);
+        if (file_exists($thumbnailPath)) {
+            unlink($thumbnailPath);
+        }
+        
+        $this->entityManager->remove($design);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Duplicate design with enhanced options
+     */
+    public function duplicateDesignFromRequest(
+        Design $originalDesign,
+        string $newName,
+        ?int $targetProjectId = null,
+        User $user
+    ): Design {
+        $targetProject = $targetProjectId ? 
+            $this->resolveProject($user, $targetProjectId) : 
+            $originalDesign->getProject();
+        
+        $newDesign = new Design();
+        $newDesign->setName($newName);
+        $newDesign->setProject($targetProject);
+        $newDesign->setWidth($originalDesign->getWidth());
+        $newDesign->setHeight($originalDesign->getHeight());
+        $newDesign->setCanvasWidth($originalDesign->getCanvasWidth());
+        $newDesign->setCanvasHeight($originalDesign->getCanvasHeight());
+        $newDesign->setData($originalDesign->getData());
+        $newDesign->setBackground($originalDesign->getBackground());
+        $newDesign->setAnimationSettings($originalDesign->getAnimationSettings());
+        
+        $this->entityManager->persist($newDesign);
+        $this->entityManager->flush();
+        
+        // Duplicate all layers
+        $this->duplicateDesignLayers($originalDesign, $newDesign);
+        
+        return $newDesign;
+    }
+
+    /**
+     * Search designs with advanced filtering
+     */
+    public function searchDesigns(
+        User $user,
+        string $query,
+        int $page = 1,
+        int $limit = 20,
+        ?int $projectId = null,
+        string $sortField = 'relevance',
+        string $sortOrder = 'DESC'
+    ): array {
+        if ($projectId) {
+            $project = $this->projectRepository->find($projectId);
+            if (!$project || ($project->getUser() !== $user && !$project->getIsPublic())) {
+                throw new \InvalidArgumentException('Project not found or access denied');
+            }
+            return $this->designRepository->searchInProjectPaginated($project, $query, $page, $limit);
+        }
+        
+        return $this->designRepository->searchByUserPaginated($user, $query, $page, $limit, $sortField, $sortOrder);
+    }
+
+    /**
+     * Validate design ownership
+     */
+    public function validateDesignAccess(Design $design, User $user): void
+    {
+        if ($design->getProject()->getUser() !== $user && !$design->getProject()->getIsPublic()) {
+            throw new \InvalidArgumentException('Access denied to design');
+        }
+    }
+
+    /**
+     * Update design thumbnail
+     */
+    public function updateDesignThumbnail(Design $design, string $thumbnailData): Design
+    {
+        // Process thumbnail data (handle data URLs and regular URLs)
+        $thumbnailPath = $this->processThumbnailData($thumbnailData, $design->getId());
+        
+        $design->setThumbnail($thumbnailPath);
+        $this->entityManager->flush();
+        
+        $this->logger->info('Design thumbnail updated successfully', [
+            'design_id' => $design->getId(),
+            'thumbnail_path' => $thumbnailPath
+        ]);
+        
+        return $design;
+    }
+
+    private function processThumbnailData(string $thumbnailData, int $designId): string
+    {
+        // If it's a data URL, extract and save the image using MediaProcessingService
+        if (str_starts_with($thumbnailData, 'data:image/')) {
+            return $this->saveDataUrlAsFile($thumbnailData, $designId);
+        }
+        
+        // If it's a regular URL, validate and return
+        if (filter_var($thumbnailData, FILTER_VALIDATE_URL)) {
+            return $thumbnailData;
+        }
+        
+        throw new \InvalidArgumentException('Invalid thumbnail data: must be a data URL or valid URL');
+    }
+
+    /**
+     * Save data URL as a file using MediaProcessingService for security and optimization
+     * 
+     * @param string $dataUrl The data URL containing base64 encoded image
+     * @param int $designId The design ID for generating unique filename
+     * @return string The saved file path
+     * @throws \InvalidArgumentException If data URL is invalid or processing fails
+     */
+    private function saveDataUrlAsFile(string $dataUrl, int $designId): string
+    {
+        // Parse the data URL
+        if (!preg_match('/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/', $dataUrl, $matches)) {
+            throw new \InvalidArgumentException('Invalid data URL format');
+        }
+        
+        $mimeType = $matches[1];
+        $base64Data = $matches[2];
+        
+        // Validate and determine file extension
+        $allowedTypes = [
+            'png' => 'png',
+            'jpeg' => 'jpg', 
+            'jpg' => 'jpg',
+            'webp' => 'webp',
+            'gif' => 'gif'
+        ];
+        
+        if (!isset($allowedTypes[$mimeType])) {
+            throw new \InvalidArgumentException("Unsupported image type: {$mimeType}");
+        }
+        
+        $extension = $allowedTypes[$mimeType];
+        
+        // Decode base64 data
+        $imageData = base64_decode($base64Data, true);
+        if ($imageData === false) {
+            throw new \InvalidArgumentException('Invalid base64 data');
+        }
+        
+        // Validate image data
+        if (strlen($imageData) === 0) {
+            throw new \InvalidArgumentException('Empty image data');
+        }
+        
+        // Create temporary file for initial processing
+        $tempFile = tmpfile();
+        if ($tempFile === false) {
+            throw new \RuntimeException('Failed to create temporary file');
+        }
+        
+        fwrite($tempFile, $imageData);
+        $tempPath = stream_get_meta_data($tempFile)['uri'];
+        
+        // Validate image using getimagesize first
+        $imageInfo = @getimagesize($tempPath);
+        if ($imageInfo === false) {
+            fclose($tempFile);
+            throw new \InvalidArgumentException('Invalid image data - cannot process as image');
+        }
+        
+        // Extract image dimensions
+        $originalWidth = $imageInfo[0];
+        $originalHeight = $imageInfo[1];
+        
+        // Define thumbnail constraints
+        $maxWidth = 800;   // Maximum width for thumbnails
+        $maxHeight = 600;  // Maximum height for thumbnails
+        $quality = 85;     // Quality for JPEG/WebP compression
+        
+        // Calculate new dimensions if resizing is needed
+        $needsResize = ($originalWidth > $maxWidth || $originalHeight > $maxHeight);
+        
+        if ($needsResize) {
+            // Calculate aspect ratio preserving dimensions
+            $aspectRatio = $originalWidth / $originalHeight;
+            
+            if ($originalWidth > $originalHeight) {
+                $newWidth = min($maxWidth, $originalWidth);
+                $newHeight = (int) round($newWidth / $aspectRatio);
+            } else {
+                $newHeight = min($maxHeight, $originalHeight);
+                $newWidth = (int) round($newHeight * $aspectRatio);
+            }
+        } else {
+            $newWidth = $originalWidth;
+            $newHeight = $originalHeight;
+        }
+        
+        // Generate unique filename
+        $filename = sprintf(
+            'design_%d_thumbnail_%s.%s',
+            $designId,
+            uniqid(),
+            $extension
+        );
+        
+        $outputPath = $this->thumbnailDirectory . '/' . $filename;
+        
+        try {
+            // Use MediaProcessingService for image processing and optimization
+            $config = new ImageProcessingConfig(
+                width: $newWidth,
+                height: $newHeight,
+                quality: $quality,
+                format: $extension,
+                maintainAspectRatio: true,
+                preserveTransparency: true,
+                stripMetadata: true, // Remove metadata for smaller file size
+                progressive: true    // Progressive JPEG for better loading
+            );
+            
+            $result = $this->mediaProcessingService->processImage(
+                $tempPath,
+                $outputPath,
+                $config
+            );
+            
+            if (!$result->isSuccess()) {
+                throw new \RuntimeException('MediaProcessing failed: ' . $result->getErrorMessage());
+            }
+            
+            // Verify the processed file exists and has content
+            if (!file_exists($outputPath) || filesize($outputPath) === 0) {
+                throw new \RuntimeException('Processed thumbnail file is empty or missing');
+            }
+            
+        } catch (\Exception $e) {
+            // Clean up temporary file
+            fclose($tempFile);
+            
+            // Clean up output file if it was created
+            if (file_exists($outputPath)) {
+                @unlink($outputPath);
+            }
+            
+            throw new \RuntimeException('Failed to process thumbnail: ' . $e->getMessage());
+        }
+        
+        // Clean up temporary file
+        fclose($tempFile);
+        
+        // Return relative path for storage in database
+        return '/uploads/thumbnails/' . $filename;
+    }
+
+    /**
+     * Duplicate all layers from source to target design
+     */
+    private function duplicateDesignLayers(Design $sourceDesign, Design $targetDesign): void
+    {
+        $originalLayers = $this->layerRepository->findBy(['design' => $sourceDesign], ['zIndex' => 'ASC']);
+        $layerMapping = [];
+
+        foreach ($originalLayers as $originalLayer) {
+            $newLayer = $this->duplicateLayerToDesign($originalLayer, $targetDesign);
+            $layerMapping[$originalLayer->getId()] = $newLayer;
+        }
+
+        // Update parent relationships for duplicated layers
+        foreach ($layerMapping as $originalId => $newLayer) {
+            $originalLayer = $this->layerRepository->find($originalId);
+            if ($originalLayer && $originalLayer->getParent()) {
+                $newParent = $layerMapping[$originalLayer->getParent()->getId()] ?? null;
+                if ($newParent) {
+                    $newLayer->setParent($newParent);
+                }
+            }
+        }
+        
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Get thumbnail path for design
+     */
+    private function getThumbnailPath(Design $design): string
+    {
+        return $this->thumbnailDirectory . '/' . ($design->getThumbnail() ?? 'default.png');
+    }
+
+    /**
+     * Get design by ID with access validation
+     */
+    public function getDesignForUser(int $designId, User $user): Design
+    {
+        $design = $this->designRepository->find($designId);
+        if (!$design) {
+            throw new \InvalidArgumentException('Design not found');
+        }
+        
+        $this->validateDesignAccess($design, $user);
+        return $design;
+    }
+
+    /**
+     * Get design for duplication (public or owned)
+     */
+    public function getDesignForDuplication(int $designId, User $user): Design
+    {
+        $design = $this->designRepository->find($designId);
+        if (!$design) {
+            throw new \InvalidArgumentException('Design not found');
+        }
+        
+        // For duplication, allow access to public designs or owned designs
+        $project = $design->getProject();
+        if ($project->getUser() !== $user && !$project->getIsPublic()) {
+            throw new \InvalidArgumentException('Access denied');
+        }
+        
+        return $design;
+    }
+
+    private function resolveProject(User $user, ?int $projectId = null): Project
+    {
+        // If a project ID is provided, validate it exists and belongs to user
+        if ($projectId !== null) {
+            $project = $this->projectRepository->find($projectId);
+            if (!$project) {
+                throw new \InvalidArgumentException('Project not found');
+            }
+            
+            if ($project->getUser() !== $user) {
+                throw new \InvalidArgumentException('Access denied to project');
+            }
+            
+            return $project;
+        }
+        
+        // No project ID provided - get user's first project or create a default one
+        $existingProjects = $this->projectRepository->findBy(['user' => $user], ['id' => 'ASC'], 1);
+        
+        if (!empty($existingProjects)) {
+            return $existingProjects[0];
+        }
+        
+        // Create a default project for the user
+        $defaultProject = new Project();
+        $defaultProject->setTitle('My First Project');
+        $defaultProject->setDescription('Default project created automatically');
+        $defaultProject->setUser($user);
+        $defaultProject->setIsPublic(false);
+        
+        $this->entityManager->persist($defaultProject);
+        $this->entityManager->flush();
+        
+        $this->logger->info('Created default project for user', [
+            'user_id' => $user->getId(),
+            'project_id' => $defaultProject->getId()
+        ]);
+        
+        return $defaultProject;
     }
 }

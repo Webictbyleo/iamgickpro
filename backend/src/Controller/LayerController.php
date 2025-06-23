@@ -16,17 +16,13 @@ use App\DTO\UpdateLayerRequestDTO;
 use App\Entity\Layer;
 use App\Entity\Design;
 use App\Entity\User;
-use App\Repository\LayerRepository;
-use App\Repository\DesignRepository;
+use App\Service\LayerService;
 use App\Service\ResponseDTOFactory;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * Layer Controller
@@ -43,11 +39,7 @@ class LayerController extends AbstractController
     use TypedResponseTrait;
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly LayerRepository $layerRepository,
-        private readonly DesignRepository $designRepository,
-        private readonly ValidatorInterface $validator,
-        private readonly SerializerInterface $serializer,
+        private readonly LayerService $layerService,
         private readonly ResponseDTOFactory $responseDTOFactory,
     ) {}
 
@@ -82,65 +74,18 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            // Find design by UUID if designId is string, by ID if numeric
-            if (is_string($dto->designId)) {
-                $design = $this->designRepository->findOneBy(['uuid' => $dto->designId]);
-            } else {
-                $design = $this->designRepository->find($dto->designId);
-            }
-            
-            if (!$design) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this design
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            $layer = new Layer();
-            $layer->setName($dto->name);
-            $layer->setType($dto->type);
-            $layer->setProperties($dto->getPropertiesArray());
-            $layer->setTransform($dto->getTransformArray());
-            $layer->setVisible($dto->visible);
-            $layer->setLocked($dto->locked);
-            $layer->setDesign($design);
-
-            // Set parent if specified
-            if ($dto->parentLayerId) {
-                $parent = $this->layerRepository->findOneBy(['uuid' => $dto->parentLayerId]);
-                if ($parent && $parent->getDesign() === $design) {
-                    $layer->setParent($parent);
-                }
-            }
-
-            // Set z-index (auto-increment if not specified)
-            if ($dto->zIndex !== null) {
-                $layer->setZIndex($dto->zIndex);
-            } else {
-                $maxZIndex = $this->layerRepository->getMaxZIndex($design);
-                $layer->setZIndex($maxZIndex + 1);
-            }
-
-            $errors = $this->validator->validate($layer);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Validation failed',
-                    $errorMessages
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->persist($layer);
-            $this->entityManager->flush();
+            $layer = $this->layerService->createLayerFromRequest(
+                $user,
+                $dto->designId,
+                $dto->name,
+                $dto->type,
+                $dto->getPropertiesArray(),
+                $dto->getTransformArray(),
+                $dto->visible,
+                $dto->locked,
+                $dto->parentLayerId,
+                $dto->zIndex
+            );
 
             $layerResponse = $this->responseDTOFactory->createLayerResponse(
                 $layer,
@@ -148,6 +93,9 @@ class LayerController extends AbstractController
             );
             return $this->layerResponse($layerResponse, Response::HTTP_CREATED);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to create layer',
@@ -184,94 +132,18 @@ class LayerController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $updatedLayers = [];
-            $errors = [];
+            $result = $this->layerService->bulkUpdateLayers($user, $dto->layers);
 
-            foreach ($dto->layers as $layerUpdate) {
-                $layer = $this->layerRepository->find($layerUpdate->id);
-                if (!$layer) {
-                    $errors[] = "Layer with ID {$layerUpdate->id} not found";
-                    continue;
-                }
-
-                // Check if user owns this layer
-                $design = $layer->getDesign();
-                if ($design->getProject()->getUser() !== $user) {
-                    $errors[] = "Access denied for layer {$layerUpdate->id}";
-                    continue;
-                }
-
-                // Update layer properties using the LayerUpdate object
-                if ($layerUpdate->name !== null) {
-                    $layer->setName($layerUpdate->name);
-                }
-                if ($layerUpdate->opacity !== null) {
-                    $layer->setOpacity($layerUpdate->opacity);
-                }
-                if ($layerUpdate->visible !== null) {
-                    $layer->setVisible($layerUpdate->visible);
-                }
-                if ($layerUpdate->locked !== null) {
-                    $layer->setLocked($layerUpdate->locked);
-                }
-                if ($layerUpdate->zIndex !== null) {
-                    $layer->setZIndex($layerUpdate->zIndex);
-                }
-
-                // Update transform properties if provided
-                if ($layerUpdate->transform !== null) {
-                    $currentTransform = $layer->getTransform();
-                    $newTransform = [
-                        'x' => $layerUpdate->transform->x,
-                        'y' => $layerUpdate->transform->y,
-                        'width' => $layerUpdate->transform->width,
-                        'height' => $layerUpdate->transform->height,
-                        'rotation' => $layerUpdate->transform->rotation,
-                        'scaleX' => $layerUpdate->transform->scaleX,
-                        'scaleY' => $layerUpdate->transform->scaleY,
-                        'skewX' => $layerUpdate->transform->skewX ?? $currentTransform['skewX'] ?? 0,
-                        'skewY' => $layerUpdate->transform->skewY ?? $currentTransform['skewY'] ?? 0,
-                        'opacity' => $currentTransform['opacity'] ?? 1,
-                    ];
-                    $layer->setTransform($newTransform);
-                }
-
-                // Update properties if provided
-                if ($layerUpdate->properties !== null) {
-                    $layer->setProperties($layerUpdate->properties->toArray());
-                }
-
-                // Update parent layer if provided
-                if ($layerUpdate->parentLayerId !== null) {
-                    $parent = $this->layerRepository->findOneBy(['uuid' => $layerUpdate->parentLayerId]);
-                    if ($parent && $parent->getDesign() === $design) {
-                        $layer->setParent($parent);
-                    }
-                }
-
-                $validationErrors = $this->validator->validate($layer);
-                if (count($validationErrors) > 0) {
-                    foreach ($validationErrors as $error) {
-                        $errors[] = "Layer {$layerUpdate->id}: " . $error->getMessage();
-                    }
-                    continue;
-                }
-
-                $updatedLayers[] = $layer->getId();
-            }
-
-            if (!empty($errors)) {
+            if (!empty($result['errors'])) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse(
                     'Some layers could not be updated',
-                    $errors
+                    $result['errors']
                 );
                 return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
-            $this->entityManager->flush();
-
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
-                'Layers updated successfully',
+                'Layers updated successfully'
             );
             return $this->successResponse($successResponse);
 
@@ -304,19 +176,7 @@ class LayerController extends AbstractController
             }
 
             $layerId = (int)$id;
-            $layer = $this->layerRepository->find($layerId);
-            if (!$layer) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user has access to this layer
-            $design = $layer->getDesign();
-            $project = $design->getProject();
-            if ($project->getUser() !== $user && !$project->getIsPublic()) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
+            $layer = $this->layerService->getLayerForUser($layerId, $user);
 
             $layerResponse = $this->responseDTOFactory->createLayerResponse(
                 $layer,
@@ -324,6 +184,9 @@ class LayerController extends AbstractController
             );
             return $this->layerResponse($layerResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to fetch layer',
@@ -364,74 +227,7 @@ class LayerController extends AbstractController
             }
             
             $layerId = (int)$id;
-            /**  @var Layer */
-            $layer = $this->layerRepository->find($layerId);
-            if (!$layer) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this layer
-            $design = $layer->getDesign();
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            // Check if there's any data to update
-            if (!$dto->hasAnyData()) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('No data provided for update');
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            // Update allowed fields
-            if ($dto->name !== null) {
-                $layer->setName($dto->name);
-            }
-
-            if ($dto->properties !== null) {
-                $layer->setProperties($dto->getPropertiesArray());
-            }
-
-            if ($dto->transform !== null) {
-                $layer->setTransform($dto->getTransformArray());
-            }
-
-            if ($dto->visible !== null) {
-                $layer->setVisible($dto->visible);
-            }
-
-            if ($dto->locked !== null) {
-                $layer->setLocked($dto->locked);
-            }
-
-            if ($dto->zIndex !== null) {
-                $layer->setZIndex($dto->zIndex);
-            }
-
-            if ($dto->parentLayerId !== null) {
-                $parent = $this->layerRepository->findOneBy(['uuid' => $dto->parentLayerId]);
-                if ($parent && $parent->getDesign() === $design) {
-                    $layer->setParent($parent);
-                }
-            }
-           
-
-            $errors = $this->validator->validate($layer);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Validation failed',
-                    $errorMessages
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->flush();
+            $layer = $this->layerService->updateLayerFromRequest($user, $layerId, $dto);
 
             $layerResponse = $this->responseDTOFactory->createLayerResponse(
                 $layer,
@@ -439,6 +235,9 @@ class LayerController extends AbstractController
             );
             return $this->layerResponse($layerResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to update layer',
@@ -469,25 +268,15 @@ class LayerController extends AbstractController
             }
 
             $layerId = (int)$id;
-            $layer = $this->layerRepository->find($layerId);
-            if (!$layer) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this layer
-            $design = $layer->getDesign();
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            $this->entityManager->remove($layer);
-            $this->entityManager->flush();
+            $layer = $this->layerService->getLayerForUser($layerId, $user);
+            $this->layerService->deleteLayer($layer);
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse('Layer deleted successfully');
             return $this->successResponse($successResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to delete layer',
@@ -521,24 +310,17 @@ class LayerController extends AbstractController
             }
 
             $layerId = (int)$id;
-            $originalLayer = $this->layerRepository->find($layerId);
-            if (!$originalLayer) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this layer
-            $design = $originalLayer->getDesign();
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            $newName = $dto->name ?? $originalLayer->getName() . ' Copy';
+            $newName = $dto->name ?? null;
             $offsetX = $dto->offsetX ?? 10;
             $offsetY = $dto->offsetY ?? 10;
 
-            $duplicatedLayer = $this->layerRepository->duplicateLayer($originalLayer, $newName, $offsetX, $offsetY);
+            $duplicatedLayer = $this->layerService->duplicateLayerByIdForUser(
+                $user,
+                $layerId,
+                $newName,
+                $offsetX,
+                $offsetY
+            );
 
             $layerResponse = $this->responseDTOFactory->createLayerResponse(
                 $duplicatedLayer,
@@ -546,6 +328,9 @@ class LayerController extends AbstractController
             );
             return $this->layerResponse($layerResponse, Response::HTTP_CREATED);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to duplicate layer',
@@ -580,53 +365,22 @@ class LayerController extends AbstractController
             }
 
             $layerId = (int)$id;
-            $layer = $this->layerRepository->find($layerId);
-            if (!$layer) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Layer not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this layer
-            $design = $layer->getDesign();
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            if ($dto->direction) {
-                // Move up/down in z-index
-                switch ($dto->direction) {
-                    case 'up':
-                        $this->layerRepository->moveLayerUp($layer);
-                        break;
-                    case 'down':
-                        $this->layerRepository->moveLayerDown($layer);
-                        break;
-                    case 'top':
-                        $this->layerRepository->moveLayerToTop($layer);
-                        break;
-                    case 'bottom':
-                        $this->layerRepository->moveLayerToBottom($layer);
-                        break;
-                    default:
-                        $errorResponse = $this->responseDTOFactory->createErrorResponse('Invalid direction');
-                        return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-                }
-            } elseif ($dto->targetZIndex !== null) {
-                // Move to specific z-index
-                $this->layerRepository->moveLayerToZIndex($layer, $dto->targetZIndex);
-            } else {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Direction or targetZIndex is required');
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->flush();
+            
+            $layer = $this->layerService->moveLayerRequest(
+                $user, 
+                $layerId, 
+                $dto->direction ?? 'to_index', 
+                $dto->targetZIndex
+            );
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
                 'Layer moved successfully'
             );
             return $this->successResponse($successResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to move layer',

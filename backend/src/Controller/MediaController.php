@@ -19,6 +19,7 @@ use App\DTO\StockSearchRequestDTO;
 use App\DTO\UpdateMediaRequestDTO;
 use App\Entity\Media;
 use App\Entity\User;
+use App\Exception\SubscriptionLimitExceededException;
 use App\Repository\MediaRepository;
 use App\Service\MediaService;
 use App\Service\MediaProcessing\MediaProcessingService;
@@ -189,6 +190,12 @@ class MediaController extends AbstractController
             );
             return $this->mediaResponse($mediaResponse, Response::HTTP_CREATED);
 
+        } catch (SubscriptionLimitExceededException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Storage limit exceeded',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_PAYMENT_REQUIRED);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to upload media',

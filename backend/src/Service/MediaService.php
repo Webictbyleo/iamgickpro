@@ -6,9 +6,11 @@ namespace App\Service;
 
 use App\Entity\Media;
 use App\Entity\User;
+use App\Exception\SubscriptionLimitExceededException;
 use App\Repository\MediaRepository;
 use App\Service\MediaProcessing\MediaProcessingService;
 use App\Service\MediaProcessing\Config\ProcessingConfigFactory;
+use App\Service\SubscriptionConstraintService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -22,6 +24,7 @@ readonly class MediaService
         private SluggerInterface $slugger,
         private LoggerInterface $logger,
         private MediaProcessingService $mediaProcessingService,
+        private SubscriptionConstraintService $subscriptionConstraintService,
         private string $mediaUploadDirectory,
         private string $thumbnailDirectory,
         private int $maxFileSize,
@@ -44,6 +47,10 @@ readonly class MediaService
     public function uploadFile(UploadedFile $file, User $user, ?string $alt = null): Media
     {
         $this->validateFile($file);
+        
+        // Check storage limit before uploading
+        $fileSize = $file->getSize();
+        $this->subscriptionConstraintService->enforceFileUploadLimit($user, $fileSize);
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $safeFilename = $this->slugger->slug($originalFilename);

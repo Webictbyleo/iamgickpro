@@ -19,6 +19,7 @@ use App\Entity\User;
 use App\Repository\DesignRepository;
 use App\Repository\ProjectRepository;
 use App\Service\ResponseDTOFactory;
+use App\Service\DesignService;
 use App\Service\MediaProcessing\MediaProcessingService;
 use App\Service\MediaProcessing\Config\ImageProcessingConfig;
 use App\Controller\Trait\TypedResponseTrait;
@@ -46,11 +47,7 @@ class DesignController extends AbstractController
     use TypedResponseTrait;
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly DesignRepository $designRepository,
-        private readonly ProjectRepository $projectRepository,
-        private readonly ValidatorInterface $validator,
-        private readonly SerializerInterface $serializer,
+        private readonly DesignService $designService,
         private readonly ResponseDTOFactory $responseDTOFactory,
         private readonly MediaProcessingService $mediaProcessingService,
     ) {}
@@ -80,30 +77,23 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $projectId = $request->query->get('project');
+            $projectId = $request->query->get('project') ? (int) $request->query->get('project') : null;
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-            $offset = ($page - 1) * $limit;
+            $search = $request->query->get('search');
             $sortField = $request->query->get('sort', 'updatedAt');
-            // Convert thhe sort field to camelcase
             $sortField = lcfirst(str_replace('_', '', ucwords($sortField, '_')));
 
-            if ($projectId) {
-                $project = $this->projectRepository->find($projectId);
-                if (!$project || ($project->getUser() !== $user && !$project->getIsPublic())) {
-                    $errorResponse = $this->responseDTOFactory->createErrorResponse('Project not found or access denied');
-                    return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-                }
-                $result = $this->designRepository->findByProjectPaginated($project, $page, $limit);
-                $designs = $result['designs'];
-                $total = $result['total'];
-            } else {
-                $result = $this->designRepository->findByUserPaginated($user, $page, $limit, $sortField);
-                $designs = $result['designs'];
-                $total = $result['total'];
-            }
+            $result = $this->designService->getUserDesigns(
+                $user, 
+                $page, 
+                $limit, 
+                $search, 
+                $projectId, 
+                $sortField
+            );
 
-            $designResponses = array_map(
+                       $designResponses = array_map(
                 fn(Design $design) => array(
                     'id' => $design->getId(),
                     'name' => $design->getName(),
@@ -115,24 +105,25 @@ class DesignController extends AbstractController
                     'createdAt' => $design->getCreatedAt()->format('c'),
                     'updatedAt' => $design->getUpdatedAt()->format('c'),
                 ),
-                $designs
+                $result['designs']
             );
+
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 $designResponses,
+                $result['total'],
                 $page,
                 $limit,
-                $total,
                 'Designs retrieved successfully'
             );
-            
+
             return $this->paginatedResponse($paginatedResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to fetch designs',
-                [$e->getMessage()]
-            );
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Failed to retrieve designs', [$e->getMessage()]);
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -164,64 +155,15 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            // Validate project access if project ID is provided
-            $project = null;
-            if ($dto->hasProjectId()) {
-                $project = $this->projectRepository->find($dto->projectId);
-                if (!$project || $project->getUser() !== $user) {
-                    $errorResponse = $this->responseDTOFactory->createErrorResponse('Project not found or access denied');
-                    return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-                }
-            } else {
-                // If no project is provided, try to get user's first project or create a default one
-                $userProjects = $this->projectRepository->findBy(['user' => $user], ['createdAt' => 'ASC'], 1);
-                if (!empty($userProjects)) {
-                    $project = $userProjects[0];
-                } else {
-                    // Create a default project for the user
-                    $project = new Project();
-                    $project->setTitle('My First Project');
-                    $project->setName('My First Project');
-                    $project->setDescription('Default project created automatically');
-                    $project->setUser($user);
-                    $this->entityManager->persist($project);
-                    $this->entityManager->flush(); // Flush to get the project ID
-                }
-            }
-
-            $design = new Design();
-            $design->setName($dto->name);
-            $design->setWidth($dto->width);
-            $design->setHeight($dto->height);
-            $design->setCanvasWidth($dto->width);
-            $design->setCanvasHeight($dto->height);
-            $design->setData($dto->getDataArray());
-            $design->setBackground(['type' => 'color', 'color' => '#ffffff']); // Default background
-            
-            if ($dto->description) {
-                $design->setTitle($dto->description); // Assuming title field stores description
-            }
-
-            // Always set a project (required by database constraints)
-            $design->setProject($project);
-
-            // Validate design
-            $errors = $this->validator->validate($design);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Validation failed',
-                    $errorMessages
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->persist($design);
-            $this->entityManager->flush();
+            $design = $this->designService->createDesignFromRequest(
+                $user,
+                $dto->name,
+                $dto->width,
+                $dto->height,
+                $dto->description,
+                $dto->hasProjectId() ? $dto->projectId : null,
+                $dto->getDataArray()
+            );
 
             $designResponse = $this->responseDTOFactory->createDesignResponse(
                 $design, 
@@ -229,11 +171,12 @@ class DesignController extends AbstractController
             );
             return $this->designResponse($designResponse, Response::HTTP_CREATED);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to create design',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Failed to create design', [$e->getMessage()]);
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -270,36 +213,39 @@ class DesignController extends AbstractController
 
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
-            $offset = ($page - 1) * $limit;
+            $projectId = $request->query->get('project_id') ? (int) $request->query->get('project_id') : null;
+            $sortField = $request->query->get('sort', 'relevance');
+            $sortOrder = $request->query->get('order', 'DESC');
 
-            $designs = $this->designRepository->searchByName($query, $limit, $offset);
-
-            // Filter designs the user has access to
-            $accessibleDesigns = array_filter($designs, function(Design $design) use ($user) {
-                $project = $design->getProject();
-                return $project->getUser() === $user || $project->getIsPublic();
-            });
-
-            $designResponses = array_map(
-                fn(Design $design) => $this->responseDTOFactory->createDesignResponse($design),
-                $accessibleDesigns
+            $result = $this->designService->searchDesigns(
+                $user,
+                $query,
+                $page,
+                $limit,
+                $projectId,
+                $sortField,
+                $sortOrder
             );
+
+            $designResponses = array_map(function (Design $design) {
+                return $this->responseDTOFactory->createDesignResponse($design);
+            }, $result['designs']);
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 $designResponses,
+                $result['total'],
                 $page,
                 $limit,
-                count($accessibleDesigns),
                 'Search results retrieved successfully'
             );
 
             return $this->paginatedResponse($paginatedResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to search designs',
-                [$e->getMessage()]
-            );
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Failed to search designs', [$e->getMessage()]);
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -323,20 +269,7 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $design = $this->designRepository->find($id);
-            if (!$design) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-            
-
-            // Check if user has access to this design
-            $project = $design->getProject();
-            if ($project->getUser() !== $user && !$project->getIsPublic()) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
+            $design = $this->designService->getDesignForUser($id, $user);
             $designResponse = $this->responseDTOFactory->createDesignResponse(
                 $design,
                 'Design retrieved successfully',
@@ -344,11 +277,11 @@ class DesignController extends AbstractController
             );
             return $this->designResponse($designResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to fetch design',
-                [$e->getMessage()]
-            );
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Failed to fetch design', [$e->getMessage()]);
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -380,79 +313,34 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $design = $this->designRepository->find($id);
-            if (!$design) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this design
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
             // Check if there's any data to update
             if (!$dto->hasAnyData()) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('No data provided for update');
                 return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
 
-            // Update allowed fields
-            if ($dto->name !== null) {
-                $design->setName($dto->name);
-            }
-
-            if ($dto->width !== null) {
-                $design->setCanvasWidth($dto->width);
-            }
-
-            if ($dto->height !== null) {
-                $design->setCanvasHeight($dto->height);
-            }
-
-            if ($dto->data !== null) {
-                $design->setData($dto->getDataArray());
-            }
-
-            if ($dto->description !== null) {
-                $design->setTitle($dto->description); // Assuming title field stores description
-            }
-
-            // Update hasAnimations based on layer animations
-            $hasAnimations = $design->getLayers()->exists(function($key, $layer) {
-                return !empty($layer->getAnimations());
-            });
-            $design->setHasAnimations($hasAnimations);
-
-            // Validate design
-            $errors = $this->validator->validate($design);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                
-                $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                    'Validation failed',
-                    $errorMessages
-                );
-                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
-            }
-
-            $this->entityManager->flush();
+            $design = $this->designService->getDesignForUser($id, $user);
+            
+            $updatedDesign = $this->designService->updateDesign(
+                $design,
+                $dto->name,
+                $dto->description,
+                $dto->getDataArray(),
+                $dto->width,
+                $dto->height
+            );
 
             $designResponse = $this->responseDTOFactory->createDesignResponse(
-                $design,
+                $updatedDesign,
                 'Design updated successfully'
             );
             return $this->designResponse($designResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
-            $errorResponse = $this->responseDTOFactory->createErrorResponse(
-                'Failed to update design',
-                [$e->getMessage()]
-            );
+            $errorResponse = $this->responseDTOFactory->createErrorResponse('Failed to update design', [$e->getMessage()]);
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -477,24 +365,15 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $design = $this->designRepository->find($id);
-            if (!$design) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this design
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            $this->entityManager->remove($design);
-            $this->entityManager->flush();
+            $design = $this->designService->getDesignForUser($id, $user);
+            $this->designService->deleteDesign($design);
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse('Design deleted successfully');
             return $this->successResponse($successResponse);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to delete design',
@@ -528,30 +407,16 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $originalDesign = $this->designRepository->find($id);
-            if (!$originalDesign) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user has access to this design
-            $project = $originalDesign->getProject();
-            if ($project->getUser() !== $user && !$project->getIsPublic()) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
+            $originalDesign = $this->designService->getDesignForDuplication($id, $user);
+            
             $newName = $dto->name ?? $originalDesign->getName() . ' (Copy)';
-            $targetProjectId = $dto->projectId ?? $project->getId();
 
-            // Verify target project access
-            $targetProject = $this->projectRepository->find($targetProjectId);
-            if (!$targetProject || $targetProject->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Target project not found or access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            $duplicatedDesign = $this->designRepository->duplicateDesign($originalDesign, $targetProject, $newName);
+            $duplicatedDesign = $this->designService->duplicateDesignFromRequest(
+                $originalDesign,
+                $newName,
+                $dto->projectId,
+                $user
+            );
 
             $designResponse = $this->responseDTOFactory->createDesignResponse(
                 $duplicatedDesign,
@@ -559,6 +424,9 @@ class DesignController extends AbstractController
             );
             return $this->designResponse($designResponse, Response::HTTP_CREATED);
 
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to duplicate design',
@@ -591,26 +459,12 @@ class DesignController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            $design = $this->designRepository->find($id);
-            if (!$design) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
-                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
-            }
-
-            // Check if user owns this design
-            if ($design->getProject()->getUser() !== $user) {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
-
-            // Process thumbnail data (handle data URLs and regular URLs)
-            $thumbnailPath = $this->processThumbnailData($dto->thumbnail, $design->getId());
+            $design = $this->designService->getDesignForUser($id, $user);
             
-            $design->setThumbnail($thumbnailPath);
-            $this->entityManager->flush();
+            $updatedDesign = $this->designService->updateDesignThumbnail($design, $dto->thumbnail);
 
             $designResponse = $this->responseDTOFactory->createDesignResponse(
-                $design,
+                $updatedDesign,
                 'Thumbnail updated successfully'
             );
             return $this->designResponse($designResponse);
@@ -626,177 +480,5 @@ class DesignController extends AbstractController
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    /**
-     * Process thumbnail data - handle both data URLs and regular URLs
-     * 
-     * @param string $thumbnail The thumbnail data (URL or data URL)
-     * @param int $designId The design ID for generating unique filenames
-     * @return string The processed thumbnail path or URL
-     * @throws \InvalidArgumentException If data URL processing fails
-     */
-    private function processThumbnailData(string $thumbnail, int $designId): string
-    {
-        // If it's a data URL, extract and save the image
-        if (str_starts_with($thumbnail, 'data:image/')) {
-            return $this->saveDataUrlAsFile($thumbnail, $designId);
-        }
-        
-        // For regular URLs, return as-is
-        return $thumbnail;
-    }
-
-    /**
-     * Save data URL as a file and return the file path
-     * Uses MediaProcessingService for validation, optimization, and resizing
-     * 
-     * @param string $dataUrl The data URL containing base64 encoded image
-     * @param int $designId The design ID for generating unique filename
-     * @return string The saved file path
-     * @throws \InvalidArgumentException If data URL is invalid or processing fails
-     */
-    private function saveDataUrlAsFile(string $dataUrl, int $designId): string
-    {
-        // Parse the data URL
-        if (!preg_match('/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/', $dataUrl, $matches)) {
-            throw new \InvalidArgumentException('Invalid data URL format');
-        }
-        
-        $mimeType = $matches[1];
-        $base64Data = $matches[2];
-        
-        // Validate and determine file extension
-        $allowedTypes = [
-            'png' => 'png',
-            'jpeg' => 'jpg', 
-            'jpg' => 'jpg',
-            'webp' => 'webp',
-            'gif' => 'gif'
-        ];
-        
-        if (!isset($allowedTypes[$mimeType])) {
-            throw new \InvalidArgumentException("Unsupported image type: {$mimeType}");
-        }
-        
-        $extension = $allowedTypes[$mimeType];
-        
-        // Decode base64 data
-        $imageData = base64_decode($base64Data, true);
-        if ($imageData === false) {
-            throw new \InvalidArgumentException('Invalid base64 data');
-        }
-        
-        // Validate image data
-        if (strlen($imageData) === 0) {
-            throw new \InvalidArgumentException('Empty image data');
-        }
-        
-        // Create temporary file for initial processing
-        $tempFile = tmpfile();
-        fwrite($tempFile, $imageData);
-        $tempPath = stream_get_meta_data($tempFile)['uri'];
-        
-        // Validate image using getimagesize first
-        $imageInfo = @getimagesize($tempPath);
-        if ($imageInfo === false) {
-            fclose($tempFile);
-            throw new \InvalidArgumentException('Invalid image data - cannot process as image');
-        }
-        
-        // Extract image dimensions
-        $originalWidth = $imageInfo[0];
-        $originalHeight = $imageInfo[1];
-        
-        // Define thumbnail constraints
-        $maxWidth = 800;   // Maximum width for thumbnails
-        $maxHeight = 600;  // Maximum height for thumbnails
-        $quality = 85;     // Quality for JPEG/WebP compression
-        
-        // Calculate new dimensions if resizing is needed
-        $needsResize = ($originalWidth > $maxWidth || $originalHeight > $maxHeight);
-        
-        if ($needsResize) {
-            // Calculate aspect ratio preserving dimensions
-            $aspectRatio = $originalWidth / $originalHeight;
-            
-            if ($originalWidth > $originalHeight) {
-                $newWidth = min($maxWidth, $originalWidth);
-                $newHeight = (int) round($newWidth / $aspectRatio);
-            } else {
-                $newHeight = min($maxHeight, $originalHeight);
-                $newWidth = (int) round($newHeight * $aspectRatio);
-            }
-        } else {
-            $newWidth = $originalWidth;
-            $newHeight = $originalHeight;
-        }
-        
-        // Generate unique filename
-        $filename = sprintf(
-            'design_%d_thumbnail_%s.%s',
-            $designId,
-            uniqid(),
-            $extension
-        );
-        
-        // Create thumbnails directory if it doesn't exist
-        $uploadsDir = $this->getParameter('app.upload_directory');
-        $thumbnailsDir = $uploadsDir . '/thumbnails';
-        
-        if (!is_dir($thumbnailsDir)) {
-            if (!mkdir($thumbnailsDir, 0755, true)) {
-                fclose($tempFile);
-                throw new \RuntimeException('Failed to create thumbnails directory');
-            }
-        }
-        
-        $outputPath = $thumbnailsDir . '/' . $filename;
-        
-        try {
-            // Use MediaProcessingService for image processing and optimization
-            $config = new ImageProcessingConfig(
-                width: $newWidth,
-                height: $newHeight,
-                quality: $quality,
-                format: $extension,
-                maintainAspectRatio: true,
-                preserveTransparency: true,
-                stripMetadata: true, // Remove metadata for smaller file size
-                progressive: true    // Progressive JPEG for better loading
-            );
-            
-            $result = $this->mediaProcessingService->processImage(
-                $tempPath,
-                $outputPath,
-                $config
-            );
-            
-            if (!$result->isSuccess()) {
-                throw new \RuntimeException('MediaProcessing failed: ' . $result->getErrorMessage());
-            }
-            
-            // Verify the processed file exists and has content
-            if (!file_exists($outputPath) || filesize($outputPath) === 0) {
-                throw new \RuntimeException('Processed thumbnail file is empty or missing');
-            }
-            
-        } catch (\Exception $e) {
-            // Clean up temporary file
-            fclose($tempFile);
-            
-            // Clean up output file if it was created
-            if (file_exists($outputPath)) {
-                @unlink($outputPath);
-            }
-            
-            throw new \RuntimeException('Failed to process thumbnail: ' . $e->getMessage());
-        }
-        
-        // Clean up temporary file
-        fclose($tempFile);
-        
-        // Return relative path for storage in database
-        return '/uploads/thumbnails/' . $filename;
     }
 }

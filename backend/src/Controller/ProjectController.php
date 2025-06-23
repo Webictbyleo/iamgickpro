@@ -16,6 +16,8 @@ use App\Entity\Project;
 use App\Entity\User;
 use App\Repository\ProjectRepository;
 use App\Service\ResponseDTOFactory;
+use App\Service\SubscriptionConstraintService;
+use App\Exception\SubscriptionLimitExceededException;
 use App\Controller\Trait\TypedResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -46,6 +48,7 @@ class ProjectController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
         private readonly ResponseDTOFactory $responseDTOFactory,
+        private readonly SubscriptionConstraintService $constraintService,
     ) {}
 
     /**
@@ -140,6 +143,14 @@ class ProjectController extends AbstractController
             if (!$user instanceof User) {
                 $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            // ENFORCE SUBSCRIPTION CONSTRAINTS - This is the key implementation!
+            try {
+                $this->constraintService->enforceProjectCreationLimit($user);
+            } catch (SubscriptionLimitExceededException $e) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
             $project = new Project();

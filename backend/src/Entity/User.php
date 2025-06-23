@@ -295,6 +295,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    /**
+     * @return Collection<int, Media>
+     */
     public function getMediaFiles(): Collection
     {
         return $this->mediaFiles;

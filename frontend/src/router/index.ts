@@ -33,9 +33,9 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresGuest: true },
   },
   {
-    path: '/verify-email',
-    name: 'EmailVerification',
-    component: () => import('@/views/EmailVerification.vue'),
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPassword.vue'),
     meta: { requiresGuest: true },
   },
   {
@@ -50,6 +50,20 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Dashboard.vue'),
     meta: { requiresAuth: true },
   },
+    {
+    path: '/designs',
+    name: 'Designs',
+    component: () => import('@/views/Designs.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/editor/:id?',
+    name: 'Editor',
+    component: () => import('@/views/Editor.vue'),
+    props: true,
+    meta: { requiresAuth: true },
+  },
+
   {
     path: '/templates',
     name: 'Templates',

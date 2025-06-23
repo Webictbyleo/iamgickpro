@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
+use App\Entity\UserSubscription;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -26,7 +27,8 @@ readonly class UserService
         private LoggerInterface $logger,
         private EmailService $emailService,
         private string $avatarUploadDirectory,
-        private PlanService $planService
+        private DatabasePlanService $planService,
+        private SubscriptionConstraintService $constraintService
     ) {
     }
 
@@ -231,23 +233,32 @@ readonly class UserService
 
     public function getSubscriptionData(User $user): array
     {
-        $plan = $user->getPlan();
+        $planName = $this->planService->getUserPlanName($user);
+        $subscription = $this->planService->getUserSubscription($user);
+        
         return [
-            'plan' => $plan,
+            'plan' => $planName,
             'isActive' => $user->isActive(),
+            'subscription' => $subscription ? [
+                'status' => $subscription->getStatus(),
+                'start_date' => $subscription->getStartDate()->format('Y-m-d H:i:s'),
+                'end_date' => $subscription->getEndDate()?->format('Y-m-d H:i:s'),
+                'is_active' => $subscription->isActive()
+            ] : null,
             'usage' => [
                 'projects' => $user->getProjects()->count(),
                 'mediaFiles' => $user->getMediaFiles()->count(),
                 'exportJobs' => $user->getExportJobs()->count(),
                 'storageUsed' => $this->calculateStorageUsage($user),
             ],
-            'limits' => $this->planService->getPlanLimits($plan),
-            'features' => $this->planService->getPlanFeatures($plan),
+            'limits' => $this->planService->getPlanLimits($planName),
+            'features' => $this->planService->getPlanFeatures($planName),
             'planInfo' => [
-                'name' => $this->planService->getPlanDisplayName($plan),
-                'description' => $this->planService->getPlanDescription($plan),
-                'price' => $this->planService->getPlanPricing($plan),
-            ]
+                'name' => $this->planService->getPlanDisplayName($planName),
+                'description' => $this->planService->getPlanDescription($planName),
+                'pricing' => $this->planService->getPlanPricing($planName),
+            ],
+            'constraints' => $this->constraintService->getUserLimitsSummary($user)
         ];
     }
 
@@ -287,6 +298,22 @@ readonly class UserService
         }
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+        
+        // Assign default plan to new user
+        try {
+            $this->assignDefaultPlanToUser($user);
+            $this->logger->info('Default plan assigned to new user', [
+                'user_id' => $user->getId(),
+                'user_email' => $user->getEmail()
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to assign default plan to new user', [
+                'user_id' => $user->getId(),
+                'user_email' => $user->getEmail(),
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw exception here - user registration should succeed even if plan assignment fails
+        }
         
         // Send welcome email
         try {
@@ -420,5 +447,50 @@ readonly class UserService
             $totalSize += $media->getSize();
         }
         return $totalSize;
+    }
+
+    /**
+     * Assign the default subscription plan to a user
+     * 
+     * @param User $user The user to assign the plan to
+     * @throws \Exception If no default plan is found or assignment fails
+     */
+    private function assignDefaultPlanToUser(User $user): void
+    {
+        // Get the default plan entity
+        $defaultPlan = $this->planService->getDefaultPlanEntity();
+        
+        if (!$defaultPlan) {
+            throw new \RuntimeException('No default subscription plan found');
+        }
+        
+        // Create user subscription
+        $userSubscription = new UserSubscription();
+        $userSubscription->setUser($user);
+        $userSubscription->setSubscriptionPlan($defaultPlan);
+        $userSubscription->setStatus('active');
+        $userSubscription->setBillingPeriod('monthly');
+        $userSubscription->setStartDate(new \DateTimeImmutable());
+        // No end date for free plan
+        $userSubscription->setEndDate(null);
+        
+        // Validate the subscription
+        $errors = $this->validator->validate($userSubscription);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            throw new \InvalidArgumentException('Subscription validation failed: ' . implode(', ', $errorMessages));
+        }
+        
+        $this->entityManager->persist($userSubscription);
+        $this->entityManager->flush();
+        
+        $this->logger->info('Default plan assigned successfully', [
+            'user_id' => $user->getId(),
+            'plan_id' => $defaultPlan->getId(),
+            'plan_code' => $defaultPlan->getCode()
+        ]);
     }
 }

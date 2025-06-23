@@ -50,6 +50,21 @@ services:
         arguments:
             $plansConfigFile: '%app.plans_config_file%'
 
+    # Database Plan Service Configuration (NEW)
+    App\Service\DatabasePlanService:
+        public: true
+
+    # Subscription Constraint Service Configuration (NEW)
+    App\Service\SubscriptionConstraintService:
+        public: true
+
+    # Migration Command Configuration
+    App\Command\MigratePlansCommand:
+        arguments:
+            $plansConfigFile: '%app.plans_config_file%'
+        tags:
+            - { name: 'console.command' }
+
     # Integration Service Configuration
     App\Service\IntegrationService:
         arguments:
@@ -67,6 +82,7 @@ services:
 
     # Media Service Configuration
     App\Service\MediaService:
+        public: true
         arguments:
             $mediaUploadDirectory: '%app.media_directory%'
             $thumbnailDirectory: '%app.thumbnail_directory%'
@@ -105,6 +121,7 @@ services:
 
     # User Service Configuration
     App\Service\UserService:
+        public: true
         arguments:
             $avatarUploadDirectory: '%app.avatar_directory%'
 
