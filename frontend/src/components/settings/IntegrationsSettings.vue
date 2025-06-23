@@ -226,43 +226,48 @@
             <!-- Connected State -->
             <div v-if="replicateConnected" class="space-y-4">
               <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div class="flex items-center">
-                  <component :is="icons.check" class="w-5 h-5 text-green-600 mr-2" />
-                  <div>
-                    <p class="text-sm font-medium text-green-800">Replicate Connected</p>
-                    <p class="text-xs text-green-600">High-quality AI image generation enabled</p>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <component :is="icons.check" class="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-green-800">Replicate Connected</p>
+                      <p class="text-xs text-green-600">API token configured and ready to use</p>
+                    </div>
                   </div>
-                </div>
-                <div class="mt-3 flex space-x-2">
-                  <button
-                    @click="testReplicateConnection"
-                    :disabled="testingReplicate"
-                    class="text-xs px-3 py-1 bg-white border border-green-300 text-green-700 rounded-md hover:bg-green-50 transition-colors disabled:opacity-50"
-                  >
-                    <component :is="icons.refresh" class="w-3 h-3 mr-1 inline" :class="{ 'animate-spin': testingReplicate }" />
-                    Test Connection
-                  </button>
-                  <button
-                    @click="disconnectReplicate"
-                    class="text-xs px-3 py-1 bg-red-50 border border-red-200 text-red-700 rounded-md hover:bg-red-100 transition-colors"
-                  >
-                    <component :is="icons.xMark" class="w-3 h-3 mr-1 inline" />
-                    Disconnect
-                  </button>
+                  <div class="flex items-center space-x-2">
+                    <button
+                      @click="testReplicateConnection"
+                      :disabled="testingReplicate"
+                      class="px-3 py-1.5 text-xs font-medium text-green-700 border border-green-300 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
+                    >
+                      <component :is="icons.refresh" class="w-3 h-3 mr-1 inline" :class="{ 'animate-spin': testingReplicate }" />
+                      Test
+                    </button>
+                    <button
+                      @click="disconnectReplicate"
+                      class="px-3 py-1.5 text-xs font-medium text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+                    >
+                      <component :is="icons.xMark" class="w-3 h-3 mr-1 inline" />
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
               
+              <!-- Update Key Option -->
               <div v-if="showUpdateReplicate" class="space-y-3">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    API Token
+                    New API Token
                   </label>
                   <div class="relative">
                     <input
                       v-model="replicateApiKey"
                       :type="showReplicateKey ? 'text' : 'password'"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-20"
                       placeholder="r8_..."
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       autocomplete="off"
                       autocorrect="off"
                       autocapitalize="off"
@@ -273,37 +278,38 @@
                       readonly
                       @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
                     />
-                    <button
-                      type="button"
-                      @click="showReplicateKey = !showReplicateKey"
-                      class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      <component :is="showReplicateKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
-                    </button>
+                    <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
+                      <button
+                        @click="showReplicateKey = !showReplicateKey"
+                        class="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <component :is="showReplicateKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-                
-                <div class="text-xs text-gray-500">
-                  <a href="https://replicate.com/account/api-tokens" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
-                    Get a new Replicate API token
-                  </a>
-                </div>
-                
-                <div class="flex space-x-2">
-                  <button
-                    @click="saveReplicateKey"
-                    :disabled="savingReplicate || !replicateApiKey"
-                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
-                    Update Token
-                  </button>
-                  <button
-                    @click="cancelUpdateReplicate"
-                    class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm text-gray-600">
+                    <a href="https://replicate.com/account/api-tokens" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                      Get a new Replicate API token
+                    </a>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <button
+                      @click="saveReplicateKey"
+                      :disabled="savingReplicate || !replicateApiKey"
+                      class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      <component :is="icons.check" class="w-4 h-4 mr-1 inline" />
+                      Update Key
+                    </button>
+                    <button
+                      @click="cancelUpdateReplicate"
+                      class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -327,8 +333,8 @@
                   <input
                     v-model="replicateApiKey"
                     :type="showReplicateKey ? 'text' : 'password'"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-20"
                     placeholder="r8_..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     autocomplete="off"
                     autocorrect="off"
                     autocapitalize="off"
@@ -339,13 +345,14 @@
                     readonly
                     @focus="(e: Event) => (e.target as HTMLInputElement)?.removeAttribute('readonly')"
                   />
-                  <button
-                    type="button"
-                    @click="showReplicateKey = !showReplicateKey"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    <component :is="showReplicateKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
-                  </button>
+                  <div class="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
+                    <button
+                      @click="showReplicateKey = !showReplicateKey"
+                      class="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <component :is="showReplicateKey ? icons.eyeSlash : icons.eye" class="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
