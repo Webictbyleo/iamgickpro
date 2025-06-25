@@ -111,116 +111,124 @@
       </div>
 
       <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <!-- Primary Action Card -->
-        <div class="xl:col-span-2">
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="p-8">
-              <div class="flex items-start justify-between mb-6">
-                <div class="flex items-center space-x-4">
-                  <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
-                    <span class="text-2xl">✨</span>
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Primary Action Cards -->
+        <div class="lg:col-span-3">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Create Content Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div class="p-6">
+                <div class="flex items-start justify-between mb-6">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
+                      <span class="text-xl">✨</span>
+                    </div>
+                    <div>
+                      <h2 class="text-xl font-bold text-gray-900">Create New Content</h2>
+                      <p class="text-sm text-gray-600 mt-1">AI-powered content creation</p>
+                    </div>
                   </div>
+                  <div class="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                    AI Powered
+                  </div>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                  <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span class="text-sm">🎯</span>
+                    </div>
+                    <div>
+                      <h3 class="font-medium text-gray-900 text-sm">Choose Topic</h3>
+                      <p class="text-xs text-gray-600">Select trending topics</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <span class="text-sm">🤖</span>
+                    </div>
+                    <div>
+                      <h3 class="font-medium text-gray-900 text-sm">AI Generation</h3>
+                      <p class="text-xs text-gray-600">Create engaging content</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <span class="text-sm">🚀</span>
+                    </div>
+                    <div>
+                      <h3 class="font-medium text-gray-900 text-sm">Publish</h3>
+                      <p class="text-xs text-gray-600">Schedule across platforms</p>
+                    </div>
+                  </div>
+                </div>
+
+                <router-link
+                  to="/workflow"
+                  class="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-sm hover:shadow-md text-sm"
+                >
+                  <span class="mr-2">🚀</span>
+                  Start Creating Content
+                </router-link>
+              </div>
+            </div>
+
+            <!-- Trending Media Preview -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
                   <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New Content</h2>
-                    <p class="text-gray-600 mt-1">Start your AI-powered content creation workflow</p>
+                    <h3 class="text-lg font-semibold text-gray-900">🔥 Viral Now</h3>
+                    <p class="text-sm text-gray-600 mt-1">Recreate trending content</p>
                   </div>
-                </div>
-                <div class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
-                  AI Powered
+                  <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                 </div>
               </div>
-
-              <div class="grid grid-cols-3 gap-6 mb-8">
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span class="text-lg">🎯</span>
+              <div class="p-6">
+                <div class="space-y-4">
+                  <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <span class="text-white text-sm">🎥</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900">Day in My Life</p>
+                      <p class="text-xs text-gray-500">2.5M views • TikTok</p>
+                    </div>
                   </div>
-                  <h3 class="font-semibold text-gray-900 mb-1">Choose Topic</h3>
-                  <p class="text-sm text-gray-600">Select trending topics or create custom ones</p>
+                  <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                      <span class="text-white text-sm">🍳</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900">Quick Recipe</p>
+                      <p class="text-xs text-gray-500">1.8M views • Instagram</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <span class="text-white text-sm">💡</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900">Productivity Tips</p>
+                      <p class="text-xs text-gray-500">3.2M views • YouTube</p>
+                    </div>
+                  </div>
                 </div>
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                  <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span class="text-lg">🤖</span>
-                  </div>
-                  <h3 class="font-semibold text-gray-900 mb-1">AI Generation</h3>
-                  <p class="text-sm text-gray-600">Let AI create engaging content for you</p>
-                </div>
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                  <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span class="text-lg">🚀</span>
-                  </div>
-                  <h3 class="font-semibold text-gray-900 mb-1">Publish</h3>
-                  <p class="text-sm text-gray-600">Schedule or publish across platforms</p>
+                <div class="mt-4">
+                  <button
+                    @click="scrollToTrendingMedia"
+                    class="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    🎨 View All & Recreate
+                  </button>
                 </div>
               </div>
-
-              <router-link
-                to="/workflow"
-                class="w-full inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-sm hover:shadow-md"
-              >
-                <span class="mr-2">🚀</span>
-                Start Creating Content
-              </router-link>
             </div>
           </div>
         </div>
 
-        <!-- Activity Sidebar -->
-        <div class="space-y-6">
-          <!-- Trending Media Preview -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div class="p-6 border-b border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-900">🔥 Viral Now</h3>
-                  <p class="text-sm text-gray-600 mt-1">Recreate trending content</p>
-                </div>
-                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-            <div class="p-6">
-              <div class="space-y-4">
-                <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
-                  <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <span class="text-white text-sm">🎥</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900">Day in My Life</p>
-                    <p class="text-xs text-gray-500">2.5M views • TikTok</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
-                    <span class="text-white text-sm">🍳</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900">Quick Recipe</p>
-                    <p class="text-xs text-gray-500">1.8M views • Instagram</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <span class="text-white text-sm">💡</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900">Productivity Tips</p>
-                    <p class="text-xs text-gray-500">3.2M views • YouTube</p>
-                  </div>
-                </div>
-              </div>
-              <div class="mt-4">
-                <button
-                  @click="scrollToTrendingMedia"
-                  class="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  🎨 View All & Recreate
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick Stats -->
+        <!-- Quick Stats Sidebar -->
+        <div class="lg:col-span-1">
           <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="p-6 border-b border-gray-200">
               <h3 class="text-lg font-semibold text-gray-900">Quick Insights</h3>
@@ -241,6 +249,13 @@
               <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-600">AI suggestions used</span>
                 <span class="text-sm font-medium text-gray-900">89%</span>
+              </div>
+              <div class="pt-4 border-t border-gray-200">
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-gray-900">94%</div>
+                  <div class="text-sm text-gray-600">Success Rate</div>
+                  <div class="text-xs text-green-600 mt-1">+3% improvement</div>
+                </div>
               </div>
             </div>
           </div>
@@ -433,8 +448,12 @@ a:focus {
     grid-template-columns: 1fr;
   }
   
-  .xl\:col-span-2 {
+  .lg\:col-span-3 {
     grid-column: span 1;
+  }
+  
+  .lg\:grid-cols-2 {
+    grid-template-columns: 1fr;
   }
   
   .text-3xl {
@@ -443,6 +462,12 @@ a:focus {
   
   .text-2xl {
     font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
