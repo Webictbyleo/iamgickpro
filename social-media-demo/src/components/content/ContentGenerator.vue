@@ -1,89 +1,97 @@
 <template>
-  <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 p-6">
-    <div class="flex items-center space-x-3 mb-4">
-      <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-        <SparklesIcon class="w-4 h-4 text-white" />
-      </div>
-      <h3 class="text-lg font-bold text-gray-900">Generate Content</h3>
-      <span class="text-sm text-green-600 font-medium">AI-powered creation</span>
-    </div>
-
-    <!-- Quick inputs -->
-    <div class="space-y-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
-          <select 
-            v-model="selectedType"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+  <div class="space-y-6">
+    <!-- Quick Generation Options -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Content Type Selection -->
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-gray-800">Content Type</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button 
+            v-for="type in contentTypes" 
+            :key="type.value"
+            @click="selectedType = type.value"
+            :class="[
+              'p-4 rounded-xl border-2 transition-all duration-200 text-left',
+              selectedType === type.value 
+                ? 'border-green-500 bg-green-50 text-green-900' 
+                : 'border-gray-200 hover:border-green-300 hover:bg-green-25'
+            ]"
           >
-            <option v-for="type in contentTypes" :key="type.value" :value="type.value">
-              {{ type.icon }} {{ type.label }} ({{ type.engagement_rate }} engagement)
-            </option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Tone</label>
-          <select 
-            v-model="selectedTone"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          >
-            <option v-for="tone in tones" :key="tone.value" :value="tone.value">
-              {{ tone.label }}
-            </option>
-          </select>
+            <div class="flex items-center space-x-3">
+              <span class="text-xl">{{ type.icon }}</span>
+              <div>
+                <div class="font-medium text-sm">{{ type.label }}</div>
+                <div class="text-xs text-gray-500">{{ type.engagement_rate }} avg</div>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
-      <!-- Custom prompt input -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          What do you want to create? 
-          <span class="text-gray-500 font-normal">(optional - we'll generate based on your topic)</span>
-        </label>
-        <textarea
-          v-model="customPrompt"
-          :placeholder="getPromptPlaceholder()"
-          rows="3"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-        ></textarea>
+      <!-- Tone Selection -->
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-gray-800">Content Tone</label>
+        <select 
+          v-model="selectedTone"
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+        >
+          <option v-for="tone in tones" :key="tone.value" :value="tone.value">
+            {{ tone.label }}
+          </option>
+        </select>
       </div>
     </div>
 
-    <!-- Success prediction -->
-    <div class="bg-white rounded-lg p-4 border border-green-200 mb-6">
-      <h4 class="font-medium text-gray-900 mb-3">📊 Predicted Performance</h4>
+    <!-- Custom Prompt -->
+    <div class="space-y-3">
+      <label class="block text-sm font-semibold text-gray-800">
+        Additional Instructions 
+        <span class="text-gray-500 font-normal">(optional)</span>
+      </label>
+      <textarea
+        v-model="customPrompt"
+        :placeholder="getPromptPlaceholder()"
+        rows="3"
+        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
+      ></textarea>
+    </div>
+
+    <!-- Performance Preview -->
+    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+      <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+        <span class="mr-2">📊</span>
+        Expected Performance
+      </h4>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="text-center">
+        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
           <div class="text-lg font-bold text-blue-600">{{ getPrediction('likes') }}</div>
           <div class="text-xs text-gray-600">Likes</div>
         </div>
-        <div class="text-center">
+        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
           <div class="text-lg font-bold text-green-600">{{ getPrediction('shares') }}</div>
           <div class="text-xs text-gray-600">Shares</div>
         </div>
-        <div class="text-center">
+        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
           <div class="text-lg font-bold text-purple-600">{{ getPrediction('comments') }}</div>
           <div class="text-xs text-gray-600">Comments</div>
         </div>
-        <div class="text-center">
+        <div class="text-center p-3 bg-white rounded-lg shadow-sm">
           <div class="text-lg font-bold text-orange-600">{{ getPrediction('reach') }}</div>
           <div class="text-xs text-gray-600">Reach</div>
         </div>
       </div>
     </div>
 
-    <!-- Generate button -->
-    <div class="flex justify-center">
+    <!-- Generate Button -->
+    <div class="flex justify-center pt-4">
       <button
         @click="generateContent"
         :disabled="loading || !canGenerate"
-        class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+        class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-lg rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
       >
-        <SparklesIcon v-if="!loading" class="w-5 h-5 mr-2" />
-        <ArrowPathIcon v-else class="w-5 h-5 mr-2 animate-spin" />
-        <span>{{ loading ? 'Creating...' : 'Generate Content' }}</span>
+        <SparklesIcon v-if="!loading" class="w-6 h-6 mr-3" />
+        <ArrowPathIcon v-else class="w-6 h-6 mr-3 animate-spin" />
+        <span>{{ loading ? 'Creating Amazing Content...' : 'Generate Content' }}</span>
       </button>
     </div>
   </div>
@@ -108,6 +116,7 @@ interface Emits {
     prompt: string;
     goal?: string;
   }): void;
+  (e: 'content-generated', content: any): void;
 }
 
 const props = defineProps<Props>();
@@ -199,9 +208,29 @@ const generateContent = async () => {
     goal: props.goal
   });
   
-  // Simulate generation time
+  // Simulate generation time and create mock content
   setTimeout(() => {
     loading.value = false;
+    
+    // Create mock generated content
+    const mockContent = {
+      id: Date.now().toString(),
+      type: selectedType.value,
+      content: {
+        text: `🚀 Generated ${selectedType.value} content for ${props.goal || 'general'} goal!\n\nThis is mock content that would be generated by AI based on:\n- Topic: ${props.topic || 'Your selected topic'}\n- Tone: ${selectedTone.value}\n- Custom prompt: ${customPrompt.value || 'Default content generation'}\n\nThis content is optimized for ${props.platforms?.join(', ') || 'your selected platforms'} and designed to achieve your ${props.goal || 'content'} objectives.\n\n#AI #ContentCreation #SocialMedia`
+      },
+      engagement_prediction: {
+        likes: Math.floor(Math.random() * 500) + 100,
+        shares: Math.floor(Math.random() * 100) + 20,
+        comments: Math.floor(Math.random() * 50) + 10,
+        reach: Math.floor(Math.random() * 10000) + 2000
+      },
+      goal: props.goal,
+      platforms: props.platforms || []
+    };
+    
+    // Emit the generated content
+    emit('content-generated', mockContent);
   }, 2000);
 };
 </script>

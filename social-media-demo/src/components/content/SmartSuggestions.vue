@@ -100,7 +100,10 @@
         
         <!-- Action button -->
         <div class="mt-3 pt-3 border-t border-gray-100">
-          <button class="w-full text-center text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors">
+          <button 
+            @click="selectSuggestion(suggestion)"
+            class="w-full text-center text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors hover:bg-purple-50 py-2 rounded-lg"
+          >
             💡 Use this suggestion
           </button>
         </div>
@@ -165,8 +168,14 @@ const filteredSuggestions = computed(() => {
 })
 
 const selectSuggestion = (suggestion: any) => {
-  emit('suggestion-selected', suggestion)
-}
+  // Add suggested_content field based on suggestion data
+  const enhancedSuggestion = {
+    ...suggestion,
+    suggested_content: suggestion.title || suggestion.reason || `Content idea: ${suggestion.title}`
+  };
+  
+  emit('suggestion-selected', enhancedSuggestion);
+};
 
 const getSuggestionTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
