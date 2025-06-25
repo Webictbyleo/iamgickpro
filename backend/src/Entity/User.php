@@ -103,6 +103,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserIntegration::class, orphanRemoval: true)]
     private Collection $integrations;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserSubscription::class, orphanRemoval: true)]
+    private Collection $subscriptions;
+
     #[ORM\Column(type: 'integer')]
     private int $failedLoginAttempts = 0;
 
@@ -165,6 +168,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->mediaFiles = new ArrayCollection();
         $this->exportJobs = new ArrayCollection();
         $this->integrations = new ArrayCollection();
+        $this->subscriptions = new ArrayCollection();
         $this->username = $this->uuid; // Set default username to UUID
     }
 
@@ -475,6 +479,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             if ($integration->getUser() === $this) {
                 // Note: Cannot set to null as User is not nullable
                 // The integration will be orphaned and removed
+            }
+        }
+
+        return $this;
+    }
+
+    public function getSubscriptions(): Collection
+    {
+        return $this->subscriptions;
+    }
+
+    public function addSubscription(UserSubscription $subscription): self
+    {
+        if (!$this->subscriptions->contains($subscription)) {
+            $this->subscriptions->add($subscription);
+            $subscription->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSubscription(UserSubscription $subscription): self
+    {
+        if ($this->subscriptions->removeElement($subscription)) {
+            if ($subscription->getUser() === $this) {
+                $subscription->setUser(null);
             }
         }
 

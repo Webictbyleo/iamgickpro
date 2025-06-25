@@ -1,211 +1,156 @@
 <template>
-  <div class="space-y-8">
-    <!-- Enhanced Selected Topic Display -->
-    <div v-if="workflowStore.selectedTopic" class="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 rounded-3xl p-8 shadow-xl animate-scale-in">
-      <div class="flex items-center space-x-6">
-        <div class="flex-shrink-0">
-          <div class="w-16 h-16 bg-gradient-to-br from-green-500 via-green-600 to-green-700 rounded-2xl flex items-center justify-center shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-300">
-            <CheckIcon class="w-8 h-8 text-white" />
-          </div>
+  <div class="h-full flex flex-col">
+    <!-- Compact Selected Topic Display -->
+    <div v-if="workflowStore.selectedTopic" class="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 animate-scale-in">
+      <div class="flex items-center space-x-4">
+        <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+          <CheckIcon class="w-5 h-5 text-white" />
         </div>
-        <div class="flex-1">
-          <h4 class="text-2xl font-bold text-green-900 mb-2 flex items-center space-x-2">
-            <span>✨ Perfect Topic Selected!</span>
-          </h4>
-          <p class="text-green-800 font-semibold text-lg">{{ workflowStore.selectedTopic.title }}</p>
-          <p class="text-green-700 text-base mt-2 leading-relaxed">{{ workflowStore.selectedTopic.description }}</p>
-          <div class="flex items-center space-x-4 mt-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800">
+        <div class="flex-1 min-w-0">
+          <h4 class="text-lg font-bold text-green-900 truncate">✨ {{ workflowStore.selectedTopic.title }}</h4>
+          <div class="flex items-center space-x-3 mt-1">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-200 text-green-800">
               {{ workflowStore.selectedTopic.category }}
             </span>
-            <span class="text-green-600 text-sm font-medium">
-              🔥 {{ workflowStore.selectedTopic.engagement.toLocaleString() }} engagement
-            </span>
+            <span class="text-green-600 text-sm">🔥 {{ workflowStore.selectedTopic.engagement.toLocaleString() }}</span>
           </div>
         </div>
-        <div class="text-right">
-          <div class="text-4xl animate-bounce-gentle">🚀</div>
-          <div class="text-sm font-semibold text-green-600 mt-2 flex items-center space-x-1">
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>Auto-advancing...</span>
-          </div>
-        </div>
+        <div class="text-2xl">🚀</div>
       </div>
-      
-      <!-- Enhanced decorative background -->
-      <div class="absolute -top-6 -right-6 w-32 h-32 bg-green-300/20 rounded-full blur-2xl animate-pulse"></div>
-      <div class="absolute -bottom-4 -left-4 w-24 h-24 bg-emerald-300/15 rounded-full blur-xl animate-float"></div>
-      <div class="absolute top-1/2 right-8 w-16 h-16 bg-teal-300/10 rounded-full blur-lg"></div>
     </div>
 
-    <!-- Enhanced Category Filter -->
-    <div class="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 p-8 shadow-lg animate-fade-in-up">
-      <div class="flex items-center space-x-3 mb-6">
-        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-          <span class="text-lg">🎯</span>
+    <!-- Compact Filters and Search Row -->
+    <div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <div class="relative">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search trending topics..."
+            class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm"
+            @input="handleSearch"
+          />
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''; searchResults = []"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <h3 class="text-xl font-bold text-gray-900">Browse by Category</h3>
       </div>
-      <div class="flex flex-wrap gap-3">
+
+      <!-- Category Filter Chips -->
+      <div class="flex flex-wrap gap-2">
         <button
           @click="selectedCategory = null"
-          class="px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-md hover:shadow-lg"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
           :class="{
-            'bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 text-white shadow-xl ring-2 ring-primary-300/50': selectedCategory === null,
-            'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-lg border border-gray-200': selectedCategory !== null
+            'bg-primary-500 text-white': selectedCategory === null,
+            'bg-gray-100 text-gray-700 hover:bg-gray-200': selectedCategory !== null
           }"
         >
-          <span class="flex items-center space-x-2">
-            <span class="text-lg">🌟</span>
-            <span>All Topics</span>
-          </span>
+          🌟 All
         </button>
         <button
           v-for="category in categories"
           :key="category.id"
           @click="selectedCategory = category.id"
-          class="px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-md hover:shadow-lg"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
           :class="{
-            'bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 text-white shadow-xl ring-2 ring-primary-300/50': selectedCategory === category.id,
-            'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-lg border border-gray-200': selectedCategory !== category.id
+            'bg-primary-500 text-white': selectedCategory === category.id,
+            'bg-gray-100 text-gray-700 hover:bg-gray-200': selectedCategory !== category.id
           }"
         >
-          <span class="flex items-center space-x-2">
-            <span class="text-lg">{{ category.icon }}</span>
-            <span>{{ category.name }}</span>
-          </span>
+          {{ category.icon }} {{ category.name }}
         </button>
       </div>
     </div>
 
-    <!-- Enhanced Search -->
-    <div class="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 p-8 shadow-lg animate-fade-in-up">
-      <div class="flex items-center space-x-3 mb-6">
-        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-          <MagnifyingGlassIcon class="w-4 h-4 text-white" />
-        </div>
-        <h3 class="text-xl font-bold text-gray-900">Search Topics</h3>
+    <!-- Trending Topics Content Area -->
+    <div class="flex-1 min-h-0">
+      <!-- Compact Loading State -->
+      <div v-if="loading.topics || loading.search" class="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border border-gray-200">
+        <LoadingSpinner size="md" />
+        <h3 class="text-lg font-bold text-gray-900 mt-4 mb-2">
+          {{ loading.search ? '🔍 Searching...' : '📡 Loading Topics...' }}
+        </h3>
+        <p class="text-gray-600 text-sm text-center max-w-sm">
+          {{ loading.search ? 'Finding relevant topics' : 'Fetching trending topics' }}
+        </p>
       </div>
-      <div class="relative group">
-        <MagnifyingGlassIcon class="absolute left-5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-colors group-focus-within:text-primary-500" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search trending topics, hashtags, or keywords..."
-          class="w-full pl-14 pr-12 py-4 border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-gray-900 placeholder-gray-500 shadow-sm transition-all duration-300 text-lg font-medium"
-          @input="handleSearch"
-        />
-        <div v-if="searchQuery" class="absolute right-4 top-1/2 transform -translate-y-1/2">
+
+      <!-- Topics Grid -->
+      <div v-else-if="filteredTopics.length > 0" class="h-full">
+        <!-- Compact Results Header -->
+        <div class="flex items-center justify-between mb-4 bg-white/60 rounded-lg p-3 border border-gray-200">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-900">
+                {{ searchQuery ? `🔍 Results` : `🔥 Trending` }}
+              </h3>
+              <p class="text-gray-600 text-sm">{{ filteredTopics.length }} topics</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 text-xs text-gray-500">
+            <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <span>Live</span>
+          </div>
+        </div>
+        
+        <!-- Scrollable Grid Container -->
+        <div class="overflow-y-auto h-96">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pr-2">
+            <div
+              v-for="topic in filteredTopics"
+              :key="topic.id"
+              class="transform transition-all duration-300 hover:scale-105"
+            >
+              <TrendingTopicCard
+                :topic="topic"
+                :selected="workflowStore.selectedTopic?.id === topic.id"
+                @select="handleTopicSelect"
+                compact
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact Empty State -->
+      <div v-else class="text-center py-12 bg-white/50 rounded-xl border border-gray-200">
+        <div class="text-4xl mb-4">🔍</div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">No topics found</h3>
+        <p class="text-gray-600 mb-6 max-w-sm mx-auto text-sm">
+          {{ searchQuery 
+            ? `No matches for "${searchQuery}". Try different keywords.` 
+            : 'No topics for this category. Try a different filter.' 
+          }}
+        </p>
+        <div class="flex justify-center space-x-3">
           <button
+            v-if="searchQuery"
             @click="searchQuery = ''; searchResults = []"
-            class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+            class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            Clear Search
+          </button>
+          <button
+            @click="selectedCategory = null"
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            Reset Filters
           </button>
         </div>
-        <!-- Search suggestion indicator -->
-        <div v-if="!searchQuery" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-          <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Loading State -->
-    <div v-if="loading.topics || loading.search" class="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-200">
-      <div class="relative mb-8">
-        <LoadingSpinner size="lg" />
-        <div class="absolute -inset-6 bg-primary-100 rounded-full animate-ping opacity-20"></div>
-        <div class="absolute -inset-3 bg-primary-200 rounded-full animate-pulse opacity-30"></div>
-      </div>
-      <h3 class="text-xl font-bold text-gray-900 mb-2">
-        {{ loading.search ? '🔍 Searching Trending Topics...' : '📡 Loading Trending Topics...' }}
-      </h3>
-      <p class="text-gray-600 font-medium mb-6 text-center max-w-md">
-        {{ loading.search ? 'Finding the most relevant trending topics for your search' : 'Fetching the latest AI-curated trending topics for your niche' }}
-      </p>
-      <div class="flex space-x-2">
-        <div class="w-3 h-3 bg-primary-500 rounded-full animate-bounce"></div>
-        <div class="w-3 h-3 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-        <div class="w-3 h-3 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
-      </div>
-    </div>
-
-    <!-- Enhanced Topics Grid -->
-    <div v-else-if="filteredTopics.length > 0" class="space-y-8">
-      <div class="flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
-        <div class="flex items-center space-x-4">
-          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="text-xl font-bold text-gray-900">
-              {{ searchQuery ? `🔍 Search Results` : `🔥 Trending Topics` }}
-            </h3>
-            <p class="text-gray-600 font-medium">{{ filteredTopics.length }} topics found</p>
-          </div>
-        </div>
-        <div class="flex items-center space-x-3 text-sm text-gray-500">
-          <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-          <span class="font-medium">Live trending data</span>
-        </div>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        <div
-          v-for="(topic, index) in filteredTopics"
-          :key="topic.id"
-          class="transform transition-all duration-500 hover:scale-105 animate-fade-in-up"
-          :style="{ animationDelay: `${index * 0.1}s` }"
-        >
-          <TrendingTopicCard
-            :topic="topic"
-            :selected="workflowStore.selectedTopic?.id === topic.id"
-            @select="handleTopicSelect"
-            enhanced
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Empty State -->
-    <div v-else class="text-center py-20 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-200">
-      <div class="relative mb-8">
-        <div class="text-8xl animate-bounce-gentle filter drop-shadow-lg">🔍</div>
-        <div class="absolute -inset-4 bg-gray-100 rounded-full animate-ping opacity-20"></div>
-      </div>
-      <h3 class="text-2xl font-bold text-gray-900 mb-4">No topics found</h3>
-      <p class="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
-        {{ searchQuery 
-          ? `No topics match "${searchQuery}". Try different keywords or browse categories above.` 
-          : 'No trending topics available for this category. Try selecting a different category.' 
-        }}
-      </p>
-      <div class="flex justify-center space-x-4">
-        <button
-          v-if="searchQuery"
-          @click="searchQuery = ''; searchResults = []"
-          class="btn-primary flex items-center space-x-2 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          <span>Clear Search</span>
-        </button>
-        <button
-          @click="selectedCategory = null"
-          class="btn-secondary flex items-center space-x-2 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>Reset Filters</span>
-        </button>
       </div>
     </div>
   </div>
