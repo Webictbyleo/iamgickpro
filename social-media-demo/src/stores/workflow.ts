@@ -54,7 +54,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       case 'content':
         return !!generatedContent.value;
       case 'creative':
-        return generatedCreatives.value.length > 0;
+        // Creative generation is optional - users can always proceed
+        return true;
       case 'posting':
         return !!postingBehavior.value;
       default:
