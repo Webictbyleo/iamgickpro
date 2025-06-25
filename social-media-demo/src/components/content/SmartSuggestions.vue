@@ -1,28 +1,55 @@
 <template>
-  <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 p-6">
-    <div class="flex items-center space-x-3 mb-4">
-      <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div class="flex items-center space-x-3 mb-6">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
         <SparklesIcon class="w-4 h-4 text-white" />
       </div>
       <div class="flex-1">
-        <h3 class="text-lg font-bold text-gray-900">Smart Suggestions</h3>
-        <p class="text-xs text-purple-600 font-medium">AI-powered recommendations for {{ goal }} content</p>
-      </div>
-      <div class="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">
-        Step 2 of 3
+        <h3 class="text-lg font-semibold text-gray-900">Smart Content Ideas</h3>
+        <p class="text-sm text-gray-600">AI-powered recommendations for {{ goal }} content</p>
       </div>
     </div>
 
-    <div class="space-y-3">
+    <!-- Scrollable suggestions container -->
+    <div class="max-h-96 overflow-y-auto space-y-4 pr-2">
       <div 
         v-for="suggestion in filteredSuggestions" 
         :key="suggestion.id"
         @click="selectSuggestion(suggestion)"
-        class="group p-4 bg-white rounded-lg border border-purple-100 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer"
+        class="group p-4 bg-gray-50 hover:bg-blue-50 rounded-lg border border-gray-200 hover:border-blue-300 transition-all duration-200 cursor-pointer"
       >
-        <div class="flex items-start justify-between mb-2">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-start space-x-3 flex-1">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900 mb-1">{{ suggestion.title }}</h4>
+              <p class="text-sm text-gray-600 leading-relaxed">{{ suggestion.reason }}</p>
+            </div>
+          </div>
+          <div class="text-right ml-4">
+            <div class="text-sm font-bold text-green-600">{{ suggestion.confidence }}%</div>
+            <div class="text-xs text-gray-500">confidence</div>
+          </div>
+        </div>
+        
+        <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+          <div class="flex items-center space-x-4">
+            <span>Reach: <span class="font-medium text-gray-700">{{ suggestion.estimated_reach }}</span></span>
+            <span>Best time: <span class="font-medium text-gray-700">{{ suggestion.best_time }}</span></span>
+          </div>
           <div class="flex items-center space-x-2">
-            <span class="text-sm font-medium text-gray-900">{{ suggestion.title }}</span>
+            <span>Trend:</span>
+            <div class="w-12 h-2 bg-gray-200 rounded-full">
+              <div 
+                class="h-2 bg-blue-600 rounded-full transition-all duration-300"
+                :style="{ width: `${suggestion.trend_score}%` }"
+              ></div>
+            </div>
+            <span class="font-medium text-blue-600">{{ suggestion.trend_score }}</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
             <span 
               class="px-2 py-1 rounded-full text-xs font-medium"
               :class="{
@@ -37,93 +64,34 @@
             </span>
             <span 
               v-if="suggestion.urgency === 'urgent'"
-              class="px-2 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold animate-pulse"
+              class="px-2 py-1 bg-red-100 text-red-600 rounded-full text-xs font-medium"
             >
               ⚡ Urgent
             </span>
           </div>
-          <div class="text-right">
-            <div class="text-xs font-bold text-green-600">{{ suggestion.confidence }}%</div>
-            <div class="text-xs text-gray-500">confidence</div>
-          </div>
-        </div>
-        
-        <p class="text-sm text-gray-600 mb-3">{{ suggestion.reason }}</p>
-        
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs">
-            <div class="flex items-center space-x-3">
-              <span class="text-gray-500">Reach: <span class="font-medium text-gray-700">{{ suggestion.estimated_reach }}</span></span>
-              <span class="text-gray-500">Best time: <span class="font-medium text-gray-700">{{ suggestion.best_time }}</span></span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <span class="text-xs text-gray-500">Trend Score:</span>
-              <div class="w-12 h-2 bg-gray-200 rounded-full">
-                <div 
-                  class="h-2 bg-gradient-to-r from-green-400 to-green-600 rounded-full"
-                  :style="{ width: `${suggestion.trend_score}%` }"
-                ></div>
-              </div>
-              <span class="text-xs font-bold text-green-600">{{ suggestion.trend_score }}</span>
-            </div>
-          </div>
-          
-          <!-- Platform tags -->
-          <div class="flex items-center justify-between">
-            <div class="flex space-x-1">
-              <span 
-                v-for="platform in suggestion.platforms.slice(0, 3)" 
-                :key="platform"
-                class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"
-              >
-                {{ platform }}
-              </span>
-              <span v-if="suggestion.platforms.length > 3" class="text-xs text-gray-400">
-                +{{ suggestion.platforms.length - 3 }}
-              </span>
-            </div>
-            <div class="text-xs text-gray-500">
-              Competition: 
-              <span 
-                class="font-medium"
-                :class="{
-                  'text-green-600': suggestion.competition_level === 'low',
-                  'text-yellow-600': suggestion.competition_level === 'medium',
-                  'text-red-600': suggestion.competition_level === 'high' || suggestion.competition_level === 'very_high'
-                }"
-              >
-                {{ suggestion.competition_level }}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Action button -->
-        <div class="mt-3 pt-3 border-t border-gray-100">
           <button 
-            @click="selectSuggestion(suggestion)"
-            class="w-full text-center text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors hover:bg-purple-50 py-2 rounded-lg"
+            @click.stop="selectSuggestion(suggestion)"
+            class="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors px-3 py-1 hover:bg-blue-100 rounded-lg"
           >
-            💡 Use this suggestion
+            Use this idea →
           </button>
         </div>
       </div>
     </div>
 
     <!-- Quick stats -->
-    <div v-if="filteredSuggestions.length > 0" class="mt-4 p-3 bg-white rounded-lg border border-purple-200">
-      <h4 class="text-sm font-medium text-gray-900 mb-2">📊 Quick Stats</h4>
+    <div v-if="filteredSuggestions.length > 0" class="mt-6 pt-4 border-t border-gray-200">
       <div class="grid grid-cols-3 gap-4 text-center">
         <div>
-          <div class="text-lg font-bold text-purple-600">{{ averageConfidence }}%</div>
+          <div class="text-lg font-semibold text-blue-600">{{ averageConfidence }}%</div>
           <div class="text-xs text-gray-600">Avg. Confidence</div>
         </div>
         <div>
-          <div class="text-lg font-bold text-green-600">{{ highOpportunities }}</div>
+          <div class="text-lg font-semibold text-green-600">{{ highOpportunities }}</div>
           <div class="text-xs text-gray-600">High Opportunities</div>
         </div>
         <div>
-          <div class="text-lg font-bold text-orange-600">{{ urgentSuggestions }}</div>
+          <div class="text-lg font-semibold text-orange-600">{{ urgentSuggestions }}</div>
           <div class="text-xs text-gray-600">Urgent Actions</div>
         </div>
       </div>
@@ -164,7 +132,7 @@ const filteredSuggestions = computed(() => {
       default:
         return true
     }
-  }).slice(0, 4) // Limit to top 4 suggestions
+  }).slice(0, 6) // Show more suggestions since they're now scrollable
 })
 
 const selectSuggestion = (suggestion: any) => {
@@ -205,12 +173,27 @@ const urgentSuggestions = computed(() => {
 </script>
 
 <style scoped>
-.animate-pulse {
-  animation: pulse 1.5s infinite;
+/* Custom scrollbar for suggestions */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.2s ease;
 }
 </style>

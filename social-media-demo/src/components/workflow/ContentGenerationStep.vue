@@ -1,36 +1,24 @@
 <template>
-  <div class="h-full flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-    <!-- Modern Header with Topic Focus -->
-    <div v-if="workflowStore.selectedTopic" 
-         class="mb-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-2xl overflow-hidden">
-      <!-- Main Header -->
-      <div class="p-8 text-white">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center space-x-6">
-            <div class="w-16 h-16 bg-white/20 rounded-3xl flex items-center justify-center backdrop-blur-sm">
-              <span class="text-2xl">🎯</span>
-            </div>
-            <div>
-              <div class="text-sm font-medium opacity-90 uppercase tracking-wide">Content Creation</div>
-              <h1 class="text-3xl font-bold leading-tight">{{ workflowStore.selectedTopic?.title }}</h1>
-              <div class="text-base opacity-80 mt-1">AI-powered content generation studio</div>
-            </div>
+  <div class="h-full flex flex-col bg-gray-50">
+    <!-- Clean Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-semibold">📝</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-6 py-4 rounded-2xl border border-white/30">
-            <div class="text-lg font-bold">⚡ AI Studio</div>
-            <div class="text-sm opacity-90">Smart Generation</div>
+          <div>
+            <h1 class="text-xl font-semibold text-gray-900">Content Generation</h1>
+            <p class="text-sm text-gray-600">Create engaging content for {{ workflowStore.selectedTopic?.title }}</p>
           </div>
         </div>
         
-        <!-- Progress Indicator -->
-        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-sm font-semibold opacity-90">Workflow Progress</span>
-            <span class="text-sm opacity-80">{{ getWorkflowProgress() }}% Complete</span>
-          </div>
-          <div class="w-full bg-white/20 rounded-full h-2">
+        <!-- Progress -->
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-500">{{ getWorkflowProgress() }}% Complete</div>
+          <div class="w-24 bg-gray-200 rounded-full h-2">
             <div 
-              class="bg-gradient-to-r from-yellow-400 to-orange-400 h-2 rounded-full transition-all duration-500"
+              class="bg-blue-600 h-2 rounded-full transition-all duration-300"
               :style="{ width: `${getWorkflowProgress()}%` }"
             ></div>
           </div>
@@ -38,125 +26,100 @@
       </div>
     </div>
 
-    <!-- Selected Accounts Panel (Separate from header) -->
+    <!-- Selected Accounts Panel -->
     <div v-if="workflowStore.selectedAccounts.length > 0" 
-         class="mb-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-            <span class="text-white text-lg">🚀</span>
-          </div>
-          <div class="text-white">
-            <h3 class="text-lg font-bold">Publishing Destinations</h3>
-            <p class="text-sm opacity-90">{{ workflowStore.selectedAccounts.length }} platform{{ workflowStore.selectedAccounts.length > 1 ? 's' : '' }} selected</p>
-          </div>
-        </div>
+         class="bg-white border-b border-gray-200 px-6 py-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-medium text-gray-900">Publishing to {{ workflowStore.selectedAccounts.length }} platform{{ workflowStore.selectedAccounts.length > 1 ? 's' : '' }}</h3>
       </div>
-      <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div 
-            v-for="account in workflowStore.selectedAccounts" 
-            :key="account.id"
-            class="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200"
-          >
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
-              {{ getPlatformIcon(account.platform) }}
-            </div>
-            <div class="flex-1">
-              <div class="font-semibold text-gray-900">{{ account.display_name }}</div>
-              <div class="text-sm text-gray-500 capitalize">{{ account.platform }}</div>
-              <div class="text-xs text-green-600 font-medium">✓ Connected</div>
-            </div>
-          </div>
+      <div class="flex flex-wrap gap-2">
+        <div 
+          v-for="account in workflowStore.selectedAccounts" 
+          :key="account.id"
+          class="inline-flex items-center space-x-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+        >
+          <span>{{ getPlatformIcon(account.platform) }}</span>
+          <span class="font-medium">{{ account.display_name }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Streamlined Content Creation Workflow -->
-    <div class="flex-1 min-h-0 space-y-8">
-      <!-- Step 1: Goal Selection -->
-      <div class="transform transition-all duration-500 ease-out" 
-           :class="selectedGoal ? 'scale-95 opacity-75 hover:scale-100 hover:opacity-100' : 'scale-100'">
-        <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-orange-500 to-red-500 p-5">
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                <span class="text-white text-xl">🎯</span>
-              </div>
-              <div class="text-white">
-                <h2 class="text-2xl font-bold">Choose Your Content Goal</h2>
-                <p class="text-sm opacity-90">What do you want to achieve with this content?</p>
-              </div>
-              <div class="ml-auto bg-white/20 backdrop-blur px-4 py-2 rounded-xl">
-                <span class="text-white text-sm font-medium">Step 1</span>
-              </div>
-            </div>
+    <!-- Tab Navigation -->
+    <div class="bg-white border-b border-gray-200 px-6">
+      <nav class="flex space-x-8" role="tablist">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          :class="[
+            'py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200',
+            activeTab === tab.id
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ]"
+          :disabled="!tab.enabled"
+          role="tab"
+          :aria-selected="activeTab === tab.id"
+        >
+          <span class="inline-flex items-center space-x-2">
+            <span>{{ tab.icon }}</span>
+            <span>{{ tab.label }}</span>
+            <span v-if="tab.completed" class="text-green-500">✓</span>
+          </span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="flex-1 overflow-auto bg-white">
+      <!-- Goal Selection Tab -->
+      <div v-show="activeTab === 'goal'" class="p-6 h-full">
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Choose Your Content Goal</h2>
+            <p class="text-gray-600">What do you want to achieve with this content?</p>
           </div>
-          <div class="p-6">
-            <QuickGoalSelector 
-              v-model:selectedGoal="selectedGoal"
-              @goal-selected="onGoalSelected"
-            />
-          </div>
+          <QuickGoalSelector 
+            v-model:selectedGoal="selectedGoal"
+            @goal-selected="onGoalSelected"
+          />
         </div>
       </div>
 
-      <!-- Step 2: Smart Suggestions -->
-      <div v-if="selectedGoal" 
-           class="transform transition-all duration-700 ease-out translate-y-0 opacity-100"
-           :class="quickInput ? 'scale-95 opacity-75 hover:scale-100 hover:opacity-100' : 'scale-100'">
-        <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-5">
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                <span class="text-white text-xl">💡</span>
-              </div>
-              <div class="text-white">
-                <h2 class="text-2xl font-bold">Smart Content Ideas</h2>
-                <p class="text-sm opacity-90">AI-powered suggestions based on current trends</p>
-              </div>
-              <div class="ml-auto bg-white/20 backdrop-blur px-4 py-2 rounded-xl">
-                <span class="text-white text-sm font-medium">Step 2</span>
-              </div>
-            </div>
+      <!-- Smart Suggestions Tab -->
+      <div v-show="activeTab === 'suggestions'" class="p-6 h-full">
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Smart Content Ideas</h2>
+            <p class="text-gray-600">AI-powered suggestions based on current trends</p>
           </div>
-          <div class="p-6">
-            <SmartSuggestions 
-              :goal="selectedGoal"
-              @suggestion-selected="onSuggestionSelected"
-            />
-          </div>
+          <SmartSuggestions 
+            v-if="selectedGoal"
+            :goal="selectedGoal"
+            @suggestion-selected="onSuggestionSelected"
+          />
         </div>
       </div>
 
-      <!-- Step 3: Quick Input for Custom Ideas -->
-      <div v-if="selectedGoal" class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-5">
-          <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-              <span class="text-white text-xl">✏️</span>
-            </div>
-            <div class="text-white">
-              <h2 class="text-2xl font-bold">Your Content Focus</h2>
-              <p class="text-sm opacity-90">Tell us what you want to create or use a suggestion above</p>
-            </div>
-            <div class="ml-auto bg-white/20 backdrop-blur px-4 py-2 rounded-xl">
-              <span class="text-white text-sm font-medium">Step 3</span>
-            </div>
+      <!-- Content Details Tab -->
+      <div v-show="activeTab === 'details'" class="p-6 h-full">
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Content Details</h2>
+            <p class="text-gray-600">Tell us what you want to create or use a suggestion</p>
           </div>
-        </div>
-        <div class="p-6">
-          <div class="space-y-4">
+          
+          <div class="space-y-6">
             <div>
-              <label class="block text-lg font-semibold text-gray-800 mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
                 {{ getQuickInputLabel() }}
                 <span class="text-red-500">*</span>
               </label>
               <textarea
                 v-model="quickInput"
                 :placeholder="getQuickInputPlaceholder()"
-                rows="3"
-                class="w-full px-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 transition-all duration-200 bg-gray-50 focus:bg-white text-base placeholder-gray-500 resize-none"
+                rows="4"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
                 @keyup.enter.meta="quickGenerate"
                 @keyup.enter.ctrl="quickGenerate"
               />
@@ -170,12 +133,12 @@
               </div>
             </div>
 
-            <!-- Advanced Options Toggle -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Target Audience</label>
                 <select 
                   v-model="targetAudience"
-                  class="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 >
                   <option value="general">👥 General audience</option>
                   <option value="professionals">💼 Professionals</option>
@@ -183,10 +146,13 @@
                   <option value="customers">🎯 Existing customers</option>
                   <option value="prospects">🔍 Potential customers</option>
                 </select>
-                
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Desired Action</label>
                 <select 
                   v-model="desiredAction"
-                  class="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 >
                   <option value="engage">👍 Like & engage</option>
                   <option value="share">📤 Share with others</option>
@@ -196,166 +162,138 @@
                   <option value="follow">➕ Follow account</option>
                 </select>
               </div>
-              
-              <!-- Quick Generate Button -->
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <div class="flex space-x-3">
               <button
                 v-if="quickInput.trim()"
                 @click="quickGenerate"
                 :disabled="!canQuickGenerate || loading.generate"
-                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+                class="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
-                <span v-if="!loading.generate" class="mr-2">⚡</span>
-                <ArrowPathIcon v-else class="w-5 h-5 mr-2 animate-spin" />
-                <span>{{ loading.generate ? 'Creating...' : 'Quick Generate' }}</span>
+                <ArrowPathIcon v-if="loading.generate" class="w-4 h-4 mr-2 animate-spin" />
+                <span>{{ loading.generate ? 'Generating...' : 'Quick Generate' }}</span>
+              </button>
+              <button
+                v-if="quickInput.trim()"
+                @click="activeTab = 'advanced'"
+                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                Advanced Options
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Step 4: Advanced Content Generator -->
-      <div v-if="selectedGoal && quickInput" class="transform transition-all duration-700 ease-out translate-y-0 opacity-100">
-        <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-5">
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                <span class="text-white text-xl">🎨</span>
-              </div>
-              <div class="text-white">
-                <h2 class="text-2xl font-bold">Advanced Content Studio</h2>
-                <p class="text-sm opacity-90">Fine-tune your content with professional options</p>
-              </div>
-              <div class="ml-auto bg-white/20 backdrop-blur px-4 py-2 rounded-xl">
-                <span class="text-white text-sm font-medium">Final Step</span>
-              </div>
-            </div>
+      <!-- Advanced Content Generator Tab -->
+      <div v-show="activeTab === 'advanced'" class="p-6 h-full">
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Advanced Content Studio</h2>
+            <p class="text-gray-600">Fine-tune your content with professional options</p>
           </div>
-          <div class="p-6">
-            <ContentGenerator 
-              :goal="selectedGoal"
-              :details="goalDetails"
-              :topic="workflowStore.selectedTopic?.title"
-              :platforms="workflowStore.selectedAccounts?.map(account => account.platform)"
-              @generate="onGenerate"
-              @content-generated="onContentGenerated"
-            />
-          </div>
+          <ContentGenerator 
+            v-if="selectedGoal && quickInput"
+            :goal="selectedGoal"
+            :details="goalDetails"
+            :topic="workflowStore.selectedTopic?.title"
+            :platforms="workflowStore.selectedAccounts?.map(account => account.platform)"
+            @generate="onGenerate"
+            @content-generated="onContentGenerated"
+          />
         </div>
       </div>
+    </div>
 
-      <!-- Generated Content Display -->
-      <div v-if="generatedContent" class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-3xl border-2 border-green-200 shadow-xl overflow-hidden">
-        <div class="bg-gradient-to-r from-green-600 to-emerald-600 p-6">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                <CheckCircleIcon class="w-8 h-8 text-white" />
-              </div>
-              <div class="text-white">
-                <h2 class="text-3xl font-bold">Content Created Successfully! 🎉</h2>
-                <p class="text-base opacity-90">Your AI-powered content is ready to captivate your audience</p>
-              </div>
+    <!-- Generated Content Display (Outside of tabs, appears after generation) -->
+    <div v-if="generatedContent" class="bg-white border-t border-gray-200 p-6">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <CheckCircleIcon class="w-6 h-6 text-green-600" />
+              <h2 class="text-lg font-semibold text-gray-900">Content Created Successfully!</h2>
             </div>
             <div class="flex space-x-3">
               <button
                 @click="generateContent"
                 :disabled="loading.generate"
-                class="inline-flex items-center px-5 py-3 bg-white/20 backdrop-blur border border-white/30 rounded-xl text-white hover:bg-white/30 transition-all duration-200 font-medium"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
               >
-                <ArrowPathIcon v-if="!loading.generate" class="w-5 h-5 mr-2" />
-                <ArrowPathIcon v-else class="w-5 h-5 mr-2 animate-spin" />
+                <ArrowPathIcon :class="['w-4 h-4 mr-2', loading.generate ? 'animate-spin' : '']" />
                 <span>{{ loading.generate ? 'Regenerating...' : 'Regenerate' }}</span>
               </button>
               <button
                 @click="copyToClipboard"
-                class="inline-flex items-center px-5 py-3 bg-white text-green-600 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium shadow-sm"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 📋 Copy Content
               </button>
             </div>
           </div>
-        </div>
-        
-        <!-- Enhanced Content Preview -->
-        <div class="p-8">
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-8 py-6 border-b border-gray-100">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-6">
-                  <h3 class="text-2xl font-bold text-gray-900">Your Generated Content</h3>
-                  <div class="flex items-center space-x-3">
-                    <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                      {{ generatedContent.content?.text?.length || 0 }} characters
-                    </span>
-                    <span class="px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium capitalize">
-                      {{ generatedContent.type || 'text' }} post
-                    </span>
-                    <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium capitalize">
-                      {{ selectedGoal }} goal
-                    </span>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <span class="text-base text-gray-600">Ready to publish</span>
-                  <div class="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
+          
+          <!-- Content Preview -->
+          <div class="bg-white rounded-lg border border-gray-200 p-6 mb-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-medium text-gray-900">Generated Content</h3>
+              <div class="flex items-center space-x-3 text-xs text-gray-500">
+                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                  {{ generatedContent.content?.text?.length || 0 }} chars
+                </span>
+                <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full capitalize">
+                  {{ generatedContent.type || 'text' }} post
+                </span>
+                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full capitalize">
+                  {{ selectedGoal }} goal
+                </span>
               </div>
             </div>
             
-            <div class="p-8">
-              <div class="prose prose-lg max-w-none text-gray-800 leading-relaxed bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-100 whitespace-pre-line shadow-inner">
-                {{ generatedContent.content?.text || 'Content will appear here...' }}
-              </div>
+            <div class="prose max-w-none text-gray-800 leading-relaxed whitespace-pre-line">
+              {{ generatedContent.content?.text || 'Content will appear here...' }}
             </div>
-            
-            <!-- Enhanced Engagement Prediction -->
-            <div v-if="generatedContent.engagement_prediction" class="px-8 pb-8">
-              <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
-                <div class="flex items-center space-x-3 mb-6">
-                  <span class="text-3xl">📊</span>
-                  <h4 class="text-2xl font-bold text-gray-900">Predicted Performance</h4>
-                  <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">AI Forecast</span>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200">
-                    <div class="text-3xl font-bold text-green-600 mb-2">{{ generatedContent.engagement_prediction.likes }}</div>
-                    <div class="text-sm text-gray-600 font-medium">Expected Likes</div>
-                    <div class="text-sm text-green-600 mt-2">👍 High engagement</div>
-                  </div>
-                  <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200">
-                    <div class="text-3xl font-bold text-blue-600 mb-2">{{ generatedContent.engagement_prediction.shares }}</div>
-                    <div class="text-sm text-gray-600 font-medium">Shares</div>
-                    <div class="text-sm text-blue-600 mt-2">📤 Great reach</div>
-                  </div>
-                  <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200">
-                    <div class="text-3xl font-bold text-purple-600 mb-2">{{ generatedContent.engagement_prediction.comments }}</div>
-                    <div class="text-sm text-gray-600 font-medium">Comments</div>
-                    <div class="text-sm text-purple-600 mt-2">💬 Active discussion</div>
-                  </div>
-                  <div class="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200">
-                    <div class="text-3xl font-bold text-orange-600 mb-2">{{ formatReach(generatedContent.engagement_prediction.reach) }}</div>
-                    <div class="text-sm text-gray-600 font-medium">Reach</div>
-                    <div class="text-sm text-orange-600 mt-2">🚀 Wide impact</div>
-                  </div>
-                </div>
+          </div>
+          
+          <!-- Engagement Prediction -->
+          <div v-if="generatedContent.engagement_prediction" class="bg-gray-50 rounded-lg p-4 mb-4">
+            <h4 class="text-sm font-medium text-gray-900 mb-3">Predicted Performance</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="text-center">
+                <div class="text-lg font-semibold text-green-600">{{ generatedContent.engagement_prediction.likes }}</div>
+                <div class="text-xs text-gray-600">Expected Likes</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-semibold text-blue-600">{{ generatedContent.engagement_prediction.shares }}</div>
+                <div class="text-xs text-gray-600">Shares</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-semibold text-purple-600">{{ generatedContent.engagement_prediction.comments }}</div>
+                <div class="text-xs text-gray-600">Comments</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-semibold text-orange-600">{{ formatReach(generatedContent.engagement_prediction.reach) }}</div>
+                <div class="text-xs text-gray-600">Reach</div>
               </div>
             </div>
           </div>
           
-          <!-- Next Steps CTA -->
-          <div class="mt-8 flex flex-col sm:flex-row gap-6">
+          <!-- Next Steps -->
+          <div class="flex flex-col sm:flex-row gap-3">
             <button
               @click="proceedToNext"
-              class="flex-1 inline-flex items-center justify-center px-8 py-5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-lg rounded-2xl transition-all duration-200 transform hover:scale-105 shadow-xl"
+              class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
             >
-              <span class="mr-3 text-xl">🚀</span>
+              <span class="mr-2">🚀</span>
               Continue to Publishing
             </button>
             <button
               @click="saveAsDraft"
-              class="flex-1 inline-flex items-center justify-center px-8 py-5 bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-bold text-lg rounded-2xl transition-all duration-200 hover:shadow-lg"
+              class="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
-              <span class="mr-3 text-xl">💾</span>
+              <span class="mr-2">💾</span>
               Save as Draft
             </button>
           </div>
@@ -384,6 +322,39 @@ import {
 
 const workflowStore = useWorkflowStore();
 const uiStore = useUiStore();
+
+// Tab management
+const activeTab = ref('goal');
+const tabs = computed(() => [
+  {
+    id: 'goal',
+    label: 'Goal',
+    icon: '🎯',
+    enabled: true,
+    completed: !!selectedGoal.value
+  },
+  {
+    id: 'suggestions',
+    label: 'Suggestions',
+    icon: '💡',
+    enabled: !!selectedGoal.value,
+    completed: !!selectedGoal.value
+  },
+  {
+    id: 'details',
+    label: 'Details',
+    icon: '✏️',
+    enabled: !!selectedGoal.value,
+    completed: !!quickInput.value.trim()
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    icon: '⚙️',
+    enabled: !!selectedGoal.value && !!quickInput.value.trim(),
+    completed: false
+  }
+]);
 
 // Loading states
 const loading = ref({
@@ -436,11 +407,10 @@ const goalDetails = computed(() => {
 // Event handlers for component integration
 const onGoalSelected = (goal: string) => {
   selectedGoal.value = goal;
-  // Auto-focus on quick input when goal is selected
+  // Auto-advance to suggestions tab
   setTimeout(() => {
-    const input = document.querySelector('input[placeholder*="' + getQuickInputPlaceholder() + '"]') as HTMLInputElement;
-    if (input) input.focus();
-  }, 100);
+    activeTab.value = 'suggestions';
+  }, 500);
 };
 
 const onSuggestionSelected = (suggestion: any) => {
@@ -451,6 +421,11 @@ const onSuggestionSelected = (suggestion: any) => {
   } else if (suggestion.title) {
     quickInput.value = suggestion.title;
   }
+  
+  // Auto-advance to details tab
+  setTimeout(() => {
+    activeTab.value = 'details';
+  }, 500);
   
   // Show notification
   uiStore.addNotification({
@@ -469,17 +444,16 @@ const onContentGenerated = (content: any) => {
   console.log('Content generated:', content);
   generatedContent.value = content;
   
+  // Update workflow store and complete the content step
+  workflowStore.setGeneratedContent(content);
+  workflowStore.completeStep('content');
+  
   // Show success notification
   uiStore.addNotification({
     type: 'success',
     title: 'Content Generated Successfully! 🎉',
-    message: 'Your AI-powered content is ready'
+    message: 'Your AI-powered content is ready to publish'
   });
-  
-  // Move to next step in workflow if available
-  if (workflowStore.goToNextStep) {
-    workflowStore.goToNextStep();
-  }
 };
 
 // Can quick generate check
@@ -744,6 +718,9 @@ const getWorkflowProgress = () => {
 
 // Initialize
 onMounted(() => {
+  // Start with the goal tab
+  activeTab.value = 'goal';
+  
   // Auto-select first goal if none selected
   if (!selectedGoal.value) {
     selectedGoal.value = 'promote';
@@ -752,208 +729,67 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Enhanced Modern UI Styles */
-
-/* Smooth, performant transitions */
-.transition-all {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Clean, professional styling */
+.transition-colors {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Advanced focus styles with accessibility */
+/* Focus styles for accessibility */
 input:focus, select:focus, textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1), 0 0 0 1px rgba(147, 51, 234, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Button hover effects */
+button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-/* Enhanced hover effects */
-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+button:disabled {
+  cursor: not-allowed;
 }
 
-/* Glass morphism effect */
-.backdrop-blur {
-  backdrop-filter: blur(10px) saturate(180%);
-  -webkit-backdrop-filter: blur(10px) saturate(180%);
+/* Tab styling */
+nav[role="tablist"] button[role="tab"] {
+  position: relative;
 }
 
-/* Smooth loading animation */
-@keyframes spin {
-  to { transform: rotate(360deg); }
+nav[role="tablist"] button[role="tab"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+/* Smooth scrolling */
+.overflow-auto {
+  scroll-behavior: smooth;
 }
 
-/* Pulse animation for status indicators */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Enhanced shadow system */
-.shadow-sm {
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-.shadow-inner {
-  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-}
-
-/* Modern gradient backgrounds */
-.bg-gradient-to-r {
-  background-image: linear-gradient(to right, var(--tw-gradient-stops));
-}
-
-.bg-gradient-to-br {
-  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
-}
-
-.bg-gradient-to-b {
-  background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
-}
-
-/* Interactive card effects */
-.hover\:scale-105:hover {
-  transform: scale(1.05);
-}
-
-.hover\:scale-100:hover {
-  transform: scale(1.0);
-}
-
-/* Custom scrollbar for better UX */
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-}
-
-.overflow-y-auto::-webkit-scrollbar {
+/* Custom scrollbar */
+.overflow-auto::-webkit-scrollbar {
   width: 6px;
 }
 
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: transparent;
+.overflow-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
 }
 
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(156, 163, 175, 0.7);
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-/* Text utilities */
-.text-shadow-sm {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* Enhanced responsive breakpoints */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .md\:grid-cols-3 {
+  .md\:grid-cols-2 {
     grid-template-columns: 1fr;
   }
   
-  .md\:flex-row {
+  .sm\:flex-row {
     flex-direction: column;
   }
-  
-  .md\:space-x-4 > :not([hidden]) ~ :not([hidden]) {
-    margin-left: 0;
-    margin-top: 1rem;
-  }
-}
-
-/* Smooth reveal animations */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.5s ease-out forwards;
-}
-
-/* Status indicator styles */
-.status-indicator {
-  position: relative;
-  overflow: hidden;
-}
-
-.status-indicator::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.status-indicator:hover::before {
-  left: 100%;
-}
-
-/* Enhanced form styling */
-input[type="text"], select {
-  transition: all 0.2s ease;
-}
-
-input[type="text"]:focus, select:focus {
-  background-color: white;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-/* Button enhancement */
-button {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-button::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
-}
-
-button:active::before {
-  width: 300px;
-  height: 300px;
 }
 </style>
