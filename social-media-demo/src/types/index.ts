@@ -23,6 +23,24 @@ export interface TopicCategory {
   trending_topics: TrendingTopic[];
 }
 
+// Trending Media Types
+export interface TrendingMedia {
+  id: string;
+  title: string;
+  description: string;
+  type: 'video' | 'image' | 'carousel' | 'story';
+  platform: SocialPlatform;
+  author: string;
+  thumbnail: string;
+  views: number;
+  likes: number;
+  shares: number;
+  duration?: number; // for videos, in seconds
+  isViral: boolean;
+  tags: string[];
+  createdAt: string;
+}
+
 // Social Media Account Types
 export interface SocialAccount {
   id: string;

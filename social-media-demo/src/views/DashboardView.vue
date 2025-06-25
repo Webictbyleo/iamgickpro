@@ -168,7 +168,57 @@
 
         <!-- Activity Sidebar -->
         <div class="space-y-6">
-          
+          <!-- Trending Media Preview -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">🔥 Viral Now</h3>
+                  <p class="text-sm text-gray-600 mt-1">Recreate trending content</p>
+                </div>
+                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                  <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm">🎥</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900">Day in My Life</p>
+                    <p class="text-xs text-gray-500">2.5M views • TikTok</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm">🍳</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900">Quick Recipe</p>
+                    <p class="text-xs text-gray-500">1.8M views • Instagram</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm">💡</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900">Productivity Tips</p>
+                    <p class="text-xs text-gray-500">3.2M views • YouTube</p>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4">
+                <button
+                  @click="scrollToTrendingMedia"
+                  class="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  🎨 View All & Recreate
+                </button>
+              </div>
+            </div>
+          </div>
 
           <!-- Quick Stats -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -255,6 +305,11 @@
           </div>
         </div>
       </div>
+
+      <!-- Trending Media Section -->
+      <div id="trending-media-section" class="mt-8">
+        <TrendingMediaSection />
+      </div>
     </div>
   </div>
 </template>
@@ -265,6 +320,7 @@ import { useRouter } from 'vue-router';
 import { useWorkflowStore } from '@/stores/workflow';
 import { useUiStore } from '@/stores/ui';
 import { trendingApi } from '@/services/api';
+import TrendingMediaSection from '@/components/trending/TrendingMediaSection.vue';
 import type { TrendingTopic } from '@/types';
 
 const router = useRouter();
@@ -299,6 +355,14 @@ const handleTopicSelect = (topic: TrendingTopic) => {
   workflowStore.setSelectedTopic(topic);
   workflowStore.setCurrentStep('platform');
   router.push('/workflow');
+};
+
+const scrollToTrendingMedia = () => {
+  // Smooth scroll to trending media section
+  const element = document.querySelector('#trending-media-section');
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' });
+  }
 };
 
 onMounted(() => {
