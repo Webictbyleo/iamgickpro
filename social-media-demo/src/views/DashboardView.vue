@@ -168,51 +168,7 @@
 
         <!-- Activity Sidebar -->
         <div class="space-y-6">
-          <!-- Recent Activity -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div class="p-6 border-b border-gray-200">
-              <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
-            </div>
-            <div class="p-6 space-y-4">
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                  </svg>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-900">Published to Twitter</p>
-                  <p class="text-sm text-gray-600">AI Revolution in Workplace</p>
-                  <p class="text-xs text-gray-500">2 hours ago</p>
-                </div>
-                <div class="text-xs font-medium text-green-600">1.2K views</div>
-              </div>
-
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span class="text-sm">🎨</span>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-900">Content generated</p>
-                  <p class="text-sm text-gray-600">Sustainable Living Tips</p>
-                  <p class="text-xs text-gray-500">4 hours ago</p>
-                </div>
-                <div class="text-xs font-medium text-blue-600">Ready</div>
-              </div>
-
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <span class="text-sm">⏰</span>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-900">Post scheduled</p>
-                  <p class="text-sm text-gray-600">Remote Work Best Practices</p>
-                  <p class="text-xs text-gray-500">1 day ago</p>
-                </div>
-                <div class="text-xs font-medium text-yellow-600">Pending</div>
-              </div>
-            </div>
-          </div>
+          
 
           <!-- Quick Stats -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-200">
