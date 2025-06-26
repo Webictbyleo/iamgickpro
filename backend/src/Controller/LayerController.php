@@ -51,7 +51,7 @@ class LayerController extends AbstractController
      * Supports various layer types including text, shape, image, svg, and group layers.
      * 
      * @param CreateLayerRequestDTO $dto Layer creation data including:
-     *                                  - designId: Target design UUID (required)
+     *                                  - designId: Target design UUID or ID (required)
      *                                  - type: Layer type (text, shape, image, svg, group, etc.)
      *                                  - name: Display name for the layer
      *                                  - properties: Layer-specific properties as JSON

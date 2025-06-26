@@ -408,7 +408,7 @@ class LayerService
      */
     public function createLayerFromRequest(
         User $user,
-        string $designId,
+        int|string $designId,
         string $name,
         string $type,
         array $properties = [],
@@ -583,7 +583,7 @@ class LayerService
     public function duplicateLayerFromRequest(
         Layer $originalLayer,
         string $newName,
-        ?string $targetDesignId = null,
+        int|string|null $targetDesignId = null,
         User $user
     ): Layer {
         $targetDesign = $targetDesignId ? 
@@ -664,13 +664,28 @@ class LayerService
     /**
      * Resolve design by ID with access validation
      */
-    private function resolveDesign(string $designId, User $user): Design
+    private function resolveDesign(int|string $designId, User $user): Design
     {
-        // Find design by UUID if string, by ID if numeric
-        if (is_string($designId)) {
-            $design = $this->designRepository->findOneBy(['uuid' => $designId]);
-        } else {
+        $design = null;
+        
+        // Convert to string for consistent handling
+        $designIdStr = (string) $designId;
+        
+        // If it's an integer, try to find by ID first
+        if (is_int($designId)) {
             $design = $this->designRepository->find($designId);
+        }
+        // If it's a string that looks like a UUID, try UUID lookup
+        elseif (strlen($designIdStr) === 36 && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $designIdStr)) {
+            $design = $this->designRepository->findOneBy(['uuid' => $designIdStr]);
+        }
+        // If it's a numeric string, try to find by ID
+        elseif (is_numeric($designIdStr)) {
+            $design = $this->designRepository->find((int) $designIdStr);
+        }
+        // Fallback: try UUID search
+        else {
+            $design = $this->designRepository->findOneBy(['uuid' => $designIdStr]);
         }
         
         if (!$design) {

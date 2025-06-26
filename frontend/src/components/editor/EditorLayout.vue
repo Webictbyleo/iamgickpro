@@ -19,11 +19,8 @@
         :can-redo="canRedo"
         :active-tool="activeTool || undefined"
         :selected-layer="selectedLayer"
-        :canvas-width="designWidth"
-        :canvas-height="designHeight"
         @save="handleSave"
         @export="handleExport"
-        @resize="handleResize"
         @undo="handleUndo"
         @redo="handleRedo"
         @tool-change="handleToolChange"
@@ -808,22 +805,6 @@ const handleExport = async (format: string) => {
 const handleExportCompleted = (url: string, filename: string) => {
   console.log('Export completed:', { url, filename })
   // TODO: Handle completed export (download, notifications, etc.)
-}
-
-const handleResize = (width: number, height: number) => {
-  // Update design dimensions
-  canvasWidth.value = width
-  canvasHeight.value = height
-  
-  // Update the canvas size in the SDK
-  if (editorSDK.value) {
-    editorSDK.value.canvas.setSize(width, height)
-  }
-  
-  console.log('Canvas resized to:', width, 'x', height)
-  
-  // Auto-fit to screen after resize
-  //autoFitToScreen()
 }
 
 const handleAddMedia = (mediaData: any) => {

@@ -11,12 +11,6 @@
           </div>
         </div>
         
-        <!-- Resize Dropdown -->
-        <ResizeDropdown 
-          :canvasWidth="canvasWidth"
-          :canvasHeight="canvasHeight"
-        @resize="handleResize" @custom-resize="() => emit('custom-resize')" />
-        
         <!-- Design Name -->
         <div class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-600 hover:border-violet-300 dark:hover:border-violet-500 transition-all duration-200 shadow-sm hover:shadow-md group">
           <input
@@ -143,7 +137,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import ExportDropdown from './ExportDropdown.vue'
-import ResizeDropdown from './ResizeDropdown.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
 import RedoIcon from '@/components/icons/RedoIcon.vue'
 import { 
@@ -158,8 +151,6 @@ interface Props {
   saveStatus: string
   canUndo: boolean
   canRedo: boolean
-  canvasWidth: number
-  canvasHeight: number
   showComments?: boolean
   commentCount?: number
 }
@@ -178,8 +169,6 @@ const emit = defineEmits<{
   'toggle-comments': []
   'present': []
   'export': [format: string]
-  'resize': [width: number, height: number]
-  'custom-resize': []
 }>()
 
 const designNameInput = ref<HTMLInputElement>()
@@ -219,9 +208,5 @@ const handleDesignNameEscape = (event: KeyboardEvent) => {
 
 const handleExport = (format: string) => {
   emit('export', format)
-}
-
-const handleResize = (width: number, height: number) => {
-  emit('resize', width, height)
 }
 </script>

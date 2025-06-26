@@ -3,15 +3,15 @@
     <!-- Header -->
     <div class="p-4 border-b border-gray-200 bg-white">
       <h3 class="text-lg font-semibold text-gray-900">Your Uploads</h3>
-      <p class="text-sm text-gray-600 mt-1">Manage and use your uploaded media files</p>
+      <p class="text-sm text-gray-600 mt-1">Manage and use your uploaded image files</p>
     </div>
 
-    <!-- Hidden file input (always present for programmatic access) -->
+    <!-- Hidden file input (only accept images) -->
     <input
       ref="fileInput"
       type="file"
       multiple
-      accept="image/*,video/*,audio/*"
+      accept="image/*"
       @change="handleFileUpload"
       class="hidden"
     />
@@ -163,7 +163,7 @@
             @click="addMedia(file)"
             class="relative group cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-[1.02]"
           >
-            <!-- Enhanced Media Preview -->
+            <!-- Enhanced Media Preview - Images only -->
             <div class="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden">
               <img
                 v-if="file.type === 'image'"
@@ -173,32 +173,9 @@
                 loading="lazy"
                 @error="handleImageError"
               />
-              <div v-else-if="file.type === 'video'" class="relative w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                <div class="absolute inset-0 bg-black/20"></div>
-                <svg class="w-8 h-8 text-white z-10" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                <div class="absolute bottom-2 right-2 bg-black/75 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
-                  {{ formatDuration(file.duration) }}
-                </div>
-                <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                  VIDEO
-                </div>
-              </div>
-              <div v-else-if="file.type === 'audio'" class="w-full h-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center relative">
-                <svg class="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-                <div class="absolute bottom-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-                  {{ formatDuration(file.duration) }}
-                </div>
-                <div class="absolute top-2 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                  AUDIO
-                </div>
-              </div>
               <div v-else class="text-gray-400 bg-gray-100 w-full h-full flex items-center justify-center">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               
@@ -280,16 +257,6 @@ const typeFilters = computed(() => [
     id: 'image', 
     label: 'Images', 
     icon: 'PhotoIcon'
-  },
-  { 
-    id: 'video', 
-    label: 'Videos', 
-    icon: 'VideoCameraIcon'
-  },
-  { 
-    id: 'audio', 
-    label: 'Audio', 
-    icon: 'MusicalNoteIcon'
   }
 ])
 
@@ -396,13 +363,6 @@ const formatFileSize = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-const formatDuration = (seconds?: number): string => {
-  if (!seconds) return '0:00'
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
 // Initialize
