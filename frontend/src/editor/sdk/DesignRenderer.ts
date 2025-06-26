@@ -42,7 +42,7 @@ export class DesignRenderer {
     width?: number
     height?: number
     scale?: number
-    quality?: number
+    pixelRatio?: number
     background?: string
   } = {}): Promise<HTMLCanvasElement> {
     if (!this.stage || !this.layer) {
@@ -53,7 +53,7 @@ export class DesignRenderer {
       width = design.width,
       height = design.height,
       scale = 1,
-      quality = 1,
+      pixelRatio = 1, // Renamed from 'quality' to be more accurate
       background = design.data?.backgroundColor || design.data?.background?.color || '#ffffff'
     } = options
 
@@ -84,9 +84,9 @@ export class DesignRenderer {
       await this.renderLayersWithRenderers(design.layers)
     }
 
-    // Convert to canvas
+    // Convert to canvas with proper pixelRatio for high-DPI support
     return this.stage.toCanvas({
-      pixelRatio: quality
+      pixelRatio: pixelRatio
     })
   }
 
@@ -202,7 +202,8 @@ export class DesignRenderer {
     width?: number
     height?: number
     format?: 'png' | 'jpeg'
-    quality?: number
+    quality?: number // Image compression quality (0.0 to 1.0)
+    pixelRatio?: number // Canvas resolution multiplier
     background?: string
   } = {}): Promise<string> {
     const {
@@ -210,8 +211,12 @@ export class DesignRenderer {
       height = 200,
       format = 'png',
       quality = 0.8,
+      pixelRatio = 1,
       background = design.data?.backgroundColor || design.data?.background?.color || '#ffffff'
     } = options
+
+    // Ensure quality is a number
+    const numericQuality = typeof quality === 'string' ? parseFloat(quality) : quality
 
     // Calculate scale to fit design into thumbnail dimensions
     const scaleX = width / design.width
@@ -222,7 +227,7 @@ export class DesignRenderer {
       width: design.width,
       height: design.height,
       scale,
-      quality,
+      pixelRatio,
       background
     })
 
@@ -245,7 +250,8 @@ export class DesignRenderer {
 
     ctx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight)
 
-    return thumbnailCanvas.toDataURL(`image/${format}`, quality)
+    // Return data URL with proper quality compression
+    return thumbnailCanvas.toDataURL(`image/${format}`, numericQuality)
   }
 
   /**
@@ -254,20 +260,40 @@ export class DesignRenderer {
   async generatePreviewBlob(design: Design, options: {
     width?: number
     height?: number
-    format?: 'png' | 'jpeg'
-    quality?: number
+    format?: 'png' | 'jpeg' | 'webp'
+    quality?: number // Image compression quality (0.0 to 1.0)
+    pixelRatio?: number // Canvas resolution multiplier
     background?: string
   } = {}): Promise<Blob> {
     return new Promise(async (resolve, reject) => {
       try {
-        const canvas = await this.renderToCanvas(design, options)
+        const {
+          width,
+          height,
+          format = 'png',
+          quality = 0.8,
+          pixelRatio = 1,
+          background
+        } = options
+
+        // Ensure quality is a number (range inputs can sometimes return strings)
+        const numericQuality = typeof quality === 'string' ? parseFloat(quality) : quality
+
+        // Render canvas with only the parameters renderToCanvas accepts
+        const canvas = await this.renderToCanvas(design, {
+          width,
+          height,
+          pixelRatio,
+          background
+        })
+
         canvas.toBlob((blob) => {
           if (blob) {
             resolve(blob)
           } else {
             reject(new Error('Failed to generate preview blob'))
           }
-        }, `image/${options.format || 'png'}`, options.quality || 0.8)
+        }, `image/${format}`, numericQuality)
       } catch (error) {
         reject(error)
       }
@@ -282,7 +308,8 @@ export class DesignRenderer {
     width: number
     height: number
     format?: 'png' | 'jpeg'
-    quality?: number
+    quality?: number // Image compression quality (0.0 to 1.0)
+    pixelRatio?: number // Canvas resolution multiplier
   }>): Promise<Record<string, string>> {
     const previews: Record<string, string> = {}
 
@@ -292,7 +319,8 @@ export class DesignRenderer {
           width: size.width,
           height: size.height,
           format: size.format || 'png',
-          quality: size.quality || 0.8
+          quality: size.quality || 0.8,
+          pixelRatio: size.pixelRatio || 1
         })
         previews[size.name] = thumbnail
       } catch (error) {
@@ -301,6 +329,66 @@ export class DesignRenderer {
     }
 
     return previews
+  }
+
+  /**
+   * Export design to various formats with proper quality control
+   */
+  async exportDesign(design: Design, options: {
+    width?: number
+    height?: number
+    scale?: number
+    format?: 'png' | 'jpeg' | 'webp'
+    quality?: number // 0.0 to 1.0 for JPEG/WebP compression
+    pixelRatio?: number // For high-DPI exports
+    background?: string
+  } = {}): Promise<{
+    canvas: HTMLCanvasElement
+    dataUrl: string
+    blob: Blob
+  }> {
+    const {
+      width = design.width,
+      height = design.height,
+      scale = 1,
+      format = 'png',
+      quality = 0.92, // High quality by default
+      pixelRatio = 1,
+      background = design.data?.backgroundColor || design.data?.background?.color || '#ffffff'
+    } = options
+
+    // Ensure quality is a number
+    const numericQuality = typeof quality === 'string' ? parseFloat(quality) : quality
+
+    // Render to canvas with specified dimensions and pixel ratio
+    const canvas = await this.renderToCanvas(design, {
+      width,
+      height,
+      scale,
+      pixelRatio,
+      background
+    })
+
+    // Generate data URL with proper quality setting for compression
+    const mimeType = `image/${format}`
+    const dataUrl = canvas.toDataURL(mimeType, numericQuality)
+
+    // Generate blob with proper quality setting
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob)
+        } else {
+          reject(new Error(`Failed to generate ${format.toUpperCase()} blob`))
+        }
+      }, mimeType, numericQuality)
+    })
+
+    return {
+      canvas,
+      dataUrl,
+      blob
+    }
   }
 
   /**

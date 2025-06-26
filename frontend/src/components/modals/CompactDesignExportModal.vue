@@ -94,13 +94,13 @@
                   </div>
                 </div>
 
-                <!-- Quality Setting -->
-                <div>
+                <!-- Quality Setting (only for JPEG) -->
+                <div v-if="selectedFormat === 'jpeg'">
                   <label class="block text-sm font-semibold text-gray-900 mb-3">
                     Quality: {{ Math.round(selectedQuality * 100) }}%
                   </label>
                   <input
-                    v-model="selectedQuality"
+                    v-model.number="selectedQuality"
                     type="range"
                     min="0.1"
                     max="1"
@@ -116,7 +116,7 @@
                 <!-- Scale Setting -->
                 <div>
                   <label class="block text-sm font-semibold text-gray-900 mb-3">
-                    Size: {{ selectedScale }}x ({{ Math.round((design?.width || 800) * selectedScale) }}×{{ Math.round((design?.height || 600) * selectedScale) }})
+                    Size: {{ selectedScale }}x ({{ Math.round((design?.width || 800) * selectedScale) }}×{{ Math.round((design?.height || 600) * selectedScale) }} pixels)
                   </label>
                   <div class="grid grid-cols-4 gap-2">
                     <button
@@ -315,14 +315,15 @@ const handleExport = async () => {
       } as Design
     }
 
-    // Generate the export using DesignRenderer
-    const blob = await designRenderer.generatePreviewBlob(designData, {
-      width: designData.width * selectedScale.value,
-      height: designData.height * selectedScale.value,
+    // Generate the export using DesignRenderer.exportDesign (more appropriate for exports)
+    const exportResult = await designRenderer.exportDesign(designData, {
+      scale: selectedScale.value,
       format: selectedFormat.value as 'png' | 'jpeg',
-      quality: selectedQuality.value,
+      quality: selectedFormat.value === 'jpeg' ? selectedQuality.value : 1.0, // Only apply quality for JPEG
       background: designData.data?.background?.color || '#ffffff'
     })
+
+    const blob = exportResult.blob
 
     // Complete progress
     clearInterval(progressInterval)
