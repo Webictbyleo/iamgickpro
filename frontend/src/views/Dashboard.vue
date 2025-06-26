@@ -79,15 +79,6 @@
             
             <!-- Compact Action Buttons -->
             <div class="flex flex-col space-y-3 lg:ml-8">
-              <!-- Primary CTA -->
-              <button
-                @click="() => createNewDesign()"
-                class="group relative bg-white text-violet-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-xl flex items-center justify-center space-x-3"
-              >
-                <component :is="icons.plus" class="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
-                <span>Create Design</span>
-              </button>
-              
               <!-- Secondary Action -->
               <router-link
                 to="/templates"
@@ -106,17 +97,6 @@
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <button
-            @click="() => createNewDesign()"
-            class="group p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl hover:from-blue-100 hover:to-indigo-100 transition-all transform hover:scale-105 border border-blue-100"
-          >
-            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
-              <component :is="icons.plus" class="w-6 h-6 text-white" />
-            </div>
-            <h3 class="font-semibold text-gray-900 text-sm">New Design</h3>
-            <p class="text-xs text-gray-500 mt-1">Start from scratch</p>
-          </button>
-
           <router-link
             to="/templates"
             class="group p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl hover:from-green-100 hover:to-emerald-100 transition-all transform hover:scale-105 border border-green-100"
@@ -149,17 +129,6 @@
             <h3 class="font-semibold text-gray-900 text-sm">My Designs</h3>
             <p class="text-xs text-gray-500 mt-1">View all projects</p>
           </router-link>
-
-          <button
-            @click="createNewDesign(1080, 1080)"
-            class="group p-6 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl hover:from-pink-100 hover:to-rose-100 transition-all transform hover:scale-105 border border-pink-100"
-          >
-            <div class="w-12 h-12 bg-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-pink-600 transition-colors">
-              <component :is="icons.image" class="w-6 h-6 text-white" />
-            </div>
-            <h3 class="font-semibold text-gray-900 text-sm">Social Post</h3>
-            <p class="text-xs text-gray-500 mt-1">1080×1080</p>
-          </button>
 
           <router-link
             to="/video-to-design"
@@ -198,7 +167,6 @@
           <DesignGrid
             :designs="recentDesigns"
             :loading="loading"
-            @create="createNewDesign"
             @open="openDesign"
             @edit="editDesign"
             @duplicate="duplicateDesign"
@@ -312,11 +280,6 @@ const formatLastLogin = (date: Date): string => {
 // Methods
 const handleSearch = (query: string) => {
   router.push(`/designs?search=${encodeURIComponent(query)}`)
-}
-
-const createNewDesign = (width = 800, height = 600) => {
-  const newDesign = designStore.createNewDesign(width, height)
-  router.push(`/editor/${newDesign.id}`)
 }
 
 const openDesign = (design: Design) => {

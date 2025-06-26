@@ -69,7 +69,6 @@
           v-if="viewMode === 'grid'"
           :designs="filteredDesigns"
           :loading="loading"
-          @create="createNewDesign"
           @open="openDesign"
           @edit="editDesign"
           @duplicate="duplicateDesign"
@@ -155,14 +154,8 @@
         <div v-if="!loading && designs.length === 0" class="text-center py-12">
           <div class="text-gray-400 text-lg mb-4">No designs found</div>
           <p class="text-gray-600 mb-6">
-            {{ searchQuery ? 'Try adjusting your search criteria' : 'Create your first design to get started' }}
+            {{ searchQuery ? 'Try adjusting your search criteria' : 'No designs available yet' }}
           </p>
-          <button
-            @click="createNewDesign"
-            class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
-          >
-            Create New Design
-          </button>
         </div>
       </div>
 
@@ -302,10 +295,6 @@ const filteredDesigns = computed(() => {
 // Methods
 const handleSearch = (query: string) => {
   searchQuery.value = query
-}
-
-const createNewDesign = () => {
-  router.push('/editor')
 }
 
 const openDesign = (design: Design) => {
