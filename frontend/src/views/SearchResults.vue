@@ -335,7 +335,7 @@
     </div>
     
     <!-- Design Export Modal -->
-    <DesignExportModal
+    <CompactDesignExportModal
       :is-open="showExportModal"
       :design="designToExport"
       @close="closeExportModal"
@@ -388,7 +388,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
-import DesignExportModal from '@/components/modals/DesignExportModal.vue'
+import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
 import MediaPreviewModal from '@/components/modals/MediaPreviewModal.vue'
 import ExportDetailsModal from '@/components/modals/ExportDetailsModal.vue'
 import { searchAPI } from '@/services/api'
@@ -729,7 +729,20 @@ const openInEditor = (result: SearchResult) => {
 const convertToMediaItem = (result: SearchResult): MediaPreviewItem => {
   // Determine proper MIME type based on result properties
   let mimeType = 'image/jpeg' // Default to image
-  let mediaUrl = result.thumbnail || `https://picsum.photos/800/600?random=${result.id}`
+  let mediaUrl = result.url || result.thumbnail || ''
+  
+  // Determine mime type from URL extension or result metadata
+  if (result.isVideo) {
+    mimeType = 'video/mp4'
+  } else if (mediaUrl.includes('.png')) {
+    mimeType = 'image/png'
+  } else if (mediaUrl.includes('.gif')) {
+    mimeType = 'image/gif'
+  } else if (mediaUrl.includes('.svg')) {
+    mimeType = 'image/svg+xml'
+  } else if (mediaUrl.includes('.webm')) {
+    mimeType = 'video/webm'
+  }
   
   console.log('Converting SearchResult to MediaPreviewItem:', { 
     resultType: result.type, 
@@ -744,13 +757,13 @@ const convertToMediaItem = (result: SearchResult): MediaPreviewItem => {
     title: result.title,
     url: mediaUrl,
     type: mimeType,
-    size: Math.floor(Math.random() * 5000000) + 1000000, // Mock file size (1-6MB)
+    size: 0, // File size not available in SearchResult type
     thumbnail: result.thumbnail,
     dimensions: {
-      width: 800 + Math.floor(Math.random() * 400),
-      height: 600 + Math.floor(Math.random() * 400)
-    },
-    tags: ['design', 'stock', 'media'],
+      width: result.width || 800,
+      height: result.height || 600
+    }, // Use actual dimensions from result, default to standard size if not available
+    tags: ['media'], // Tags not available in SearchResult type
     created_at: result.created_at
   }
 }

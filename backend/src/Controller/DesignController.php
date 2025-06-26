@@ -111,9 +111,9 @@ class DesignController extends AbstractController
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 $designResponses,
-                $result['total'],
                 $page,
                 $limit,
+                $result['total'],
                 'Designs retrieved successfully'
             );
 
@@ -233,9 +233,9 @@ class DesignController extends AbstractController
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(
                 $designResponses,
-                $result['total'],
                 $page,
                 $limit,
+                $result['total'],
                 'Search results retrieved successfully'
             );
 

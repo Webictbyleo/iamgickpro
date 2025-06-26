@@ -200,6 +200,152 @@
               </div>
             </div>
 
+            <!-- Viral Success Criteria -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 class="font-medium text-gray-900 mb-4">Viral Success Targets</h3>
+              <p class="text-gray-600 mb-4">Define what success looks like and when to stop the campaign.</p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Target Views/Impressions</label>
+                  <input
+                    v-model.number="criteria.targetViews"
+                    type="number"
+                    placeholder="e.g., 10000"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Target Engagement Rate (%)</label>
+                  <input
+                    v-model.number="criteria.targetEngagement"
+                    type="number"
+                    placeholder="e.g., 5"
+                    min="0"
+                    max="100"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Target Likes/Reactions</label>
+                  <input
+                    v-model.number="criteria.targetLikes"
+                    type="number"
+                    placeholder="e.g., 500"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Target Shares/Retweets</label>
+                  <input
+                    v-model.number="criteria.targetShares"
+                    type="number"
+                    placeholder="e.g., 100"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Campaign Stop Conditions -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 class="font-medium text-gray-900 mb-4">Campaign Stop Conditions</h3>
+              <div class="space-y-4">
+                <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    v-model="criteria.stopCondition"
+                    value="target_reached"
+                    type="radio"
+                    class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500 mt-1"
+                  >
+                  <div class="ml-3">
+                    <span class="text-sm font-medium text-gray-900">Stop When Targets Are Reached</span>
+                    <p class="text-sm text-gray-500">Campaign stops automatically when any success target is achieved</p>
+                  </div>
+                </label>
+                
+                <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    v-model="criteria.stopCondition"
+                    value="date_reached"
+                    type="radio"
+                    class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500 mt-1"
+                  >
+                  <div class="ml-3">
+                    <span class="text-sm font-medium text-gray-900">Stop on Specific Date</span>
+                    <p class="text-sm text-gray-500">Campaign runs until a specified end date regardless of performance</p>
+                  </div>
+                </label>
+                
+                <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    v-model="criteria.stopCondition"
+                    value="performance_decline"
+                    type="radio"
+                    class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500 mt-1"
+                  >
+                  <div class="ml-3">
+                    <span class="text-sm font-medium text-gray-900">Stop on Performance Decline</span>
+                    <p class="text-sm text-gray-500">Campaign stops when engagement drops below threshold for 24 hours</p>
+                  </div>
+                </label>
+              </div>
+
+              <!-- End Date Selection -->
+              <div v-if="criteria.stopCondition === 'date_reached'" class="mt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Campaign End Date</label>
+                <input
+                  v-model="criteria.endDate"
+                  type="datetime-local"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                  :min="minDateTime"
+                >
+              </div>
+
+              <!-- Performance Threshold -->
+              <div v-if="criteria.stopCondition === 'performance_decline'" class="mt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Engagement Rate (%)</label>
+                <input
+                  v-model.number="criteria.minEngagementRate"
+                  type="number"
+                  placeholder="e.g., 1"
+                  min="0"
+                  max="100"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                >
+              </div>
+            </div>
+
+            <!-- Viral Acceleration Features -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 class="font-medium text-gray-900 mb-4">Viral Acceleration</h3>
+              <div class="space-y-4">
+                <label class="flex items-start">
+                  <input
+                    v-model="criteria.viralBoost"
+                    type="checkbox"
+                    class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-1"
+                  >
+                  <div class="ml-3">
+                    <span class="text-sm font-medium text-gray-900">Viral Momentum Detection</span>
+                    <p class="text-sm text-gray-500">Increase posting frequency when content shows viral potential</p>
+                  </div>
+                </label>
+                
+                <label class="flex items-start">
+                  <input
+                    v-model="criteria.influencerOutreach"
+                    type="checkbox"
+                    class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-1"
+                  >
+                  <div class="ml-3">
+                    <span class="text-sm font-medium text-gray-900">Auto Influencer Notifications</span>
+                    <p class="text-sm text-gray-500">Notify relevant influencers when content gains traction</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+            </div>
+
             <!-- Viral Boost Options -->
             <div class="bg-white rounded-lg border border-gray-200 p-6">
               <h3 class="font-medium text-gray-900 mb-4">Viral Boost Features</h3>
@@ -240,160 +386,6 @@
                   </div>
                 </label>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Viral Criteria Tab -->
-      <div v-show="activeTab === 'viral'" class="p-6">
-        <div class="max-w-4xl mx-auto space-y-6">
-          <div>
-            <h2 class="text-lg font-medium text-gray-900 mb-2">Viral Success Criteria</h2>
-            <p class="text-gray-600 mb-6">Define what success looks like and when to stop the campaign.</p>
-          </div>
-
-          <!-- Success Metrics -->
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 class="font-medium text-gray-900 mb-4">Success Targets</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Target Views/Impressions</label>
-                <input
-                  v-model.number="criteria.targetViews"
-                  type="number"
-                  placeholder="e.g., 10000"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Target Engagement Rate (%)</label>
-                <input
-                  v-model.number="criteria.targetEngagement"
-                  type="number"
-                  placeholder="e.g., 5"
-                  min="0"
-                  max="100"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Target Likes/Reactions</label>
-                <input
-                  v-model.number="criteria.targetLikes"
-                  type="number"
-                  placeholder="e.g., 500"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Target Shares/Retweets</label>
-                <input
-                  v-model.number="criteria.targetShares"
-                  type="number"
-                  placeholder="e.g., 100"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Stopping Conditions -->
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 class="font-medium text-gray-900 mb-4">Campaign Stop Conditions</h3>
-            <div class="space-y-4">
-              <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  v-model="criteria.stopCondition"
-                  value="target_reached"
-                  type="radio"
-                  class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500 mt-1"
-                >
-                <div class="ml-3">
-                  <span class="text-sm font-medium text-gray-900">Stop When Targets Are Reached</span>
-                  <p class="text-sm text-gray-500">Campaign stops automatically when any success target is achieved</p>
-                </div>
-              </label>
-              
-              <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  v-model="criteria.stopCondition"
-                  value="date_reached"
-                  type="radio"
-                  class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500 mt-1"
-                >
-                <div class="ml-3">
-                  <span class="text-sm font-medium text-gray-900">Stop on Specific Date</span>
-                  <p class="text-sm text-gray-500">Campaign runs until a specified end date regardless of performance</p>
-                </div>
-              </label>
-              
-              <label class="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  v-model="criteria.stopCondition"
-                  value="performance_decline"
-                  type="radio"
-                  class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500 mt-1"
-                >
-                <div class="ml-3">
-                  <span class="text-sm font-medium text-gray-900">Stop on Performance Decline</span>
-                  <p class="text-sm text-gray-500">Campaign stops when engagement drops below threshold for 24 hours</p>
-                </div>
-              </label>
-            </div>
-
-            <!-- End Date Selection -->
-            <div v-if="criteria.stopCondition === 'date_reached'" class="mt-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Campaign End Date</label>
-              <input
-                v-model="criteria.endDate"
-                type="datetime-local"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                :min="minDateTime"
-              >
-            </div>
-
-            <!-- Performance Threshold -->
-            <div v-if="criteria.stopCondition === 'performance_decline'" class="mt-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Engagement Rate (%)</label>
-              <input
-                v-model.number="criteria.minEngagementRate"
-                type="number"
-                placeholder="e.g., 1"
-                min="0"
-                max="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-              >
-            </div>
-          </div>
-
-          <!-- Viral Boost Settings -->
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 class="font-medium text-gray-900 mb-4">Viral Acceleration</h3>
-            <div class="space-y-4">
-              <label class="flex items-start">
-                <input
-                  v-model="criteria.viralBoost"
-                  type="checkbox"
-                  class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-1"
-                >
-                <div class="ml-3">
-                  <span class="text-sm font-medium text-gray-900">Viral Momentum Detection</span>
-                  <p class="text-sm text-gray-500">Increase posting frequency when content shows viral potential</p>
-                </div>
-              </label>
-              
-              <label class="flex items-start">
-                <input
-                  v-model="criteria.influencerOutreach"
-                  type="checkbox"
-                  class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-1"
-                >
-                <div class="ml-3">
-                  <span class="text-sm font-medium text-gray-900">Auto Influencer Notifications</span>
-                  <p class="text-sm text-gray-500">Notify relevant influencers when content gains traction</p>
-                </div>
-              </label>
             </div>
           </div>
         </div>
@@ -474,10 +466,9 @@
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Campaign Preview -->
-    <div v-if="behavior.mode && activeTab === 'viral'" class="bg-white border-t border-gray-200 px-6 py-4">
+    <div v-if="behavior.mode === 'auto' && activeTab === 'scheduling'" class="bg-white border-t border-gray-200 px-6 py-4">
       <div class="max-w-4xl mx-auto">
         <h3 class="font-medium text-gray-900 mb-3">Campaign Preview</h3>
         <div class="bg-gray-50 rounded-lg p-4">
@@ -577,8 +568,7 @@ const activeTab = ref('summary')
 // Tab configuration
 const tabs = [
   { id: 'summary', name: 'Summary' },
-  { id: 'scheduling', name: 'Scheduling' },
-  { id: 'viral', name: 'Viral Criteria' },
+  { id: 'scheduling', name: 'Scheduling & Viral' },
   { id: 'platforms', name: 'Platform Settings' }
 ]
 

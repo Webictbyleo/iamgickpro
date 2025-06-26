@@ -74,6 +74,7 @@
           @edit="editDesign"
           @duplicate="duplicateDesign"
           @delete="deleteDesign"
+          @download="downloadDesign"
         />
 
         <!-- List View -->
@@ -122,6 +123,23 @@
                 </svg>
               </button>
               <button
+                @click.stop="downloadDesign(design)"
+                class="p-2 text-gray-400 hover:text-purple-600 rounded-md hover:bg-purple-50"
+                title="Download"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+              </button>
+              <button
+                @click.stop="deleteDesign(design)"
+                class="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+              <button
                 @click.stop="deleteDesign(design)"
                 class="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
               >
@@ -156,6 +174,14 @@
         @page-change="handlePageChange"
       />
     </div>
+
+    <!-- Export Modal -->
+    <CompactDesignExportModal
+      :is-open="isExportModalOpen"
+      :design="selectedDesignForExport"
+      @close="handleExportModalClose"
+      @exported="handleExportComplete"
+    />
   </AppLayout>
 </template>
 
@@ -163,13 +189,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
-import type { Design, DesignSearchParams } from '@/types'
+import type { Design, DesignSearchParams, SearchResult } from '@/types'
 import { designAPI } from '@/services/api'
 
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import DesignGrid from '@/components/ui/DesignGrid.vue'
+import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
 
 const router = useRouter()
 const designStore = useDesignStore()
@@ -184,6 +211,10 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalResults = ref(0)
 const designs = ref<Design[]>([])
+
+// Export modal state
+const isExportModalOpen = ref(false)
+const selectedDesignForExport = ref<SearchResult | null>(null)
 
 // Methods
 const loadDesigns = async (resetPage = false) => {
@@ -212,17 +243,37 @@ const loadDesigns = async (resetPage = false) => {
         limit: 12,
         sort: sortBy.value as 'name' | 'created_at' | 'updated_at'
       }
+      console.log('Searching designs with params:', searchParams)
       response = await designAPI.searchDesigns(searchParams)
     } else {
       // Use regular getDesigns for listing with filters
+      console.log('Loading designs with params:', params)
       response = await designAPI.getDesigns(params)
     }
+    
+    console.log('Designs API response:', {
+      dataLength: response.data?.data?.length || 0,
+      pagination: response.data?.pagination,
+      currentPage: currentPage.value
+    })
     
     if (response.data?.data) {
       designs.value = response.data.data
       if (response.data.pagination) {
-        totalPages.value = response.data.pagination.totalPages
-        totalResults.value = response.data.pagination.total
+        const pagination = response.data.pagination
+        totalPages.value = pagination.totalPages || 1
+        totalResults.value = pagination.total || 0
+        
+        // If we're on a page beyond available data, redirect to last valid page
+        if (designs.value.length === 0 && currentPage.value > 1 && pagination.totalPages > 0) {
+          console.warn(`Page ${currentPage.value} has no results. Redirecting to page ${pagination.totalPages}`)
+          currentPage.value = Math.min(currentPage.value, pagination.totalPages)
+          // Re-fetch data for the corrected page
+          if (currentPage.value !== parseInt(String(currentPage.value))) {
+            await loadDesigns()
+            return
+          }
+        }
       } else {
         totalPages.value = 1
         totalResults.value = designs.value.length
@@ -285,6 +336,39 @@ const deleteDesign = async (design: Design) => {
   }
 }
 
+const downloadDesign = (design: Design) => {
+  // Convert Design to SearchResult format for the export modal
+  selectedDesignForExport.value = convertDesignToSearchResult(design)
+  isExportModalOpen.value = true
+}
+
+// Helper function to convert Design to SearchResult
+const convertDesignToSearchResult = (design: Design): SearchResult => {
+  return {
+    id: design.id,
+    type: 'design' as const,
+    title: design.title,
+    description: design.description,
+    thumbnail: design.thumbnail,
+    created_at: design.createdAt,
+    width: design.width,
+    height: design.height,
+    // Add any animation/video detection logic here if needed
+    hasAnimation: false,
+    isVideo: false
+  }
+}
+
+const handleExportModalClose = () => {
+  isExportModalOpen.value = false
+  selectedDesignForExport.value = null
+}
+
+const handleExportComplete = (url: string, filename: string) => {
+  console.log('Export completed:', { url, filename })
+  // Optionally show a success message or handle the exported file
+}
+
 const formatDate = (date: string | Date) => {
   const d = new Date(date)
   const now = new Date()
@@ -301,6 +385,12 @@ const formatDate = (date: string | Date) => {
 
 // Handle page change for pagination
 const handlePageChange = (page: number) => {
+  // Validate page number before making request
+  if (page < 1 || page > totalPages.value) {
+    console.warn(`Invalid page number: ${page}. Valid range: 1-${totalPages.value}`)
+    return
+  }
+  
   currentPage.value = page
   loadDesigns() // Load new page data from server
 }

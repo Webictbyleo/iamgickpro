@@ -203,6 +203,7 @@
             @edit="editDesign"
             @duplicate="duplicateDesign"
             @delete="deleteDesign"
+            @download="downloadDesign"
           />
         </div>
       </div>
@@ -236,6 +237,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Export Modal -->
+    <CompactDesignExportModal
+      :is-open="isExportModalOpen"
+      :design="selectedDesignForExport"
+      @close="handleExportModalClose"
+      @exported="handleExportComplete"
+    />
   </AppLayout>
 </template>
 
@@ -249,12 +258,13 @@ import { useAuthStore } from '@/stores/auth'
 import { useDesignStore } from '@/stores/design'
 import { useIcons } from '@/composables/useIcons'
 import { analyticsAPI, templateAPI } from '@/services/api'
-import type { Design, Template, DashboardStats } from '@/types'
+import type { Design, Template, DashboardStats, SearchResult } from '@/types'
 
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
 import DesignGrid from '@/components/ui/DesignGrid.vue'
 import TemplateGrid from '@/components/ui/TemplateGrid.vue'
+import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -268,6 +278,12 @@ const statsLoading = ref(false)
 const recentDesigns = ref<Design[]>([])
 const featuredTemplates = ref<Template[]>([])
 const dashboardStats = ref<DashboardStats | null>(null)
+
+// Export modal state
+const isExportModalOpen = ref(false)
+const selectedDesignForExport = ref<SearchResult | null>(null)
+const exportModalOpen = ref(false)
+const selectedDesign = ref<Design | null>(null)
 
 // Computed
 const user = computed(() => authStore.user)
@@ -329,6 +345,39 @@ const deleteDesign = async (design: Design) => {
       console.error('Failed to delete design:', error)
     }
   }
+}
+
+const downloadDesign = (design: Design) => {
+  // Convert Design to SearchResult format for the export modal
+  selectedDesignForExport.value = convertDesignToSearchResult(design)
+  isExportModalOpen.value = true
+}
+
+// Helper function to convert Design to SearchResult
+const convertDesignToSearchResult = (design: Design): SearchResult => {
+  return {
+    id: design.id,
+    type: 'design' as const,
+    title: design.title,
+    description: design.description,
+    thumbnail: design.thumbnail,
+    created_at: design.createdAt,
+    width: design.width,
+    height: design.height,
+    // Add any animation/video detection logic here if needed
+    hasAnimation: false,
+    isVideo: false
+  }
+}
+
+const handleExportModalClose = () => {
+  isExportModalOpen.value = false
+  selectedDesignForExport.value = null
+}
+
+const handleExportComplete = (url: string, filename: string) => {
+  console.log('Export completed:', { url, filename })
+  // Optionally show a success message or handle the exported file
 }
 
 const useTemplate = async (template: Template) => {
