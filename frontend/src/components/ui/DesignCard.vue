@@ -5,27 +5,30 @@
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <!-- Design Thumbnail Container -->
+    <!-- Design Thumbnail Container with dynamic aspect ratio handling -->
     <div class="relative bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden">
-      <!-- Main Thumbnail Area -->
-      <div class="relative aspect-[3/4] bg-gray-50">
+      <!-- Main Thumbnail Area with adaptive height -->
+      <div 
+        class="relative bg-gray-50 flex items-center justify-center p-4"
+        :style="getThumbnailContainerStyle()"
+      >
         <!-- Loading state -->
         <div v-if="isImageLoading" class="absolute inset-0 flex items-center justify-center">
           <div class="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-500"></div>
         </div>
         
-        <!-- Design thumbnail image -->
+        <!-- Design thumbnail image with smart sizing -->
         <img 
           v-if="design.thumbnail"
           :src="design.thumbnail"
           :alt="design.title"
-          class="w-full h-full object-contain bg-white"
+          :class="getImageClasses()"
           @load="isImageLoading = false"
           @error="handleImageError"
         />
         
-        <!-- Fallback placeholder -->
-        <div v-else class="w-full h-full flex items-center justify-center bg-gray-50">
+        <!-- Fallback placeholder with consistent styling -->
+        <div v-else class="flex items-center justify-center bg-gray-50 rounded-md" :style="{ minHeight: '120px' }">
           <div class="text-center">
             <component :is="icons.template" class="w-12 h-12 text-gray-300 mx-auto mb-2" />
             <span class="text-xs text-gray-400 font-medium">{{ getDesignType() }}</span>
@@ -193,6 +196,55 @@ const handleImageError = () => {
 }
 
 // Utility functions
+
+// Calculate dynamic thumbnail container style based on design dimensions
+const getThumbnailContainerStyle = () => {
+  const { width, height } = props.design
+  const aspectRatio = width / height
+  
+  // Define max dimensions for the thumbnail container
+  const maxWidth = 280
+  const maxHeight = 320
+  const minHeight = 160
+  
+  let containerHeight: number
+  
+  if (aspectRatio > 1.5) {
+    // Wide landscape designs (banners, etc.)
+    containerHeight = Math.max(minHeight, Math.min(maxHeight * 0.6, maxWidth / aspectRatio))
+  } else if (aspectRatio < 0.7) {
+    // Tall portrait designs
+    containerHeight = Math.min(maxHeight, maxWidth / aspectRatio)
+  } else {
+    // Square-ish or standard dimensions
+    containerHeight = Math.min(maxHeight * 0.8, maxWidth / aspectRatio)
+  }
+  
+  return {
+    height: `${Math.round(containerHeight)}px`,
+    minHeight: `${minHeight}px`
+  }
+}
+
+// Get appropriate image classes based on design aspect ratio
+const getImageClasses = () => {
+  const { width, height } = props.design
+  const aspectRatio = width / height
+  
+  const baseClasses = 'max-w-full max-h-full object-contain bg-white rounded-md shadow-sm'
+  
+  if (aspectRatio > 1.5) {
+    // Wide designs - ensure they fit width-wise
+    return `${baseClasses} w-full h-auto`
+  } else if (aspectRatio < 0.7) {
+    // Tall designs - ensure they fit height-wise
+    return `${baseClasses} h-full w-auto`
+  } else {
+    // Balanced designs
+    return `${baseClasses} w-full h-auto`
+  }
+}
+
 const formatDate = (date: string | Date) => {
   const d = new Date(date)
   const now = new Date()
@@ -214,14 +266,21 @@ const formatDate = (date: string | Date) => {
 }
 
 const getDesignType = () => {
-  // Determine design type based on dimensions
+  // Determine design type based on dimensions with more granular categories
   const { width, height } = props.design
+  const aspectRatio = width / height
   
-  if (width === height) return 'Square'
-  if (width > height) {
-    if (width / height > 1.5) return 'Banner'
-    return 'Landscape'
-  }
-  return 'Portrait'
+  if (Math.abs(aspectRatio - 1) < 0.1) return 'Square'
+  
+  if (aspectRatio > 2.5) return 'Banner'
+  if (aspectRatio > 1.8) return 'Wide'
+  if (aspectRatio > 1.3) return 'Landscape'
+  if (aspectRatio > 1) return 'Horizontal'
+  
+  if (aspectRatio < 0.4) return 'Vertical'
+  if (aspectRatio < 0.6) return 'Tall'
+  if (aspectRatio < 0.8) return 'Portrait'
+  
+  return 'Standard'
 }
 </script>

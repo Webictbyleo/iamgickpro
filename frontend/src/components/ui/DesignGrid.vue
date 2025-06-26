@@ -1,5 +1,6 @@
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+  <!-- Modern masonry-style grid that adapts to various aspect ratios -->
+  <div class="grid gap-6" :class="gridColumns">
     <!-- Create New Design Card - Only show when there are existing designs -->
     <div 
       v-if="!loading && designs.length > 0"
@@ -66,12 +67,15 @@
       @download="$emit('download', design)"
     />
 
-    <!-- Loading Cards -->
+    <!-- Loading Cards with varied heights for realistic layout -->
     <div 
       v-if="loading"
       v-for="i in loadingCount"
       :key="`loading-${i}`"
-      class="aspect-video bg-white rounded-2xl shadow-sm border border-gray-100 animate-pulse overflow-hidden"
+      :class="[
+        'bg-white rounded-2xl shadow-sm border border-gray-100 animate-pulse overflow-hidden',
+        getLoadingCardHeight(i)
+      ]"
     >
       <div class="h-full flex flex-col">
         <div class="flex-1 bg-gradient-to-br from-gray-200 to-gray-300 rounded-t-2xl"></div>
@@ -104,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Design } from '@/types'
 import { useIcons } from '@/composables/useIcons'
 import DesignCard from './DesignCard.vue'
@@ -132,4 +137,25 @@ defineEmits<{
   rename: [design: Design]
   download: [design: Design]
 }>()
+
+// Responsive grid columns based on screen size
+const gridColumns = computed(() => {
+  return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+})
+
+// Generate varied loading card heights for more realistic layout
+const getLoadingCardHeight = (index: number) => {
+  const heights = [
+    'h-[280px]', // Portrait
+    'h-[220px]', // Square-ish
+    'h-[180px]', // Landscape
+    'h-[320px]', // Tall portrait
+    'h-[200px]', // Medium
+    'h-[160px]', // Short landscape
+    'h-[240px]', // Standard
+    'h-[260px]'  // Tall
+  ]
+  return heights[index % heights.length]
+}
 </script>
+

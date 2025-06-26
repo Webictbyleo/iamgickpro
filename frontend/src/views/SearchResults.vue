@@ -115,16 +115,19 @@
         </div>
       </div>
 
-      <!-- Search Results Grid -->
-      <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Search Results Grid with improved aspect ratio handling -->
+      <div v-else-if="searchResults.length > 0" class="masonry-grid">
         <div
           v-for="result in searchResults"
           :key="`${result.type}-${result.id}`"
-          class="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+          class="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer break-inside-avoid mb-6"
           @click="openResult(result)"
         >
-          <!-- Result Image/Thumbnail -->
-          <div class="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+          <!-- Result Image/Thumbnail with adaptive container -->
+          <div 
+            class="relative bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden"
+            :class="getThumbnailContainerClass(result)"
+          >
             <img
               v-if="result.thumbnail"
               :src="result.thumbnail"
@@ -870,6 +873,46 @@ const getExportStatusClass = (status?: string): string => {
   return statusClasses[status || 'pending'] || 'text-gray-600'
 }
 
+// Determine thumbnail container aspect ratio based on content type and dimensions
+const getThumbnailContainerClass = (result: SearchResult): string => {
+  const { type, width, height, isVideo } = result
+  
+  // Calculate aspect ratio if dimensions are available
+  let aspectRatio = 16 / 9 // Default video aspect ratio
+  
+  if (width && height) {
+    aspectRatio = width / height
+  }
+  
+  // Different aspect ratios based on content type and dimensions
+  if (type === 'design') {
+    if (aspectRatio > 2.5) return 'aspect-[5/2]' // Wide banners
+    if (aspectRatio > 1.8) return 'aspect-[21/9]' // Ultra-wide
+    if (aspectRatio > 1.3) return 'aspect-video' // Landscape
+    if (aspectRatio < 0.6) return 'aspect-[2/3]' // Tall portrait
+    if (aspectRatio < 0.9) return 'aspect-[3/4]' // Portrait
+    return 'aspect-square' // Square designs
+  }
+  
+  if (type === 'template') {
+    // Templates often have standard aspect ratios
+    if (aspectRatio > 1.5) return 'aspect-video'
+    if (aspectRatio < 0.8) return 'aspect-[3/4]'
+    return 'aspect-square'
+  }
+  
+  if (type === 'media') {
+    if (isVideo) return 'aspect-video' // Videos are typically 16:9
+    if (aspectRatio > 2) return 'aspect-[5/2]' // Wide photos
+    if (aspectRatio > 1.5) return 'aspect-video' // Landscape photos
+    if (aspectRatio < 0.7) return 'aspect-[3/4]' // Portrait photos
+    return 'aspect-square' // Square media
+  }
+  
+  // Default for exports and other types
+  return 'aspect-video'
+}
+
 // Export modal handlers
 const closeExportModal = () => {
   showExportModal.value = false
@@ -1007,5 +1050,29 @@ watch(() => route.query, () => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Masonry-style grid for varied content */
+.masonry-grid {
+  columns: 1;
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .masonry-grid {
+    columns: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .masonry-grid {
+    columns: 3;
+  }
+}
+
+@media (min-width: 1536px) {
+  .masonry-grid {
+    columns: 4;
+  }
 }
 </style>

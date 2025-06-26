@@ -62,7 +62,9 @@
                 <div class="py-1">
                   <MenuItem v-slot="{ active }">
                     <a
-                      href="#"
+                      :href="supportLinks.documentation"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       :class="[
                         active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
                         'group flex w-full items-center px-4 py-3 text-sm font-medium'
@@ -80,7 +82,9 @@
                   
                   <MenuItem v-slot="{ active }">
                     <a
-                      href="#"
+                      :href="supportLinks.liveChat"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       :class="[
                         active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
                         'group flex w-full items-center px-4 py-3 text-sm font-medium'
@@ -98,7 +102,9 @@
                   
                   <MenuItem v-slot="{ active }">
                     <a
-                      href="#"
+                      :href="supportLinks.videoTutorials"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       :class="[
                         active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
                         'group flex w-full items-center px-4 py-3 text-sm font-medium'
@@ -324,6 +330,13 @@ const authStore = useAuthStore()
 const icons = useIcons()
 const searchQuery = ref('')
 const isLoggingOut = ref(false)
+
+// Support links from environment variables
+const supportLinks = {
+  documentation: import.meta.env.VITE_SUPPORT_DOCUMENTATION_URL || '#',
+  liveChat: import.meta.env.VITE_SUPPORT_LIVE_CHAT_URL || '#',
+  videoTutorials: import.meta.env.VITE_SUPPORT_VIDEO_TUTORIALS_URL || '#'
+}
 
 const userName = computed(() => {
   const user = authStore.user
