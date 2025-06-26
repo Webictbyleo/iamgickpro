@@ -57,32 +57,12 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <span>Upload More Files</span>
+          <span>Upload More Images</span>
         </button>
       </div>
     </div>
 
-    <!-- Sticky Type Filter Tabs -->
-    <div v-if="userMedia.length > 0" class="sticky top-0 z-10 bg-white border-b border-gray-200">
-      <div class="px-4 py-3">
-        <div class="flex space-x-1 bg-gray-100 rounded-lg p-1">
-          <button
-            v-for="filter in typeFilters"
-            :key="filter.id"
-            @click="selectedTypeFilter = filter.id"
-            :class="[
-              'flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap text-center',
-              selectedTypeFilter === filter.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            ]"
-          >
-            <component :is="iconComponents[filter.icon as keyof typeof iconComponents]" class="w-4 h-4 mx-auto mb-1" />
-            <span class="block text-xs">{{ filter.label }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Scrollable Content Area -->
     <div class="flex-1 overflow-y-auto">
@@ -106,14 +86,12 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
         <h3 class="mt-2 text-sm font-medium text-gray-900">
-          {{ searchQuery ? 'No uploads found' : userMedia.length === 0 ? 'No uploads yet' : `No ${selectedTypeFilter}s found` }}
+          {{ searchQuery ? 'No uploads found' : 'No uploads yet' }}
         </h3>
         <p class="mt-1 text-sm text-gray-500">
           {{ searchQuery 
             ? 'Try adjusting your search terms' 
-            : userMedia.length === 0
-            ? 'Upload your first media files to start building your design library' 
-            : `Upload some ${selectedTypeFilter} files or try a different filter`
+            : 'Upload your first image files to start building your design library'
           }}
         </p>
         
@@ -127,7 +105,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <span>Upload Your First File</span>
+            <span>Upload Your First Image</span>
           </button>
           <button
             v-if="searchQuery"
@@ -146,7 +124,7 @@
       <div v-else class="p-4 space-y-4">
         <!-- Results header -->
         <div v-if="searchQuery" class="flex items-center justify-between">
-          <h4 class="text-sm font-medium text-gray-900">{{ filteredUploads.length }} {{ selectedTypeFilter }}s</h4>
+          <h4 class="text-sm font-medium text-gray-900">{{ filteredUploads.length }} images</h4>
           <button
             @click="clearSearch"
             class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
@@ -206,7 +184,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span>Load More Files</span>
+            <span>Load More Images</span>
           </button>
         </div>
         
@@ -214,7 +192,7 @@
         <div v-if="isLoadingUserMedia && userMedia.length > 0" class="text-center py-4">
           <div class="inline-flex items-center space-x-2">
             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span class="text-sm text-gray-600">Loading more files...</span>
+            <span class="text-sm text-gray-600">Loading more images...</span>
           </div>
         </div>
       </div>
@@ -226,18 +204,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserMedia } from '@/composables/useUserMedia'
 import type { MediaItem } from '@/types'
-import { 
-  PhotoIcon, 
-  VideoCameraIcon, 
-  MusicalNoteIcon 
-} from '@heroicons/vue/24/outline'
-
-// Icon components for template
-const iconComponents = {
-  PhotoIcon,
-  VideoCameraIcon,
-  MusicalNoteIcon
-}
 
 const emit = defineEmits<{
   addMedia: [mediaData: any]
@@ -249,16 +215,8 @@ const fileInput = ref<HTMLInputElement>()
 // Search and filter
 const searchQuery = ref('')
 const searchTimeout = ref<NodeJS.Timeout | null>(null)
-const selectedTypeFilter = ref('image')
 const isDragOver = ref(false)
 
-const typeFilters = computed(() => [
-  { 
-    id: 'image', 
-    label: 'Images', 
-    icon: 'PhotoIcon'
-  }
-])
 
 // User media management
 const {
@@ -283,8 +241,8 @@ const filteredUploads = computed(() => {
     )
   }
 
-  // Filter by type
-  filtered = filtered.filter(file => file.type === selectedTypeFilter.value)
+  // Only show images (since we only accept images now)
+  filtered = filtered.filter(file => file.type === 'image')
 
   return filtered
 })
@@ -377,10 +335,5 @@ watch(searchQuery, (newQuery) => {
     // The filtering is handled by computed property, no API call needed for local filtering
     if (newQuery.trim()) handleSearch()
   }, 500) // 500ms debounce
-})
-
-// Tab switching
-watch([selectedTypeFilter], () => {
-  // Filtering is handled by computed property
 })
 </script>
