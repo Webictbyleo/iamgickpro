@@ -47,10 +47,6 @@ readonly class UserService
             $user->setUsername($profileData['username']);
         }
         
-        if (isset($profileData['email'])) {
-            $user->setEmail($profileData['email']);
-        }
-        
         if (isset($profileData['jobTitle'])) {
             $user->setJobTitle($profileData['jobTitle']);
         }

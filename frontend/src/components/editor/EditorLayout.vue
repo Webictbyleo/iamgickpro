@@ -1415,8 +1415,18 @@ const handleLoadExistingDesign = async (designIdParam: string) => {
 const handleCreateNewDesign = async () => {
   console.log('🔄 Creating new design...')
   
-  // Create new design
-  const newDesign = designStore.createNewDesign(800, 600)
+  // Get dimensions from query parameters, with fallback to defaults
+  const width = route.query.width ? parseInt(route.query.width as string, 10) : 800
+  const height = route.query.height ? parseInt(route.query.height as string, 10) : 600
+  
+  // Validate dimensions
+  const validWidth = !isNaN(width) && width > 0 && width <= 8000 ? width : 800
+  const validHeight = !isNaN(height) && height > 0 && height <= 8000 ? height : 600
+  
+  console.log(`🎨 Creating new design with dimensions: ${validWidth}x${validHeight}`)
+  
+  // Create new design with the specified or default dimensions
+  const newDesign = designStore.createNewDesign(validWidth, validHeight)
   newDesign.name = 'Untitled Design'
   newDesign.title = 'Untitled Design'
   
@@ -1426,12 +1436,13 @@ const handleCreateNewDesign = async () => {
   if (result.success && newDesign.id) {
     const newDesignId = parseInt(newDesign.id.toString(), 10)
     if (!isNaN(newDesignId) && newDesignId > 0) {
-      // Replace current route with the new design ID
+      await editorSDK.value?.loadDesign(newDesign)
+      // Replace current route with the new design ID (remove query params)
       router.replace({ 
         name: 'Editor', 
         params: { id: newDesignId.toString() } 
       })
-      console.log(`✅ New design created with ID: ${newDesignId}`)
+      console.log(`✅ New design created with ID: ${newDesignId} and dimensions: ${validWidth}x${validHeight}`)
     }
   } else {
     console.warn('Failed to save new design, continuing with local version')

@@ -241,6 +241,7 @@ const totalPages = ref(1)
 const fileInput = ref<HTMLInputElement>()
 const previewItem = ref<MediaItem | null>(null)
 const searchTimeout = ref<NodeJS.Timeout>()
+const lastSearchQuery = ref('')
 
 // Enhanced tabs with icons
 const tabs = [
@@ -258,7 +259,16 @@ const debouncedSearch = () => {
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value)
   }
-  searchTimeout.value = setTimeout(searchMedia, 500)
+  
+  // Store the current search query value at the time of call
+  const currentQuery = searchQuery.value
+  
+  searchTimeout.value = setTimeout(() => {
+    // Only search if the query hasn't changed since the timeout was set
+    if (searchQuery.value === currentQuery) {
+      searchMedia()
+    }
+  }, 500)
 }
 
 // Memoized functions for better performance
@@ -314,6 +324,14 @@ const getPaginationPages = (): number[] => {
 
 // Media operations
 const searchMedia = async () => {
+  // Skip if already loading or if query hasn't changed
+  if (isLoading.value || lastSearchQuery.value === searchQuery.value) {
+    return
+  }
+  
+  lastSearchQuery.value = searchQuery.value
+  currentPage.value = 1 // Reset to first page for new search
+  
   if (activeTab.value === 'uploads') {
     await loadUserUploads()
   } else {
@@ -428,6 +446,7 @@ const closePreview = () => {
 
 const clearSearch = () => {
   searchQuery.value = ''
+  lastSearchQuery.value = ''
   currentPage.value = 1
   searchMedia()
 }
@@ -442,6 +461,7 @@ const goToPage = (page: number) => {
 // Watchers
 watch(activeTab, () => {
   currentPage.value = 1
+  lastSearchQuery.value = '' // Reset search state when switching tabs
   searchMedia()
 })
 

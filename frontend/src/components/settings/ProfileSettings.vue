@@ -68,13 +68,12 @@
             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
               Email Address
             </label>
-            <input
-              id="email"
-              v-model="userProfile.email"
-              type="email"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
-              placeholder="Enter your email address"
-            />
+            <div class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
+              {{ userProfile.email }}
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              Email address cannot be changed for security reasons
+            </p>
           </div>
         </div>
       </div>
@@ -578,7 +577,6 @@ const saveProfile = async () => {
     const profileData: Partial<User> = {
       firstName: userProfile.value.firstName,
       lastName: userProfile.value.lastName,
-      email: userProfile.value.email,
       jobTitle: userProfile.value.jobTitle,
       company: userProfile.value.company,
       website: userProfile.value.website,

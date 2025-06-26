@@ -563,6 +563,7 @@ class DesignService
         $newDesign->setData($originalDesign->getData());
         $newDesign->setBackground($originalDesign->getBackground());
         $newDesign->setAnimationSettings($originalDesign->getAnimationSettings());
+        $newDesign->setThumbnail($originalDesign->getThumbnail()); // Copy thumbnail
         
         $this->entityManager->persist($newDesign);
         $this->entityManager->flush();

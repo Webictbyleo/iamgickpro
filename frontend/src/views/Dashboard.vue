@@ -77,18 +77,7 @@
               </div>
             </div>
             
-            <!-- Compact Action Buttons -->
-            <div class="flex flex-col space-y-3 lg:ml-8">
-              <!-- Secondary Action -->
-              <router-link
-                to="/templates"
-                class="group w-full bg-white/15 backdrop-blur-md text-white px-8 py-3 rounded-xl font-semibold hover:bg-white/25 transition-all duration-300 border border-white/30 hover:border-white/50 flex items-center justify-center space-x-3"
-              >
-                <component :is="icons.template" class="w-5 h-5" />
-                <span>Browse Templates</span>
-                <component :is="icons.arrowRight" class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-              </router-link>
-            </div>
+
           </div>
         </div>
       </div>
@@ -146,62 +135,268 @@
       </div>
 
       <!-- Recent Designs Section -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div class="p-8 border-b border-gray-100">
+      <div class="bg-white rounded-lg border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">Recent Designs</h2>
-              <p class="text-gray-600 mt-1">Continue working on your latest projects</p>
+              <h2 class="text-xl font-bold text-gray-900">Recent Designs</h2>
+              <p class="text-gray-500 mt-1 text-sm">Continue working on your latest projects</p>
             </div>
             <router-link
               to="/designs" 
-              class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+              class="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
             >
-              View all designs
-              <ArrowRightIcon class="w-4 h-4 ml-2" />
+              View all
+              <ArrowRightIcon class="w-4 h-4 ml-1" />
             </router-link>
           </div>
         </div>
         
-        <div class="p-8">
-          <DesignGrid
-            :designs="recentDesigns"
-            :loading="loading"
-            @open="openDesign"
-            @edit="editDesign"
-            @duplicate="duplicateDesign"
-            @delete="deleteDesign"
-            @download="downloadDesign"
-          />
+        <div class="p-6">
+          <div class="relative">
+            <!-- Show loading cards first -->
+            <div v-if="loading" class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-4">
+              <div 
+                v-for="i in 3"
+                :key="`loading-${i}`"
+                class="flex-shrink-0 w-60 bg-white rounded-lg border border-gray-100 animate-pulse overflow-hidden h-80 flex flex-col"
+              >
+                <div class="h-48 bg-gray-200"></div>
+                <div class="flex-1 p-3 space-y-2">
+                  <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div class="mt-2 h-6 bg-gray-200 rounded w-16"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Show designs when loaded -->
+            <div v-else-if="recentDesigns.length > 0" class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-4">
+              <div
+                v-for="design in recentDesigns"
+                :key="design.id"
+                class="flex-shrink-0 w-60"
+                :data-design-id="design.id"
+              >
+                <!-- Design Card with Proper Aspect Ratio -->
+                <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden h-80 flex flex-col group">
+                  <!-- Design Thumbnail Container - Fixed height but proper aspect ratio -->
+                  <div class="relative h-48 bg-gray-50 flex items-center justify-center p-2">
+                    <div 
+                      v-if="design.thumbnail"
+                      class="relative max-w-full max-h-full"
+                      :style="{
+                        aspectRatio: `${design.width || 1}/${design.height || 1}`,
+                        width: design.width > design.height ? '100%' : 'auto',
+                        height: design.height > design.width ? '100%' : 'auto'
+                      }"
+                    >
+                      <img
+                        :src="design.thumbnail"
+                        :alt="design.title"
+                        class="w-full h-full object-cover rounded shadow-sm cursor-pointer"
+                        loading="lazy"
+                        @click="editDesign(design)"
+                      />
+                    </div>
+                    <div 
+                      v-else 
+                      class="w-32 h-24 bg-gray-100 rounded flex items-center justify-center cursor-pointer"
+                      @click="editDesign(design)"
+                    >
+                      <component :is="icons.design" class="w-8 h-8 text-gray-400" />
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="absolute top-2 right-2">
+                      <div class="relative">
+                        <button
+                          class="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                          @click.stop="toggleDropdown(design.id)"
+                        >
+                          <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                            <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
+                            <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
+                          </svg>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div 
+                          :class="[
+                            'absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 transition-all duration-200 z-10',
+                            dropdownOpen === design.id ? 'opacity-100 visible' : 'opacity-0 invisible'
+                          ]"
+                        >
+                          <button
+                            @click.stop="editDesign(design); closeDropdown()"
+                            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          >
+                            <component :is="icons.edit" class="w-4 h-4 mr-2" />
+                            Edit Design
+                          </button>
+                          <button
+                            @click.stop="duplicateDesign(design); closeDropdown()"
+                            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          >
+                            <component :is="icons.duplicate" class="w-4 h-4 mr-2" />
+                            Duplicate
+                          </button>
+                          <button
+                            @click.stop="downloadDesign(design); closeDropdown()"
+                            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          >
+                            <component :is="icons.download" class="w-4 h-4 mr-2" />
+                            Export
+                          </button>
+                          <hr class="my-1 border-gray-100">
+                          <button
+                            @click.stop="deleteDesign(design); closeDropdown()"
+                            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                          >
+                            <component :is="icons.delete" class="w-4 h-4 mr-2" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Design Info - Takes remaining space -->
+                  <div class="flex-1 p-3 flex flex-col justify-between">
+                    <div>
+                      <h3 class="font-medium text-gray-900 truncate text-sm cursor-pointer hover:text-violet-600 transition-colors" @click="editDesign(design)">
+                        {{ design.title || design.name || 'Untitled Design' }}
+                      </h3>
+                      <p class="text-xs text-gray-500 mt-1">
+                        {{ new Date(design.updatedAt || design.createdAt).toLocaleDateString() }}
+                      </p>
+                    </div>
+                    
+                    <!-- Design dimensions -->
+                    <div class="mt-2">
+                      <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                        {{ design.width }}×{{ design.height }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Empty State -->
+            <div 
+              v-else
+              class="text-center py-12 bg-gray-50 rounded-lg"
+            >
+              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <component :is="icons.design" class="w-6 h-6 text-gray-500" />
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No designs yet</h3>
+              <p class="text-gray-500 mb-6 text-sm">Start creating your first design!</p>
+              <router-link
+                to="/editor"
+                class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors text-sm"
+              >
+                <component :is="icons.plus" class="w-4 h-4 mr-2" />
+                Create Design
+              </router-link>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Featured Templates Section -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div class="p-8 border-b border-gray-100">
+      <div class="bg-white rounded-lg border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">Featured Templates</h2>
-              <p class="text-gray-600 mt-1">Professional designs to get you started quickly</p>
+              <h2 class="text-xl font-bold text-gray-900">Featured Templates</h2>
+              <p class="text-gray-500 mt-1 text-sm">Professional designs to get you started quickly</p>
             </div>
             <router-link
               to="/templates"
-              class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+              class="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
             >
               Browse all
-              <ArrowRightIcon class="w-4 h-4 ml-2" />
+              <ArrowRightIcon class="w-4 h-4 ml-1" />
             </router-link>
           </div>
         </div>
         
-        <div class="p-8">
-          <TemplateGrid
-            title=""
-            :templates="featuredTemplates"
-            :loading="templatesLoading"
-            :show-view-all="false"
-            @select="useTemplate"
-          />
+        <div class="p-6">
+          <div class="relative">
+            <div class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-4">
+              <div
+                v-for="template in featuredTemplates"
+                :key="template.id"
+                class="flex-shrink-0 w-60 cursor-pointer"
+                @click="useTemplate(template)"
+              >
+                <!-- Minimal Template Card -->
+                <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden">
+                  <!-- Template Thumbnail -->
+                  <div class="aspect-[3/4] bg-gray-50">
+                    <img
+                      v-if="template.thumbnail || template.thumbnailUrl"
+                      :src="template.thumbnail || template.thumbnailUrl"
+                      :alt="template.title"
+                      class="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-50">
+                      <component :is="icons.template" class="w-6 h-6 text-gray-400" />
+                    </div>
+                  </div>
+                  
+                  <!-- Template Info -->
+                  <div class="p-3">
+                    <h3 class="font-medium text-gray-900 text-sm truncate">
+                      {{ template.title }}
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ template.category || 'General' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Loading Cards -->
+              <div 
+                v-if="templatesLoading"
+                v-for="i in 4"
+                :key="`template-loading-${i}`"
+                class="flex-shrink-0 w-60 animate-pulse"
+              >
+                <div class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+                  <div class="aspect-[3/4] bg-gray-200"></div>
+                  <div class="p-3 space-y-2">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Empty State -->
+          <div 
+            v-if="!templatesLoading && featuredTemplates.length === 0"
+            class="text-center py-12 bg-gray-50 rounded-lg"
+          >
+            <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <component :is="icons.template" class="w-6 h-6 text-gray-500" />
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No templates available</h3>
+            <p class="text-gray-500 mb-6 text-sm">Check back later for new templates</p>
+            <router-link
+              to="/templates"
+              class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm"
+            >
+              Browse Templates
+              <component :is="icons.arrowRight" class="w-4 h-4 ml-2" />
+            </router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -225,11 +420,12 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useDesignStore } from '@/stores/design'
 import { useIcons } from '@/composables/useIcons'
-import { analyticsAPI, templateAPI } from '@/services/api'
+import { analyticsAPI, templateAPI, designAPI } from '@/services/api'
 import type { Design, Template, DashboardStats, SearchResult } from '@/types'
 
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
+import DesignCard from '@/components/ui/DesignCard.vue'
 import DesignGrid from '@/components/ui/DesignGrid.vue'
 import TemplateGrid from '@/components/ui/TemplateGrid.vue'
 import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
@@ -246,6 +442,9 @@ const statsLoading = ref(false)
 const recentDesigns = ref<Design[]>([])
 const featuredTemplates = ref<Template[]>([])
 const dashboardStats = ref<DashboardStats | null>(null)
+
+// Dropdown state
+const dropdownOpen = ref<string | null>(null)
 
 // Export modal state
 const isExportModalOpen = ref(false)
@@ -280,6 +479,15 @@ const formatLastLogin = (date: Date): string => {
 // Methods
 const handleSearch = (query: string) => {
   router.push(`/designs?search=${encodeURIComponent(query)}`)
+}
+
+// Dropdown methods
+const toggleDropdown = (designId: string) => {
+  dropdownOpen.value = dropdownOpen.value === designId ? null : designId
+}
+
+const closeDropdown = () => {
+  dropdownOpen.value = null
 }
 
 const openDesign = (design: Design) => {
@@ -387,10 +595,22 @@ const loadDashboardStats = async () => {
 const loadRecentDesigns = async () => {
   loading.value = true
   try {
-    await designStore.loadUserDesigns()
-    recentDesigns.value = designStore.designs.slice(0, 6) // Show only recent 6
+    // Load only recent 6 designs directly from API with pagination
+    const response = await designAPI.getDesigns({
+      page: 1,
+      limit: 6,
+      sort_by: 'updated_at',
+      sort_order: 'desc'
+    })
+    
+    if (response.data?.data) {
+      recentDesigns.value = response.data.data
+    } else {
+      recentDesigns.value = []
+    }
   } catch (error) {
     console.error('Failed to load recent designs:', error)
+    recentDesigns.value = []
   } finally {
     loading.value = false
   }
@@ -458,5 +678,34 @@ onMounted(async () => {
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+/* Custom Scrollbar Styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Hide scrollbar for Firefox */
+.scrollbar-thin {
+  scrollbar-color: #d1d5db #f3f4f6;
+  scrollbar-width: thin;
 }
 </style>

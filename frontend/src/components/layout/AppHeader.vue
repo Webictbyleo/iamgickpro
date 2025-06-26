@@ -145,7 +145,7 @@
             <MenuItems class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-1 z-[9999]">
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="handleCreateDesign('blank')"
+                  @click="showDesignSizeModal = true"
                   :class="[
                     active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
                     'group flex w-full items-center px-4 py-3 text-sm font-medium'
@@ -155,8 +155,8 @@
                     <component :is="icons.plus" class="w-4 h-4 text-white" />
                   </div>
                   <div class="text-left">
-                    <div class="font-semibold">Blank Design</div>
-                    <div class="text-xs text-gray-500">Start from scratch</div>
+                    <div class="font-semibold">New Design</div>
+                    <div class="text-xs text-gray-500">Choose size & start creating</div>
                   </div>
                 </button>
               </MenuItem>
@@ -181,6 +181,12 @@
             </MenuItems>
           </Transition>
         </Menu>
+
+        <!-- Design Size Selection Modal -->
+        <DesignSizeSelectionModal
+          :show="showDesignSizeModal"
+          @close="showDesignSizeModal = false"
+        />
 
         <!-- User menu -->
         <Menu as="div" class="relative">
@@ -310,6 +316,7 @@ import { useRouter } from 'vue-router'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useIcons } from '@/composables/useIcons'
+import DesignSizeSelectionModal from '@/components/modals/DesignSizeSelectionModal.vue'
 
 interface Props {
   title: string
@@ -330,6 +337,7 @@ const authStore = useAuthStore()
 const icons = useIcons()
 const searchQuery = ref('')
 const isLoggingOut = ref(false)
+const showDesignSizeModal = ref(false)
 
 // Support links from environment variables
 const supportLinks = {

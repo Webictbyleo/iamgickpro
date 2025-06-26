@@ -39,9 +39,6 @@ class UpdateProfileRequestDTO
     )]
     public readonly ?string $username;
 
-    #[Assert\Email(message: 'Please provide a valid email address')]
-    public readonly ?string $email;
-
     #[Assert\Length(
         max: 255,
         maxMessage: 'Job title cannot be longer than {{ limit }} characters'
@@ -85,7 +82,6 @@ class UpdateProfileRequestDTO
         ?string $firstName = null,
         ?string $lastName = null,
         ?string $username = null,
-        ?string $email = null,
         ?string $jobTitle = null,
         ?string $company = null,
         ?string $website = null,
@@ -98,7 +94,6 @@ class UpdateProfileRequestDTO
         $this->firstName = $firstName;
         $this->lastName = $lastName;
         $this->username = $username;
-        $this->email = $email;
         $this->jobTitle = $jobTitle;
         $this->company = $company;
         $this->website = $website;
@@ -117,7 +112,6 @@ class UpdateProfileRequestDTO
         return $this->firstName !== null 
             || $this->lastName !== null 
             || $this->username !== null 
-            || $this->email !== null
             || $this->jobTitle !== null
             || $this->company !== null
             || $this->website !== null
@@ -143,9 +137,6 @@ class UpdateProfileRequestDTO
         }
         if ($this->username !== null) {
             $data['username'] = $this->username;
-        }
-        if ($this->email !== null) {
-            $data['email'] = $this->email;
         }
         if ($this->jobTitle !== null) {
             $data['jobTitle'] = $this->jobTitle;

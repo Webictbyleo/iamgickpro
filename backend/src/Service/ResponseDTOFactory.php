@@ -65,7 +65,12 @@ class ResponseDTOFactory
                     'mediaCount' => count($user->getMediaFiles()),
                     'exportJobCount' => count($user->getExportJobs()),
                 ],
-                socialLinks: $user->getSocialLinks()
+                socialLinks: $user->getSocialLinks(),
+                jobTitle: $user->getJobTitle(),
+                company: $user->getCompany(),
+                website: $user->getWebsite(),
+                portfolio: $user->getPortfolio(),
+                bio: $user->getBio(),
             );
         }
 

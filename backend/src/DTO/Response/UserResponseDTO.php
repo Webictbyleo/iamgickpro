@@ -25,7 +25,14 @@ class UserResponseDTO
         public readonly ?string $updatedAt = null,
         public readonly ?array $settings = null,
         public readonly ?array $stats = null,
-        public readonly ?array $socialLinks = null
+        public readonly ?array $socialLinks = null,
+        // Additional fields can be added as needed
+        public readonly ?string $jobTitle = null,
+        public readonly ?string $company = null,
+        public readonly ?string $website = null,
+        public readonly ?string $portfolio = null,
+        public readonly ?string $bio = null,
+
     ) {}
 
     public function toArray(): array
@@ -65,6 +72,21 @@ class UserResponseDTO
         }
         if ($this->socialLinks !== null) {
             $data['socialLinks'] = $this->socialLinks;
+        }
+        if ($this->jobTitle !== null) {
+            $data['jobTitle'] = $this->jobTitle;
+        }
+        if ($this->company !== null) {
+            $data['company'] = $this->company;
+        }
+        if ($this->website !== null) {
+            $data['website'] = $this->website;
+        }
+        if ($this->portfolio !== null) {
+            $data['portfolio'] = $this->portfolio;
+        }
+        if ($this->bio !== null) {
+            $data['bio'] = $this->bio;
         }
 
         return $data;

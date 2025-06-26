@@ -65,16 +65,146 @@
         </div>
         
         <!-- Grid View -->
-        <DesignGrid
-          v-if="viewMode === 'grid'"
-          :designs="filteredDesigns"
-          :loading="loading"
-          @open="openDesign"
-          @edit="editDesign"
-          @duplicate="duplicateDesign"
-          @delete="deleteDesign"
-          @download="downloadDesign"
-        />
+        <div v-if="viewMode === 'grid'">
+          <!-- Loading State -->
+          <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div 
+              v-for="i in 12"
+              :key="`loading-${i}`"
+              class="bg-white rounded-lg border border-gray-100 animate-pulse overflow-hidden h-80 flex flex-col"
+            >
+              <div class="h-48 bg-gray-200"></div>
+              <div class="flex-1 p-3 space-y-2">
+                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div class="mt-2 h-6 bg-gray-200 rounded w-16"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Designs Grid -->
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div
+              v-for="design in filteredDesigns"
+              :key="design.id"
+              class="group"
+            >
+              <!-- Design Card with Fixed Height -->
+              <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden h-80 flex flex-col">
+                <!-- Design Thumbnail Container - Fixed height but proper aspect ratio -->
+                <div class="relative h-48 bg-gray-50 flex items-center justify-center p-2">
+                  <div 
+                    v-if="design.thumbnail"
+                    class="relative max-w-full max-h-full"
+                    :style="{
+                      aspectRatio: `${design.width || 1}/${design.height || 1}`,
+                      width: design.width > design.height ? '100%' : 'auto',
+                      height: design.height > design.width ? '100%' : 'auto'
+                    }"
+                  >
+                    <img
+                      :src="design.thumbnail"
+                      :alt="design.title"
+                      class="w-full h-full object-cover rounded shadow-sm cursor-pointer"
+                      loading="lazy"
+                      @click="editDesign(design)"
+                    />
+                  </div>
+                  <div 
+                    v-else 
+                    class="w-32 h-24 bg-gray-100 rounded flex items-center justify-center cursor-pointer"
+                    @click="editDesign(design)"
+                  >
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  
+                  <!-- Dropdown Menu -->
+                  <div class="absolute top-2 right-2">
+                    <div class="relative">
+                      <button
+                        class="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                        @click.stop="toggleDropdown(design.id)"
+                      >
+                        <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                          <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
+                          <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
+                        </svg>
+                      </button>
+                      
+                      <!-- Dropdown Menu -->
+                      <div 
+                        :class="[
+                          'absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 transition-all duration-200 z-10',
+                          dropdownOpen === design.id ? 'opacity-100 visible' : 'opacity-0 invisible'
+                        ]"
+                      >
+                        <button
+                          @click.stop="editDesign(design); closeDropdown()"
+                          class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        >
+                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                          Edit Design
+                        </button>
+                        <button
+                          @click.stop="duplicateDesign(design); closeDropdown()"
+                          class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        >
+                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                          Duplicate
+                        </button>
+                        <button
+                          @click.stop="downloadDesign(design); closeDropdown()"
+                          class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        >
+                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                          </svg>
+                          Export
+                        </button>
+                        <hr class="my-1 border-gray-100">
+                        <button
+                          @click.stop="deleteDesign(design); closeDropdown()"
+                          class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                        >
+                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Design Info - Takes remaining space -->
+                <div class="flex-1 p-3 flex flex-col justify-between">
+                  <div>
+                    <h3 class="font-medium text-gray-900 truncate text-sm cursor-pointer hover:text-violet-600 transition-colors" @click="editDesign(design)">
+                      {{ design.title || design.name || 'Untitled Design' }}
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ formatDate(design.updatedAt || design.createdAt) }}
+                    </p>
+                  </div>
+                  
+                  <!-- Design dimensions -->
+                  <div class="mt-2">
+                    <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                      {{ design.width }}×{{ design.height }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- List View -->
         <div v-else-if="viewMode === 'list'" class="space-y-4">
@@ -188,7 +318,6 @@ import { designAPI } from '@/services/api'
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
-import DesignGrid from '@/components/ui/DesignGrid.vue'
 import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
 
 const router = useRouter()
@@ -204,6 +333,9 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalResults = ref(0)
 const designs = ref<Design[]>([])
+
+// Dropdown state
+const dropdownOpen = ref<string | null>(null)
 
 // Export modal state
 const isExportModalOpen = ref(false)
@@ -295,6 +427,15 @@ const filteredDesigns = computed(() => {
 // Methods
 const handleSearch = (query: string) => {
   searchQuery.value = query
+}
+
+// Dropdown methods
+const toggleDropdown = (designId: string) => {
+  dropdownOpen.value = dropdownOpen.value === designId ? null : designId
+}
+
+const closeDropdown = () => {
+  dropdownOpen.value = null
 }
 
 const openDesign = (design: Design) => {
