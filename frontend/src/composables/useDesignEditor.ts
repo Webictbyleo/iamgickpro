@@ -37,11 +37,201 @@ export function useDesignEditor() {
   const saveError = ref(false)
   const isPerformingHistoryOperation = ref(false) // Flag to prevent history reset during undo/redo
 
-  // Auto-save functionality
+  // Auto-save functionality and sync status tracking
   let autoSaveInterval: ReturnType<typeof setInterval>
   let thumbnailUpdateTimeout: ReturnType<typeof setTimeout>
   let layerUpdateTimeout: ReturnType<typeof setTimeout>
   const pendingLayerUpdates = new Map<number, Layer>() // Store pending updates by layer ID
+  
+  // Enhanced sync status tracking
+  const pendingSyncOperations = new Set<number>() // Track layers with pending sync operations
+  const failedSyncLayers = new Set<number>() // Track layers that failed to sync
+  const temporaryLayers = new Set<number>() // Track layers that haven't been saved to backend yet
+
+  // Utility functions for sync status management
+  const markLayerAsPending = (layerId: number) => {
+    pendingSyncOperations.add(layerId)
+    if (designStore.currentDesign?.layers) {
+      const layer = designStore.currentDesign.layers.find(l => l.id === layerId)
+      if (layer) {
+        layer.syncStatus = 'pending'
+        layer.lastSyncAttempt = new Date().toISOString()
+      }
+    }
+  }
+
+  const markLayerAsSynced = (layerId: number) => {
+    pendingSyncOperations.delete(layerId)
+    failedSyncLayers.delete(layerId)
+    temporaryLayers.delete(layerId)
+    if (designStore.currentDesign?.layers) {
+      const layer = designStore.currentDesign.layers.find(l => l.id === layerId)
+      if (layer) {
+        layer.syncStatus = 'synced'
+        layer.isTemporary = false
+        layer.syncError = undefined
+      }
+    }
+  }
+
+  const markLayerAsFailed = (layerId: number, error: string) => {
+    pendingSyncOperations.delete(layerId)
+    failedSyncLayers.add(layerId)
+    if (designStore.currentDesign?.layers) {
+      const layer = designStore.currentDesign.layers.find(l => l.id === layerId)
+      if (layer) {
+        layer.syncStatus = 'failed'
+        layer.syncError = error
+        layer.lastSyncAttempt = new Date().toISOString()
+      }
+    }
+  }
+
+  const markLayerAsTemporary = (layerId: number) => {
+    temporaryLayers.add(layerId)
+    if (designStore.currentDesign?.layers) {
+      const layer = designStore.currentDesign.layers.find(l => l.id === layerId)
+      if (layer) {
+        layer.isTemporary = true
+        layer.syncStatus = 'pending'
+      }
+    }
+  }
+
+  const markLayerAsDeleting = (layerId: number) => {
+    pendingSyncOperations.add(layerId)
+    if (designStore.currentDesign?.layers) {
+      const layer = designStore.currentDesign.layers.find(l => l.id === layerId)
+      if (layer) {
+        layer.syncStatus = 'deleting'
+        layer.lastSyncAttempt = new Date().toISOString()
+      }
+    }
+  }
+
+  // Helper function to update layer ID in all tracking sets
+  const updateLayerIdInTrackingSets = (oldId: number, newId: number) => {
+    // Update tracking sets
+    if (pendingSyncOperations.has(oldId)) {
+      pendingSyncOperations.delete(oldId)
+      pendingSyncOperations.add(newId)
+    }
+    if (failedSyncLayers.has(oldId)) {
+      failedSyncLayers.delete(oldId)
+      failedSyncLayers.add(newId)
+    }
+    if (temporaryLayers.has(oldId)) {
+      temporaryLayers.delete(oldId)
+      temporaryLayers.add(newId)
+    }
+    
+    // Update pending layer updates map
+    if (pendingLayerUpdates.has(oldId)) {
+      const layerData = pendingLayerUpdates.get(oldId)
+      if (layerData) {
+        layerData.id = newId
+        pendingLayerUpdates.delete(oldId)
+        pendingLayerUpdates.set(newId, layerData)
+      }
+    }
+  }
+
+  // Helper function to initialize sync status for loaded designs
+  const initializeSyncStatusForLoadedDesign = (design: any) => {
+    console.log('🔄 Initializing sync status for loaded design')
+    
+    // Clear all tracking sets since this is a fresh load
+    pendingSyncOperations.clear()
+    failedSyncLayers.clear()
+    temporaryLayers.clear()
+    pendingLayerUpdates.clear()
+    
+    // Mark design as synced
+    if (designStore.currentDesign) {
+      designStore.currentDesign.syncStatus = 'synced'
+      designStore.currentDesign.isTemporary = false
+      designStore.currentDesign.syncError = undefined
+    }
+    
+    // Mark all layers as synced
+    if (design.layers && Array.isArray(design.layers)) {
+      design.layers.forEach((layer: Layer) => {
+        layer.syncStatus = 'synced'
+        layer.isTemporary = false
+        layer.syncError = undefined
+        console.log(`📦 Layer ${layer.id} (${layer.name}) marked as synced`)
+      })
+    }
+    
+    console.log('✅ Sync status initialized for loaded design')
+  }
+
+  // Enhanced sync status getters
+  const getUnsyncedLayers = computed(() => {
+    if (!designStore.currentDesign?.layers) return []
+    return designStore.currentDesign.layers.filter(layer => {
+      // Skip layers that are clearly synced from backend (positive IDs with synced status)
+      if (layer.id > 0 && layer.syncStatus === 'synced') {
+        return false
+      }
+      
+      // Check for unsynced conditions
+      return layer.syncStatus !== 'synced' || 
+             pendingSyncOperations.has(layer.id) ||
+             failedSyncLayers.has(layer.id) ||
+             temporaryLayers.has(layer.id)
+    })
+  })
+
+  const hasUnsyncedChanges = computed(() => {
+    return hasUnsavedChanges.value || 
+           getUnsyncedLayers.value.length > 0 ||
+           designStore.currentDesign?.syncStatus !== 'synced'
+  })
+
+  // Enhanced computed for failed sync layers to ensure UI reactivity
+  const failedSyncLayersComputed = computed(() => {
+    return Array.from(failedSyncLayers).filter(layerId => 
+      designStore.currentDesign?.layers?.some(layer => layer.id === layerId)
+    )
+  })
+
+  // Retry mechanism for failed sync operations
+  const retryFailedSyncs = async () => {
+    const failedLayers = Array.from(failedSyncLayers)
+    console.log(`🔄 Retrying sync for ${failedLayers.length} failed layers`)
+    
+    for (const layerId of failedLayers) {
+      const layer = designStore.currentDesign?.layers?.find(l => l.id === layerId)
+      if (layer) {
+        console.log(`🔄 Retrying sync for layer: ${layer.name} (${layerId})`)
+        
+        // Clear the failed status before retrying
+        failedSyncLayers.delete(layerId)
+        
+        // Queue for retry
+        debouncedLayerUpdate(layer)
+      }
+    }
+  }
+
+  // Auto-retry mechanism - retry failed syncs when connection is restored
+  const setupAutoRetry = () => {
+    // Listen for online/offline events
+    const handleOnline = () => {
+      console.log('🌐 Network connection restored, retrying failed syncs')
+      if (failedSyncLayers.size > 0) {
+        retryFailedSyncs()
+      }
+    }
+    
+    window.addEventListener('online', handleOnline)
+    
+    // Cleanup function
+    return () => {
+      window.removeEventListener('online', handleOnline)
+    }
+  }
 
   // Debounced thumbnail generation to avoid excessive API calls
   const debouncedThumbnailGeneration = () => {
@@ -84,10 +274,13 @@ export function useDesignEditor() {
     }, 3000) // Wait 3 seconds after last change before generating thumbnail
   }
 
-  // Debounced layer update to avoid excessive API calls during slider interactions
+  // Enhanced debounced layer update with sync status tracking
   const debouncedLayerUpdate = (layer: Layer) => {
     // Store the latest layer state
     pendingLayerUpdates.set(layer.id, layer)
+    
+    // Mark layer as pending sync
+    markLayerAsPending(layer.id)
     
     if (layerUpdateTimeout) {
       clearTimeout(layerUpdateTimeout)
@@ -102,10 +295,66 @@ export function useDesignEditor() {
       
       for (const [layerId, layerData] of updates) {
         try {
-          await designStore.updateLayer(layerId, layerData, { skipPersistence: false })
-          console.log('📦 Layer updated in store with backend persistence (debounced):', layerId)
-        } catch (error) {
-          console.error('Failed to update layer:', layerId, error)
+          // Check if this is a temporary layer (needs CREATE) or existing layer (needs UPDATE)
+          const isTemporary = temporaryLayers.has(layerId)
+          
+          if (isTemporary) {
+            // Use CREATE endpoint for temporary layers - but DON'T call addLayer again
+            // Instead, directly call the layer API to create in backend
+            const response = await layerAPI.createLayer({
+              designId: designStore.currentDesign!.id,
+              type: layerData.type as 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio',
+              name: layerData.name,
+              properties: layerData.properties,
+              transform: layerData.transform,
+              visible: layerData.visible,
+              locked: layerData.locked,
+              zIndex: layerData.zIndex
+            })
+            
+            if (response.data?.success && response.data?.data?.layer) {
+              const backendLayer = response.data.data.layer
+              const oldId = layerId
+              const newId = backendLayer.id
+              
+              console.log(`📦 Temporary layer created in backend: ${oldId} -> ${newId}`)
+              
+              // Update the layer ID in the design store
+              if (designStore.currentDesign?.layers) {
+                const layerIndex = designStore.currentDesign.layers.findIndex(l => l.id === oldId)
+                if (layerIndex !== -1) {
+                  designStore.currentDesign.layers[layerIndex].id = newId
+                  // Also update any other properties that might have changed
+                  Object.assign(designStore.currentDesign.layers[layerIndex], backendLayer)
+                }
+              }
+              
+              // Update tracking sets
+              updateLayerIdInTrackingSets(oldId, newId)
+              
+              // Update the layer in the SDK
+              if (editorSDK.value?.layers?.updateLayerId) {
+                editorSDK.value.layers.updateLayerId(oldId, newId)
+              }
+              
+              // Mark as synced with new ID
+              markLayerAsSynced(newId)
+            }
+          } else {
+            // Use UPDATE endpoint for existing layers
+            await designStore.updateLayer(layerId, layerData, { skipPersistence: false })
+            console.log('📦 Layer updated in backend:', layerId)
+            markLayerAsSynced(layerId)
+          }
+        } catch (error: any) {
+          console.error('Failed to sync layer:', layerId, error)
+          const errorMessage = error.response?.data?.message || error.message || 'Network error'
+          markLayerAsFailed(layerId, errorMessage)
+          
+          // Show user notification for sync failure
+          if (error.name === 'NetworkError' || error.code === 'ECONNREFUSED') {
+            console.warn('🌐 Network connectivity issue detected for layer sync')
+          }
         }
       }
       
@@ -255,18 +504,45 @@ export function useDesignEditor() {
 
     console.log('Setting up SDK event listeners')
 
-    // Layer events
+    // Enhanced layer events with sync status tracking
     editorSDK.value.on('layer:created', async (layer: Layer) => {
       console.log('🎯 Event received: layer:created', layer)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
-        // Normal layer creation - persist to backend
-        const result = await designStore.addLayer(layer)
-        if (result.success && result.layer && result.layer.id !== layer.id && editorSDK.value) {
-          // Update the SDK layer with the new ID from backend
-          console.log(`🔄 Updating layer ID from ${layer.id} to ${result.layer.id}`)
-          editorSDK.value.layers.updateLayerId(layer.id, result.layer.id)
+        
+        // Generate temporary ID for new layers (negative to distinguish from backend IDs)
+        const tempId = layer.id > 0 ? -Date.now() : layer.id
+        if (layer.id > 0) {
+          layer.id = tempId
         }
+        
+        // Mark as temporary layer
+        markLayerAsTemporary(layer.id)
+        
+        // Add to store without immediate backend persistence
+        const result = await designStore.addLayer(layer, { skipPersistence: true })
+        
+        // Update layer ID if backend assigned a new one
+        if (result.success && result.layer && result.layer.id !== layer.id) {
+          const oldId = layer.id
+          const newId = result.layer.id
+          console.log(`🔄 Updating temporary layer ID from ${oldId} to ${newId}`)
+          
+          // Update tracking sets with new ID
+          updateLayerIdInTrackingSets(oldId, newId)
+          
+          // Update the layer object
+          layer.id = newId
+          
+          // Update the layer in the SDK if it has an updateLayerId method
+          if (editorSDK.value?.layers?.updateLayerId) {
+            editorSDK.value.layers.updateLayerId(oldId, newId)
+          }
+        }
+        
+        // Set up debounced persistence with sync tracking
+        debouncedLayerUpdate(layer)
+        
         hasUnsavedChanges.value = true
         saveError.value = false // Clear previous save errors
         console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)
@@ -290,9 +566,9 @@ export function useDesignEditor() {
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
         
-        // Handle layer update with proper history tracking
+        // Handle layer update with proper history tracking and sync status
         handleLayerChangeWithHistory('update', layer, () => {
-          // Use debounced update for backend persistence
+          // Use debounced update for backend persistence with sync tracking
           debouncedLayerUpdate(layer)
         })
         
@@ -301,10 +577,44 @@ export function useDesignEditor() {
       }
     })
 
-    editorSDK.value.on('layer:deleted', (layerId: number) => {
+    editorSDK.value.on('layer:deleted', async (layerId: number) => {
       console.log('🎯 Event received: layer:deleted', layerId)
       // Only process if not loading a design to prevent circular saves
       if (!editorSDK.value?.isLoading()) {
+        
+        // Mark layer as being deleted
+        markLayerAsDeleting(layerId)
+        
+        try {
+          // Delete from backend only if not a temporary layer
+          if (!temporaryLayers.has(layerId)) {
+            await designStore.removeLayer(layerId)
+            console.log('📦 Layer deleted from backend:', layerId)
+          } else {
+            // Just remove from local state for temporary layers
+            // Find and remove the layer from the current design layers array
+            if (designStore.currentDesign?.layers) {
+              const layerIndex = designStore.currentDesign.layers.findIndex(l => l.id === layerId)
+              if (layerIndex !== -1) {
+                designStore.currentDesign.layers.splice(layerIndex, 1)
+              }
+            }
+            console.log('📦 Temporary layer removed locally:', layerId)
+          }
+          
+          // Clean up tracking sets
+          temporaryLayers.delete(layerId)
+          pendingSyncOperations.delete(layerId)
+          failedSyncLayers.delete(layerId)
+          
+        } catch (error: any) {
+          console.error('Failed to delete layer from backend:', layerId, error)
+          const errorMessage = error.response?.data?.message || error.message || 'Network error'
+          markLayerAsFailed(layerId, `Delete failed: ${errorMessage}`)
+          
+          // Note: Layer remains visible in UI with failed sync status
+          // User can retry deletion later when network is restored
+        }
         
         // Handle layer deletion with proper history tracking
         handleLayerChangeWithHistory('delete', layerId)
@@ -337,6 +647,9 @@ export function useDesignEditor() {
     editorSDK.value.on('design:loaded', (design: any) => {
       console.log('🎯 Event received: design:loaded', design)
       
+      // Initialize sync status for all loaded content (clears pending states)
+      initializeSyncStatusForLoadedDesign(design)
+      
       // Sync store with loaded design state (without triggering saves)
       if (design.layers && Array.isArray(design.layers)) {
         // Update store layers directly to match what was loaded into the editor
@@ -356,6 +669,14 @@ export function useDesignEditor() {
       
       // Clear unsaved changes since we just loaded a fresh design
       hasUnsavedChanges.value = false
+      
+      // Mark the design itself as synced
+      if (designStore.currentDesign) {
+        designStore.currentDesign.syncStatus = 'synced'
+        designStore.currentDesign.isTemporary = false
+        designStore.currentDesign.syncError = undefined
+        console.log('📦 Design marked as synced')
+      }
       
       // Emit auto-fit event only if we're not performing a history operation
       if (typeof window !== 'undefined' && !isPerformingHistoryOperation.value) {
@@ -639,6 +960,10 @@ export function useDesignEditor() {
         return result // Return the successful result
       } else {
         const newDesign = designStore.createNewDesign()
+        
+        // Initialize sync status for new design
+        initializeSyncStatusForLoadedDesign(newDesign)
+        
         return { success: true, design: newDesign } // Return new design result
       }
     } finally {
@@ -646,6 +971,9 @@ export function useDesignEditor() {
       isPerformingHistoryOperation.value = false
     }
   }
+
+  // Set up auto-retry mechanism
+  const cleanupAutoRetry = setupAutoRetry()
 
   const cleanup = async () => {
     // Cleanup SDK
@@ -656,6 +984,7 @@ export function useDesignEditor() {
     
     stopAutoSave()
     stopThumbnailGeneration()
+    cleanupAutoRetry() // Clean up auto-retry event listeners
     
     // Save before leaving
     if (hasUnsavedChanges.value && designStore.currentDesign) {
@@ -668,10 +997,17 @@ export function useDesignEditor() {
     editorSDK: computed(() => editorSDK.value) as ComputedRef<EditorSDK | null>,
     isInitializing: computed(() => isInitializing.value),
     hasUnsavedChanges: computed(() => hasUnsavedChanges.value),
+    hasUnsyncedChanges, // Enhanced sync status
     saveError: computed(() => saveError.value),
     isPerformingHistoryOperation: computed(() => isPerformingHistoryOperation.value),
     canUndo,
     canRedo,
+    // Sync status tracking
+    getUnsyncedLayers,
+    retryFailedSyncs,
+    pendingSyncOperations: computed(() => Array.from(pendingSyncOperations)),
+    failedSyncLayers: failedSyncLayersComputed,
+    temporaryLayers: computed(() => Array.from(temporaryLayers)),
     initializeEditor,
     loadDesign,
     saveDesign,
