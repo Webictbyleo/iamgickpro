@@ -1,0 +1,42 @@
+{
+  "name": "iamgickpro-scripts",
+  "version": "1.0.0",
+  "description": "Automation scripts for IAMGickPro template management",
+  "main": "advanced-template-importer.js",
+  "scripts": {
+    "test": "node test-import-system.js",
+    "browse": "node browse-templates.js",
+    "browse:analyze": "node browse-templates.js --analyze",
+    "browse:social": "node browse-templates.js --category social-media --limit 20",
+    "import": "node advanced-template-importer.js",
+    "import:sample": "node advanced-template-importer.js --limit 5 --dry-run",
+    "import:social": "node advanced-template-importer.js --category social-media --limit 10",
+    "import:presentation": "node advanced-template-importer.js --category presentation --limit 10",
+    "import:test": "node advanced-template-importer.js --limit 1 --dry-run",
+    "import:fresh": "node advanced-template-importer.js --clear-existing --limit 20",
+    "import:all": "node advanced-template-importer.js --clear-existing"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.19.12",
+    "jsdom": "^24.0.0",
+    "mysql2": "^3.14.1"
+  },
+  "keywords": [
+    "design",
+    "templates",
+    "automation",
+    "import",
+    "thumbnail-generation",
+    "canvas"
+  ],
+  "author": "IAMGickPro Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,6 +1,7 @@
 {
     "git.ignoreLimitWarning": true,
     "sqltools.connections": [
+        
         {
             "mysqlOptions": {
                 "authProtocol": "default",
