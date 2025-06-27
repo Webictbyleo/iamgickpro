@@ -330,33 +330,55 @@
               <div
                 v-for="template in featuredTemplates"
                 :key="template.id"
-                class="flex-shrink-0 w-60 cursor-pointer"
+                class="flex-shrink-0 w-60 cursor-pointer group"
                 @click="useTemplate(template)"
               >
-                <!-- Minimal Template Card -->
-                <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden">
+                <!-- Template Card with Dynamic Aspect Ratio -->
+                <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden">
                   <!-- Template Thumbnail -->
-                  <div class="aspect-[3/4] bg-gray-50">
+                  <div 
+                    class="relative bg-gray-50 overflow-hidden"
+                    :style="getTemplateCardStyle(template)"
+                  >
                     <img
                       v-if="template.thumbnail || template.thumbnailUrl"
                       :src="template.thumbnail || template.thumbnailUrl"
-                      :alt="template.title"
-                      class="w-full h-full object-cover"
+                      :alt="template.title || template.name"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
-                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-50">
-                      <component :is="icons.template" class="w-6 h-6 text-gray-400" />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                      <component :is="icons.template" class="w-8 h-8 text-gray-300" />
+                    </div>
+                    
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-200 flex items-center justify-center">
+                      <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div class="bg-white text-gray-900 px-3 py-2 rounded-lg font-medium text-sm shadow-lg">
+                          Use Template
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
                   <!-- Template Info -->
                   <div class="p-3">
-                    <h3 class="font-medium text-gray-900 text-sm truncate">
-                      {{ template.title }}
+                    <h3 class="font-medium text-gray-900 text-sm leading-tight mb-1 truncate">
+                      {{ template.title || template.name }}
                     </h3>
-                    <p class="text-xs text-gray-500 mt-1">
-                      {{ template.category || 'General' }}
-                    </p>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-500 capitalize">{{ template.category || 'General' }}</span>
+                      
+                      <!-- Usage count or rating -->
+                      <div v-if="template.usageCount > 0" class="flex items-center text-xs text-gray-400">
+                        <component :is="icons.users" class="w-3 h-3 mr-1" />
+                        {{ formatUsageCount(template.usageCount) }}
+                      </div>
+                      <div v-else-if="template.rating >= 4.0" class="flex items-center text-xs text-gray-400">
+                        <component :is="icons.star" class="w-3 h-3 mr-1 text-yellow-400" />
+                        {{ template.rating.toFixed(1) }}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -420,6 +442,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useDesignStore } from '@/stores/design'
 import { useIcons } from '@/composables/useIcons'
+import { useNotifications } from '@/composables/useNotifications'
 import { analyticsAPI, templateAPI, designAPI } from '@/services/api'
 import type { Design, Template, DashboardStats, SearchResult } from '@/types'
 
@@ -434,6 +457,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const designStore = useDesignStore()
 const icons = useIcons()
+const { showInfo, showSuccess, showError } = useNotifications()
 
 // State
 const loading = ref(false)
@@ -451,6 +475,9 @@ const isExportModalOpen = ref(false)
 const selectedDesignForExport = ref<SearchResult | null>(null)
 const exportModalOpen = ref(false)
 const selectedDesign = ref<Design | null>(null)
+
+// Template application state
+const isApplyingTemplate = ref(false)
 
 // Computed
 const user = computed(() => authStore.user)
@@ -552,26 +579,34 @@ const handleExportComplete = (url: string, filename: string) => {
 }
 
 const useTemplate = async (template: Template) => {
-  // Create new design from template
-  const newDesign = designStore.createNewDesign(
-    template.width,
-    template.height
-  )
-  
-  // Copy template data to design
-  if (template.designData) {
-    newDesign.data = { ...template.designData }
-  }
-  
-  newDesign.name = `${template.name} Copy`
-  
-  // Save the design first
-  const result = await designStore.saveDesign(newDesign, true)
-  
-  if (result.success) {
-    router.push(`/editor/${newDesign.id}`)
-  } else {
-    console.error('Failed to create design from template:', result.error)
+  try {
+    isApplyingTemplate.value = true
+    
+    // Show loading notification
+    showInfo('Applying template...')
+    
+    // Use the proper API endpoint to apply the template
+    const response = await templateAPI.useTemplate(template.uuid, {
+      name: `${template.name} Copy`
+    })
+    
+    if (response.data?.success && response.data?.data) {
+      const newDesign = response.data.data
+      
+      // Navigate to the editor with the new design
+      router.push(`/editor/${newDesign.id}`)
+      
+      showSuccess('Template applied successfully!')
+    } else {
+      throw new Error(response.data?.message || 'Failed to apply template')
+    }
+  } catch (error: any) {
+    console.error('Template application failed:', error)
+    
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to apply template'
+    showError(`Template Error: ${errorMessage}`)
+  } finally {
+    isApplyingTemplate.value = false
   }
 }
 
@@ -634,6 +669,50 @@ const loadFeaturedTemplates = async () => {
   } finally {
     templatesLoading.value = false
   }
+}
+
+// Helper functions for template cards
+const getTemplateCardStyle = (template: Template) => {
+  const width = template.width || 800
+  const height = template.height || 600
+  const aspectRatio = width / height
+  
+  // Standardize aspect ratios for better grid consistency
+  let finalAspectRatio = aspectRatio
+  
+  // Group similar aspect ratios together for visual consistency
+  if (aspectRatio > 2.5) {
+    // Ultra-wide (banners) -> 3:1
+    finalAspectRatio = 3
+  } else if (aspectRatio > 1.8) {
+    // Wide (landscape) -> 2:1
+    finalAspectRatio = 2
+  } else if (aspectRatio > 1.2) {
+    // Standard landscape -> 4:3
+    finalAspectRatio = 4/3
+  } else if (aspectRatio > 0.9) {
+    // Square-ish -> 1:1
+    finalAspectRatio = 1
+  } else if (aspectRatio > 0.6) {
+    // Portrait -> 3:4
+    finalAspectRatio = 3/4
+  } else {
+    // Tall portrait -> 2:3
+    finalAspectRatio = 2/3
+  }
+  
+  return {
+    aspectRatio: finalAspectRatio.toString()
+  }
+}
+
+const formatUsageCount = (count: number): string => {
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(1) + 'M'
+  } else if (count >= 1000) {
+    return (count / 1000).toFixed(1) + 'K'
+  }
+  return count.toString()
 }
 
 // Lifecycle hooks

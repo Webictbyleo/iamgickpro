@@ -38,13 +38,14 @@
  *   node advanced-template-importer.js --help      # Show help
  */
 
-// Load environment variables
-require('dotenv').config({ path: '../backend/.env' });
+// Load environment variables with proper path resolution
+const path = require('path');
+const envPath = path.resolve(__dirname, '../backend/.env');
+require('dotenv').config({ path: envPath });
 
 const https = require('https');
 const http = require('http');
 const fs = require('fs').promises;
-const path = require('path');
 const { JSDOM } = require('jsdom');
 const { createCanvas } = require('canvas');
 const mysql = require('mysql2/promise');
@@ -57,12 +58,12 @@ const CONFIG = {
     },
     backend: {
         baseUrl: 'http://localhost:8000/api',
-        uploadDir: '../backend/public/uploads/templates',
-        thumbnailDir: '../backend/public/uploads/thumbnails'
+        uploadDir: path.resolve(__dirname, '../backend/public/uploads/templates'),
+        thumbnailDir: path.resolve(__dirname, '../backend/public/uploads/thumbnails')
     },
     frontend: {
-        srcDir: '../frontend/src',
-        buildDir: '../frontend/dist'
+        srcDir: path.resolve(__dirname, '../frontend/src'),
+        buildDir: path.resolve(__dirname, '../frontend/dist')
     },
     defaults: {
         thumbnailWidth: 400,
@@ -225,6 +226,11 @@ class AdvancedTemplateImporter {
                     return canvas;
                 }
                 
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
                 destroy() {
                     this.layers = [];
                     this._container = null;
@@ -240,6 +246,11 @@ class AdvancedTemplateImporter {
                 
                 add(child) { this.children.push(child); }
                 destroyChildren() { this.children = []; }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
                 
                 render(ctx) {
                     this.children.forEach(child => {
@@ -382,34 +393,106 @@ class AdvancedTemplateImporter {
                         opacity: 1,
                         ...config
                     });
+                    this._image = null;
+                    this._imageLoaded = false;
+                    
+                    // If image source is provided, load it
+                    if (config.image) {
+                        this.image(config.image);
+                    }
                 }
                 
                 setAttrs(attrs) {
                     Object.assign(this, attrs);
+                    if (attrs.image) {
+                        this.image(attrs.image);
+                    }
                 }
                 
                 destroy() {
-                    // Clean up
+                    this._image = null;
+                    this._imageLoaded = false;
                 }
                 
-                image() {
-                    return this._image || null;
+                image(imgElement) {
+                    if (imgElement !== undefined) {
+                        this._image = imgElement;
+                        this._imageLoaded = true;
+                        return this;
+                    }
+                    return this._image;
+                }
+                
+                async loadImageFromSrc(src) {
+                    return new Promise((resolve, reject) => {
+                        const { loadImage } = require('canvas');
+                        
+                        // Convert relative paths to absolute file paths
+                        let imagePath = src;
+                        if (src.startsWith('/uploads/templates/')) {
+                            // Convert to absolute path
+                            imagePath = path.join(__dirname, '..', 'backend', 'public', src);
+                        } else if (src.startsWith('/converted_assets/')) {
+                            // This should have been converted already, but handle fallback
+                            const filename = path.basename(src);
+                            imagePath = path.join(__dirname, '..', 'backend', 'public', 'uploads', 'templates', filename);
+                        }
+                        
+                        loadImage(imagePath)
+                            .then(image => {
+                                this._image = image;
+                                this._imageLoaded = true;
+                                resolve(image);
+                            })
+                            .catch(error => {
+                                console.log(`    ⚠️  Failed to load image ${imagePath}: ${error.message}`);
+                                this._image = null;
+                                this._imageLoaded = false;
+                                resolve(null); // Don't reject, just continue without image
+                            });
+                    });
                 }
                 
                 render(ctx) {
                     ctx.save();
                     ctx.globalAlpha = this.opacity || 1;
-                    if (this.image()) {
-                        ctx.drawImage(this.image(), this.x || 0, this.y || 0, this.width || 100, this.height || 100);
+                    
+                    const x = typeof this.x === 'function' ? this.x() : (this.x || 0);
+                    const y = typeof this.y === 'function' ? this.y() : (this.y || 0);
+                    const width = typeof this.width === 'function' ? this.width() : (this.width || 100);
+                    const height = typeof this.height === 'function' ? this.height() : (this.height || 100);
+                    
+                    if (this._image && this._imageLoaded) {
+                        try {
+                            ctx.drawImage(this._image, x, y, width, height);
+                        } catch (error) {
+                            // Fallback to placeholder if image rendering fails
+                            this.renderPlaceholder(ctx, x, y, width, height);
+                        }
                     } else {
                         // Placeholder for missing images
-                        ctx.fillStyle = '#e0e0e0';
-                        ctx.fillRect(this.x || 0, this.y || 0, this.width || 100, this.height || 100);
-                        ctx.fillStyle = '#999999';
-                        ctx.font = '12px Arial';
-                        ctx.fillText('IMG', (this.x || 0) + 10, (this.y || 0) + 20);
+                        this.renderPlaceholder(ctx, x, y, width, height);
                     }
                     ctx.restore();
+                }
+                
+                renderPlaceholder(ctx, x, y, width, height) {
+                    // Draw a subtle placeholder
+                    ctx.fillStyle = '#f8f9fa';
+                    ctx.fillRect(x, y, width, height);
+                    
+                    // Add a border
+                    ctx.strokeStyle = '#dee2e6';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, width, height);
+                    
+                    // Add an icon-like shape in center
+                    const centerX = x + width / 2;
+                    const centerY = y + height / 2;
+                    const iconSize = Math.min(width, height) * 0.2;
+                    
+                    ctx.fillStyle = '#adb5bd';
+                    ctx.fillRect(centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
                 }
             },
             
@@ -437,10 +520,21 @@ class AdvancedTemplateImporter {
                 findOne(selector) {
                     // Simple selector support for finding children
                     if (typeof selector === 'string') {
-                        return this.children.find(child => 
-                            child.constructor.name.includes(selector) || 
-                            child.tagName === selector
-                        );
+                        return this.children.find(child => {
+                            // Check constructor name (e.g., 'MockImage' matches 'Image')
+                            if (child.constructor.name.includes(selector)) {
+                                return true;
+                            }
+                            // Check by class name
+                            if (child.constructor.name === `Mock${selector}`) {
+                                return true;
+                            }
+                            // Check tagName if it exists
+                            if (child.tagName === selector) {
+                                return true;
+                            }
+                            return false;
+                        });
                     }
                     return null;
                 }
@@ -452,6 +546,287 @@ class AdvancedTemplateImporter {
                     this.children.forEach(child => {
                         if (child.render) child.render(ctx);
                     });
+                    ctx.restore();
+                }
+            },
+            
+            Circle: class MockCircle {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        x: 0,
+                        y: 0,
+                        radius: 50,
+                        fill: '#cccccc',
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    ctx.fillStyle = this.fill || '#cccccc';
+                    
+                    const x = typeof this.x === 'function' ? this.x() : (this.x || 0);
+                    const y = typeof this.y === 'function' ? this.y() : (this.y || 0);
+                    const radius = typeof this.radius === 'function' ? this.radius() : (this.radius || 50);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            },
+            
+            Ellipse: class MockEllipse {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        x: 0,
+                        y: 0,
+                        radiusX: 50,
+                        radiusY: 30,
+                        fill: '#cccccc',
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    ctx.fillStyle = this.fill || '#cccccc';
+                    
+                    const x = typeof this.x === 'function' ? this.x() : (this.x || 0);
+                    const y = typeof this.y === 'function' ? this.y() : (this.y || 0);
+                    const radiusX = typeof this.radiusX === 'function' ? this.radiusX() : (this.radiusX || 50);
+                    const radiusY = typeof this.radiusY === 'function' ? this.radiusY() : (this.radiusY || 30);
+                    
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, radiusX, radiusY, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            },
+            
+            RegularPolygon: class MockRegularPolygon {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        x: 0,
+                        y: 0,
+                        sides: 6,
+                        radius: 50,
+                        fill: '#cccccc',
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    ctx.fillStyle = this.fill || '#cccccc';
+                    
+                    const x = typeof this.x === 'function' ? this.x() : (this.x || 0);
+                    const y = typeof this.y === 'function' ? this.y() : (this.y || 0);
+                    const sides = typeof this.sides === 'function' ? this.sides() : (this.sides || 6);
+                    const radius = typeof this.radius === 'function' ? this.radius() : (this.radius || 50);
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < sides; i++) {
+                        const angle = (i * 2 * Math.PI) / sides;
+                        const pointX = x + radius * Math.cos(angle);
+                        const pointY = y + radius * Math.sin(angle);
+                        if (i === 0) {
+                            ctx.moveTo(pointX, pointY);
+                        } else {
+                            ctx.lineTo(pointX, pointY);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            },
+            
+            Star: class MockStar {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        x: 0,
+                        y: 0,
+                        numPoints: 5,
+                        innerRadius: 25,
+                        outerRadius: 50,
+                        fill: '#cccccc',
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    ctx.fillStyle = this.fill || '#cccccc';
+                    
+                    const x = typeof this.x === 'function' ? this.x() : (this.x || 0);
+                    const y = typeof this.y === 'function' ? this.y() : (this.y || 0);
+                    const numPoints = typeof this.numPoints === 'function' ? this.numPoints() : (this.numPoints || 5);
+                    const innerRadius = typeof this.innerRadius === 'function' ? this.innerRadius() : (this.innerRadius || 25);
+                    const outerRadius = typeof this.outerRadius === 'function' ? this.outerRadius() : (this.outerRadius || 50);
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < numPoints * 2; i++) {
+                        const angle = (i * Math.PI) / numPoints;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const pointX = x + radius * Math.cos(angle);
+                        const pointY = y + radius * Math.sin(angle);
+                        if (i === 0) {
+                            ctx.moveTo(pointX, pointY);
+                        } else {
+                            ctx.lineTo(pointX, pointY);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            },
+            
+            Line: class MockLine {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        points: [0, 0, 100, 100],
+                        stroke: '#000000',
+                        strokeWidth: 2,
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    ctx.strokeStyle = this.stroke || '#000000';
+                    ctx.lineWidth = this.strokeWidth || 2;
+                    
+                    const points = typeof this.points === 'function' ? this.points() : (this.points || [0, 0, 100, 100]);
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < points.length; i += 2) {
+                        if (i === 0) {
+                            ctx.moveTo(points[i], points[i + 1]);
+                        } else {
+                            ctx.lineTo(points[i], points[i + 1]);
+                        }
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            },
+            
+            Path: class MockPath {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        data: '',
+                        fill: '#cccccc',
+                        stroke: '#000000',
+                        strokeWidth: 1,
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    
+                    // Simple fallback for path rendering
+                    if (this.fill) {
+                        ctx.fillStyle = this.fill;
+                        ctx.fillRect(0, 0, 50, 50); // Simple placeholder
+                    }
+                    if (this.stroke) {
+                        ctx.strokeStyle = this.stroke;
+                        ctx.lineWidth = this.strokeWidth || 1;
+                        ctx.strokeRect(0, 0, 50, 50); // Simple placeholder
+                    }
+                    
+                    ctx.restore();
+                }
+            },
+            
+            Shape: class MockShape {
+                constructor(config = {}) {
+                    Object.assign(this, {
+                        x: 0,
+                        y: 0,
+                        width: 100,
+                        height: 100,
+                        fill: '#cccccc',
+                        opacity: 1,
+                        ...config
+                    });
+                }
+                
+                setAttrs(attrs) {
+                    Object.assign(this, attrs);
+                    return this;
+                }
+                
+                destroy() {}
+                
+                render(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity || 1;
+                    ctx.fillStyle = this.fill || '#cccccc';
+                    
+                    const x = typeof this.x === 'function' ? this.x() : (this.x || 0);
+                    const y = typeof this.y === 'function' ? this.y() : (this.y || 0);
+                    const width = typeof this.width === 'function' ? this.width() : (this.width || 100);
+                    const height = typeof this.height === 'function' ? this.height() : (this.height || 100);
+                    
+                    ctx.fillRect(x, y, width, height);
                     ctx.restore();
                 }
             }
@@ -466,7 +841,7 @@ class AdvancedTemplateImporter {
         
         try {
             // Try to load DesignRenderer from frontend
-            const rendererPath = path.join(__dirname, CONFIG.frontend.srcDir, 'editor/sdk/DesignRenderer.ts');
+            const rendererPath = path.join(CONFIG.frontend.srcDir, 'editor/sdk/DesignRenderer.ts');
             
             // Check if the file exists
             try {
@@ -535,8 +910,8 @@ class AdvancedTemplateImporter {
             }
             
         } catch (error) {
-            console.log(`   ⚠️  Failed to load DesignRenderer (${error.message}), using fallback`);
-            this.designRenderer = this.createFallbackRenderer();
+            console.log(`   ❌ Failed to load DesignRenderer: ${error.message}`);
+            throw error; // Don't fall back, we want to fix the real issue
         }
     }
 
@@ -565,25 +940,99 @@ class AdvancedTemplateImporter {
 
                 // Render basic elements
                 if (design.layers) {
-                    design.layers.forEach(layer => {
+                    for (const layer of design.layers) {
+                        // Get position and size from transform object (new format) or direct properties (legacy)
+                        const x = layer.transform?.x || layer.x || 0;
+                        const y = layer.transform?.y || layer.y || 0;
+                        const width = layer.transform?.width || layer.width || 100;
+                        const height = layer.transform?.height || layer.height || 100;
+                        const opacity = layer.transform?.opacity || layer.opacity || 1;
+                        
                         if (layer.type === 'text') {
+                            ctx.save();
+                            ctx.globalAlpha = opacity;
                             ctx.fillStyle = layer.properties?.color || '#000000';
                             ctx.font = `${(layer.properties?.fontSize || 16) * scale}px ${layer.properties?.fontFamily || 'Arial'}`;
                             ctx.fillText(
                                 layer.properties?.text || 'Sample Text',
-                                (layer.x || 0) * scale,
-                                (layer.y || 0) * scale
+                                x * scale,
+                                y * scale
                             );
+                            ctx.restore();
                         } else if (layer.type === 'shape') {
+                            ctx.save();
+                            ctx.globalAlpha = opacity;
                             ctx.fillStyle = layer.properties?.fill || '#cccccc';
                             ctx.fillRect(
-                                (layer.x || 0) * scale,
-                                (layer.y || 0) * scale,
-                                (layer.width || 100) * scale,
-                                (layer.height || 100) * scale
+                                x * scale,
+                                y * scale,
+                                width * scale,
+                                height * scale
                             );
+                            ctx.restore();
+                        } else if (layer.type === 'image' && layer.properties?.src) {
+                            try {
+                                // Load and render the image
+                                const { loadImage } = require('canvas');
+                                
+                                // Convert relative paths to absolute file paths
+                                let imagePath = layer.properties.src;
+                                if (imagePath.startsWith('/uploads/templates/')) {
+                                    imagePath = path.join(__dirname, '..', 'backend', 'public', imagePath);
+                                } else if (imagePath.startsWith('/converted_assets/')) {
+                                    const filename = path.basename(imagePath);
+                                    imagePath = path.join(__dirname, '..', 'backend', 'public', 'uploads', 'templates', filename);
+                                }
+                                
+                                console.log(`    🖼️  Loading image: ${imagePath}`);
+                                const img = await loadImage(imagePath);
+                                
+                                ctx.save();
+                                ctx.globalAlpha = opacity;
+                                ctx.drawImage(
+                                    img,
+                                    x * scale,
+                                    y * scale,
+                                    width * scale,
+                                    height * scale
+                                );
+                                ctx.restore();
+                                console.log(`    ✅ Image rendered: ${width}x${height} at ${x},${y}`);
+                            } catch (error) {
+                                console.log(`    ⚠️  Failed to load image ${layer.properties.src}: ${error.message}`);
+                                // Fallback placeholder for failed image loads
+                                ctx.save();
+                                ctx.globalAlpha = opacity;
+                                ctx.fillStyle = '#f8f9fa';
+                                ctx.fillRect(
+                                    x * scale,
+                                    y * scale,
+                                    width * scale,
+                                    height * scale
+                                );
+                                ctx.strokeStyle = '#dee2e6';
+                                ctx.lineWidth = 1;
+                                ctx.strokeRect(
+                                    x * scale,
+                                    y * scale,
+                                    width * scale,
+                                    height * scale
+                                );
+                                
+                                // Add "IMG" text in center
+                                ctx.fillStyle = '#adb5bd';
+                                ctx.font = '12px Arial';
+                                ctx.textAlign = 'center';
+                                ctx.fillText(
+                                    'IMG',
+                                    (x + width/2) * scale,
+                                    (y + height/2) * scale
+                                );
+                                ctx.restore();
+                                console.log(`    📷 Placeholder rendered: ${width}x${height} at ${x},${y}`);
+                            }
                         }
-                    });
+                    }
                 }
 
                 return canvas.toDataURL('image/png', CONFIG.defaults.quality);
@@ -677,6 +1126,14 @@ class AdvancedTemplateImporter {
         source = source.replace(/document\.body\.appendChild\(/g, 'mockAppendChild(');
         source = source.replace(/container\.parentNode\.removeChild\(/g, 'mockRemoveChild(');
         
+        // Replace renderer instantiations with our context versions
+        source = source.replace(/new TextLayerRenderer\(\)/g, 'new TextLayerRenderer()');
+        source = source.replace(/new ImageLayerRenderer\(\)/g, 'new ImageLayerRenderer()');
+        source = source.replace(/new ShapeLayerRenderer\(\)/g, 'new ShapeLayerRenderer()');
+        source = source.replace(/new SVGLayerRenderer\(\)/g, 'new SVGLayerRenderer()');
+        source = source.replace(/new GroupLayerRenderer\(\)/g, 'new GroupLayerRenderer()');
+        
+        // The renderer classes will be available as global variables in the VM context
         // Replace the entire createOffscreenStage method to work without DOM
         source = source.replace(
             /private\s+createOffscreenStage\(\):\s*void\s*{[\s\S]*?this\.stage\.add\(this\.layer\)\s*}/gm,
@@ -794,16 +1251,23 @@ class AdvancedTemplateImporter {
         // Create mock renderer classes that implement the KonvaLayerRenderer interface
         class TextLayerRenderer {
             render(layerNode) {
+                // Get position and size from transform object (new format) or direct properties (legacy)
+                const x = layerNode.transform?.x || layerNode.x || 0;
+                const y = layerNode.transform?.y || layerNode.y || 0;
+                const width = layerNode.transform?.width || layerNode.width || 100;
+                const height = layerNode.transform?.height || layerNode.height || 100;
+                const opacity = layerNode.transform?.opacity || layerNode.opacity || 1;
+                
                 const text = new global.Konva.Text({
-                    x: layerNode.x || 0,
-                    y: layerNode.y || 0,
+                    x: x,
+                    y: y,
                     text: layerNode.properties?.text || 'Text',
                     fontSize: layerNode.properties?.fontSize || 16,
                     fontFamily: layerNode.properties?.fontFamily || 'Arial',
                     fill: layerNode.properties?.color || '#000000',
-                    width: layerNode.width,
-                    height: layerNode.height,
-                    opacity: layerNode.opacity || 1
+                    width: width,
+                    height: height,
+                    opacity: opacity
                 });
                 return text;
             }
@@ -832,23 +1296,68 @@ class AdvancedTemplateImporter {
         }
 
         class ImageLayerRenderer {
-            render(layerNode) {
-                const image = new global.Konva.Image({
-                    x: layerNode.x || 0,
-                    y: layerNode.y || 0,
-                    width: layerNode.width || 100,
-                    height: layerNode.height || 100,
-                    opacity: layerNode.opacity || 1
+            async render(layerNode) {
+                // Get position and size from transform object (new format) or direct properties (legacy)
+                const x = layerNode.transform?.x || layerNode.x || 0;
+                const y = layerNode.transform?.y || layerNode.y || 0;
+                const width = layerNode.transform?.width || layerNode.width || 100;
+                const height = layerNode.transform?.height || layerNode.height || 100;
+                const opacity = layerNode.transform?.opacity || layerNode.opacity || 1;
+                
+                // Create a group like the frontend renderer does
+                const group = new global.Konva.Group({
+                    id: layerNode.id.toString(),
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height,
+                    opacity: opacity
                 });
-                return image;
+                
+                // Create an image node within the group
+                const image = new global.Konva.Image({
+                    x: 0, // Relative to group
+                    y: 0, // Relative to group
+                    width: width,
+                    height: height,
+                    opacity: 1
+                });
+                
+                // Load the actual image if src is provided
+                if (layerNode.properties?.src) {
+                    try {
+                        await image.loadImageFromSrc(layerNode.properties.src);
+                    } catch (error) {
+                        console.log(`    ⚠️  ImageLayerRenderer: Failed to load image for layer: ${error.message}`);
+                    }
+                }
+                
+                group.add(image);
+                return group;
             }
             
-            update(node, layerNode) {
+            async update(node, layerNode) {
                 if (node && typeof node.setAttrs === 'function') {
+                    // Get position and size from transform object (new format) or direct properties (legacy)
+                    const width = layerNode.transform?.width || layerNode.width || 100;
+                    const height = layerNode.transform?.height || layerNode.height || 100;
+                    
                     node.setAttrs({
-                        width: layerNode.width || 100,
-                        height: layerNode.height || 100
+                        width: width,
+                        height: height
                     });
+                    
+                    // Find the image node within the group and update it
+                    if (typeof node.findOne === 'function') {
+                        const imageNode = node.findOne('Image');
+                        if (imageNode && layerNode.properties?.src) {
+                            try {
+                                await imageNode.loadImageFromSrc(layerNode.properties.src);
+                            } catch (error) {
+                                console.log(`    ⚠️  ImageLayerRenderer: Failed to update image: ${error.message}`);
+                            }
+                        }
+                    }
                 }
             }
             
@@ -865,13 +1374,20 @@ class AdvancedTemplateImporter {
 
         class ShapeLayerRenderer {
             render(layerNode) {
+                // Get position and size from transform object (new format) or direct properties (legacy)
+                const x = layerNode.transform?.x || layerNode.x || 0;
+                const y = layerNode.transform?.y || layerNode.y || 0;
+                const width = layerNode.transform?.width || layerNode.width || 100;
+                const height = layerNode.transform?.height || layerNode.height || 100;
+                const opacity = layerNode.transform?.opacity || layerNode.opacity || 1;
+                
                 const rect = new global.Konva.Rect({
-                    x: layerNode.x || 0,
-                    y: layerNode.y || 0,
-                    width: layerNode.width || 100,
-                    height: layerNode.height || 100,
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height,
                     fill: layerNode.properties?.fill || '#cccccc',
-                    opacity: layerNode.opacity || 1
+                    opacity: opacity
                 });
                 return rect;
             }
@@ -899,10 +1415,15 @@ class AdvancedTemplateImporter {
 
         class GroupLayerRenderer {
             render(layerNode) {
+                // Get position and size from transform object (new format) or direct properties (legacy)
+                const x = layerNode.transform?.x || layerNode.x || 0;
+                const y = layerNode.transform?.y || layerNode.y || 0;
+                const opacity = layerNode.transform?.opacity || layerNode.opacity || 1;
+                
                 const group = new global.Konva.Group({
-                    x: layerNode.x || 0,
-                    y: layerNode.y || 0,
-                    opacity: layerNode.opacity || 1
+                    x: x,
+                    y: y,
+                    opacity: opacity
                 });
                 return group;
             }
@@ -930,14 +1451,21 @@ class AdvancedTemplateImporter {
 
         class SVGLayerRenderer {
             render(layerNode) {
+                // Get position and size from transform object (new format) or direct properties (legacy)
+                const x = layerNode.transform?.x || layerNode.x || 0;
+                const y = layerNode.transform?.y || layerNode.y || 0;
+                const width = layerNode.transform?.width || layerNode.width || 100;
+                const height = layerNode.transform?.height || layerNode.height || 100;
+                const opacity = layerNode.transform?.opacity || layerNode.opacity || 1;
+                
                 // Fallback to shape renderer for SVG
                 const rect = new global.Konva.Rect({
-                    x: layerNode.x || 0,
-                    y: layerNode.y || 0,
-                    width: layerNode.width || 100,
-                    height: layerNode.height || 100,
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height,
                     fill: layerNode.properties?.fill || '#cccccc',
-                    opacity: layerNode.opacity || 1
+                    opacity: opacity
                 });
                 return rect;
             }
@@ -1006,7 +1534,7 @@ class AdvancedTemplateImporter {
             mockAppendChild,
             mockRemoveChild,
             
-            // Mock renderer classes
+            // Mock renderer classes - accessible as this.RendererName
             TextLayerRenderer,
             ImageLayerRenderer,
             ShapeLayerRenderer,
@@ -1224,8 +1752,25 @@ class AdvancedTemplateImporter {
     async generateThumbnails(templateData) {
         console.log(`  🖼️  Generating thumbnails...`);
 
-        const thumbnailPath = path.join(CONFIG.backend.thumbnailDir, `${templateData.id}.png`);
-        const previewPath = path.join(CONFIG.backend.thumbnailDir, `${templateData.id}_preview.png`);
+        // Use absolute paths from CONFIG
+        const thumbnailDir = CONFIG.backend.thumbnailDir;
+        const thumbnailPath = path.join(thumbnailDir, `${templateData.id}.png`);
+        const previewPath = path.join(thumbnailDir, `${templateData.id}_preview.png`);
+
+        // Ensure the thumbnail directory exists
+        await fs.mkdir(thumbnailDir, { recursive: true });
+
+        // Check if thumbnails already exist and show appropriate message
+        try {
+            await fs.access(thumbnailPath);
+            if (this.options.force) {
+                console.log(`    🔄 Thumbnail exists but force mode enabled, regenerating...`);
+            } else {
+                console.log(`    📁 Thumbnail already exists, regenerating anyway...`);
+            }
+        } catch {
+            console.log(`    ✨ Creating new thumbnail...`);
+        }
 
         try {
             // Generate standard thumbnail
@@ -1238,6 +1783,7 @@ class AdvancedTemplateImporter {
             // Save thumbnail
             const thumbnailBuffer = Buffer.from(thumbnailDataUrl.split(',')[1], 'base64');
             await fs.writeFile(thumbnailPath, thumbnailBuffer);
+            console.log(`    ✅ Thumbnail generated: ${CONFIG.defaults.thumbnailWidth}x${CONFIG.defaults.thumbnailHeight}`);
 
             // Generate preview if enabled
             let previewRelativePath = null;
@@ -1250,14 +1796,18 @@ class AdvancedTemplateImporter {
 
                 const previewBuffer = Buffer.from(previewDataUrl.split(',')[1], 'base64');
                 await fs.writeFile(previewPath, previewBuffer);
-                previewRelativePath = path.relative('../backend/public', previewPath);
+                previewRelativePath = true; // Mark that preview was generated
+                console.log(`    ✅ Preview generated: ${CONFIG.defaults.previewWidth}x${CONFIG.defaults.previewHeight}`);
             }
 
             this.stats.thumbnailsGenerated++;
 
+            // Calculate relative paths from the backend public directory for serving
+            const backendPublicDir = path.resolve(__dirname, '../backend/public');
+            
             return {
-                thumbnail: path.relative('../backend/public', thumbnailPath),
-                preview: previewRelativePath
+                thumbnail: path.relative(backendPublicDir, thumbnailPath),
+                preview: previewRelativePath ? path.relative(backendPublicDir, previewPath) : null
             };
 
         } catch (error) {
@@ -1266,18 +1816,28 @@ class AdvancedTemplateImporter {
     }
 
     /**
-     * Download template assets
+     * Download template assets and update paths
      */
     async downloadTemplateAssets(templateData) {
         if (!templateData.layers) return;
 
-        console.log(`  📦 Downloading assets...`);
+        console.log(`  📦 Downloading assets and updating paths...`);
         let downloadCount = 0;
+        let updatedCount = 0;
 
         for (const layer of templateData.layers) {
             if (layer.type === 'image' && layer.properties?.src) {
-                const downloaded = await this.downloadAsset(layer.properties.src);
+                const originalPath = layer.properties.src;
+                const { downloaded, newPath } = await this.downloadAsset(originalPath);
+                
                 if (downloaded) downloadCount++;
+                
+                if (newPath) {
+                    // Update the layer's src path to the new accessible URL
+                    layer.properties.src = newPath;
+                    updatedCount++;
+                    console.log(`    🔗 Updated path: ${originalPath} → ${newPath}`);
+                }
             }
         }
 
@@ -1285,47 +1845,72 @@ class AdvancedTemplateImporter {
             console.log(`    ✅ Downloaded ${downloadCount} assets`);
             this.stats.assetsDownloaded += downloadCount;
         }
+        
+        if (updatedCount > 0) {
+            console.log(`    🔄 Updated ${updatedCount} asset paths`);
+        }
     }
 
     /**
-     * Download a single asset
+     * Download a single asset and return new path
      */
     async downloadAsset(assetPath) {
-        if (!assetPath.startsWith('/converted_assets/')) return false;
+        if (!assetPath.startsWith('/converted_assets/')) {
+            return { downloaded: false, newPath: null };
+        }
 
         const filename = path.basename(assetPath);
         const url = `${CONFIG.github.repo}/converted_assets/${filename}`;
+        
+        // Store assets in the uploads/templates directory accessible via HTTP
         const localPath = path.join(CONFIG.backend.uploadDir, filename);
+        
+        // Create the new URL path that the frontend can access
+        // This should be relative to the backend's public directory
+        const newPath = `/uploads/templates/${filename}`;
 
-        // Check if exists
+        // Check if file already exists
         try {
             await fs.access(localPath);
-            return false; // Already exists
+            if (!this.options.force) {
+                console.log(`    📁 Asset already exists: ${filename}`);
+                return { downloaded: false, newPath };
+            } else {
+                console.log(`    🔄 Asset exists but force mode enabled, re-downloading: ${filename}`);
+            }
         } catch {}
 
-        // Download
+        console.log(`    📥 Downloading: ${filename}`);
+
+        // Download the asset
         return new Promise((resolve, reject) => {
             const file = require('fs').createWriteStream(localPath);
             
             https.get(url, (response) => {
                 if (response.statusCode !== 200) {
+                    console.log(`    ❌ Failed to download ${filename}: HTTP ${response.statusCode}`);
                     file.close();
                     fs.unlink(localPath).catch(() => {});
-                    resolve(false);
+                    resolve({ downloaded: false, newPath: null });
                     return;
                 }
                 
                 response.pipe(file);
                 file.on('finish', () => {
                     file.close();
-                    resolve(true);
+                    console.log(`    ✅ Downloaded: ${filename}`);
+                    resolve({ downloaded: true, newPath });
                 });
                 file.on('error', (err) => {
+                    console.log(`    ❌ File write error for ${filename}:`, err.message);
                     file.close();
                     fs.unlink(localPath).catch(() => {});
-                    resolve(false);
+                    resolve({ downloaded: false, newPath: null });
                 });
-            }).on('error', () => resolve(false));
+            }).on('error', (err) => {
+                console.log(`    ❌ Network error for ${filename}:`, err.message);
+                resolve({ downloaded: false, newPath: null });
+            });
         });
     }
 

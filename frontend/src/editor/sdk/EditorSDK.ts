@@ -277,28 +277,14 @@ export class EditorSDK extends EventEmitter {
         }
       }
       
-      // Apply viewport settings if available
-      if (design.data.viewportSettings) {
-        if (design.data.viewportSettings.zoom !== undefined) {
-          this.state.zoom = design.data.viewportSettings.zoom
-        }
-        if (design.data.viewportSettings.panX !== undefined) {
-          this.state.panX = design.data.viewportSettings.panX
-        }
-        if (design.data.viewportSettings.panY !== undefined) {
-          this.state.panY = design.data.viewportSettings.panY
-        }
-        
-        // Apply zoom and pan to stage
-        this.stage.scale({ x: this.state.zoom, y: this.state.zoom })
-        this.stage.position({ x: this.state.panX, y: this.state.panY })
-      } else {
-        // Fit canvas to viewport if no custom viewport settings
-        this.canvasManager.zoomToFit()
-      }
-      
       // Clear loading state before emitting events
       this.state.isLoadingDesign = false
+      
+      // Always auto-fit to screen after loading, regardless of saved viewport settings
+      // Use a small delay to ensure the container is fully rendered and has proper dimensions
+      setTimeout(() => {
+        this.canvasManager.fitCanvasToViewport()
+      }, 100)
       
       // Force refresh hit detection after design loads to ensure proper interaction at all zoom levels
       this.layerManager.refreshHitDetection()

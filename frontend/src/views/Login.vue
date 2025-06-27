@@ -22,6 +22,16 @@
           </div>
         </div>
 
+        <!-- Error Message -->
+        <div v-if="loginError" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <svg class="h-5 w-5 text-red-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm text-red-800">{{ loginError }}</p>
+          </div>
+        </div>
+
         <form @submit.prevent="handleLogin" class="space-y-6">
           <!-- Email Field -->
           <div>
@@ -168,6 +178,7 @@ const loginForm = ref({
 const showPassword = ref(false)
 const emailError = ref('')
 const passwordError = ref('')
+const loginError = ref('')
 const successMessage = ref('')
 
 // Computed properties
@@ -216,6 +227,12 @@ const validatePassword = () => {
 
 // Handle login
 const handleLogin = async () => {
+  // Clear previous errors
+  loginError.value = ''
+  emailError.value = ''
+  passwordError.value = ''
+  successMessage.value = ''
+  
   // Validate form
   const isEmailValid = validateEmail()
   const isPasswordValid = validatePassword()
@@ -224,20 +241,27 @@ const handleLogin = async () => {
     return
   }
 
-  // Attempt login
-  const result = await login({
-    email: loginForm.value.email,
-    password: loginForm.value.password,
-  })
+  try {
+    // Attempt login
+    const result = await login({
+      email: loginForm.value.email,
+      password: loginForm.value.password,
+    })
 
-  if (result.success) {
-    successMessage.value = 'Login successful! Redirecting...'
-    setTimeout(() => {
-      // Redirect will be handled by the auth composable
-      router.push('/dashboard')
-    }, 2000)
-  } else {
-    successMessage.value = ''
+    if (result.success) {
+      successMessage.value = 'Login successful! Redirecting...'
+      setTimeout(() => {
+        // Redirect will be handled by the auth composable
+        router.push('/')
+      }, 2000)
+    } else {
+      // Display the error from the auth composable
+      loginError.value = result.error || 'Login failed. Please check your credentials and try again.'
+    }
+  } catch (error: any) {
+    // Handle any unexpected errors
+    console.error('Login error:', error)
+    loginError.value = 'An unexpected error occurred. Please try again.'
   }
 }
 
@@ -245,7 +269,7 @@ const handleLogin = async () => {
 onMounted(() => {
   // Redirect if already authenticated
   if (isAuthenticated.value) {
-    router.push('/dashboard')
+    router.push('/')
   }
   
   // Check for success message from query params
@@ -258,6 +282,7 @@ onMounted(() => {
 const clearErrors = () => {
   emailError.value = ''
   passwordError.value = ''
+  loginError.value = ''
 }
 
 // Watch form changes

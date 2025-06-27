@@ -119,7 +119,7 @@ const loadTemplates = async (resetPage = false) => {
 
     const params: TemplateSearchParams = {
       page: currentPage.value,
-      limit: 6
+      limit: 22
     }
 
     // Use search API if there's a query or category filter

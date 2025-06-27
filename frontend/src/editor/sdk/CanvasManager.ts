@@ -155,9 +155,16 @@ export class CanvasManager implements CanvasAPI {
    * Fit the entire canvas to the available viewport space with provided dimensions
    */
   fitCanvasToViewport(viewportWidth?: number, viewportHeight?: number): void {
+    console.log('🎯 CanvasManager: fitCanvasToViewport called', {
+      providedViewport: { width: viewportWidth, height: viewportHeight },
+      canvasSize: { width: this.originalCanvasWidth, height: this.originalCanvasHeight }
+    })
     
     const container = this.stage.container()
-    if (!container) return
+    if (!container) {
+      console.warn('🎯 CanvasManager: No container found for stage')
+      return
+    }
 
     let availableWidth: number
     let availableHeight: number
@@ -166,14 +173,19 @@ export class CanvasManager implements CanvasAPI {
       // Use provided viewport dimensions (from EditorLayout)
       availableWidth = viewportWidth
       availableHeight = viewportHeight
+      console.log('🎯 CanvasManager: Using provided viewport dimensions:', { availableWidth, availableHeight })
     } else {
       // Fallback: try to get dimensions from container
       const viewportContainer = container.parentElement
-      if (!viewportContainer) return
+      if (!viewportContainer) {
+        console.warn('🎯 CanvasManager: No viewport container found')
+        return
+      }
 
       const viewportRect = viewportContainer.getBoundingClientRect()
       availableWidth = viewportRect.width
       availableHeight = viewportRect.height
+      console.log('🎯 CanvasManager: Using container viewport dimensions:', { availableWidth, availableHeight })
     }
 
     const canvasWidth = this.originalCanvasWidth
@@ -190,6 +202,13 @@ export class CanvasManager implements CanvasAPI {
     let scale = Math.min(scaleX, scaleY)
     scale = Math.max(scale, 0.01)
     scale = Math.min(scale, 10)
+    
+    console.log('🎯 CanvasManager: Calculated fit-to-viewport scale:', {
+      targetDimensions: { width: targetWidth, height: targetHeight },
+      scaleX,
+      scaleY,
+      finalScale: scale
+    })
     
     this.setZoom(scale, { zoomToCenter: true })
   }

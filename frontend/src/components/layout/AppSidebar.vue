@@ -30,7 +30,7 @@
           
           <!-- Dashboard -->
           <router-link
-            to="/dashboard"
+            to="/"
             class="sidebar-nav-item group"
             :class="{ 'sidebar-nav-item-active': $route.name === 'Dashboard' }"
           >

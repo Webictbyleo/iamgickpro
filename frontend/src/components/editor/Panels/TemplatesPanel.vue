@@ -145,14 +145,6 @@
                 <DocumentDuplicateIcon class="w-8 h-8 text-purple-400" />
               </div>
               
-              <!-- Premium badge -->
-              <div v-if="template.isPremium" class="absolute top-2 right-2">
-                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-400 text-white shadow-sm">
-                  <SparklesIcon class="w-3 h-3 mr-1" />
-                  Pro
-                </span>
-              </div>
-              
               <!-- Enhanced hover overlay -->
               <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                 <div class="bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">

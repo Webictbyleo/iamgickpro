@@ -121,6 +121,13 @@ export class LayerManager implements LayerAPI {
     // Make layer draggable
     konvaNode.draggable(true)
     
+    // Add universal drag handlers for unselected layers only
+    // These will be managed dynamically based on selection state
+    this.addUniversalDragHandlers(layerNode, konvaNode)
+    
+    // Add boundary constraints to prevent dragging outside stage
+    this.addDragBoundaryConstraints(konvaNode)
+    
     // Add to main layer
     this.mainLayer.add(konvaNode as Konva.Shape | Konva.Group)
     
@@ -274,6 +281,9 @@ export class LayerManager implements LayerAPI {
     // Update internal selection state
     this.state.selectedLayers = [layerId]
     
+    // Update drag handlers for all layers based on new selection
+    this.updateDragHandlersForSelection()
+    
     // Delegate to transform manager
     if (this.transformManager) {
       this.transformManager.selectLayer(layer)
@@ -286,6 +296,9 @@ export class LayerManager implements LayerAPI {
   selectLayers(layerIds: number[]): void {
     // Update internal selection state
     this.state.selectedLayers = layerIds.filter(id => this.layers.has(id))
+    
+    // Update drag handlers for all layers based on new selection
+    this.updateDragHandlersForSelection()
     
     // Delegate to transform manager
     if (this.transformManager) {
@@ -315,6 +328,9 @@ export class LayerManager implements LayerAPI {
   deselectAll(): void {
     // Clear internal selection state
     this.state.selectedLayers = []
+    
+    // Update drag handlers for all layers (all will now get universal handlers)
+    this.updateDragHandlersForSelection()
     
     // Delegate to transform manager
     if (this.transformManager) {
@@ -645,12 +661,34 @@ export class LayerManager implements LayerAPI {
     
     this.stage.add(this.mainLayer)
     
+    // Set up stage clipping to ensure content outside canvas boundaries is not visible
+    this.setupStageClipping()
+    
     // Ensure the main content layer is above any background layers
     // Background layers should stay at the bottom
     const backgroundLayer = this.stage.findOne('.background-layer')
     if (backgroundLayer) {
       backgroundLayer.moveToBottom()
     }
+  }
+
+  /**
+   * Set up stage clipping to ensure content outside canvas boundaries is not visible
+   */
+  private setupStageClipping(): void {
+    // Add a clipping function to the main layer to ensure it only shows content within canvas bounds
+    this.mainLayer.clipFunc((ctx: CanvasRenderingContext2D) => {
+      // Get current canvas dimensions
+      const stageWidth = this.stage.width()
+      const stageHeight = this.stage.height()
+      
+      // Use fallback dimensions if stage isn't properly sized yet
+      const canvasWidth = stageWidth > 0 ? stageWidth : 800
+      const canvasHeight = stageHeight > 0 ? stageHeight : 600
+      
+      // Clip to canvas rectangle
+      ctx.rect(0, 0, canvasWidth, canvasHeight)
+    })
   }
 
   private setupRenderers(): void {
@@ -906,7 +944,143 @@ export class LayerManager implements LayerAPI {
     }
   }
 
-  
+  // ============================================================================
+  // UNIVERSAL DRAG HANDLING
+  // ============================================================================
 
+  /**
+   * Add universal drag handlers to ALL layers, ensuring layer updates are always emitted
+   */
+  private addUniversalDragHandlers(layerNode: LayerNode, konvaNode: Konva.Node): void {
+    let dragStartPosition: { x: number; y: number } | null = null
+
+    // Drag start handler
+    konvaNode.on('dragstart.universal', () => {
+      // Store initial position
+      dragStartPosition = { x: layerNode.x, y: layerNode.y }
+      
+      // Update cursor
+      const container = konvaNode.getStage()?.container()
+      if (container) {
+        container.style.cursor = 'grabbing'
+      }
+    })
+
+    // Drag move handler for position tracking (no events emitted here)
+    konvaNode.on('dragmove.universal', () => {
+      if (!konvaNode) return
+      
+      // Update layer position silently during drag (no events emitted)
+      layerNode.x = konvaNode.x()
+      layerNode.y = konvaNode.y()
+    })
+
+    // Drag end handler
+    konvaNode.on('dragend.universal', () => {
+      // Update final position
+      if (konvaNode) {
+        layerNode.x = konvaNode.x()
+        layerNode.y = konvaNode.y()
+      }
+      
+      // Reset cursor
+      const container = konvaNode.getStage()?.container()
+      if (container) {
+        container.style.cursor = 'default'
+      }
+      
+      // Emit final layer update event
+      if (!this.state.isLoadingDesign) {
+        this.emitter.emit('layer:updated', this.layerNodeToLayer(layerNode))
+      }
+      
+      // Add to history if position actually changed
+      if (dragStartPosition && this.historyManager && 
+          (dragStartPosition.x !== layerNode.x || dragStartPosition.y !== layerNode.y)) {
+        this.historyManager.addTransformLayerCommand(
+          layerNode.id,
+          dragStartPosition,
+          { x: layerNode.x, y: layerNode.y }
+        )
+      }
+      
+      dragStartPosition = null
+    })
+  }
+
+  /**
+   * Add boundary constraints to prevent layers from being dragged outside the stage
+   */
+  private addDragBoundaryConstraints(konvaNode: Konva.Node): void {
+    konvaNode.dragBoundFunc((pos) => {
+      const stage = konvaNode.getStage()
+      if (!stage) return pos
+      
+      // Get stage dimensions (canvas size)
+      const stageWidth = this.stage.width()
+      const stageHeight = this.stage.height()
+      
+      // Use fallback dimensions if stage isn't properly sized yet
+      const canvasWidth = stageWidth > 0 ? stageWidth : 800
+      const canvasHeight = stageHeight > 0 ? stageHeight : 600
+      
+      // Get node dimensions
+      const nodeBox = konvaNode.getClientRect()
+      
+      // Calculate boundaries (keep at least part of the object visible)
+      const minX = -nodeBox.width + 50 // Allow 50px outside left edge
+      const maxX = canvasWidth - 50     // Allow 50px outside right edge
+      const minY = -nodeBox.height + 50 // Allow 50px outside top edge
+      const maxY = canvasHeight - 50     // Allow 50px outside bottom edge
+      
+      return {
+        x: Math.max(minX, Math.min(maxX, pos.x)),
+        y: Math.max(minY, Math.min(maxY, pos.y))
+      }
+    })
+  }
+
+  /**
+   * Enable universal drag handlers for unselected layers
+   */
+  private enableUniversalDragHandlers(layerNode: LayerNode): void {
+    if (!layerNode.konvaNode) return
+    
+    // Only enable if layer is not currently selected
+    if (!this.state.selectedLayers.includes(layerNode.id)) {
+      this.addUniversalDragHandlers(layerNode, layerNode.konvaNode)
+    }
+  }
+
+  /**
+   * Disable universal drag handlers (when layer becomes selected)
+   */
+  private disableUniversalDragHandlers(layerNode: LayerNode): void {
+    if (!layerNode.konvaNode) return
+    
+    // Remove universal drag handlers
+    layerNode.konvaNode.off('dragstart.universal')
+    layerNode.konvaNode.off('dragmove.universal')
+    layerNode.konvaNode.off('dragend.universal')
+  }
+
+  /**
+   * Update drag handlers for all layers based on current selection
+   */
+  private updateDragHandlersForSelection(): void {
+    // Update drag handlers for all layers based on their selection state
+    for (const layer of this.layers.values()) {
+      if (this.state.selectedLayers.includes(layer.id)) {
+        // Layer is selected - disable universal handlers (TransformManager will handle)
+        this.disableUniversalDragHandlers(layer)
+      } else {
+        // Layer is not selected - enable universal handlers
+        this.enableUniversalDragHandlers(layer)
+      }
+    }
+  }
+
+  // ============================================================================
+  // LAYER CRUD OPERATIONS (CONTINUED)
   // ============================================================================
 }

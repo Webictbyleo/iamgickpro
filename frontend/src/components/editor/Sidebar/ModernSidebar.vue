@@ -2,7 +2,7 @@
   <div class="w-16 bg-gray-900 flex flex-col items-center py-4 border-r border-gray-800">
     <!-- Logo/Home -->
     <button
-      @click="$router.push('/dashboard')"
+      @click="$router.push('/')"
       class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 hover:scale-110 transition-transform duration-200 group"
       title="Back to Dashboard"
     >

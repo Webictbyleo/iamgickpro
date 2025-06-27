@@ -47,10 +47,33 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
+      // Unauthorized - clear auth token and redirect to login
       localStorage.removeItem('auth_token')
-      const currentPath = window.location.pathname + window.location.search
-      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+      
+      // Construct redirect URL properly
+      const currentPath = window.location.pathname
+      const currentSearch = window.location.search
+      
+      // Don't redirect if already on login page to avoid infinite redirect loops
+      if (currentPath === '/login') {
+        return Promise.reject(error)
+      }
+      
+      // Construct the full current URL (path + search params, excluding any existing redirect params)
+      let redirectPath = currentPath
+      if (currentSearch) {
+        // Parse current search params and remove any existing redirect param to avoid nesting
+        const searchParams = new URLSearchParams(currentSearch)
+        searchParams.delete('redirect') // Remove any existing redirect param
+        const cleanSearch = searchParams.toString()
+        if (cleanSearch) {
+          redirectPath = `${currentPath}?${cleanSearch}`
+        }
+      }
+      
+      // Redirect to login with the clean redirect URL
+      const loginUrl = `/login?redirect=${encodeURIComponent(redirectPath)}`
+      window.location.href = loginUrl
     }
     return Promise.reject(error)
   }

@@ -762,11 +762,24 @@ const autoFitToScreen = () => {
     console.warn('Skipping auto-fit while performing history operation')
     return
   }
-  // Use nextTick to ensure DOM is updated and viewport dimensions are correct
+  
+  console.log('🎯 autoFitToScreen called - ensuring consistent viewport fit')
+  
+  // Use multiple nextTick calls to ensure DOM is fully updated
   nextTick(() => {
+    // First, update viewport dimensions to ensure they're current
+    updateCanvasViewportDimensions()
+    
+    // Then use a delay to ensure all layout changes are complete
     setTimeout(() => {
-      handleFitToScreen()
-    }, 100) // Small delay to ensure all layout changes are complete
+      if (editorSDK.value) {
+        console.log('🎯 Executing auto-fit with current viewport dimensions:', {
+          viewportWidth: canvasContainerWidth.value,
+          viewportHeight: canvasContainerHeight.value
+        })
+        handleFitToScreen()
+      }
+    }, 150) // Slightly longer delay for more consistency
   })
 }
 
@@ -1375,6 +1388,17 @@ onMounted(async () => {
   
   // Set up global event listeners
   setupGlobalEventListeners()
+  
+  // Ensure consistent auto-fit after everything is loaded and rendered
+  // This backup mechanism ensures the design is properly fitted regardless of timing issues
+  await nextTick() // Wait for Vue to finish rendering
+  setTimeout(() => {
+    if (editorSDK.value) {
+      console.log('🎯 Applying backup auto-fit to ensure consistent viewport')
+      // Use the public API through handleFitToScreen which calls the CanvasManager
+      handleFitToScreen()
+    }
+  }, 500) // Longer delay to ensure everything is settled
 })
 
 // Helper function to load existing design

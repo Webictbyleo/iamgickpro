@@ -17,11 +17,11 @@ class DesignRenderer {
      * Initialize all layer renderers
      */
     initializeRenderers() {
-        this.renderers.set('text', new new TextLayerRenderer());
-        this.renderers.set('image', new new ImageLayerRenderer());
-        this.renderers.set('shape', new new ShapeLayerRenderer());
-        this.renderers.set('svg', new new SVGLayerRenderer());
-        this.renderers.set('group', new new GroupLayerRenderer());
+        this.renderers.set('text', new this.TextLayerRenderer());
+        this.renderers.set('image', new this.ImageLayerRenderer());
+        this.renderers.set('shape', new this.ShapeLayerRenderer());
+        this.renderers.set('svg', new this.SVGLayerRenderer());
+        this.renderers.set('group', new this.GroupLayerRenderer());
     }
     /**
      * Render a design to a canvas element
@@ -39,7 +39,7 @@ class DesignRenderer {
         // Clear previous content
         this.layer.destroyChildren();
         // Add background with proper configuration support
-        const backgroundRect = new global.Konva.Rect({
+        const backgroundRect = new Konva.Rect({
             x: 0,
             y: 0,
             width: design.width,
@@ -129,7 +129,7 @@ class DesignRenderer {
                     renderer.update(konvaNode, layerNode);
                 }
                 // For image layers, we need to wait for the image to load
-                if (layerNode.type === 'image' && konvaNode instanceof global.Konva.Group) {
+                if (layerNode.type === 'image' && konvaNode instanceof Konva.Group) {
                     await this.waitForImageLoad(konvaNode);
                 }
             }
@@ -286,12 +286,12 @@ class DesignRenderer {
     createOffscreenStage() {
         // Create mock container for Node.js
         const container = createMockElement();
-        this.stage = new global.Konva.Stage({
+        this.stage = new Konva.Stage({
             container,
             width: 800,
             height: 600
         });
-        this.layer = new global.Konva.Layer();
+        this.layer = new Konva.Layer();
         this.stage.add(this.layer);
     }
     /**
@@ -430,4 +430,4 @@ class DesignRenderer {
     }
 }
 // Singleton instance for app-wide use
-const designRenderer = new DesignRenderer();
+this.DesignRenderer = DesignRenderer; const designRenderer = new DesignRenderer();

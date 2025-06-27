@@ -13,6 +13,7 @@ use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\Response\TemplateResponseDTO;
 use App\DTO\Response\TemplateSearchResponseDTO;
 use App\Entity\Design;
+use App\Entity\Layer;
 use App\Entity\Project;
 use App\Entity\Template;
 use App\Entity\User;
@@ -182,9 +183,9 @@ class TemplateController extends AbstractController
 
             $searchResponse = $this->responseDTOFactory->createTemplateListResponse(
                 $templates,
+                $total,
                 $dto->page,
                 $dto->limit,
-                $total,
                 $query ? "Search results for: {$query}" : 'Template search results'
             );
             return $this->templateResponse($searchResponse);
@@ -388,11 +389,7 @@ class TemplateController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            // Check if user has access to premium templates (simplified check)
-            if ($template->isPremium() && method_exists($user, 'getPlan') && $user->getPlan() !== 'premium') {
-                $errorResponse = $this->responseDTOFactory->createErrorResponse('Premium template access required');
-                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
-            }
+            // Premium template access removed - all users can use any template
 
             // Create a default project for the design
             $project = new Project();
@@ -410,9 +407,58 @@ class TemplateController extends AbstractController
             $design->setData($template->getCanvasSettings());
             $design->setBackground(['type' => 'color', 'color' => '#ffffff']);
             $design->setProject($project);
+            
+            // Copy thumbnail from template if available
+            if ($template->getThumbnailUrl()) {
+                $design->setThumbnail($template->getThumbnailUrl());
+            }
 
-            // Note: Individual layers will need to be created separately in a real implementation
-            // For now, we'll store the template layers data in the design's data field
+            // Persist design first to get ID for layer relationships
+            $this->entityManager->persist($project);
+            $this->entityManager->persist($design);
+            $this->entityManager->flush();
+
+            // Copy template layers to the new design
+            $templateLayers = $template->getLayers();
+            if (!empty($templateLayers)) {
+                foreach ($templateLayers as $templateLayerData) {
+                    $layer = new Layer();
+                    $layer->setDesign($design);
+                    $layer->setName($templateLayerData['name'] ?? 'Layer');
+                    $layer->setType($templateLayerData['type'] ?? 'shape');
+                    $layer->setProperties($templateLayerData['properties'] ?? []);
+                    $layer->setTransform($templateLayerData['transform'] ?? [
+                        'x' => 0,
+                        'y' => 0,
+                        'width' => 100,
+                        'height' => 100,
+                        'rotation' => 0,
+                        'scaleX' => 1,
+                        'scaleY' => 1
+                    ]);
+                    $layer->setZIndex($templateLayerData['zIndex'] ?? 0);
+                    $layer->setVisible($templateLayerData['visible'] ?? true);
+                    $layer->setLocked($templateLayerData['locked'] ?? false);
+                    $layer->setOpacity($templateLayerData['opacity'] ?? 1.0);
+                    
+                    if (isset($templateLayerData['animations'])) {
+                        $layer->setAnimations($templateLayerData['animations']);
+                    }
+                    
+                    if (isset($templateLayerData['mask'])) {
+                        $layer->setMask($templateLayerData['mask']);
+                    }
+                    
+                    if (isset($templateLayerData['plugins'])) {
+                        $layer->setPlugins($templateLayerData['plugins']);
+                    }
+
+                    $this->entityManager->persist($layer);
+                    $design->addLayer($layer);
+                }
+                // Final flush to save all layers
+                $this->entityManager->flush();
+            }
 
             // Validate project and design
             $projectErrors = $this->validator->validate($project);
@@ -442,10 +488,6 @@ class TemplateController extends AbstractController
                 );
                 return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
             }
-
-            $this->entityManager->persist($project);
-            $this->entityManager->persist($design);
-            $this->entityManager->flush();
 
             // Increment usage count if method exists
             if (method_exists($this->templateRepository, 'incrementUsageCount')) {

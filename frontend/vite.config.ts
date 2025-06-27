@@ -3,12 +3,16 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command, mode }) => ({
   plugins: [vue()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
     },
+  },
+  esbuild: {
+    // Strip console logs and debugger statements in production
+    drop: mode === 'production' ? ['console', 'debugger'] : []
   },
   server: {
     port: 3000,
@@ -73,4 +77,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['konva', 'vue-konva']
   }
-})
+}))

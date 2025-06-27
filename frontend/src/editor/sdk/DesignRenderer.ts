@@ -146,7 +146,7 @@ export class DesignRenderer {
   private async renderLayerNode(layerNode: LayerNode, renderer: KonvaLayerRenderer): Promise<Konva.Node | null> {
     try {
       // Use the renderer to create the Konva node
-      const konvaNode = renderer.render(layerNode)
+      const konvaNode = await renderer.render(layerNode)
       
       // Apply basic transform properties
       if (konvaNode) {

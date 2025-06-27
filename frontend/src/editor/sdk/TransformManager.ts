@@ -433,8 +433,9 @@ export class TransformManager {
     // Add individual transform handlers for each selected node
     this.addNodeTransformHandlers()
     
-    // Add drag handlers for each selected node
+    // Add drag and transform handlers for the selected nodes
     this.addNodeDragHandlers()
+    this.addNodeTransformHandlers()
   }
 
   private handleTransformStart(): void {

@@ -19,7 +19,7 @@ export const useAuth = () => {
       
       if (result.success) {
         // Redirect to dashboard or intended route
-        const redirectTo = router.currentRoute.value.query.redirect as string || '/dashboard'
+        const redirectTo = router.currentRoute.value.query.redirect as string || '/'
         router.push(redirectTo)
       } else {
         error('Login Failed', result.error || 'Invalid email or password')
@@ -48,7 +48,7 @@ export const useAuth = () => {
       if (result.success) {
         const appTitle = import.meta.env.VITE_APP_TITLE || 'Design Studio'
         success('Account Created!', `Welcome to ${appTitle}, ${result.user?.firstName}!`)
-        router.push('/dashboard')
+        router.push('/')
       } else {
         error('Registration Failed', result.error || 'Registration failed')
       }
