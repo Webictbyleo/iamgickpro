@@ -192,6 +192,50 @@
         <p class="text-gray-600">Please wait while we set up your template...</p>
       </div>
     </div>
+
+    <!-- Sync Status Indicator -->
+    <div v-if="getUnsyncedLayers.length > 0 || failedSyncLayers.length > 0" 
+         class="fixed top-4 right-4 z-40 bg-white rounded-lg shadow-lg border border-gray-200 p-3 max-w-sm">
+      <div class="flex items-start space-x-3">
+        <!-- Status Icon -->
+        <div class="flex-shrink-0">
+          <div v-if="failedSyncLayers.length > 0" class="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div v-else class="w-5 h-5 bg-yellow-100 rounded-full flex items-center justify-center">
+            <svg class="w-3 h-3 text-yellow-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Status Message -->
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900">
+            <span v-if="failedSyncLayers.length > 0">Sync Failed</span>
+            <span v-else>Syncing Changes</span>
+          </p>
+          <p class="text-sm text-gray-500">
+            <span v-if="failedSyncLayers.length > 0">
+              {{ failedSyncLayers.length }} layer{{ failedSyncLayers.length !== 1 ? 's' : '' }} failed to sync
+            </span>
+            <span v-else>
+              {{ getUnsyncedLayers.length }} layer{{ getUnsyncedLayers.length !== 1 ? 's' : '' }} pending
+            </span>
+          </p>
+          
+          <!-- Retry Button for Failed Syncs -->
+          <button v-if="failedSyncLayers.length > 0" 
+                  @click="retryFailedSyncs"
+                  class="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors">
+            Retry Sync
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   <!-- Toast Notifications -->
       <ToastNotifications />
@@ -272,8 +316,14 @@ const {
   canUndo,
   canRedo,
   hasUnsavedChanges,
+  hasUnsyncedChanges,
   saveError,
   isPerformingHistoryOperation,
+  getUnsyncedLayers,
+  retryFailedSyncs,
+  pendingSyncOperations,
+  failedSyncLayers,
+  temporaryLayers,
   initializeEditor,
   loadDesign,
   saveDesign,
@@ -439,7 +489,7 @@ const designName = computed({
 const saveStatus = computed(() => {
   if (saveError.value) return 'error'
   if (designStore.isLoading) return 'saving'
-  if (hasUnsavedChanges.value) return 'unsaved'
+  if (hasUnsyncedChanges.value) return 'unsaved'
   return 'saved'
 })
 

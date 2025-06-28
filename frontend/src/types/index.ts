@@ -121,6 +121,11 @@ export interface Design {
   isPublic: boolean
   createdAt: string
   updatedAt: string
+  // Sync status tracking for network failure handling
+  syncStatus?: 'synced' | 'pending' | 'failed'
+  isTemporary?: boolean // True if design has not been saved to backend yet
+  lastSyncAttempt?: string // ISO timestamp of last sync attempt
+  syncError?: string // Error message from last failed sync
 }
 
 export interface DesignData {
@@ -173,6 +178,11 @@ export interface Layer {
   zIndex: number
   properties: LayerProperties
   plugins?: Record<string, any>
+  // Sync status tracking for network failure handling
+  syncStatus?: 'synced' | 'pending' | 'failed' | 'deleting'
+  isTemporary?: boolean // True if layer has not been saved to backend yet
+  lastSyncAttempt?: string // ISO timestamp of last sync attempt
+  syncError?: string // Error message from last failed sync
 }
 
 export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg'

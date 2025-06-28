@@ -349,9 +349,12 @@ export const useDesignStore = defineStore('design', () => {
       const createLayerData = layerToCreateLayerData(layer, currentDesign.value.id)
       const response = await layerAPI.createLayer(createLayerData)
       
-      if (response.data?.data?.layer) {
+      // Check if the API response indicates success
+      // Since TypeScript expects success response type, we need to check the actual response
+      const responseData = response.data as any
+      if (responseData?.success && responseData?.data?.layer) {
         // Type assertion for the backend response structure
-        const backendLayer = response.data.data.layer as unknown as BackendLayerData
+        const backendLayer = responseData.data.layer as unknown as BackendLayerData
         
         // Convert backend layer format to frontend Layer format
         const persistedLayer = backendToFrontendLayer(backendLayer)
@@ -363,19 +366,43 @@ export const useDesignStore = defineStore('design', () => {
         console.log(`Layer added and persisted successfully. Total layers: ${currentDesign.value.layers.length}`)
         return { success: true, layer: persistedLayer }
       } else {
-        console.error('No layer data returned from API')
-        return { success: false, error: 'No layer data returned from API' }
+        // Backend returned an error response - extract the error message
+        const errorMessage = responseData?.error || responseData?.message || 'Backend layer creation failed'
+        console.error('Backend layer creation failed:', errorMessage)
+        
+        // Don't add to local state if backend failed
+        throw new Error(errorMessage)
       }
     } catch (err: unknown) {
       console.error('Failed to persist layer to backend:', err)
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Failed to create layer'
       
-      // Fallback: add to local state only
-      currentDesign.value.layers.push(layer)
-      currentDesign.value.updatedAt = new Date().toISOString()
+      // Extract error message from various possible sources
+      let errorMessage = 'Failed to create layer'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if ((err as any)?.response?.data?.error) {
+        errorMessage = (err as any).response.data.error
+      } else if ((err as any)?.response?.data?.message) {
+        errorMessage = (err as any).response.data.message
+      } else if ((err as any)?.message) {
+        errorMessage = (err as any).message
+      }
       
-      console.warn('Layer added to local state only (backend failed)')
-      return { success: false, error: errorMessage }
+      // Fallback: add to local state only if it's a network error (not a validation error)
+      const isNetworkError = (err as any)?.code === 'ECONNREFUSED' || 
+                            (err as any)?.name === 'NetworkError' ||
+                            errorMessage.includes('Network Error') ||
+                            errorMessage.includes('timeout')
+      
+      if (isNetworkError) {
+        console.warn('Network error detected, adding layer to local state as fallback')
+        currentDesign.value.layers.push(layer)
+        currentDesign.value.updatedAt = new Date().toISOString()
+        return { success: false, error: errorMessage, layer }
+      } else {
+        console.warn('Validation/permission error, not adding layer to local state')
+        return { success: false, error: errorMessage }
+      }
     }
   }
   
@@ -405,11 +432,22 @@ export const useDesignStore = defineStore('design', () => {
         console.warn(`Layer ${layerId} appears to be a local-only layer, skipping backend deletion`)
       } else {
         // Try to delete from backend using the numeric ID
-        await layerAPI.deleteLayer(layerId)
+        const response = await layerAPI.deleteLayer(layerId)
+        
+        // Check if the API response indicates success
+        // Since TypeScript expects success response type, we need to check the actual response
+        const responseData = response.data as any
+        if (responseData?.success === false) {
+          // Backend returned an error response - extract the error message
+          const errorMessage = responseData?.error || responseData?.message || 'Backend layer deletion failed'
+          console.error('Backend layer deletion failed:', errorMessage)
+          throw new Error(errorMessage)
+        }
+        
         console.log(`Layer ${layerId} deleted from backend successfully`)
       }
 
-      // Remove from local state regardless of backend success
+      // Remove from local state after successful backend deletion (or if local-only)
       currentDesign.value.layers.splice(index, 1)
       currentDesign.value.updatedAt = new Date().toISOString()
       
@@ -418,14 +456,34 @@ export const useDesignStore = defineStore('design', () => {
       
     } catch (err: unknown) {
       console.error('Failed to delete layer from backend:', err)
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Failed to delete layer'
       
-      // Still remove from local state as fallback
-      currentDesign.value.layers.splice(index, 1)
-      currentDesign.value.updatedAt = new Date().toISOString()
+      // Extract error message from various possible sources
+      let errorMessage = 'Failed to delete layer'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if ((err as any)?.response?.data?.error) {
+        errorMessage = (err as any).response.data.error
+      } else if ((err as any)?.response?.data?.message) {
+        errorMessage = (err as any).response.data.message
+      } else if ((err as any)?.message) {
+        errorMessage = (err as any).message
+      }
       
-      console.warn('Layer removed from local state only (backend failed)')
-      return { success: false, error: errorMessage }
+      // Check if it's a network error vs validation/permission error
+      const isNetworkError = (err as any)?.code === 'ECONNREFUSED' || 
+                            (err as any)?.name === 'NetworkError' ||
+                            errorMessage.includes('Network Error') ||
+                            errorMessage.includes('timeout')
+      
+      if (isNetworkError) {
+        console.warn('Network error detected, removing layer from local state as fallback')
+        currentDesign.value.layers.splice(index, 1)
+        currentDesign.value.updatedAt = new Date().toISOString()
+        return { success: false, error: errorMessage }
+      } else {
+        console.warn('Validation/permission error, preserving layer in local state')
+        return { success: false, error: errorMessage }
+      }
     }
   }
   
@@ -464,9 +522,12 @@ export const useDesignStore = defineStore('design', () => {
         console.log("Updating layer in backend with data:", updateData)
         const response = await layerAPI.updateLayer(layerId, updateData)
         
-        if (response.data?.data?.layer) {
+        // Check if the API response indicates success
+        // Since TypeScript expects success response type, we need to check the actual response
+        const responseData = response.data as any
+        if (responseData?.success && responseData?.data?.layer) {
           // Type assertion for the backend response structure
-          const backendLayer = response.data.data.layer as unknown as BackendLayerData
+          const backendLayer = responseData.data.layer as unknown as BackendLayerData
           
           // Convert backend response to frontend format and merge with updates
           const backendUpdates = backendToFrontendLayer(backendLayer)
@@ -477,9 +538,12 @@ export const useDesignStore = defineStore('design', () => {
           
           console.log(`Layer ${layerId} updated in backend successfully`)
         } else {
-          // Backend update failed, just apply local updates
-          updatedLayer = { ...layer, ...updates }
-          console.warn(`Backend update failed, applying local updates only`)
+          // Backend returned an error response - extract the error message
+          const errorMessage = responseData?.error || responseData?.message || 'Backend update failed'
+          console.error(`Backend update failed with error:`, errorMessage)
+          
+          // Don't update locally if backend failed - throw error to be caught
+          throw new Error(errorMessage)
         }
       } else {
         // Local-only layer, just apply updates locally
@@ -487,7 +551,7 @@ export const useDesignStore = defineStore('design', () => {
         console.warn(`Layer ${layerId} is local-only, applying updates locally`)
       }
 
-      // Update local state
+      // Update local state only if backend succeeded or it's a local-only layer
       Object.assign(layer, updatedLayer)
       currentDesign.value.updatedAt = new Date().toISOString()
       
@@ -496,13 +560,21 @@ export const useDesignStore = defineStore('design', () => {
       
     } catch (err: unknown) {
       console.error('Failed to update layer in backend:', err)
-      const errorMessage = (err as any)?.response?.data?.message || (err as Error)?.message || 'Failed to update layer'
       
-      // Fallback: apply updates locally only
-      Object.assign(layer, updates)
-      currentDesign.value.updatedAt = new Date().toISOString()
+      // Extract error message from various possible sources
+      let errorMessage = 'Failed to update layer'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if ((err as any)?.response?.data?.error) {
+        errorMessage = (err as any).response.data.error
+      } else if ((err as any)?.response?.data?.message) {
+        errorMessage = (err as any).response.data.message
+      } else if ((err as any)?.message) {
+        errorMessage = (err as any).message
+      }
       
-      console.warn('Layer updated locally only (backend failed)')
+      // Do NOT apply updates locally if backend failed - preserve original state
+      console.warn('Layer update failed, preserving original state')
       return { success: false, error: errorMessage }
     }
   }

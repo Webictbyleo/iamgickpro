@@ -65,6 +65,31 @@ export class CanvasManager implements CanvasAPI {
       // Create background now that LayerManager is available
       this.createBackground()
     }
+    
+    // Set up canvas clipping now that we have access to the main layer
+    this.setupCanvasClipping()
+  }
+
+  /**
+   * Set up canvas clipping to ensure content outside canvas boundaries is not visible
+   */
+  private setupCanvasClipping(): void {
+    if (!this.layerManager) return
+    
+    const mainLayer = this.layerManager.getMainLayer()
+    
+    // Add a clipping function to the main layer to ensure it only shows content within canvas bounds
+    mainLayer.clipFunc((ctx: CanvasRenderingContext2D) => {
+      // Use the original canvas dimensions (design content size)
+      const canvasWidth = this.originalCanvasWidth
+      const canvasHeight = this.originalCanvasHeight
+      
+      // Clip to canvas rectangle
+      ctx.rect(0, 0, canvasWidth, canvasHeight)
+    })
+    
+    // Force redraw to apply clipping
+    mainLayer.batchDraw()
   }
 
   // ============================================================================
@@ -91,10 +116,35 @@ export class CanvasManager implements CanvasAPI {
     // Update background to maintain proper styling
     this.updateBackground()
     
+    // Update canvas clipping when size changes
+    this.updateCanvasClipping()
+    
     // Only emit canvas:resized if not loading a design
     if (!this.state.isLoadingDesign) {
       this.eventEmitter.emit('canvas:resized', { width, height })
     }
+  }
+
+  /**
+   * Update canvas clipping when canvas size changes
+   */
+  private updateCanvasClipping(): void {
+    if (!this.layerManager) return
+    
+    const mainLayer = this.layerManager.getMainLayer()
+    
+    // Update the clipping function with new canvas dimensions
+    mainLayer.clipFunc((ctx: CanvasRenderingContext2D) => {
+      // Use the current canvas dimensions
+      const canvasWidth = this.originalCanvasWidth
+      const canvasHeight = this.originalCanvasHeight
+      
+      // Clip to canvas rectangle
+      ctx.rect(0, 0, canvasWidth, canvasHeight)
+    })
+    
+    // Force redraw to apply updated clipping
+    mainLayer.batchDraw()
   }
 
   getSize(): { width: number, height: number } {

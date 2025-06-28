@@ -661,8 +661,7 @@ export class LayerManager implements LayerAPI {
     
     this.stage.add(this.mainLayer)
     
-    // Set up stage clipping to ensure content outside canvas boundaries is not visible
-    this.setupStageClipping()
+    // Canvas clipping is now handled by CanvasManager
     
     // Ensure the main content layer is above any background layers
     // Background layers should stay at the bottom
@@ -670,25 +669,6 @@ export class LayerManager implements LayerAPI {
     if (backgroundLayer) {
       backgroundLayer.moveToBottom()
     }
-  }
-
-  /**
-   * Set up stage clipping to ensure content outside canvas boundaries is not visible
-   */
-  private setupStageClipping(): void {
-    // Add a clipping function to the main layer to ensure it only shows content within canvas bounds
-    this.mainLayer.clipFunc((ctx: CanvasRenderingContext2D) => {
-      // Get current canvas dimensions
-      const stageWidth = this.stage.width()
-      const stageHeight = this.stage.height()
-      
-      // Use fallback dimensions if stage isn't properly sized yet
-      const canvasWidth = stageWidth > 0 ? stageWidth : 800
-      const canvasHeight = stageHeight > 0 ? stageHeight : 600
-      
-      // Clip to canvas rectangle
-      ctx.rect(0, 0, canvasWidth, canvasHeight)
-    })
   }
 
   private setupRenderers(): void {
@@ -1016,13 +996,11 @@ export class LayerManager implements LayerAPI {
       const stage = konvaNode.getStage()
       if (!stage) return pos
       
-      // Get stage dimensions (canvas size)
-      const stageWidth = this.stage.width()
-      const stageHeight = this.stage.height()
-      
-      // Use fallback dimensions if stage isn't properly sized yet
-      const canvasWidth = stageWidth > 0 ? stageWidth : 800
-      const canvasHeight = stageHeight > 0 ? stageHeight : 600
+      // Get canvas dimensions from CanvasManager instead of stage dimensions
+      // This ensures proper bounds based on actual design canvas size
+      const canvasSize = this.getCanvasSize()
+      const canvasWidth = canvasSize.width
+      const canvasHeight = canvasSize.height
       
       // Get node dimensions
       const nodeBox = konvaNode.getClientRect()
@@ -1038,6 +1016,20 @@ export class LayerManager implements LayerAPI {
         y: Math.max(minY, Math.min(maxY, pos.y))
       }
     })
+  }
+
+  /**
+   * Get canvas dimensions from state or fallback to defaults
+   */
+  private getCanvasSize(): { width: number; height: number } {
+    // Use stage dimensions as they represent the canvas size
+    // CanvasManager should ensure stage dimensions match canvas content size
+    const stageWidth = this.stage.width()
+    const stageHeight = this.stage.height()
+    return {
+      width: stageWidth > 0 ? stageWidth : 800,
+      height: stageHeight > 0 ? stageHeight : 600
+    }
   }
 
   /**

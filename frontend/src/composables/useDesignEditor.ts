@@ -312,8 +312,10 @@ export function useDesignEditor() {
               zIndex: layerData.zIndex
             })
             
-            if (response.data?.success && response.data?.data?.layer) {
-              const backendLayer = response.data.data.layer
+            // Check if the API response indicates success
+            const responseData = response.data as any
+            if (responseData?.success && responseData?.data?.layer) {
+              const backendLayer = responseData.data.layer
               const oldId = layerId
               const newId = backendLayer.id
               
@@ -339,12 +341,22 @@ export function useDesignEditor() {
               
               // Mark as synced with new ID
               markLayerAsSynced(newId)
+            } else {
+              // Backend returned error response
+              const errorMessage = responseData?.error || responseData?.message || 'Backend layer creation failed'
+              throw new Error(errorMessage)
             }
           } else {
             // Use UPDATE endpoint for existing layers
-            await designStore.updateLayer(layerId, layerData, { skipPersistence: false })
-            console.log('📦 Layer updated in backend:', layerId)
-            markLayerAsSynced(layerId)
+            const result = await designStore.updateLayer(layerId, layerData, { skipPersistence: false })
+            
+            if (result.success) {
+              console.log('📦 Layer updated in backend:', layerId)
+              markLayerAsSynced(layerId)
+            } else {
+              // Design store returned error
+              throw new Error(result.error || 'Layer update failed')
+            }
           }
         } catch (error: any) {
           console.error('Failed to sync layer:', layerId, error)
@@ -522,22 +534,27 @@ export function useDesignEditor() {
         // Add to store without immediate backend persistence
         const result = await designStore.addLayer(layer, { skipPersistence: true })
         
-        // Update layer ID if backend assigned a new one
-        if (result.success && result.layer && result.layer.id !== layer.id) {
-          const oldId = layer.id
-          const newId = result.layer.id
-          console.log(`🔄 Updating temporary layer ID from ${oldId} to ${newId}`)
-          
-          // Update tracking sets with new ID
-          updateLayerIdInTrackingSets(oldId, newId)
-          
-          // Update the layer object
-          layer.id = newId
-          
-          // Update the layer in the SDK if it has an updateLayerId method
-          if (editorSDK.value?.layers?.updateLayerId) {
-            editorSDK.value.layers.updateLayerId(oldId, newId)
+        // Check the result from the design store
+        if (result.success && result.layer) {
+          // Update layer ID if backend assigned a new one
+          if (result.layer.id !== layer.id) {
+            const oldId = layer.id
+            const newId = result.layer.id
+            console.log(`🔄 Updating temporary layer ID from ${oldId} to ${newId}`)
+            
+            // Update tracking sets with new ID
+            updateLayerIdInTrackingSets(oldId, newId)
+            
+            // Update the layer object
+            layer.id = newId
+            
+            // Update the layer in the SDK if it has an updateLayerId method
+            if (editorSDK.value?.layers?.updateLayerId) {
+              editorSDK.value.layers.updateLayerId(oldId, newId)
+            }
           }
+        } else {
+          console.warn('Layer addition to store failed:', result.error)
         }
         
         // Set up debounced persistence with sync tracking
@@ -588,8 +605,30 @@ export function useDesignEditor() {
         try {
           // Delete from backend only if not a temporary layer
           if (!temporaryLayers.has(layerId)) {
-            await designStore.removeLayer(layerId)
-            console.log('📦 Layer deleted from backend:', layerId)
+            const result = await designStore.removeLayer(layerId)
+            
+            if (result.success) {
+              console.log('📦 Layer deleted from backend:', layerId)
+            } else {
+              // Design store returned error - but might be network vs validation error
+              const errorMessage = result.error || 'Delete failed'
+              console.error('Backend layer deletion failed:', errorMessage)
+              
+              // Check if it's a network error vs validation/permission error
+              const isNetworkError = errorMessage.includes('Network Error') ||
+                                    errorMessage.includes('timeout') ||
+                                    errorMessage.includes('ECONNREFUSED')
+              
+              if (!isNetworkError) {
+                // Validation/permission error - don't delete locally, mark as failed
+                markLayerAsFailed(layerId, errorMessage)
+                return // Exit early, don't delete locally
+              }
+              
+              // Network error - continue with local deletion but mark as failed
+              console.warn('Network error during deletion, proceeding with local removal')
+              throw new Error(errorMessage)
+            }
           } else {
             // Just remove from local state for temporary layers
             // Find and remove the layer from the current design layers array
@@ -609,7 +648,7 @@ export function useDesignEditor() {
           
         } catch (error: any) {
           console.error('Failed to delete layer from backend:', layerId, error)
-          const errorMessage = error.response?.data?.message || error.message || 'Network error'
+          const errorMessage = error.message || 'Network error'
           markLayerAsFailed(layerId, `Delete failed: ${errorMessage}`)
           
           // Note: Layer remains visible in UI with failed sync status
