@@ -1272,6 +1272,20 @@ const handleApplyColor = (colorString: string) => {
         }
       }
       updateLayerProperties(selectedLayer.value.id, updates)
+    } else if (selectedLayer.value.type === 'svg') {
+      // For SVG layers, apply color to the main fill color (global)
+      const svgProperties = selectedLayer.value.properties as any
+      const updates: Partial<Layer> = {
+        properties: {
+          ...svgProperties,
+          fillColors: {
+            ...svgProperties.fillColors,
+            global: color
+          }
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+      console.log('Applied color to SVG layer:', selectedLayer.value.id, color)
     }
     console.log('Applied color to layer:', selectedLayer.value.id, color)
   } else {
@@ -1317,6 +1331,23 @@ const handleApplyGradient = (gradientString: string) => {
     const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
     if (colorMatch) {
       handleApplyColor(colorMatch[0])
+    }
+  } else if (selectedLayer.value && selectedLayer.value.type === 'svg') {
+    // For SVG layers, apply the primary color from the gradient to the global fill
+    const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
+    if (colorMatch) {
+      const svgProperties = selectedLayer.value.properties as any
+      const updates: Partial<Layer> = {
+        properties: {
+          ...svgProperties,
+          fillColors: {
+            ...svgProperties.fillColors,
+            global: colorMatch[0]
+          }
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
+      console.log('Applied gradient primary color to SVG layer:', selectedLayer.value.id, colorMatch[0])
     }
   } else {
     // Apply gradient to canvas background using new DesignBackground format

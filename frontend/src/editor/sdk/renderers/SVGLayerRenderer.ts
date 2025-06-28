@@ -39,7 +39,10 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       y: layer.y,
       width: layer.width,
       height: layer.height,
-      draggable: true
+      draggable: true,
+      // SVG group handles positioning itself - no additional offsets needed
+      offsetX: 0,
+      offsetY: 0
     })
 
     // Load SVG if src is provided
@@ -64,10 +67,22 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       hasStyleChanges: !!(properties.fillColors || properties.strokeColors || properties.strokeWidths)
     })
 
-    // Update group dimensions
+    // Update group position and dimensions exactly as specified
+    // Do NOT apply any offsets to the group - this ensures the group appears
+    // exactly where the layer coordinates specify (consistent with other layers)
     node.setAttrs({
+      x: layer.x,
+      y: layer.y,
       width: layer.width,
-      height: layer.height
+      height: layer.height,
+      // No offsets on the group - visual compensation handled in path positioning
+      offsetX: 0,
+      offsetY: 0
+    })
+
+    console.log('🔄 SVGLayerRenderer: Updated group position exactly as specified', {
+      layerPosition: { x: layer.x, y: layer.y },
+      explanation: 'Group positioned exactly at layer coordinates, viewBox compensation in paths'
     })
 
     // Check if we need to reload SVG or just update properties
@@ -244,7 +259,8 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       layerId: layer.id,
       pathCount: cache.pathElements.length,
       groupId: group.id(),
-      existingChildren: group.getChildren().length
+      existingChildren: group.getChildren().length,
+      viewBox: cache.viewBox
     })
     
     // Clear any existing content
@@ -253,14 +269,33 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     const scaleX = layer.width / cache.viewBox.width
     const scaleY = layer.height / cache.viewBox.height
 
+    // SVG layers should behave exactly like other layers - no viewBox compensation
+    // Just scale the content to fit the layer dimensions, like how images work
+    console.log('🔧 SVGLayerRenderer: Scaling SVG content to fit layer dimensions', {
+      viewBox: cache.viewBox,
+      layerDimensions: { width: layer.width, height: layer.height },
+      scale: { scaleX, scaleY },
+      explanation: 'No viewBox compensation - SVG behaves like other layer types'
+    })
+
+    // No offsets on the group - position exactly at layer coordinates
+    group.setAttrs({
+      offsetX: 0,
+      offsetY: 0
+    })
+
     cache.pathElements.forEach((pathElement, index) => {
       const pathConfig: Konva.PathConfig = {
         name: 'svg-path',
         data: pathElement.data,
         scaleX,
         scaleY,
-        x: -cache.viewBox.x * scaleX,
-        y: -cache.viewBox.y * scaleY,
+        // Position paths at (0,0) relative to group - just like other layer types
+        x: 0,
+        y: 0,
+        // No offsets - let SVG scale naturally like images
+        offsetX: 0,
+        offsetY: 0,
         // Apply customizations or use original values
         fill: this.getCustomFill(pathElement, properties) || pathElement.originalFill || 'black',
         stroke: this.getCustomStroke(pathElement, properties) || pathElement.originalStroke || 'none',
@@ -480,7 +515,7 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
         zIndex: layer.zIndex,
         properties: { ...properties }
       }
-      layerEmitter.emit('layer:updated', layerData)
+      
     }
   }
 
@@ -689,23 +724,20 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
   }
 
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {
-    group.on('dragstart', () => {
-      group.getStage()?.fire('layer:dragstart', { layer })
-    })
-
-    group.on('dragend', () => {
-      const newX = group.x()
-      const newY = group.y()
-      
-      group.getStage()?.fire('layer:positionchange', {
-        layer,
-        x: newX,
-        y: newY
-      })
-    })
-
+    // Only set up click/tap handlers - LayerManager handles universal drag events
     group.on('click tap', () => {
       group.getStage()?.fire('layer:select', { layer })
+    })
+
+    // Set up cursor changes for better UX
+    group.on('mouseenter', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'grab'
+    })
+
+    group.on('mouseleave', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'default'
     })
   }
 

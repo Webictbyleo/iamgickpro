@@ -963,6 +963,7 @@ export class LayerManager implements LayerAPI {
         layerNode.y = konvaNode.y()
       }
       
+      
       // Reset cursor
       const container = konvaNode.getStage()?.container()
       if (container) {

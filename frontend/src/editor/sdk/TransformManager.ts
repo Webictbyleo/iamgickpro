@@ -72,7 +72,28 @@ export class TransformManager {
   applyPositionPreset(preset: string, canvasWidth: number, canvasHeight: number): void {
     if (this.selectedLayers.length === 0) return
 
+    console.log(`🎯 TransformManager: Applying position preset "${preset}" to ${this.selectedLayers.length} layer(s)`)
+
     this.selectedLayers.forEach(layer => {
+      // Log layer information for debugging
+      console.log(`🔍 Layer ${layer.id} (${layer.type}):`, {
+        position: { x: layer.x, y: layer.y },
+        dimensions: { width: layer.width, height: layer.height },
+        hasKonvaNode: !!layer.konvaNode,
+        konvaOffsets: layer.konvaNode ? { 
+          offsetX: layer.konvaNode.offsetX(), 
+          offsetY: layer.konvaNode.offsetY() 
+        } : null
+      })
+
+      // Get the effective dimensions and visual bounds
+      const effectiveDimensions = this.getEffectiveLayerDimensions(layer)
+      const visualBounds = this.getVisualBounds(layer)
+      
+      console.log(`📏 Effective dimensions for layer ${layer.id}:`, effectiveDimensions)
+      console.log(`👁️ Visual bounds for layer ${layer.id}:`, visualBounds)
+      
+      // Calculate preset position based on layer dimensions (same for all layer types)
       const position = this.calculatePresetPosition(
         preset, 
         layer.width, 
@@ -81,12 +102,17 @@ export class TransformManager {
         canvasHeight
       )
       
+      console.log(`📍 Calculated position for "${preset}":`, position)
+      
+      // All layers should be positioned at the exact coordinates requested
+      // Internal rendering offsets should be handled in the renderer, not here
+      console.log(`🔧 Setting layer ${layer.id} to position:`, position)
+      
       // Store old position for history
       const oldPosition = { x: layer.x, y: layer.y }
       
-      // Position layers directly in canvas coordinates
-      // The LayerManager's updateMainLayerForViewport() method handles
-      // the viewport offset automatically for all user layers
+      // Position all layers at the exact coordinates requested (consistent behavior)
+      // Internal rendering offsets are handled in the renderer, not here
       layer.x = position.x
       layer.y = position.y
       
@@ -139,6 +165,25 @@ export class TransformManager {
         return { x: canvasWidth - width, y: canvasHeight - height }
       default:
         return { x: 0, y: 0 }
+    }
+  }
+
+  /**
+   * Get effective layer dimensions - same for all layer types
+   */
+  private getEffectiveLayerDimensions(layer: LayerNode): { width: number; height: number } {
+    return { width: layer.width, height: layer.height }
+  }
+
+  /**
+   * Get the layer bounds - same for all layer types  
+   */
+  private getVisualBounds(layer: LayerNode): { x: number; y: number; width: number; height: number } {
+    return {
+      x: layer.x,
+      y: layer.y,
+      width: layer.width,
+      height: layer.height
     }
   }
 

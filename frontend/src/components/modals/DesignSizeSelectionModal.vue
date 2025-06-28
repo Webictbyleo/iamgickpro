@@ -242,10 +242,10 @@ const filteredSizes = computed(() => {
 
 // Popular design sizes
 const popularSizes: DesignSize[] = [
+    { id: 'youtube-thumbnail', name: 'YouTube Thumbnail', width: 1280, height: 720, category: 'Video' },
   { id: 'social-post', name: 'Social Media Post', width: 1080, height: 1080, category: 'Social Media' },
   { id: 'instagram-story', name: 'Instagram Story', width: 1080, height: 1920, category: 'Social Media' },
   { id: 'facebook-cover', name: 'Facebook Cover', width: 1640, height: 859, category: 'Social Media' },
-  { id: 'youtube-thumbnail', name: 'YouTube Thumbnail', width: 1280, height: 720, category: 'Video' },
   { id: 'poster', name: 'Poster', width: 2480, height: 3508, category: 'Print' },
   { id: 'flyer', name: 'Flyer', width: 2480, height: 3508, category: 'Print' },
   { id: 'business-card', name: 'Business Card', width: 1050, height: 600, category: 'Print' },
