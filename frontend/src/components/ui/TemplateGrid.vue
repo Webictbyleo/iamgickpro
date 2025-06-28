@@ -185,32 +185,11 @@ const getTemplateCardStyle = (template: Template) => {
   const height = template.height || 600
   const aspectRatio = width / height
   
-  // Standardize aspect ratios for better grid consistency
-  let finalAspectRatio = aspectRatio
-  
-  // Group similar aspect ratios together for visual consistency
-  if (aspectRatio > 2.5) {
-    // Ultra-wide (banners) -> 3:1
-    finalAspectRatio = 3
-  } else if (aspectRatio > 1.8) {
-    // Wide (landscape) -> 2:1
-    finalAspectRatio = 2
-  } else if (aspectRatio > 1.2) {
-    // Standard landscape -> 4:3
-    finalAspectRatio = 4/3
-  } else if (aspectRatio > 0.9) {
-    // Square-ish -> 1:1
-    finalAspectRatio = 1
-  } else if (aspectRatio > 0.6) {
-    // Portrait -> 3:4
-    finalAspectRatio = 3/4
-  } else {
-    // Tall portrait -> 2:3
-    finalAspectRatio = 2/3
-  }
-  
+  // Use the actual aspect ratio to maintain proper proportions
   return {
-    aspectRatio: finalAspectRatio.toString()
+    aspectRatio: aspectRatio.toString(),
+    minHeight: '120px', // Ensure minimum height for very wide templates
+    maxHeight: '200px'  // Limit height for very tall templates
   }
 }
 </script>

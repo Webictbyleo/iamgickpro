@@ -7,7 +7,7 @@
         <router-link to="/" class="flex items-center group">
           <div class="relative">
             <div class="w-10 h-10 bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-200">
-              <span class="text-white font-bold text-lg">I</span>
+              <span class="text-white font-bold text-lg">{{ appInitials }}</span>
             </div>
             <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
           </div>
@@ -243,6 +243,22 @@ const route = useRoute()
 
 const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
 const appSubtitle = computed(() => import.meta.env.VITE_APP_SUBTITLE || 'Design Studio')
+
+const appInitials = computed(() => {
+  const title = appTitle.value
+  const words = title.split(' ').filter(word => word.length > 0)
+  
+  if (words.length === 1) {
+    // Single word: take first two characters
+    return words[0].substring(0, 2).toUpperCase()
+  } else if (words.length >= 2) {
+    // Multiple words: take first character of first two words
+    return (words[0][0] + words[1][0]).toUpperCase()
+  }
+  
+  // Fallback
+  return 'DS'
+})
 
 const userName = computed(() => {
   const user = authStore.user

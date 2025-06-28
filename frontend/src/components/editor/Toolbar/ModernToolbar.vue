@@ -7,7 +7,7 @@
         <!-- Logo/Brand Space -->
         <div class="flex items-center">
           <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <span class="text-white font-bold text-sm">IG</span>
+            <span class="text-white font-bold text-sm">{{ appInitials }}</span>
           </div>
         </div>
         
@@ -135,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ExportDropdown from './ExportDropdown.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
 import RedoIcon from '@/components/icons/RedoIcon.vue'
@@ -158,6 +158,22 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showComments: false,
   commentCount: 0
+})
+
+const appInitials = computed(() => {
+  const title = import.meta.env.VITE_APP_TITLE || 'Design Studio'
+  const words = title.split(' ').filter(word => word.length > 0)
+  
+  if (words.length === 1) {
+    // Single word: take first two characters
+    return words[0].substring(0, 2).toUpperCase()
+  } else if (words.length >= 2) {
+    // Multiple words: take first character of first two words
+    return (words[0][0] + words[1][0]).toUpperCase()
+  }
+  
+  // Fallback
+  return 'DS'
 })
 
 const emit = defineEmits<{

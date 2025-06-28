@@ -203,6 +203,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { designRenderer } from '@/editor/sdk/DesignRenderer'
 import { designAPI } from '@/services/api'
+import { GeometryUtils } from '@/utils/GeometryUtils'
 import type { SearchResult, Design } from '@/types'
 
 interface Props {
@@ -242,13 +243,36 @@ const exportFormats = [
   }
 ]
 
-// Scale options
-const scaleOptions = [
-  { value: 0.5, label: '0.5x' },
-  { value: 1, label: '1x' },
-  { value: 2, label: '2x' },
-  { value: 3, label: '3x' }
-]
+// Scale options with size constraints
+const scaleOptions = computed(() => {
+  if (!props.design) return [{ value: 1, label: '1x' }]
+  
+  const designDimensions = {
+    width: props.design.width || 800,
+    height: props.design.height || 600
+  }
+  
+  // Maximum export size from environment variables
+  const maxExportSize = {
+    width: Number(import.meta.env.VITE_EXPORT_MAX_WIDTH) || 4000,
+    height: Number(import.meta.env.VITE_EXPORT_MAX_HEIGHT) || 4000
+  }
+  
+  const options = [
+    { value: 0.5, label: '0.5x' },
+    { value: 1, label: '1x' },
+    { value: 2, label: '2x' },
+    { value: 3, label: '3x' },
+    { value: 4, label: '4x' }
+  ]
+  
+  // Filter options based on size constraints
+  return options.filter(option => {
+    // Only include if scaled dimensions don't exceed max size
+    return (designDimensions.width * option.value <= maxExportSize.width) &&
+           (designDimensions.height * option.value <= maxExportSize.height)
+  })
+})
 
 // Methods
 const closeModal = () => {
@@ -315,9 +339,38 @@ const handleExport = async () => {
       } as Design
     }
 
+    // Apply size constraints using GeometryUtils
+    const originalDimensions = {
+      width: designData.width,
+      height: designData.height
+    }
+    
+    const maxExportSize = {
+      width: Number(import.meta.env.VITE_EXPORT_MAX_WIDTH) || 4000,
+      height: Number(import.meta.env.VITE_EXPORT_MAX_HEIGHT) || 4000
+    }
+    
+    // Calculate constrained scale to ensure export doesn't exceed max size
+    const requestedDimensions = {
+      width: originalDimensions.width * selectedScale.value,
+      height: originalDimensions.height * selectedScale.value
+    }
+    
+    const constrainedResult = GeometryUtils.resize(requestedDimensions, maxExportSize, {
+      mode: 'contain',
+      allowUpscaling: false
+    })
+    
+    // Calculate the actual scale we'll use
+    const actualScale = Math.min(
+      constrainedResult.width / originalDimensions.width,
+      constrainedResult.height / originalDimensions.height,
+      selectedScale.value // Don't exceed the requested scale
+    )
+
     // Generate the export using DesignRenderer.exportDesign (more appropriate for exports)
     const exportResult = await designRenderer.exportDesign(designData, {
-      scale: selectedScale.value,
+      scale: actualScale,
       format: selectedFormat.value as 'png' | 'jpeg',
       quality: selectedFormat.value === 'jpeg' ? selectedQuality.value : 1.0, // Only apply quality for JPEG
       background: designData.data?.background?.color || '#ffffff'

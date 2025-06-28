@@ -251,8 +251,11 @@ export function useDesignEditor() {
             height: currentDesign.height || 600
           }
           
-          // Target maximum thumbnail size (we want thumbnails to fit within 400x300)
-          const maxThumbnailSize = { width: 400, height: 300 }
+          // Target maximum thumbnail size from environment variables
+          const maxThumbnailSize = { 
+            width: Number(import.meta.env.VITE_THUMBNAIL_MAX_WIDTH) || 400, 
+            height: Number(import.meta.env.VITE_THUMBNAIL_MAX_HEIGHT) || 300 
+          }
           
           // Use GeometryUtils to calculate dimensions that preserve aspect ratio
           const thumbnailResult = GeometryUtils.resize(designDimensions, maxThumbnailSize, {

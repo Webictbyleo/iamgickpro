@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Transform Fix Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .test-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .code {
+            background: #f8f9fa;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text Transform Fix Verification</h1>
+    <p>This page verifies that text resizing works correctly after the underline implementation.</p>
+
+    <div class="test-container">
+        <h2 class="test-title">Issue Analysis</h2>
+        <div class="test-status warning">
+            🔍 <strong>Problem Identified:</strong> After implementing underline support, text resizing stopped working
+        </div>
+        <div class="test-status info">
+            📋 <strong>Root Cause:</strong> Text layers now use Konva.Group structure instead of direct Konva.Text nodes
+        </div>
+        <div class="code">
+            <strong>Before:</strong> layer.konvaNode = Konva.Text<br>
+            <strong>After:</strong> layer.konvaNode = Konva.Group { Text, Line(s) }
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2 class="test-title">Fixed Methods in TransformManager</h2>
+        
+        <div class="test-status success">
+            ✅ <strong>handleTextTransformRealtime():</strong> Now handles both Group and Text structures
+        </div>
+        <div class="code">
+            // Get the actual text node - handle both structures<br>
+            let textNode: Konva.Text | null = null<br>
+            if (layer.konvaNode instanceof Konva.Group) {<br>
+            &nbsp;&nbsp;textNode = layer.konvaNode.findOne('Text') as Konva.Text<br>
+            } else if (layer.konvaNode instanceof Konva.Text) {<br>
+            &nbsp;&nbsp;textNode = layer.konvaNode<br>
+            }
+        </div>
+
+        <div class="test-status success">
+            ✅ <strong>handleTextTransform():</strong> Updated to work with group-based text and update underlines
+        </div>
+        <div class="code">
+            // After scaling, update underlines if this is a group-based text<br>
+            if (layer.konvaNode instanceof Konva.Group) {<br>
+            &nbsp;&nbsp;this.updateTextUnderlines(layer.konvaNode, textNode, layer.properties)<br>
+            }
+        </div>
+
+        <div class="test-status success">
+            ✅ <strong>addNodeTransformHandlers():</strong> Fixed to find text nodes within groups
+        </div>
+        <div class="code">
+            // Real-time width resizing with underline updates<br>
+            textNode.setAttrs({ width: textNode.width() * textNode.scaleX(), scaleX: 1 })<br>
+            if (layer.konvaNode instanceof Konva.Group) {<br>
+            &nbsp;&nbsp;this.updateTextUnderlines(layer.konvaNode, textNode, layer.properties)<br>
+            }
+        </div>
+
+        <div class="test-status success">
+            ✅ <strong>updateTextUnderlines():</strong> New method to recreate underlines after transformations
+        </div>
+        <div class="code">
+            // Remove existing underlines and recreate with new dimensions<br>
+            const existingUnderlines = textGroup.find('Line')<br>
+            existingUnderlines.forEach(line => line.destroy())<br>
+            // Recreate with updated fontSize, width, and positioning
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2 class="test-title">Backward Compatibility</h2>
+        <div class="test-status success">
+            ✅ <strong>Legacy Text Support:</strong> Existing text layers (Konva.Text) continue to work
+        </div>
+        <div class="test-status success">
+            ✅ <strong>New Group Support:</strong> Text with underlines (Konva.Group) now work correctly
+        </div>
+        <div class="test-status info">
+            ℹ️ The transform manager automatically detects the structure and handles both cases appropriately
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2 class="test-title">Testing Scenarios</h2>
+        <div class="test-status info">
+            <strong>Test the following scenarios to verify the fix:</strong><br><br>
+            
+            <strong>1. Regular Text Resizing:</strong><br>
+            • Create text layer without underline<br>
+            • Use middle handles to resize width<br>
+            • Use corner handles to resize font size<br>
+            • Verify smooth resizing without jumping<br><br>
+            
+            <strong>2. Underlined Text Resizing:</strong><br>
+            • Create text layer and enable underline<br>
+            • Use middle handles to resize width<br>
+            • Verify underlines adjust to new text width<br>
+            • Use corner handles to resize font size<br>
+            • Verify underlines scale with text size<br><br>
+            
+            <strong>3. Mixed Text Behavior:</strong><br>
+            • Create multiple text layers (some with, some without underlines)<br>
+            • Select and resize each type<br>
+            • Verify both types work correctly<br><br>
+            
+            <strong>4. Toggle Underline During Edit:</strong><br>
+            • Create text layer and resize it<br>
+            • Toggle underline on/off<br>
+            • Continue resizing and verify it still works<br>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2 class="test-title">Performance Notes</h2>
+        <div class="test-status info">
+            ℹ️ <strong>Underline Updates:</strong> Underlines are recreated during transforms to ensure proper positioning
+        </div>
+        <div class="test-status info">
+            ℹ️ <strong>Structure Detection:</strong> Runtime checking of node type (Group vs Text) with minimal overhead
+        </div>
+        <div class="test-status success">
+            ✅ <strong>Optimization:</strong> Underlines only updated when necessary (during width/font size changes)
+        </div>
+    </div>
+
+    <script>
+        console.log('Text transform fix verification page loaded');
+        console.log('All text transformation methods updated to handle group-based text structure');
+    </script>
+</body>
+</html>
