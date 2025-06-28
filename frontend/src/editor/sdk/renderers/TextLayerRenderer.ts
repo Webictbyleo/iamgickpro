@@ -352,7 +352,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
     this.textInput = document.createElement('textarea')
     this.textInput.value = textNode.text()
     
-    // Position and style the textarea to match the text
+    // Position and style the textarea to match the text exactly
     const computedFontSize = textNode.fontSize() * scale.x
     const computedWidth = textNode.width() * scale.x
     
@@ -361,7 +361,7 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       top: `${containerRect.top + pos.y}px`,
       left: `${containerRect.left + pos.x}px`,
       width: `${Math.max(computedWidth, 100)}px`,
-      minHeight: `${computedFontSize * 1.2}px`,
+      minHeight: `${computedFontSize * textNode.lineHeight()}px`,
       fontSize: `${computedFontSize}px`,
       fontFamily: textNode.fontFamily(),
       fontWeight: textNode.fontStyle().includes('bold') ? 'bold' : 'normal',
@@ -369,9 +369,9 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       textDecoration: textNode.textDecoration(),
       color: textNode.fill(),
       backgroundColor: 'transparent',
-      border: '2px solid #3b82f6',
-      borderRadius: '4px',
-      padding: '4px 8px',
+      border: '1px solid #3b82f6', // Thinner border to reduce layout shift
+      borderRadius: '2px', // Smaller radius to match text bounds better
+      padding: '0', // Remove padding to prevent text jumping
       margin: '0',
       outline: 'none',
       resize: 'none',
@@ -382,7 +382,9 @@ export class TextLayerRenderer implements KonvaLayerRenderer {
       letterSpacing: `${textNode.letterSpacing()}px`,
       wordWrap: 'break-word',
       whiteSpace: 'pre-wrap',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+      boxShadow: '0 1px 4px rgba(59, 130, 246, 0.3)', // Subtle shadow
+      boxSizing: 'border-box', // Include border in width calculation
+      verticalAlign: 'top', // Match Konva text vertical alignment
       // Match text transformation
       transform: `rotate(${textNode.rotation()}deg) scale(${textNode.scaleX()}, ${textNode.scaleY()})`,
       transformOrigin: 'top left'
