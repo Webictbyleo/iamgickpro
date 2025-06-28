@@ -1720,6 +1720,9 @@ class AdvancedTemplateImporter {
             // Fetch template data
             const templateData = await this.fetchTemplateData(templateId);
 
+            // Recalculate text dimensions before generating thumbnails or saving
+            await this.recalculateTextLayerDimensions(templateData);
+
             // Download assets
             await this.downloadTemplateAssets(templateData);
 
@@ -1996,6 +1999,78 @@ class AdvancedTemplateImporter {
         } catch (error) {
             console.error(`    ❌ Database insertion failed:`, error.message);
             throw new Error(`Database insertion failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Recalculates width and height for text layers based on their content,
+     * accounting for multiple lines. This ensures the saved dimensions match
+     * the actual rendered size of the text.
+     */
+    async recalculateTextLayerDimensions(templateData) {
+        if (!templateData.layers || !Array.isArray(templateData.layers)) {
+            return;
+        }
+
+        console.log('  📏 Recalculating dimensions for text layers...');
+
+        // A single canvas instance can be reused for all measurements
+        const canvas = createCanvas(1, 1);
+        const ctx = canvas.getContext('2d');
+        let updatedCount = 0;
+
+        for (const layer of templateData.layers) {
+            // Process only text layers that have text content
+            if (layer.type === 'text' && layer.properties?.text) {
+                const text = String(layer.properties.text);
+                const textLines = text.split('\n');
+                const fontSize = layer.properties.fontSize || 16;
+                const fontFamily = layer.properties.fontFamily || 'Arial';
+                // Konva's default lineHeight is a multiplier of the font size. Let's assume a default if not present.
+                const lineHeightMultiplier = layer.properties.lineHeight || 1.2;
+
+                // Set the font on the context to get accurate measurements
+                ctx.font = `${fontSize}px "${fontFamily}"`;
+
+                // Find the width of the longest line
+                let maxWidth = 0;
+                for (const line of textLines) {
+                    const metrics = ctx.measureText(line);
+                    if (metrics.width > maxWidth) {
+                        maxWidth = metrics.width;
+                    }
+                }
+                
+                // Calculate the total height based on number of lines, font size, and line height
+                // This mimics how Konva calculates text block height
+                const calculatedHeight = textLines.length * fontSize * lineHeightMultiplier;
+                const calculatedWidth = maxWidth;
+
+                // Only update if the dimensions are different, to avoid unnecessary logs
+                if (Math.abs((layer.width || 0) - calculatedWidth) > 0.01 || Math.abs((layer.height || 0) - calculatedHeight) > 0.01) {
+                    console.log(`    - Layer ID ${layer.id}: '${text.substring(0, 30).replace(/\n/g, '\\n')}...'`);
+                    console.log(`      Original dims: ${layer.width?.toFixed(2) || 'N/A'}x${layer.height?.toFixed(2) || 'N/A'}`);
+                    console.log(`      Calculated dims: ${calculatedWidth.toFixed(2)}x${calculatedHeight.toFixed(2)}`);
+
+                    // Update the layer's width and height. This will be persisted to the DB.
+                    layer.width = calculatedWidth;
+                    layer.height = calculatedHeight;
+                    
+                    // Also update the transform object if it exists, for consistency
+                    if (layer.transform) {
+                        layer.transform.width = calculatedWidth;
+                        layer.transform.height = calculatedHeight;
+                    }
+
+                    updatedCount++;
+                }
+            }
+        }
+
+        if (updatedCount > 0) {
+            console.log(`    ✅ Updated dimensions for ${updatedCount} text layers.`);
+        } else {
+            console.log('    ✅ No text layers found or their dimensions were already correct.');
         }
     }
 

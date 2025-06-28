@@ -39,17 +39,8 @@ class Template
 
     #[ORM\Column(type: Types::STRING, length: 100)]
     #[Assert\NotBlank]
-    #[Assert\Choice(choices: [
-        'social-media',
-        'presentation',
-        'print',
-        'marketing',
-        'document',
-        'logo',
-        'web-graphics',
-        'video',
-        'animation'
-    ])]
+    #[Assert\Length(max: 50)]
+    #[Assert\Regex(pattern: '/^[a-zA-Z0-9\s\-_]+$/', message: 'Category can only contain letters, numbers, spaces, hyphens, and underscores')]
     #[Groups(['template:read', 'template:admin'])]
     private ?string $category = null;
 

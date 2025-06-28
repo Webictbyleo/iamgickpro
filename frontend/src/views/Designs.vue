@@ -168,6 +168,19 @@
                           </svg>
                           Export
                         </button>
+                        
+                        <!-- Admin Convert to Template -->
+                        <button
+                          v-if="authStore.isAdmin"
+                          @click.stop="openConvertModal(design); closeDropdown()"
+                          class="w-full px-4 py-2 text-left text-sm text-violet-600 hover:bg-violet-50 flex items-center"
+                        >
+                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                          </svg>
+                          Convert to Template
+                        </button>
+                        
                         <hr class="my-1 border-gray-100">
                         <button
                           @click.stop="deleteDesign(design); closeDropdown()"
@@ -305,6 +318,14 @@
       @close="handleExportModalClose"
       @exported="handleExportComplete"
     />
+
+    <!-- Convert to Template Modal -->
+    <ConvertToTemplateModal
+      :is-open="isConvertModalOpen"
+      :design="selectedDesignForConversion"
+      @close="closeConvertModal"
+      @converted="handleConversionComplete"
+    />
   </AppLayout>
 </template>
 
@@ -312,6 +333,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDesignStore } from '@/stores/design'
+import { useAuthStore } from '@/stores/auth'
 import type { Design, DesignSearchParams, SearchResult } from '@/types'
 import { designAPI } from '@/services/api'
 
@@ -319,9 +341,11 @@ import { designAPI } from '@/services/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
+import ConvertToTemplateModal from '@/components/modals/ConvertToTemplateModal.vue'
 
 const router = useRouter()
 const designStore = useDesignStore()
+const authStore = useAuthStore()
 
 // State
 const loading = ref(false)
@@ -340,6 +364,10 @@ const dropdownOpen = ref<string | null>(null)
 // Export modal state
 const isExportModalOpen = ref(false)
 const selectedDesignForExport = ref<SearchResult | null>(null)
+
+// Convert to template modal state
+const isConvertModalOpen = ref(false)
+const selectedDesignForConversion = ref<Design | null>(null)
 
 // Methods
 const loadDesigns = async (resetPage = false) => {
@@ -464,6 +492,26 @@ const deleteDesign = async (design: Design) => {
       console.error('Failed to delete design:', error)
     }
   }
+}
+
+const openConvertModal = (design: Design) => {
+  if (!authStore.isAdmin) {
+    console.error('Only admin users can convert designs to templates')
+    return
+  }
+  
+  selectedDesignForConversion.value = design
+  isConvertModalOpen.value = true
+}
+
+const closeConvertModal = () => {
+  isConvertModalOpen.value = false
+  selectedDesignForConversion.value = null
+}
+
+const handleConversionComplete = () => {
+  closeConvertModal()
+  // Optionally show a success message or refresh the designs list
 }
 
 const downloadDesign = (design: Design) => {

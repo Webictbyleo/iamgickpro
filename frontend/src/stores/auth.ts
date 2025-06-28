@@ -19,6 +19,12 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!token.value)
+  const isAdmin = computed(() => {
+    if (!user.value) return false
+    return user.value.role === 'ROLE_ADMIN' || 
+           user.value.roles?.includes('ROLE_ADMIN') || 
+           user.value.role === 'admin'
+  })
 
   const setError = (message: string) => {
     error.value = message
@@ -245,6 +251,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Getters
     isAuthenticated,
+    isAdmin,
     
     // Actions
     login,

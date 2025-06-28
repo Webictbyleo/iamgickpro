@@ -53,17 +53,22 @@
                 </div>
               </div>
             </div>
+
+            <!-- Admin Controls -->
+            <div v-if="showAdminControls" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <button
+                @click.stop="handleDeleteTemplate(template)"
+                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow-lg transition-colors"
+                title="Delete Template"
+              >
+                <component :is="icons.trash" class="w-4 h-4" />
+              </button>
+            </div>
           </div>
           
           <!-- Template Info -->
           <div class="p-3">
-            <h3 class="font-medium text-gray-900 text-sm leading-tight mb-1 truncate">
-              {{ template.title || template.name }}
-            </h3>
-            
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500 capitalize">{{ template.category }}</span>
-              
+            <div class="flex items-center justify-end">
               <!-- Usage count or rating -->
               <div v-if="template.usageCount > 0" class="flex items-center text-xs text-gray-400">
                 <component :is="icons.users" class="w-3 h-3 mr-1" />
@@ -133,6 +138,7 @@ interface Props {
   emptyStateMessage?: string
   showCreateButton?: boolean
   disabled?: boolean
+  showAdminControls?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -143,19 +149,25 @@ const props = withDefaults(defineProps<Props>(), {
   showViewAll: true,
   emptyStateMessage: '',
   showCreateButton: false,
-  disabled: false
+  disabled: false,
+  showAdminControls: false
 })
 
 const emit = defineEmits<{
   select: [template: Template]
   viewAll: []
   createNew: []
+  delete: [template: Template]
 }>()
 
 // Methods
 const handleTemplateClick = (template: Template) => {
   if (props.disabled) return
   emit('select', template)
+}
+
+const handleDeleteTemplate = (template: Template) => {
+  emit('delete', template)
 }
 
 const formatUsageCount = (count: number): string => {

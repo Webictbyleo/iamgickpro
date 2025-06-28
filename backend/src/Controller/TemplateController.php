@@ -508,4 +508,43 @@ class TemplateController extends AbstractController
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    /**
+     * Delete Template
+     * 
+     * Permanently deletes a template from the system.
+     * Only admin users are allowed to perform this action.
+     * 
+     * @param string $uuid The template UUID to delete
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success message or error response
+     */
+    #[Route('/{uuid}', name: 'delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function delete(string $uuid): JsonResponse
+    {
+        try {
+            $template = $this->templateRepository->findOneBy(['uuid' => $uuid]);
+            
+            if (!$template) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Template not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            // Remove the template
+            $this->entityManager->remove($template);
+            $this->entityManager->flush();
+
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                'Template deleted successfully'
+            );
+            return $this->successResponse($successResponse);
+
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to delete template',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

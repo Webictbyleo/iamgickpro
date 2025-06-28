@@ -148,6 +148,16 @@ export const designAPI = {
     format?: string
   }) => api.put<ApiResponse<Design>>(`/designs/${id}/thumbnail`, data),
 
+  // POST /designs/{id}/convert-to-template
+  convertToTemplate: (id: string, data: {
+    category: string
+    name?: string
+    description?: string
+    tags?: string[]
+    isPremium?: boolean
+    isActive?: boolean
+  }) => api.post<ApiResponse<{ message: string }>>(`/designs/${id}/convert-to-template`, data),
+
   // GET /designs/search
   searchDesigns: (params: {
     q: string
@@ -495,6 +505,9 @@ export const templateAPI = {
     name?: string
     projectId?: number
   }) => api.post<ApiResponse<Design>>(`/templates/${uuid}/use`, data),
+
+  // DELETE /templates/{uuid}
+  deleteTemplate: (uuid: string) => api.delete<ApiResponse<{ message: string }>>(`/templates/${uuid}`),
 }
 
 // User API - aligned with UserController (8 endpoints)

@@ -63,7 +63,7 @@ export default defineConfig(({ command, mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: mode === 'development',
     rollupOptions: {
       output: {
         manualChunks: {

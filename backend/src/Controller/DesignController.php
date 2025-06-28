@@ -9,12 +9,14 @@ use App\DTO\DuplicateDesignRequestDTO;
 use App\DTO\SearchRequestDTO;
 use App\DTO\UpdateDesignRequestDTO;
 use App\DTO\UpdateDesignThumbnailRequestDTO;
+use App\DTO\Request\ConvertDesignToTemplateRequestDTO;
 use App\DTO\Response\DesignResponseDTO;
 use App\DTO\Response\ErrorResponseDTO;
 use App\DTO\Response\PaginatedResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\Entity\Design;
 use App\Entity\Project;
+use App\Entity\Template;
 use App\Entity\User;
 use App\Repository\DesignRepository;
 use App\Repository\ProjectRepository;
@@ -50,6 +52,7 @@ class DesignController extends AbstractController
         private readonly DesignService $designService,
         private readonly ResponseDTOFactory $responseDTOFactory,
         private readonly MediaProcessingService $mediaProcessingService,
+        private readonly EntityManagerInterface $entityManager,
     ) {}
 
     /**
@@ -476,6 +479,125 @@ class DesignController extends AbstractController
         } catch (\Exception $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse(
                 'Failed to update thumbnail',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Convert a design to a template
+     * 
+     * Converts an existing design into a template for reuse.
+     * Only admin users are allowed to perform this action.
+     * 
+     * @param int $id The design ID to convert
+     * @param Request $request HTTP request with conversion data
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success message or error response
+     */
+    #[Route('/{id}/convert-to-template', name: 'convert_to_template', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function convertToTemplate(int $id, Request $request, SerializerInterface $serializer, ValidatorInterface $validator): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            // Deserialize and validate the request
+            $dto = $serializer->deserialize(
+                $request->getContent(),
+                ConvertDesignToTemplateRequestDTO::class,
+                'json'
+            );
+
+            $errors = $validator->validate($dto);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                    'Validation failed',
+                    $errorMessages
+                );
+                return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+            }
+
+            // Get the design (admin can convert any design)
+            $design = $this->entityManager->getRepository(Design::class)->find($id);
+            if (!$design) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Design not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            // Create the template
+            $template = new Template();
+            $template->setName($dto->name ?? $design->getName());
+            $template->setDescription($dto->description ?? $design->getDescription());
+            $template->setCategory($dto->category);
+            $template->setTags($dto->tags);
+            $template->setWidth($design->getWidth());
+            $template->setHeight($design->getHeight());
+            
+            // Set thumbnail from design if available
+            if ($design->getThumbnail()) {
+                $template->setThumbnailUrl($design->getThumbnail());
+                $template->setPreviewUrl($design->getThumbnail()); // Use same for preview
+            }
+            
+            // Convert design layers to template format
+            $templateLayers = [];
+            foreach ($design->getLayers() as $layer) {
+                $templateLayers[] = [
+                    'id' => $layer->getId(),
+                    'type' => $layer->getType(),
+                    'name' => $layer->getName(),
+                    'x' => $layer->getX(),
+                    'y' => $layer->getY(),
+                    'width' => $layer->getWidth(),
+                    'height' => $layer->getHeight(),
+                    'rotation' => $layer->getRotation(),
+                    'scaleX' => $layer->getScaleX(),
+                    'scaleY' => $layer->getScaleY(),
+                    'opacity' => $layer->getOpacity(),
+                    'visible' => $layer->isVisible(),
+                    'locked' => $layer->isLocked(),
+                    'zIndex' => $layer->getZIndex(),
+                    'properties' => $layer->getProperties(),
+                ];
+            }
+            
+            $template->setLayers($templateLayers);
+            
+            // Set canvas settings from design
+            $canvasSettings = [
+                'background' => $design->getBackground(),
+                'width' => $design->getWidth(),
+                'height' => $design->getHeight(),
+            ];
+            $template->setCanvasSettings($canvasSettings);
+            
+            $template->setIsPremium($dto->isPremium);
+            $template->setIsActive($dto->isActive);
+
+            // Save the template
+            $this->entityManager->persist($template);
+            $this->entityManager->flush();
+
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                'Design converted to template successfully'
+            );
+            return $this->successResponse($successResponse, Response::HTTP_CREATED);
+
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to convert design to template',
                 [$e->getMessage()]
             );
             return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
