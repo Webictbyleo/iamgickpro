@@ -10,16 +10,17 @@
       <p class="text-xs mt-1">Add elements to get started</p>
     </div>
     
-    <div v-else class="space-y-1">
+    <div v-else class="space-y-1" ref="layersPanelContainer">
       <div
         v-for="(layer, index) in reversedLayers"
         :key="layer.id"
+        :data-layer-id="layer.id"
         :draggable="true"
         @dragstart="handleDragStart($event, layer)"
         @dragover="handleDragOver"
         @drop="handleDrop($event, layer)"
         :class="[
-          'group flex items-center p-2 rounded border transition-colors cursor-pointer',
+          'group flex items-center p-2 rounded border transition-all duration-200 cursor-pointer',
           isSelected(layer.id)
             ? 'bg-blue-50 border-blue-200'
             : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300',
@@ -146,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseDropdown from '@/components/common/BaseDropdown.vue'
 import {
@@ -184,6 +185,92 @@ const editInput = ref<HTMLInputElement>()
 
 // Drag state
 const draggedLayer = ref<Layer | null>(null)
+
+// Refs for auto-scroll functionality
+const layersPanelContainer = ref<HTMLElement>()
+const layerElements = ref<HTMLElement[]>([])
+const scrollTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+
+// Auto-scroll to selected layer when selection changes
+watch(
+  () => props.selectedLayers,
+  (newSelectedLayers, oldSelectedLayers) => {
+    if (newSelectedLayers.length > 0) {
+      const selectedLayer = newSelectedLayers[0]
+      
+      // Only auto-scroll if the selection actually changed
+      const wasAlreadySelected = oldSelectedLayers?.some(layer => layer.id === selectedLayer.id)
+      if (!wasAlreadySelected) {
+        // Use debounced scroll to avoid excessive calls
+        if (scrollTimeout.value) {
+          clearTimeout(scrollTimeout.value)
+        }
+        scrollTimeout.value = setTimeout(() => {
+          scrollToLayer(selectedLayer.id)
+        }, 100)
+      }
+    }
+  },
+  { deep: true, flush: 'post' }
+)
+
+// Function to scroll to a specific layer
+const scrollToLayer = async (layerId: number) => {
+  await nextTick() // Ensure DOM is updated
+  
+  const layerElement = document.querySelector(`[data-layer-id="${layerId}"]`) as HTMLElement
+  
+  if (layerElement) {
+    // Find the actual scroll container (the parent with overflow-y-auto)
+    let scrollContainer = layerElement.closest('.overflow-y-auto') as HTMLElement
+    
+    // Fallback to finding panel container if specific class not found
+    if (!scrollContainer) {
+      scrollContainer = layerElement.closest('[class*="overflow"]') as HTMLElement
+    }
+    
+    // Final fallback to using scrollIntoView directly
+    if (!scrollContainer) {
+      layerElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+    } else {
+      // Calculate positions relative to the scroll container
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const layerRect = layerElement.getBoundingClientRect()
+      
+      // Check if the layer is already fully visible
+      const isVisible = (
+        layerRect.top >= containerRect.top &&
+        layerRect.bottom <= containerRect.bottom
+      )
+      
+      if (!isVisible) {
+        // Calculate scroll position to center the layer
+        const containerScrollTop = scrollContainer.scrollTop
+        const layerOffsetTop = layerElement.offsetTop
+        const containerHeight = scrollContainer.clientHeight
+        const layerHeight = layerElement.offsetHeight
+        
+        const targetScrollTop = layerOffsetTop - (containerHeight / 2) + (layerHeight / 2)
+        
+        // Smooth scroll to the calculated position
+        scrollContainer.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth'
+        })
+      }
+    }
+    
+    // Add a subtle highlight effect to indicate the scrolled-to layer
+    layerElement.classList.add('layer-scroll-highlight')
+    setTimeout(() => {
+      layerElement.classList.remove('layer-scroll-highlight')
+    }, 1500)
+  }
+}
 
 // Computed
 const reversedLayers = computed(() => [...props.layers].reverse())
@@ -282,4 +369,36 @@ const getLayerIcon = (type: string) => {
 const getLayerTypeLabel = (type: string) => {
   return type.charAt(0).toUpperCase() + type.slice(1)
 }
+
+// Cleanup timeout on unmount
+onUnmounted(() => {
+  if (scrollTimeout.value) {
+    clearTimeout(scrollTimeout.value)
+  }
+})
 </script>
+
+<style scoped>
+/* Highlight effect for auto-scrolled layers */
+.layer-scroll-highlight {
+  box-shadow: 0 0 0 2px rgb(147 197 253 / 0.5);
+  animation: pulse-highlight 1.5s ease-in-out;
+}
+
+@keyframes pulse-highlight {
+  0% {
+    box-shadow: 0 0 0 2px rgb(147 197 253 / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgb(147 197 253 / 0.75);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgb(147 197 253 / 0);
+  }
+}
+
+/* Ensure smooth scrolling for the layers container */
+.space-y-1 {
+  scroll-behavior: smooth;
+}
+</style>
