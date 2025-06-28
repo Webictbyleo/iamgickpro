@@ -541,6 +541,7 @@ class DesignController extends AbstractController
             $template->setTags($dto->tags);
             $template->setWidth($design->getWidth());
             $template->setHeight($design->getHeight());
+            $template->setIsPublic(true); // Templates are public by default
             
             // Set thumbnail from design if available
             if ($design->getThumbnail()) {
@@ -552,21 +553,18 @@ class DesignController extends AbstractController
             $templateLayers = [];
             foreach ($design->getLayers() as $layer) {
                 $templateLayers[] = [
-                    'id' => $layer->getId(),
+                    'id' => $layer->getUuid(),
                     'type' => $layer->getType(),
                     'name' => $layer->getName(),
-                    'x' => $layer->getX(),
-                    'y' => $layer->getY(),
-                    'width' => $layer->getWidth(),
-                    'height' => $layer->getHeight(),
-                    'rotation' => $layer->getRotation(),
-                    'scaleX' => $layer->getScaleX(),
-                    'scaleY' => $layer->getScaleY(),
-                    'opacity' => $layer->getOpacity(),
+                    'properties' => $layer->getProperties(),
+                    'transform' => $layer->getTransform(),
+                    'zIndex' => $layer->getZIndex(),
                     'visible' => $layer->isVisible(),
                     'locked' => $layer->isLocked(),
-                    'zIndex' => $layer->getZIndex(),
-                    'properties' => $layer->getProperties(),
+                    'opacity' => $layer->getOpacity(),
+                    'animations' => $layer->getAnimations(),
+                    'mask' => $layer->getMask(),
+                    'plugins' => $layer->getPlugins(),
                 ];
             }
             
@@ -577,6 +575,7 @@ class DesignController extends AbstractController
                 'background' => $design->getBackground(),
                 'width' => $design->getWidth(),
                 'height' => $design->getHeight(),
+                'data' => $design->getData(),
             ];
             $template->setCanvasSettings($canvasSettings);
             
@@ -587,10 +586,11 @@ class DesignController extends AbstractController
             $this->entityManager->persist($template);
             $this->entityManager->flush();
 
-            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+            $successResponse = $this->responseDTOFactory->createTemplateResponse(
+                $template,
                 'Design converted to template successfully'
             );
-            return $this->successResponse($successResponse, Response::HTTP_CREATED);
+            return $this->templateResponse($successResponse, Response::HTTP_CREATED);
 
         } catch (\InvalidArgumentException $e) {
             $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());

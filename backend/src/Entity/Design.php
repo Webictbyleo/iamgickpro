@@ -233,7 +233,7 @@ class Design
         return $this;
     }
 
-    public function getCanvasSettings(): array
+    public function  getCanvasSettings(): array
     {
         return [
             'width' => $this->width,

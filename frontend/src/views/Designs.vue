@@ -321,12 +321,13 @@
 
     <!-- Convert to Template Modal -->
     <ConvertToTemplateModal
+      ref="convertModal"
       :is-open="isConvertModalOpen"
       :design="selectedDesignForConversion"
       @close="closeConvertModal"
-      @converted="handleConversionComplete"
+      @convert="handleConversionSubmit"
     />
-  </AppLayout>
+  </AppLayout>``
 </template>
 
 <script setup lang="ts">
@@ -368,6 +369,7 @@ const selectedDesignForExport = ref<SearchResult | null>(null)
 // Convert to template modal state
 const isConvertModalOpen = ref(false)
 const selectedDesignForConversion = ref<Design | null>(null)
+const convertModal = ref<InstanceType<typeof ConvertToTemplateModal> | null>(null)
 
 // Methods
 const loadDesigns = async (resetPage = false) => {
@@ -509,9 +511,33 @@ const closeConvertModal = () => {
   selectedDesignForConversion.value = null
 }
 
-const handleConversionComplete = () => {
-  closeConvertModal()
-  // Optionally show a success message or refresh the designs list
+const handleConversionSubmit = async (formData: any) => {
+  if (!selectedDesignForConversion.value) {
+    console.error('No design selected for conversion')
+    convertModal.value?.resetConverting()
+    return
+  }
+
+  try {
+    await designAPI.convertToTemplate(selectedDesignForConversion.value.id, {
+      category: formData.category,
+      name: formData.name,
+      description: formData.description,
+      tags: formData.tags,
+      isPremium: formData.isPremium,
+      isActive: formData.isActive
+    })
+    
+    console.log(`Design "${selectedDesignForConversion.value.title || selectedDesignForConversion.value.name}" has been successfully converted to a template!`)
+    closeConvertModal()
+    
+    // Optionally show a success notification
+    // You can implement a notification system here if available
+  } catch (error) {
+    console.error('Failed to convert design to template:', error)
+    // Reset the converting state in the modal
+    convertModal.value?.resetConverting()
+  }
 }
 
 const downloadDesign = (design: Design) => {
