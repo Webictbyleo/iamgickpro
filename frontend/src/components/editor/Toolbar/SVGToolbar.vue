@@ -13,7 +13,7 @@
       :icon="PaintBrushIcon"
       tooltip="Style SVG paths"
       placement="bottom-end"
-      text="Style Paths"
+      text="SVG Styling"
       width="w-72"
       :showChevron="false"
       buttonClass="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
@@ -22,9 +22,9 @@
       <template #default="{ close }">
         <div class="p-4 space-y-4">
           <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Path Styling
+            SVG Element Styling
             <div class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">
-              All SVG elements are rendered as paths for optimal performance
+              Customize colors and strokes for all SVG elements
             </div>
           </div>
           
@@ -66,7 +66,7 @@
 
           <!-- Path Count Info -->
           <div v-if="pathCount > 0" class="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
-            Styling {{ pathCount }} path{{ pathCount === 1 ? '' : 's' }}
+            Styling {{ pathCount }} element{{ pathCount === 1 ? '' : 's' }}
           </div>
 
           <!-- Reset Section -->
@@ -83,16 +83,6 @@
         </div>
       </template>
     </IconDropdown>
-
-    <!-- Aspect Ratio -->
-    <div class="flex items-center space-x-2">
-      <PropertyDropdown
-        :value="preserveAspectRatio || 'xMidYMid meet'"
-        @update="(value: string | number) => $emit('update', { preserveAspectRatio: value as string })"
-        :options="aspectRatioOptions"
-        placeholder="Aspect Ratio"
-      />
-    </div>
   </div>
 </template>
 
@@ -100,7 +90,6 @@
 import { computed } from 'vue'
 import { PaintBrushIcon } from '@heroicons/vue/24/outline'
 import PropertyNumberInput from '@/components/editor/Properties/PropertyNumberInput.vue'
-import PropertyDropdown from '@/components/editor/Properties/PropertyDropdown.vue'
 import PropertyColorPicker from '@/components/editor/Properties/PropertyColorPicker.vue'
 import IconDropdown from '@/components/ui/IconDropdown.vue'
 import ModernButton from '@/components/common/ModernButton.vue'
@@ -110,8 +99,7 @@ interface Props {
   fillColors?: Record<string, string>
   strokeColors?: Record<string, string>
   strokeWidths?: Record<string, number>
-  preserveAspectRatio?: string
-  // SVG elements info (optional, used for path count)
+  // SVG elements info (optional, used for element count)
   svgElements?: Array<{
     type: string
     id?: string
@@ -127,7 +115,6 @@ const props = withDefaults(defineProps<Props>(), {
   fillColors: () => ({}),
   strokeColors: () => ({}),
   strokeWidths: () => ({}),
-  preserveAspectRatio: 'xMidYMid meet',
   svgElements: () => ([])
 })
 
@@ -135,14 +122,7 @@ const emit = defineEmits<{
   update: [properties: Partial<Props>]
 }>()
 
-// Aspect ratio options for SVG scaling
-const aspectRatioOptions = [
-  { label: 'Fit (Meet)', value: 'xMidYMid meet' },
-  { label: 'Fill (Slice)', value: 'xMidYMid slice' },
-  { label: 'Stretch', value: 'none' },
-]
-
-// Global style values - use 'global' as the key for all paths
+// Global style values - use 'global' as the key for all elements
 const globalFillColor = computed(() => {
   return props.fillColors?.['global'] || '#000000'
 })
@@ -155,7 +135,7 @@ const globalStrokeWidth = computed(() => {
   return props.strokeWidths?.['global'] || 1
 })
 
-// Count of paths (for display purposes)
+// Count of elements (for display purposes)
 const pathCount = computed(() => {
   return props.svgElements?.length || 0
 })
@@ -175,7 +155,7 @@ const getSvgLabel = (src: string): string => {
   return 'SVG Shape'
 }
 
-// Global styling functions - apply to all paths using 'global' key
+// Global styling functions - apply to all elements using 'global' key
 const updateGlobalFill = (color: string) => {
   console.log('🎨 SVGToolbar: Updating global fill color to:', color)
   const newFillColors = { ...props.fillColors }
