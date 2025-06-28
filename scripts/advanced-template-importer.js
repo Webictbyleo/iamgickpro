@@ -1808,9 +1808,13 @@ class AdvancedTemplateImporter {
             // Calculate relative paths from the backend public directory for serving
             const backendPublicDir = path.resolve(__dirname, '../backend/public');
             
+            // Ensure paths start with forward slash for proper URL serving
+            const thumbnailRelativePath = path.relative(backendPublicDir, thumbnailPath);
+            const previewRelativePath_url = previewRelativePath ? path.relative(backendPublicDir, previewPath) : null;
+            
             return {
-                thumbnail: path.relative(backendPublicDir, thumbnailPath),
-                preview: previewRelativePath ? path.relative(backendPublicDir, previewPath) : null
+                thumbnail: '/' + thumbnailRelativePath.replace(/\\/g, '/'),
+                preview: previewRelativePath_url ? '/' + previewRelativePath_url.replace(/\\/g, '/') : null
             };
 
         } catch (error) {
