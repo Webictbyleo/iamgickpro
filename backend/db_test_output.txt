@@ -1,7 +1,0 @@
-Testing Direct Shape Repository Access
-====================================
-
-❌ Error: SQLSTATE[HY000] [1045] Access denied for user 'iamgickpro_user'@'localhost' (using password: YES)
-Stack trace:
-#0 /var/www/html/iamgickpro/backend/test_shapes_database.php(17): PDO->__construct()
-#1 {main}
