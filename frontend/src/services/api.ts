@@ -42,6 +42,7 @@ import type {
   SearchSuggestionApiResponse,
   DesignsApiResponse,
   TemplatesApiResponse,
+  DetailedTemplateApiResponse,
   MediaApiResponse,
   MediaListApiResponse,
   ProjectsApiResponse,
@@ -262,6 +263,10 @@ export const layerAPI = {
   // PUT /layers/{id}/move
   moveLayer: (id: number, data: MoveLayerData) => 
     api.put<LayerApiResponse>(`/layers/${id}/move`, data),
+
+  // DELETE /layers/design/{designId}/clear
+  clearAllLayers: (designId: string) => 
+    api.delete<ApiResponse<{ message: string; deletedCount: number }>>(`/layers/design/${designId}/clear`),
 }
 
 // Media API - aligned with MediaController (9 endpoints)
@@ -498,7 +503,7 @@ export const templateAPI = {
     api.get<TemplatesApiResponse>('/templates/search', { params }),
 
   // GET /templates/{uuid}
-  getTemplate: (uuid: string) => api.get<ApiResponse<Template>>(`/templates/${uuid}`),
+  getTemplate: (uuid: string) => api.get<DetailedTemplateApiResponse>(`/templates/${uuid}`),
 
   // POST /templates/{uuid}/use
   useTemplate: (uuid: string, data?: {

@@ -134,6 +134,7 @@ export interface DesignData {
   background?: DesignBackground // New background configuration supporting gradients
   customProperties?: Record<string, any> // Custom properties for the design
   globalStyles?: Record<string, any> // Global styles for the design
+  layers?: Layer[] // Layers data (optional, can be stored at Design level or here)
   gridSettings?: {
     gridSize: number // Size of the grid cells
     showGrid: boolean
@@ -412,6 +413,7 @@ export interface Template {
   width: number
   height: number
   designData?: DesignData
+  layers?: Layer[] // Template layers data
   isPremium: boolean
   isActive: boolean
   rating: number
@@ -419,6 +421,33 @@ export interface Template {
   usageCount: number
   createdAt: string
   updatedAt: string
+}
+
+// Detailed template response from backend (from getTemplate API call)
+export interface DetailedTemplate {
+  id: string
+  uuid: string
+  name: string
+  description?: string
+  category: string
+  tags: string[]
+  thumbnailUrl: string
+  previewUrl: string
+  width: number
+  height: number
+  canvasSettings: DesignData // Canvas configuration data
+  layers: Layer[] // Template layers data
+  isPremium: boolean
+  isActive: boolean
+  rating: number
+  ratingCount: number
+  usageCount: number
+  createdBy?: {
+    id: string
+    username: string
+  }
+  createdAt: string
+  updatedAt?: string
 }
 
 export interface MediaItem {
@@ -907,6 +936,15 @@ export interface DesignsApiResponse extends BaseApiResponse {
 export interface TemplateApiResponse extends BaseApiResponse {
   data: {
     template: Template
+  }
+}
+
+/**
+ * Detailed Template API Response - for single template with full data
+ */
+export interface DetailedTemplateApiResponse extends BaseApiResponse {
+  data: {
+    template: DetailedTemplate
   }
 }
 

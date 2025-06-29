@@ -7,7 +7,7 @@ import { EditorSDK } from '@/editor/sdk/EditorSDK'
 import { layerAPI } from '@/services/api'
 import { GeometryUtils } from '@/utils/GeometryUtils'
 import type { EditorConfig } from '@/editor/sdk/types'
-import type { Layer } from '@/types'
+import type { Layer, Design } from '@/types'
 
 export function useDesignEditor() {
   const route = useRoute()
@@ -287,7 +287,7 @@ export function useDesignEditor() {
     
     if (layerUpdateTimeout) {
       clearTimeout(layerUpdateTimeout)
-    }
+    } 
     
     layerUpdateTimeout = setTimeout(async () => {
       console.log('🔄 Processing debounced layer updates...')
@@ -689,8 +689,13 @@ export function useDesignEditor() {
     editorSDK.value.on('design:loaded', (design: any) => {
       console.log('🎯 Event received: design:loaded', design)
       
-      // Initialize sync status for all loaded content (clears pending states)
-      initializeSyncStatusForLoadedDesign(design)
+      // Only initialize sync status if we're not performing a loadDesignFromData operation
+      if (!isPerformingHistoryOperation.value) {
+        // Initialize sync status for all loaded content (clears pending states)
+        initializeSyncStatusForLoadedDesign(design)
+      } else {
+        console.log('📦 Skipping sync status reset during loadDesignFromData operation')
+      }
       
       // Sync store with loaded design state (without triggering saves)
       if (design.layers && Array.isArray(design.layers)) {
@@ -1014,6 +1019,133 @@ export function useDesignEditor() {
     }
   }
 
+  // Helper function to create multiple layers in backend in bulk
+  const createLayersInBackend = async (layers: Layer[]): Promise<void> => {
+    if (!designStore.currentDesign?.id || layers.length === 0) return
+    
+    console.log(`🔄 Creating ${layers.length} layers in backend...`)
+    
+    for (const layer of layers) {
+      try {
+       
+        
+        const response = await layerAPI.createLayer({
+          designId: designStore.currentDesign.id,
+          type: layer.type,
+          name: layer.name,
+          properties: layer.properties,
+          transform: layer.transform,
+          visible: layer.visible,
+          locked: layer.locked,
+          zIndex: layer.zIndex
+        })
+        
+        // Check if the API response indicates success
+        const responseData = response.data as any
+        if (responseData?.success && responseData?.data?.layer) {
+          const backendLayer = responseData.data.layer
+          const oldId = layer.id
+          const newId = backendLayer.id
+          
+          console.log(`📦 Layer created in backend: "${layer.name}" ${oldId} -> ${newId}`)
+          
+          // Update the layer ID in the design store and layers array
+          layer.id = newId
+          if (designStore.currentDesign?.layers) {
+            const layerIndex = designStore.currentDesign.layers.findIndex(l => l.id === oldId)
+            if (layerIndex !== -1) {
+              designStore.currentDesign.layers[layerIndex].id = newId
+              // Also update any other properties that might have changed
+              Object.assign(designStore.currentDesign.layers[layerIndex], backendLayer)
+            }
+          }
+          
+          // Update the layer in the SDK
+          if (editorSDK.value?.layers?.updateLayerId) {
+            editorSDK.value.layers.updateLayerId(oldId, newId)
+          }
+          
+          // Mark layer properties as synced
+          layer.syncStatus = 'synced'
+          layer.isTemporary = false
+          layer.syncError = undefined
+          
+        } else {
+          // Backend returned error response
+          const errorMessage = responseData?.error || responseData?.message || 'Backend layer creation failed'
+          console.error(`Failed to create layer "${layer.name}":`, errorMessage)
+          
+          // Mark layer as failed
+          layer.syncStatus = 'failed'
+          layer.syncError = errorMessage
+          layer.lastSyncAttempt = new Date().toISOString()
+        }
+      } catch (error: any) {
+        console.error(`Failed to create layer "${layer.name}":`, error)
+        const errorMessage = error.response?.data?.message || error.message || 'Network error'
+        
+        // Mark layer as failed
+        layer.syncStatus = 'failed'
+        layer.syncError = errorMessage
+        layer.lastSyncAttempt = new Date().toISOString()
+      }
+    }
+    
+    console.log('✅ Bulk layer creation completed')
+  }
+
+  /**
+   * Load a design directly from a Design object (e.g., from template data)
+   * This method bypasses the backend API call and loads the provided design data directly
+   * into both the store and the EditorSDK.
+   * 
+   * @param design - The Design object to load
+   * @returns Promise with success status and design data
+   */
+  const loadDesignFromData = async (design: Design) => {
+    try {
+      console.log('Loading design from data into EditorSDK:', design.id)
+      initializeSyncStatusForLoadedDesign(design)
+      // Set flag to prevent sync status reset during SDK loading
+      isPerformingHistoryOperation.value = true
+      // Set the design in the store
+      designStore.currentDesign = design
+      // Order layers by zIndex before loading to ensure correct layer stacking
+      if (design.layers && Array.isArray(design.layers)) {
+        design.layers.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+        // Mark layers as temporary
+        design.layers.forEach(layer => {
+            markLayerAsTemporary(layer.id)
+            debouncedLayerUpdate(layer)
+        })
+      }
+      
+      
+      
+      // Load the design into the EditorSDK (this will trigger design:loaded event but flag prevents sync reset)
+      if (editorSDK.value) {
+        await editorSDK.value.loadDesign(design)
+        console.log('Design loaded successfully into EditorSDK:', design.id)
+      } else {
+        console.warn('EditorSDK not available, design loaded into store only')
+      }
+      
+      
+      
+      return { success: true, design }
+    } catch (error: any) {
+      console.error('Failed to load design from data:', error)
+      return { 
+        success: false, 
+        error: error.message || 'Failed to load design from data',
+        design: undefined
+      }
+    } finally {
+      // Always reset the history operation flag when loadDesignFromData completes
+      isPerformingHistoryOperation.value = false
+    }
+  }
+
   // Set up auto-retry mechanism
   const cleanupAutoRetry = setupAutoRetry()
 
@@ -1052,6 +1184,7 @@ export function useDesignEditor() {
     temporaryLayers: computed(() => Array.from(temporaryLayers)),
     initializeEditor,
     loadDesign,
+    loadDesignFromData,
     saveDesign,
     exportDesign,
     undo,

@@ -390,4 +390,48 @@ class LayerController extends AbstractController
         }
     }
 
+    /**
+     * Clear all layers from a design
+     * 
+     * Removes all layers from the specified design, effectively clearing the canvas.
+     * This operation is irreversible and will delete all layer data including text,
+     * images, shapes, and any other design elements. Users can only clear layers
+     * from designs they own.
+     * 
+     * @param string $designId The design UUID or ID to clear layers from
+     * @return JsonResponse<SuccessResponseDTO|ErrorResponseDTO> Success message with count of deleted layers or error response
+     */
+    #[Route('/design/{designId}/clear', name: 'clear_all', methods: ['DELETE'])]
+    public function clearAllLayers(string $designId): JsonResponse
+    {
+        try {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('User not found');
+                return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
+            }
+
+            // Use LayerService to resolve design and validate access
+            $design = $this->layerService->resolveDesign($designId, $user);
+            
+            // Clear all layers from the design
+            $deletedCount = $this->layerService->clearAllLayers($design);
+
+            $successResponse = $this->responseDTOFactory->createSuccessResponse(
+                "Successfully cleared {$deletedCount} layers from design"
+            );
+            return $this->successResponse($successResponse);
+
+        } catch (\InvalidArgumentException $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse($e->getMessage());
+            return $this->errorResponse($errorResponse, Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            $errorResponse = $this->responseDTOFactory->createErrorResponse(
+                'Failed to clear layers from design',
+                [$e->getMessage()]
+            );
+            return $this->errorResponse($errorResponse, Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

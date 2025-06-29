@@ -61,7 +61,7 @@
 
             <TemplatesPanel 
               v-if="activePanel === 'templates'" 
-              :disabled="isApplyingTemplate"
+              :disabled="isLoadingTemplate"
               @use-template="handleUseTemplate"
             />
             
@@ -184,12 +184,12 @@
       @exported="handleExportCompleted"
     />
     
-    <!-- Template Application Loading Overlay -->
-    <div v-if="isApplyingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <!-- Template Loading Overlay -->
+    <div v-if="isLoadingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg p-6 max-w-sm mx-4 text-center shadow-2xl">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Applying Template</h3>
-        <p class="text-gray-600">Please wait while we set up your template...</p>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Loading Template</h3>
+        <p class="text-gray-600">Please wait while we load your template...</p>
       </div>
     </div>
 
@@ -244,7 +244,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template, PluginEvent, PluginLayerUpdate } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template, DetailedTemplate, PluginEvent, PluginLayerUpdate } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
@@ -278,7 +278,7 @@ import { usePanelManagement } from '@/composables/usePanelManagement'
 import { useRoute, useRouter } from 'vue-router'
 
 // API Services
-import { templateAPI, mediaAPI } from '@/services/api'
+import { templateAPI, mediaAPI, layerAPI } from '@/services/api'
 import { useNotifications } from '@/composables/useNotifications'
 
 const designStore = useDesignStore()
@@ -326,6 +326,7 @@ const {
   temporaryLayers,
   initializeEditor,
   loadDesign,
+  loadDesignFromData,
   saveDesign,
   exportDesign,
   undo,
@@ -394,7 +395,7 @@ const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
 const canvasViewportElement = ref<HTMLElement>()
 const designCanvasRef = ref<InstanceType<typeof DesignCanvas>>()
-const isApplyingTemplate = ref(false)
+const isLoadingTemplate = ref(false)
 
 // Update canvas container dimensions based on actual viewport
 const updateCanvasViewportDimensions = () => {
@@ -640,52 +641,91 @@ const handleAddTemplate = (template: any) => {
 }
 
 const handleUseTemplate = async (template: Template) => {
-  if (isApplyingTemplate.value) return // Prevent multiple simultaneous template applications
+  if (isLoadingTemplate.value) return // Prevent multiple simultaneous template loads
   
   try {
-    isApplyingTemplate.value = true
+    isLoadingTemplate.value = true
     
     // Show loading notification
-    showInfo('Applying template...')
+    showInfo('Loading template...')
     
-    // Use the proper API endpoint to apply the template
-    const response = await templateAPI.useTemplate(template.uuid, {
-      name: `${template.name} Copy`
+    // Get the full template data using the getTemplate API
+    const response = await templateAPI.getTemplate(template.uuid)
+    
+    console.log('📋 Raw template API response:', {
+      status: response.status,
+      hasData: !!response.data,
+      hasSuccess: response.data?.success,
+      responseStructure: response.data ? Object.keys(response.data) : []
     })
     
-    if (response.data?.success && response.data?.data) {
-      const newDesign = response.data.data
+    if (response.data?.success && response.data?.data?.template) {
+      const fullTemplate = response.data.data.template
       
-      // Update the current design in the store
-      designStore.currentDesign = newDesign
+      console.log('📋 Full template data received:', {
+        uuid: fullTemplate.uuid,
+        name: fullTemplate.name,
+        hasCanvasSettings: !!fullTemplate.canvasSettings,
+        hasLayers: !!fullTemplate.layers,
+        layerCount: fullTemplate.layers?.length || 0
+      })
       
-      // Update the URL with the new design ID
-      if (route.params.id !== newDesign.id.toString()) {
-        await router.replace(`/editor/${newDesign.id}`)
+      if (!fullTemplate.canvasSettings && !fullTemplate.layers) {
+        throw new Error('Template data not available')
       }
       
-      if (editorSDK.value) {
-        // Load the design data into the editor
-        await editorSDK.value.loadDesign(newDesign)
-        
-        // Close all panels and auto-fit to screen
-        closeAllPanels()
-        autoFitToScreen()
-        
-        showSuccess('Template applied successfully!')
-      } else {
+      if (!editorSDK.value) {
         throw new Error('Editor SDK not initialized')
       }
+      
+      // Update the current design with template data while preserving the design ID
+      if (designStore.currentDesign) {
+        // Clear all existing layers
+        await layerAPI.clearAllLayers(designStore.currentDesign.id)
+        // Create a modified copy of the current design with template data
+        const updatedDesign: Design = {
+          ...designStore.currentDesign,
+          width: fullTemplate.width,
+          height: fullTemplate.height,
+          data: {
+            ...designStore.currentDesign.data,
+            ...fullTemplate.canvasSettings
+          },
+          layers: fullTemplate.layers || [],
+          updatedAt: new Date().toISOString()
+        }
+        
+        console.log('📋 Loading template into editor:', {
+          templateName: fullTemplate.name,
+          canvasSize: `${fullTemplate.width}x${fullTemplate.height}`,
+          layerCount: fullTemplate.layers?.length || 0
+        })
+        
+        // Load the updated design using the new loadDesignFromData method
+        const loadResult = await loadDesignFromData(updatedDesign)
+        
+        if (!loadResult.success) {
+          throw new Error(loadResult.error || 'Failed to load template data into editor')
+        }
+        
+        // Close all panels and auto-fit to screen
+        
+        autoFitToScreen()
+        
+        showSuccess('Template loaded successfully!')
+      } else {
+        throw new Error('No current design to load template into')
+      }
     } else {
-      throw new Error(response.data?.message || 'Failed to apply template')
+      throw new Error(response.data?.message || 'Failed to load template')
     }
   } catch (error: any) {
-    console.error('Template application failed:', error)
+    console.error('Template loading failed:', error)
     
-    const errorMessage = error.response?.data?.message || error.message || 'Failed to apply template'
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to load template'
     showError(`Template Error: ${errorMessage}`)
   } finally {
-    isApplyingTemplate.value = false
+    isLoadingTemplate.value = false
   }
 }
 

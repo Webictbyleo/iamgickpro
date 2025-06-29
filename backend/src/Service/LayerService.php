@@ -664,7 +664,7 @@ class LayerService
     /**
      * Resolve design by ID with access validation
      */
-    private function resolveDesign(int|string $designId, User $user): Design
+    public function resolveDesign(int|string $designId, User $user): Design
     {
         $design = null;
         
@@ -864,5 +864,27 @@ class LayerService
         $this->entityManager->flush();
         
         return $layer;
+    }
+
+    /**
+     * Clear all layers from a design
+     * 
+     * @param Design $design The design to clear layers from
+     * @return int Number of layers that were deleted
+     */
+    public function clearAllLayers(Design $design): int
+    {
+        $layers = $this->layerRepository->findBy(['design' => $design]);
+        $layerCount = count($layers);
+        
+        // Delete all layers (this will handle children recursively via deleteLayer method)
+        foreach ($layers as $layer) {
+            // Only delete root layers - children will be handled recursively
+            if ($layer->getParent() === null) {
+                $this->deleteLayer($layer, true);
+            }
+        }
+        
+        return $layerCount;
     }
 }

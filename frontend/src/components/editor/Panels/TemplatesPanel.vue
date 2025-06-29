@@ -38,25 +38,27 @@
         </div>
 
         <!-- Enhanced Category Filter -->
-        <div class="relative">
+        <div v-if="categories.length >= 2" class="relative">
           <select
             v-model="selectedCategory"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 appearance-none cursor-pointer"
+            :disabled="isLoadingCategories"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <option value="">All Categories</option>
-            <option value="social-media">Social Media</option>
-            <option value="presentation">Presentation</option>
-            <option value="marketing">Marketing</option>
-            <option value="print">Print</option>
-            <option value="document">Document</option>
-            <option value="logo">Logo</option>
-            <option value="web-graphics">Web Graphics</option>
+            <option value="">{{ isLoadingCategories ? 'Loading categories...' : 'All Categories' }}</option>
+            <option 
+              v-for="category in categories" 
+              :key="category.slug" 
+              :value="category.slug"
+            >
+              {{ category.title || category.name }}
+            </option>
           </select>
           <!-- Custom dropdown arrow -->
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="!isLoadingCategories" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
+            <div v-else class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
           </div>
         </div>
       </div>
@@ -197,7 +199,9 @@ const emit = defineEmits<{
 const searchQuery = ref('')
 const selectedCategory = ref('')
 const templates = ref<Template[]>([])
+const categories = ref<{ name: string; slug: string; title: string }[]>([])
 const isLoading = ref(false)
+const isLoadingCategories = ref(false)
 const searchTimeout = ref<NodeJS.Timeout | null>(null)
 
 // Enhanced search functionality
@@ -230,6 +234,28 @@ const handleImageError = (event: Event) => {
         </svg>
       </div>
     `
+  }
+}
+
+// Load template categories
+const loadCategories = async () => {
+  try {
+    isLoadingCategories.value = true
+    
+    const response = await templateAPI.getCategories()
+    
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      categories.value = response.data.data
+      console.log('📁 Template categories loaded:', categories.value.length, 'categories')
+    } else {
+      categories.value = []
+      console.warn('No template categories found in response')
+    }
+  } catch (error) {
+    console.error('Failed to load template categories:', error)
+    categories.value = []
+  } finally {
+    isLoadingCategories.value = false
   }
 }
 
@@ -298,6 +324,7 @@ watch(selectedCategory, () => {
 
 // Load templates on mount
 onMounted(() => {
+  loadCategories() // Load categories first
   loadTemplates(true)
 })
 </script>
