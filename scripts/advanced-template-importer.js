@@ -1850,7 +1850,7 @@ class AdvancedTemplateImporter {
                 
                 if (newPath) {
                     // Update the layer's src path to the new accessible URL
-                    layer.properties.src = this.config.backend.publicUrl + newPath;
+                    layer.properties.src = this.config.backend.uploadDir + newPath;
                     updatedCount++;
                     console.log(`    🔗 Updated path: ${originalPath} → ${newPath}`);
                 }
