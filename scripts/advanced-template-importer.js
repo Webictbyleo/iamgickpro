@@ -108,15 +108,10 @@ class AdvancedTemplateImporter {
             ...options
         };
         
-        // Update CONFIG with the specified backend directory
-        this.config = {
-            ...CONFIG,
-            backend: {
-                ...CONFIG.backend,
-                uploadDir: path.resolve(this.options.backendDir, 'public/uploads/templates'),
-                thumbnailDir: path.resolve(this.options.backendDir, 'public/uploads/thumbnails')
-            }
-        };
+        // Update global CONFIG with the specified backend directory
+        CONFIG.backend.baseDir = this.options.backendDir;
+        CONFIG.backend.uploadDir = path.resolve(this.options.backendDir, 'public/uploads/templates');
+        CONFIG.backend.thumbnailDir = path.resolve(this.options.backendDir, 'public/uploads/thumbnails');
         
         this.stats = {
             processed: 0,
@@ -440,11 +435,11 @@ class AdvancedTemplateImporter {
                         let imagePath = src;
                         if (src.startsWith('/uploads/templates/')) {
                             // Convert to absolute path
-                            imagePath = path.join(this.options.backendDir, 'public', src);
+                            imagePath = path.join(CONFIG.backend.baseDir, 'public', src);
                         } else if (src.startsWith('/converted_assets/')) {
                             // This should have been converted already, but handle fallback
                             const filename = path.basename(src);
-                            imagePath = path.join(this.options.backendDir, 'public', 'uploads', 'templates', filename);
+                            imagePath = path.join(CONFIG.backend.baseDir, 'public', 'uploads', 'templates', filename);
                         }
                         
                         loadImage(imagePath)
@@ -987,10 +982,10 @@ class AdvancedTemplateImporter {
                                 // Convert relative paths to absolute file paths
                                 let imagePath = layer.properties.src;
                                 if (imagePath.startsWith('/uploads/templates/')) {
-                                    imagePath = path.join(this.options.backendDir, 'public', imagePath);
+                                    imagePath = path.join(CONFIG.backend.baseDir, 'public', imagePath);
                                 } else if (imagePath.startsWith('/converted_assets/')) {
                                     const filename = path.basename(imagePath);
-                                    imagePath = path.join(this.options.backendDir, 'public', 'uploads', 'templates', filename);
+                                    imagePath = path.join(CONFIG.backend.baseDir, 'public', 'uploads', 'templates', filename);
                                 }
                                 
                                 console.log(`    🖼️  Loading image: ${imagePath}`);
@@ -1560,6 +1555,12 @@ class AdvancedTemplateImporter {
             // Math object
             Math: global.Math,
             
+            // Timer functions (required by DesignRenderer)
+            setTimeout: global.setTimeout,
+            clearTimeout: global.clearTimeout,
+            setInterval: global.setInterval,
+            clearInterval: global.clearInterval,
+            
             // DesignRenderer will be added here after execution
             DesignRenderer: null
         };
@@ -1764,8 +1765,8 @@ class AdvancedTemplateImporter {
     async generateThumbnails(templateData) {
         console.log(`  🖼️  Generating thumbnails...`);
 
-        // Use absolute paths from this.config (which includes custom backend directory)
-        const thumbnailDir = this.config.backend.thumbnailDir;
+        // Use absolute paths from CONFIG (which has been updated with custom backend directory)
+        const thumbnailDir = CONFIG.backend.thumbnailDir;
         const thumbnailPath = path.join(thumbnailDir, `${templateData.id}.png`);
         const previewPath = path.join(thumbnailDir, `${templateData.id}_preview.png`);
 
@@ -1815,7 +1816,7 @@ class AdvancedTemplateImporter {
             this.stats.thumbnailsGenerated++;
 
             // Calculate relative paths from the backend public directory for serving
-            const backendPublicDir = path.resolve(this.options.backendDir, 'public');
+            const backendPublicDir = path.resolve(CONFIG.backend.baseDir, 'public');
             
             // Ensure paths start with forward slash for proper URL serving
             const thumbnailRelativePath = path.relative(backendPublicDir, thumbnailPath);
@@ -1879,8 +1880,8 @@ class AdvancedTemplateImporter {
         const url = `${CONFIG.github.repo}/converted_assets/${filename}`;
         
         // Store assets in the uploads/templates directory accessible via HTTP
-        // Use this.config instead of CONFIG to get the correct backend directory
-        const localPath = path.join(this.config.backend.uploadDir, filename);
+        // Use CONFIG instead of original CONFIG to get the correct backend directory
+        const localPath = path.join(CONFIG.backend.uploadDir, filename);
         
         // Create the new URL path that the frontend can access
         // This should be relative to the backend's public directory
@@ -2227,7 +2228,7 @@ class AdvancedTemplateImporter {
      * Ensure directories exist
      */
     async ensureDirectories() {
-        const dirs = [this.config.backend.uploadDir, this.config.backend.thumbnailDir];
+        const dirs = [CONFIG.backend.uploadDir, CONFIG.backend.thumbnailDir];
         
         for (const dir of dirs) {
             await fs.mkdir(dir, { recursive: true });
