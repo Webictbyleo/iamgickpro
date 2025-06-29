@@ -2314,7 +2314,10 @@ Examples:
                 `);
                 process.exit(0);
             default:
-                if (args[i].startsWith('--')) {
+                if (args[i].startsWith('--backend-dir=')) {
+                    // Handle --backend-dir=/path/to/backend format
+                    options.backendDir = args[i].substring('--backend-dir='.length);
+                } else if (args[i].startsWith('--')) {
                     console.error(`Unknown option: ${args[i]}`);
                     process.exit(1);
                 }
