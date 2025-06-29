@@ -1764,8 +1764,8 @@ class AdvancedTemplateImporter {
     async generateThumbnails(templateData) {
         console.log(`  🖼️  Generating thumbnails...`);
 
-        // Use absolute paths from CONFIG
-        const thumbnailDir = CONFIG.backend.thumbnailDir;
+        // Use absolute paths from this.config (which includes custom backend directory)
+        const thumbnailDir = this.config.backend.thumbnailDir;
         const thumbnailPath = path.join(thumbnailDir, `${templateData.id}.png`);
         const previewPath = path.join(thumbnailDir, `${templateData.id}_preview.png`);
 
@@ -2226,7 +2226,7 @@ class AdvancedTemplateImporter {
      * Ensure directories exist
      */
     async ensureDirectories() {
-        const dirs = [CONFIG.backend.uploadDir, CONFIG.backend.thumbnailDir];
+        const dirs = [this.config.backend.uploadDir, this.config.backend.thumbnailDir];
         
         for (const dir of dirs) {
             await fs.mkdir(dir, { recursive: true });
