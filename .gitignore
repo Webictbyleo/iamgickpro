@@ -67,8 +67,7 @@ temp/
 # Documentation and markdown files (except main README)
 *.md
 !README.md
-# Ignore README.md in subdirectories
-**/README.md
+
 
 # Installer repository (separate repo)
 iamgickpro-installer/
