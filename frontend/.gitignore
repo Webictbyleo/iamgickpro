@@ -10,6 +10,10 @@ package-lock.json
 /dist-ssr
 *.local
 
+# Documentation and markdown files
+*.md
+src/**/*.md
+
 # Testing and debug files
 /coverage
 test*

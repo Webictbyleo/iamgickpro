@@ -31,6 +31,10 @@
 
 # Backend-specific patterns (supplement to root .gitignore)
 
+# Documentation and markdown files
+*.md
+docs/*.md
+
 # Environment files
 /.env
 /.env.local

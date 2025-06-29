@@ -64,6 +64,10 @@ temp/
 .env.test.local
 .env.production.local
 
+# Documentation and markdown files (except main README)
+*.md
+!README.md
+
 # Testing and debug files
 *test*
 *Test*
