@@ -70,6 +70,10 @@ temp/
 # Ignore README.md in subdirectories
 **/README.md
 
+# Installer repository (separate repo)
+iamgickpro-installer/
+install.sh
+
 # Testing and debug files
 *test*
 *Test*
