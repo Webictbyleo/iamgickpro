@@ -67,6 +67,8 @@ temp/
 # Documentation and markdown files (except main README)
 *.md
 !README.md
+# Ignore README.md in subdirectories
+**/README.md
 
 # Testing and debug files
 *test*
