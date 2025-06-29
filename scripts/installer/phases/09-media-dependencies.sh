@@ -69,10 +69,20 @@ install_imagemagick() {
     
     cd "$build_dir"
     
-    # Download ImageMagick source
+    # Download latest ImageMagick source
     print_step "Downloading ImageMagick source"
     
-    IMAGEMAGICK_VERSION="7.1.1-15"
+    # Get the latest release from GitHub API
+    IMAGEMAGICK_VERSION=$(curl -s https://api.github.com/repos/ImageMagick/ImageMagick/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    
+    if [[ -z "$IMAGEMAGICK_VERSION" ]]; then
+        # Fallback to a known working version
+        IMAGEMAGICK_VERSION="7.1.1-29"
+        print_warning "Could not fetch latest version, using fallback: $IMAGEMAGICK_VERSION"
+    else
+        print_success "Using latest ImageMagick version: $IMAGEMAGICK_VERSION"
+    fi
+    
     wget -q "https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${IMAGEMAGICK_VERSION}.tar.gz" -O imagemagick.tar.gz
     
     if [[ $? -ne 0 ]]; then
@@ -149,9 +159,17 @@ install_imagemagick() {
     # Create ImageMagick policy for web applications
     print_step "Configuring ImageMagick security policy"
     
+    # Get system resources
+    TOTAL_MEMORY=$(free -m | awk 'NR==2{printf "%.0f", $2}')
+    MEMORY_LIMIT=$(($TOTAL_MEMORY / 4))  # Use 1/4 of system memory
+    MAP_LIMIT=$(($TOTAL_MEMORY / 2))     # Use 1/2 of system memory for map
+    DISK_LIMIT="2GiB"                    # Fixed disk limit
+    CPU_CORES=$(nproc)
+    THREAD_LIMIT=$((CPU_CORES * 2))      # 2 threads per core
+    
     mkdir -p /usr/local/etc/ImageMagick-7
     
-    cat > /usr/local/etc/ImageMagick-7/policy.xml << 'EOF'
+    cat > /usr/local/etc/ImageMagick-7/policy.xml << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE policymap [
 <!ELEMENT policymap (policy)+>
@@ -164,18 +182,18 @@ install_imagemagick() {
 <!ATTLIST policy value CDATA #IMPLIED>
 ]>
 <policymap>
-  <!-- Resource limits -->
+  <!-- Resource limits based on system specifications -->
   <policy domain="resource" name="temporary-path" value="/tmp"/>
-  <policy domain="resource" name="memory" value="512MiB"/>
-  <policy domain="resource" name="map" value="1GiB"/>
-  <policy domain="resource" name="width" value="16KP"/>
-  <policy domain="resource" name="height" value="16KP"/>
-  <policy domain="resource" name="area" value="128MB"/>
-  <policy domain="resource" name="disk" value="1GiB"/>
-  <policy domain="resource" name="file" value="768"/>
-  <policy domain="resource" name="thread" value="4"/>
+  <policy domain="resource" name="memory" value="${MEMORY_LIMIT}MiB"/>
+  <policy domain="resource" name="map" value="${MAP_LIMIT}MiB"/>
+  <policy domain="resource" name="width" value="32KP"/>
+  <policy domain="resource" name="height" value="32KP"/>
+  <policy domain="resource" name="area" value="1GB"/>
+  <policy domain="resource" name="disk" value="$DISK_LIMIT"/>
+  <policy domain="resource" name="file" value="1024"/>
+  <policy domain="resource" name="thread" value="$THREAD_LIMIT"/>
   <policy domain="resource" name="throttle" value="0"/>
-  <policy domain="resource" name="time" value="120"/>
+  <policy domain="resource" name="time" value="300"/>
   
   <!-- Disable potentially dangerous coders -->
   <policy domain="coder" rights="none" pattern="PS" />
@@ -195,7 +213,7 @@ install_imagemagick() {
 </policymap>
 EOF
 
-    print_success "ImageMagick security policy configured"
+    print_success "ImageMagick security policy configured for ${TOTAL_MEMORY}MB system"
 }
 
 install_ffmpeg() {
@@ -205,10 +223,20 @@ install_ffmpeg() {
     
     cd "$build_dir"
     
-    # Download FFmpeg source
+    # Download latest FFmpeg source
     print_step "Downloading FFmpeg source"
     
-    FFMPEG_VERSION="6.0.1"
+    # Get the latest release version
+    FFMPEG_VERSION=$(curl -s https://api.github.com/repos/FFmpeg/FFmpeg/releases/latest | grep -oP '"tag_name": "n\K(.*)(?=")')
+    
+    if [[ -z "$FFMPEG_VERSION" ]]; then
+        # Fallback to a known working version
+        FFMPEG_VERSION="6.1.1"
+        print_warning "Could not fetch latest version, using fallback: $FFMPEG_VERSION"
+    else
+        print_success "Using latest FFmpeg version: $FFMPEG_VERSION"
+    fi
+    
     wget -q "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" -O ffmpeg.tar.xz
     
     if [[ $? -ne 0 ]]; then
@@ -284,36 +312,6 @@ install_ffmpeg() {
         print_error "FFmpeg installation verification failed"
         return 1
     fi
-    
-    # Create FFmpeg wrapper script for web applications
-    print_step "Creating FFmpeg wrapper"
-    
-    cat > /usr/local/bin/ffmpeg-web << 'EOF'
-#!/bin/bash
-# FFmpeg wrapper for web applications with security restrictions
-
-# Timeout for FFmpeg operations (seconds)
-TIMEOUT=300
-
-# Maximum input file size (100MB)
-MAX_FILE_SIZE=$((100 * 1024 * 1024))
-
-# Check if input file exists and is within size limit
-if [[ -f "$1" ]]; then
-    FILE_SIZE=$(stat -c%s "$1")
-    if [[ $FILE_SIZE -gt $MAX_FILE_SIZE ]]; then
-        echo "Error: File size exceeds maximum limit (100MB)"
-        exit 1
-    fi
-fi
-
-# Run FFmpeg with timeout and restricted options
-timeout $TIMEOUT ffmpeg -hide_banner -loglevel warning "$@"
-EOF
-
-    chmod +x /usr/local/bin/ffmpeg-web
-    
-    print_success "FFmpeg wrapper created"
 }
 
 # Run the installation

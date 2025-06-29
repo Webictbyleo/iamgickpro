@@ -120,11 +120,6 @@ server {
     gzip_proxied expired no-cache no-store private must-revalidate auth;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
 
-    # Frontend routes (SPA)
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
     # API routes (proxy to backend)
     location /api/ {
         try_files \$uri @backend;
@@ -136,7 +131,7 @@ server {
         try_files \$uri /index.php\$is_args\$args;
     }
 
-    # PHP-FPM processing
+    # PHP-FPM processing for API endpoints
     location ~ ^/api/.*\.php$ {
         root $INSTALL_DIR/backend/public;
         fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
@@ -146,11 +141,47 @@ server {
         fastcgi_param HTTPS off;
     }
 
-    # Handle uploads
+    # Media file routes (serve from backend)
+    location /media/ {
+        alias $INSTALL_DIR/backend/public/media/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri @backend;
+    }
+
+    # Upload file routes (serve from backend)
     location /uploads/ {
         alias $INSTALL_DIR/backend/public/uploads/;
         expires 1y;
         add_header Cache-Control "public, immutable";
+        try_files \$uri @backend;
+    }
+
+    # Storage file routes (serve from backend)
+    location /storage/ {
+        alias $INSTALL_DIR/backend/public/storage/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri @backend;
+    }
+
+    # Thumbnail routes (serve from backend)
+    location /thumbnails/ {
+        alias $INSTALL_DIR/backend/public/thumbnails/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri @backend;
+    }
+
+    # Secure media routes (serve from backend)
+    location /secure-media/ {
+        # This should go through backend for security checks
+        try_files \$uri @backend;
+    }
+
+    # Frontend routes (SPA) - must be last to catch all remaining routes
+    location / {
+        try_files \$uri \$uri/ /index.html;
     }
 
     # Static assets caching

@@ -78,65 +78,6 @@ EOF
     
     print_success "File permissions configured"
     
-    # Configure PHP-FPM for optimal performance
-    print_step "Optimizing PHP-FPM configuration"
-    
-    # Backup original config
-    cp /etc/php/8.4/fpm/pool.d/www.conf /etc/php/8.4/fpm/pool.d/www.conf.backup
-    
-    # Create optimized PHP-FPM pool configuration
-    cat > /etc/php/8.4/fpm/pool.d/iamgickpro.conf << EOF
-[iamgickpro]
-user = www-data
-group = www-data
-listen = /var/run/php/php8.4-fpm-iamgickpro.sock
-listen.owner = www-data
-listen.group = www-data
-listen.mode = 0660
-
-pm = dynamic
-pm.max_children = 20
-pm.start_servers = 2
-pm.min_spare_servers = 1
-pm.max_spare_servers = 5
-pm.max_requests = 1000
-
-; Performance settings
-php_value[memory_limit] = 512M
-php_value[max_execution_time] = 300
-php_value[max_input_time] = 300
-php_value[post_max_size] = 50M
-php_value[upload_max_filesize] = 50M
-php_value[max_file_uploads] = 20
-
-; Security settings
-php_value[expose_php] = off
-php_value[allow_url_fopen] = off
-php_value[allow_url_include] = off
-
-; Logging
-php_value[log_errors] = on
-php_value[error_log] = /var/log/php/iamgickpro-errors.log
-
-; Environment variables
-env[DATABASE_URL] = \$DATABASE_URL
-env[APP_ENV] = \$APP_ENV
-env[APP_SECRET] = \$APP_SECRET
-EOF
-
-    # Create PHP error log directory
-    mkdir -p /var/log/php
-    chown www-data:www-data /var/log/php
-    
-    # Update nginx to use the new PHP-FPM pool
-    sed -i 's|unix:/var/run/php/php8.4-fpm.sock|unix:/var/run/php/php8.4-fpm-iamgickpro.sock|g' /etc/nginx/sites-available/iamgickpro
-    
-    # Restart services
-    systemctl restart php8.4-fpm
-    systemctl restart nginx
-    
-    print_success "PHP-FPM optimized"
-    
     # Start background worker service
     print_step "Starting background services"
     
@@ -347,7 +288,6 @@ Useful Commands:
 
 Configuration Files:
 - Nginx: /etc/nginx/sites-available/iamgickpro
-- PHP-FPM: /etc/php/8.4/fpm/pool.d/iamgickpro.conf
 - Backend Config: $backend_dir/.env.local
 
 Next Steps:
