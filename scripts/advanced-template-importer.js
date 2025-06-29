@@ -108,6 +108,13 @@ class AdvancedTemplateImporter {
             ...options
         };
         
+        // Debug: Show what backend directory is being used
+        console.log('🔧 Backend directory configuration:');
+        console.log(`   Command line --backend-dir: ${options.backendDir || 'not provided'}`);
+        console.log(`   Environment BACKEND_DIR: ${process.env.BACKEND_DIR || 'not set'}`);
+        console.log(`   Default path: ${path.resolve(__dirname, '../backend')}`);
+        console.log(`   Final backend directory: ${this.options.backendDir}`);
+        
         // Update CONFIG with the specified backend directory
         this.config = {
             ...CONFIG,
@@ -117,6 +124,9 @@ class AdvancedTemplateImporter {
                 thumbnailDir: path.resolve(this.options.backendDir, 'public/uploads/thumbnails')
             }
         };
+        
+        console.log(`   Upload directory: ${this.config.backend.uploadDir}`);
+        console.log(`   Thumbnail directory: ${this.config.backend.thumbnailDir}`);
         
         this.stats = {
             processed: 0,
