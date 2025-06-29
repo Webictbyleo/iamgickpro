@@ -10,13 +10,25 @@ package-lock.json
 /dist-ssr
 *.local
 
-# Testing
+# Testing and debug files
 /coverage
-**test*.html
-**test*.ts
-/*test*.js
-/*debug*.html
-/*debug*.js
+test*
+*test*
+Test*
+*Test*
+debug*
+*debug*
+Debug*
+*Debug*
+*.test.html
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+test-*
+*-test*
+debug-*
+*-debug*
 
 # Editor directories and files
 .vscode/*

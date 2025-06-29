@@ -30,29 +30,37 @@
 ###< doctrine/orm ###
 
 # Backend-specific patterns (supplement to root .gitignore)
+
+# Environment files
+/.env
+/.env.local
+/.env.local.php
+/.env.*.local
+
+# Migrations (except templates)
 /migrations/*.php
 /migrations/Version*.php
 
-# Debug files
-debug_*.php
-debug_*.txt
-debug_*.log
-debug_*.svg
-debug_*.json
+# Test files and output
+/tests/
+test_*
+*_test_*
+*test*.php
+*test*.txt
+*test*.log
+*test*.svg
+*test*.json
+*test*.sh
+api_test_output.txt
+db_test_output.txt
 
-# Test files
-test_*.php
-*test**.php
-/**.json
-test_*.txt
-test_*.log
-test_*.svg
-test_*.json
-test_*.sh
-*_test_*.php
-create_test*.php
-verify_*.php
-verify_*.sh
+# Debug files
+debug_*
+*debug*.php
+*debug*.txt
+*debug*.log
+*debug*.svg
+*debug*.json
 
 # Generated files
 api-documentation.json
