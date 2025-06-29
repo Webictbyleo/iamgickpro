@@ -25,11 +25,13 @@
  *   --dry-run             Show what would be imported without actually importing
  *   --category <name>     Filter by category
  *   --clear-existing      Clear all existing templates before importing
+ *   --backend-dir <path>  Specify custom backend directory path
  *   --no-previews         Skip generating preview images
  *   --help                Show help
  * 
  * Environment Variables:
- *   DATABASE_URL          Database connection string (from backend/.env)
+ *   DATABASE_URL          Database connection string (must be provided externally)
+ *   BACKEND_DIR           Backend directory path (alternative to --backend-dir)
  * 
  * Examples:
  *   npm run import:sample                           # Dry run with 5 templates
@@ -38,11 +40,7 @@
  *   node advanced-template-importer.js --help      # Show help
  */
 
-// Load environment variables with proper path resolution
 const path = require('path');
-const envPath = path.resolve(__dirname, '../backend/.env');
-require('dotenv').config({ path: envPath });
-
 const https = require('https');
 const http = require('http');
 const fs = require('fs').promises;
@@ -106,7 +104,18 @@ class AdvancedTemplateImporter {
             category: options.category || null,
             clearExisting: options.clearExisting || false,
             generatePreviews: options.generatePreviews !== false,
+            backendDir: options.backendDir || process.env.BACKEND_DIR || path.resolve(__dirname, '../backend'),
             ...options
+        };
+        
+        // Update CONFIG with the specified backend directory
+        this.config = {
+            ...CONFIG,
+            backend: {
+                ...CONFIG.backend,
+                uploadDir: path.resolve(this.options.backendDir, 'public/uploads/templates'),
+                thumbnailDir: path.resolve(this.options.backendDir, 'public/uploads/thumbnails')
+            }
         };
         
         this.stats = {
@@ -431,11 +440,11 @@ class AdvancedTemplateImporter {
                         let imagePath = src;
                         if (src.startsWith('/uploads/templates/')) {
                             // Convert to absolute path
-                            imagePath = path.join(__dirname, '..', 'backend', 'public', src);
+                            imagePath = path.join(this.options.backendDir, 'public', src);
                         } else if (src.startsWith('/converted_assets/')) {
                             // This should have been converted already, but handle fallback
                             const filename = path.basename(src);
-                            imagePath = path.join(__dirname, '..', 'backend', 'public', 'uploads', 'templates', filename);
+                            imagePath = path.join(this.options.backendDir, 'public', 'uploads', 'templates', filename);
                         }
                         
                         loadImage(imagePath)
@@ -978,10 +987,10 @@ class AdvancedTemplateImporter {
                                 // Convert relative paths to absolute file paths
                                 let imagePath = layer.properties.src;
                                 if (imagePath.startsWith('/uploads/templates/')) {
-                                    imagePath = path.join(__dirname, '..', 'backend', 'public', imagePath);
+                                    imagePath = path.join(this.options.backendDir, 'public', imagePath);
                                 } else if (imagePath.startsWith('/converted_assets/')) {
                                     const filename = path.basename(imagePath);
-                                    imagePath = path.join(__dirname, '..', 'backend', 'public', 'uploads', 'templates', filename);
+                                    imagePath = path.join(this.options.backendDir, 'public', 'uploads', 'templates', filename);
                                 }
                                 
                                 console.log(`    🖼️  Loading image: ${imagePath}`);
@@ -1806,7 +1815,7 @@ class AdvancedTemplateImporter {
             this.stats.thumbnailsGenerated++;
 
             // Calculate relative paths from the backend public directory for serving
-            const backendPublicDir = path.resolve(__dirname, '../backend/public');
+            const backendPublicDir = path.resolve(this.options.backendDir, 'public');
             
             // Ensure paths start with forward slash for proper URL serving
             const thumbnailRelativePath = path.relative(backendPublicDir, thumbnailPath);
@@ -2273,6 +2282,9 @@ function parseArgs() {
             case '--clear-existing':
                 options.clearExisting = true;
                 break;
+            case '--backend-dir':
+                options.backendDir = args[++i];
+                break;
             case '--no-previews':
                 options.generatePreviews = false;
                 break;
@@ -2291,7 +2303,8 @@ Options:
   --help              Show this help
 
 Environment Variables:
-  DATABASE_URL        Database connection string (from backend/.env)
+  DATABASE_URL        Database connection string (must be provided externally)
+  BACKEND_DIR         Backend directory path (alternative to --backend-dir)
 
 Examples:
   npm run import:sample                           # Dry run with 5 templates
