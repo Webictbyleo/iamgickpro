@@ -324,11 +324,7 @@ const getPaginationPages = (): number[] => {
 
 // Media operations
 const searchMedia = async () => {
-  // Skip if already loading or if query hasn't changed
-  if (isLoading.value || lastSearchQuery.value === searchQuery.value) {
-    return
-  }
-  
+ 
   lastSearchQuery.value = searchQuery.value
   currentPage.value = 1 // Reset to first page for new search
   
