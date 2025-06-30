@@ -513,10 +513,16 @@ class MediaRepository extends ServiceEntityRepository
      * @param string|null $search Optional text search across filename and alt text
      * @return Media[] Array of Media entities matching the criteria
      */
-    public function findByFilters(array $filters, int $page, int $limit, ?string $search = null): array
+    public function findByFilters(array $filters, int $page, int $limit, ?string $search = null, ?User $user = null): array
     {
         $qb = $this->createQueryBuilder('m')
             ->andWhere('m.deletedAt IS NULL');
+
+        // Filter by user if provided (for user uploads)
+        if ($user !== null) {
+            $qb->andWhere('m.user = :user')
+               ->setParameter('user', $user);
+        }
 
         // Apply filter criteria
         if (isset($filters['type'])) {
@@ -553,13 +559,20 @@ class MediaRepository extends ServiceEntityRepository
      * 
      * @param array<string, string> $filters Associative array of filters (type, source, etc.)
      * @param string|null $search Optional text search across filename and alt text
+     * @param User|null $user Optional user to filter by (for user uploads)
      * @return int Total count of media items matching the criteria
      */
-    public function countByFilters(array $filters, ?string $search = null): int
+    public function countByFilters(array $filters, ?string $search = null, ?User $user = null): int
     {
         $qb = $this->createQueryBuilder('m')
             ->select('COUNT(m.id)')
             ->andWhere('m.deletedAt IS NULL');
+
+        // Filter by user if provided (for user uploads)
+        if ($user !== null) {
+            $qb->andWhere('m.user = :user')
+               ->setParameter('user', $user);
+        }
 
         // Apply filter criteria
         if (isset($filters['type'])) {

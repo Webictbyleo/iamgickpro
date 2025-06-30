@@ -97,8 +97,8 @@ class MediaController extends AbstractController
             $filters = $dto->getFilters();
             $offset = $dto->getOffset();
 
-            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
-            $total = $this->mediaRepository->countByFilters($filters, $dto->search);
+            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search, $user);
+            $total = $this->mediaRepository->countByFilters($filters, $dto->search, $user);
 
             $mediaData = array_map(fn(Media $mediaItem) => $mediaItem->toArray(), $media);
 
@@ -233,8 +233,8 @@ class MediaController extends AbstractController
             }
 
             $filters = $dto->getFilters();
-            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search);
-            $total = $this->mediaRepository->countByFilters($filters, $dto->search);
+            $media = $this->mediaRepository->findByFilters($filters, $dto->page, $dto->limit, $dto->search, $user);
+            $total = $this->mediaRepository->countByFilters($filters, $dto->search, $user);
 
             $mediaData = array_map(fn(Media $mediaItem) => $mediaItem->toArray(), $media);
 
@@ -282,8 +282,11 @@ class MediaController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            // Check if user can access this media (assume all media is accessible for now)
-            // TODO: Implement proper access control based on media visibility settings
+            // Check if user can access this media (ownership validation)
+            if ($media->getUser() !== $user) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
+            }
 
             $mediaResponse = $this->responseDTOFactory->createMediaResponse(
                 $media,
@@ -516,8 +519,8 @@ class MediaController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
             }
 
-            $this->entityManager->remove($media);
-            $this->entityManager->flush();
+            // Use MediaService to properly handle file cleanup
+            $this->mediaService->deleteMedia($media);
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse('Media deleted successfully');
             return $this->successResponse($successResponse);
@@ -559,8 +562,11 @@ class MediaController extends AbstractController
                 return $this->errorResponse($errorResponse, Response::HTTP_NOT_FOUND);
             }
 
-            // Check if user can access this media (assume all media is accessible for duplication)
-            // TODO: Implement proper access control based on media visibility settings
+            // Check if user can access this media (ownership validation)
+            if ($originalMedia->getUser() !== $user) {
+                $errorResponse = $this->responseDTOFactory->createErrorResponse('Access denied');
+                return $this->errorResponse($errorResponse, Response::HTTP_FORBIDDEN);
+            }
 
             $duplicatedMedia = $this->mediaRepository->duplicateMedia($originalMedia, $user);
 
@@ -763,11 +769,14 @@ class MediaController extends AbstractController
                     continue;
                 }
 
-                $this->entityManager->remove($media);
-                $deleted++;
+                try {
+                    // Use MediaService to properly handle file cleanup
+                    $this->mediaService->deleteMedia($media);
+                    $deleted++;
+                } catch (\Exception $e) {
+                    $failed[] = ['uuid' => $uuid, 'reason' => $e->getMessage()];
+                }
             }
-
-            $this->entityManager->flush();
 
             $successResponse = $this->responseDTOFactory->createSuccessResponse(
                 sprintf('Bulk delete completed: %d deleted, %d failed', $deleted, count($failed)),
