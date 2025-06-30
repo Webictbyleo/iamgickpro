@@ -100,6 +100,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/VideoToDesign.vue'),
     meta: { requiresAuth: true },
   },
+  // Admin Routes
+  {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    component: () => import('@/views/admin/UserManagement.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin/plans',
+    name: 'AdminPlans',
+    component: () => import('@/views/admin/PlanManagement.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin/analytics',
+    name: 'AdminAnalytics',
+    component: () => import('@/views/admin/Analytics.vue'),
+    meta: { requiresAuth: true },
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',

@@ -693,3 +693,83 @@ export const integrationsAPI = {
   removeIntegration: (serviceName: string) =>
     api.delete<ApiResponse<{ message: string }>>(`/integrations/${serviceName}`),
 }
+
+// ============================================================================
+// ADMIN API
+// ============================================================================
+
+// Admin API - for managing users, plans, and platform statistics
+export const adminAPI = {
+  // GET /admin/users - Get all users with pagination and filters
+  getUsers: (params?: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: string
+    role?: string
+  }) => api.get<ApiResponse<{
+    users: any[]
+    pagination: {
+      current_page: number
+      total_pages: number
+      total_items: number
+      items_per_page: number
+      has_next: boolean
+      has_prev: boolean
+    }
+  }>>('/admin/users', { params }),
+
+  // GET /admin/users/{id} - Get user details
+  getUserDetails: (id: number) => 
+    api.get<ApiResponse<any>>(`/admin/users/${id}`),
+
+  // PUT /admin/users/{id}/status - Update user status
+  updateUserStatus: (id: number, data: { active: boolean }) =>
+    api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/status`, data),
+
+  // PUT /admin/users/{id}/roles - Update user roles
+  updateUserRoles: (id: number, data: { roles: string[] }) =>
+    api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/roles`, data),
+
+  // GET /admin/stats - Get platform statistics
+  getPlatformStats: () => api.get<ApiResponse<{
+    users: {
+      total: number
+      active: number
+      verified: number
+      admins: number
+    }
+    recent_registrations: number
+    designs: {
+      total: number
+      public: number
+      private: number
+      templates: number
+    }
+    storage: {
+      used: number
+      total: number
+      uploads_count: number
+    }
+    exports: {
+      total: number
+      successful: number
+      failed: number
+      in_progress: number
+    }
+  }>>('/admin/stats'),
+
+  // Plans management - UserController endpoints (only GET and POST available)
+  getPlans: () => api.get<ApiResponse<{ plans: any[] }>>('/user/admin/plans'),
+  createPlan: (data: any) => api.post<ApiResponse<{ plan: any }>>('/user/admin/plans', data),
+  // Note: Update and Delete not implemented in backend yet
+  updatePlan: (id: number, data: any) => Promise.reject(new Error('Plan update not implemented')),
+  deletePlan: (id: number) => Promise.reject(new Error('Plan deletion not implemented')),
+
+  // Analytics - placeholder for future implementation, using platform stats for now
+  getAnalytics: (params?: {
+    startDate?: string
+    endDate?: string
+    granularity?: 'day' | 'week' | 'month'
+  }) => Promise.reject(new Error('Analytics endpoint not implemented yet')),
+}

@@ -34,10 +34,10 @@
             class="sidebar-nav-item group"
             :class="{ 'sidebar-nav-item-active': $route.name === 'Dashboard' }"
           >
-            <component :is="icons.home" class="w-5 h-5 mr-3 transition-colors" />
+            <HomeIcon class="w-5 h-5 mr-3 transition-colors" />
             <span>Dashboard</span>
             <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-              <component :is="icons.arrowRight" class="w-4 h-4" />
+              <ChevronRightIcon class="w-4 h-4" />
             </div>
           </router-link>
 
@@ -47,7 +47,7 @@
             class="sidebar-nav-item group"
             :class="{ 'sidebar-nav-item-active': $route.name === 'Designs' }"
           >
-            <component :is="icons.design" class="w-5 h-5 mr-3 transition-colors" />
+            <RectangleStackIcon class="w-5 h-5 mr-3 transition-colors" />
             <span>My Designs</span>
             
           </router-link>
@@ -58,10 +58,10 @@
             class="sidebar-nav-item group"
             :class="{ 'sidebar-nav-item-active': $route.name === 'Templates' }"
           >
-            <component :is="icons.template" class="w-5 h-5 mr-3 transition-colors" />
+            <DocumentDuplicateIcon class="w-5 h-5 mr-3 transition-colors" />
             <span>Templates</span>
             <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-              <component :is="icons.sparkle" class="w-4 h-4 text-yellow-500" />
+              <SparklesIcon class="w-4 h-4 text-yellow-500" />
             </div>
           </router-link>
 
@@ -83,7 +83,7 @@
                 NEW
               </span>
               <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                <component :is="icons.arrowRight" class="w-4 h-4" />
+                <ChevronRightIcon class="w-4 h-4" />
               </div>
             </div>
           </router-link>
@@ -98,6 +98,52 @@
             <span>Stock Media</span>
             <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
               <component :is="icons.arrowRight" class="w-4 h-4" />
+            </div>
+          </router-link>
+        </nav>
+
+        <!-- Admin Section (only visible to admin users) -->
+        <nav v-if="isAdmin" class="space-y-2">
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">
+            Administration
+          </div>
+          
+          <!-- User Management -->
+          <router-link
+            to="/admin/users"
+            class="sidebar-nav-item group"
+            :class="{ 'sidebar-nav-item-active': $route.name === 'AdminUsers' || isActive('/admin/users') }"
+          >
+            <UserGroupIcon class="w-5 h-5 mr-3 transition-colors" />
+            <span>User Management</span>
+            <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronRightIcon class="w-4 h-4" />
+            </div>
+          </router-link>
+
+          <!-- Plan Management -->
+          <router-link
+            to="/admin/plans"
+            class="sidebar-nav-item group"
+            :class="{ 'sidebar-nav-item-active': $route.name === 'AdminPlans' || isActive('/admin/plans') }"
+          >
+            <CreditCardIcon class="w-5 h-5 mr-3 transition-colors" />
+            <span>Plan Management</span>
+            <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronRightIcon class="w-4 h-4" />
+            </div>
+          </router-link>
+
+          <!-- Analytics & Reports -->
+          <router-link
+            to="/admin/analytics"
+            class="sidebar-nav-item group"
+            :class="{ 'sidebar-nav-item-active': $route.name === 'AdminAnalytics' || isActive('/admin/analytics') }"
+          >
+            <ChartBarIcon class="w-5 h-5 mr-3 transition-colors" />
+            <span>Analytics</span>
+            <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronRightIcon class="w-4 h-4" />
             </div>
           </router-link>
         </nav>
@@ -225,6 +271,16 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useIcons } from '@/composables/useIcons'
+import {
+  HomeIcon,
+  RectangleStackIcon,
+  DocumentDuplicateIcon,
+  SparklesIcon,
+  ChevronRightIcon,
+  UserGroupIcon,
+  CreditCardIcon,
+  ChartBarIcon
+} from '@heroicons/vue/24/outline'
 
 interface Props {
   sidebarOpen?: boolean
@@ -238,8 +294,10 @@ defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const icons = useIcons()
 const route = useRoute()
+const icons = useIcons()
+
+const isAdmin = computed(() => authStore.isAdmin)
 
 const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Design Studio')
 const appSubtitle = computed(() => import.meta.env.VITE_APP_SUBTITLE || 'Design Studio')
