@@ -15,10 +15,14 @@ use App\Entity\User;
 use App\Entity\SubscriptionPlan;
 use App\Entity\PlanLimit;
 use App\Entity\PlanFeature;
+use App\Message\PrepareUserDataDownloadMessage;
+use App\Message\DeleteUserAccountMessage;
 use App\Service\ResponseDTOFactory;
 use App\Service\UserService;
 use App\Service\FileUploadService;
 use App\Service\DatabasePlanService;
+use App\Service\RateLimitService;
+use App\Service\AuditLogService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Util\Json;
 use Psr\Log\LoggerInterface;
@@ -30,6 +34,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * User Controller
@@ -54,6 +59,9 @@ class UserController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly DatabasePlanService $planService,
         private readonly LoggerInterface $logger,
+        private readonly MessageBusInterface $messageBus,
+        private readonly RateLimitService $rateLimitService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -231,47 +239,47 @@ class UserController extends AbstractController
             /** @var User $user */
             $user = $this->getUser();
             
-            // In a real implementation, this would trigger a background job
-            // to prepare the user's data export
+            // Check rate limit
+            if ($this->rateLimitService->isRateLimited('data_download', $user->getId(), 1, 3600)) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Rate limit exceeded. Please try again later.'),
+                    Response::HTTP_TOO_MANY_REQUESTS
+                );
+            }
             
-            return $this->successResponse(
-                $this->responseDTOFactory->createSuccessResponse(
-                    'Data download request submitted'
-                )
-            );
+            // Generate request ID for tracking
+            $requestId = 'download_' . $user->getId() . '_' . time() . '_' . bin2hex(random_bytes(8));
+            
+            // Dispatch background job
+            $this->messageBus->dispatch(new PrepareUserDataDownloadMessage(
+                $user->getId(), 
+                $requestId, 
+                $user->getEmail(),
+                [] // all data types
+            ));
+            
+            // Log the request
+            $this->auditLogService->logPrivacyAction($user, 'data_download_requested', [
+                'request_id' => $requestId,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Data download request submitted. You will receive an email when your data is ready.',
+                'data' => [
+                    'requestId' => $requestId
+                ]
+            ], Response::HTTP_OK);
         } catch (\Exception $e) {
-            return $this->errorResponse(
-                $this->responseDTOFactory->createErrorResponse('Failed to process download request'),
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * Export user data in portable format
-     * 
-     * Generates and returns comprehensive user data export including
-     * all user content, settings, and account information.
-     * 
-     * @return JsonResponse Complete user data export or error details
-     */
-    #[Route('/settings/privacy/export', name: 'export_data', methods: ['POST'])]
-    public function exportPortableData(): JsonResponse
-    {
-        try {
-            /** @var User $user */
-            $user = $this->getUser();
+            $this->logger->error('Failed to process data download request', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
             
-            $exportData = $this->userService->generateDataExport($user);
-            
-            return $this->successResponse(
-                $this->responseDTOFactory->createSuccessResponse(
-                    'Data export completed'
-                )
-            );
-        } catch (\Exception $e) {
             return $this->errorResponse(
-                $this->responseDTOFactory->createErrorResponse('Failed to export data'),
+                $this->responseDTOFactory->createErrorResponse($e->getMessage()),
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
@@ -292,12 +300,43 @@ class UserController extends AbstractController
             /** @var User $user */
             $user = $this->getUser();
             
-            $this->userService->deleteUserAccount($user);
+            // Check rate limit
+            if ($this->rateLimitService->isRateLimited('account_deletion', $user->getId(), 1, 86400)) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Account deletion rate limit exceeded. Please try again tomorrow.'),
+                    Response::HTTP_TOO_MANY_REQUESTS
+                );
+            }
+            
+            // Generate request ID for tracking
+            $requestId = 'delete_' . $user->getId() . '_' . time() . '_' . bin2hex(random_bytes(8));
+            
+            // Dispatch background job for account deletion
+            $this->messageBus->dispatch(new DeleteUserAccountMessage(
+                $user->getId(),
+                $user->getEmail(),
+                $requestId,
+                false // soft delete by default
+            ));
+            
+            // Log the deletion request
+            $this->auditLogService->logPrivacyAction($user, 'account_deletion_requested', [
+                'request_id' => $requestId,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
             
             return $this->successResponse(
-                $this->responseDTOFactory->createSuccessResponse('Account deletion initiated')
+                $this->responseDTOFactory->createSuccessResponse(
+                    'Account deletion initiated. You will receive a confirmation email shortly.'
+                )
             );
         } catch (\Exception $e) {
+            $this->logger->error('Failed to initiate account deletion', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse('Failed to delete account'),
                 Response::HTTP_INTERNAL_SERVER_ERROR
@@ -321,15 +360,21 @@ class UserController extends AbstractController
             $user = $this->getUser();
             
             $subscriptionData = $this->userService->getSubscriptionData($user);
+            
             return JsonResponse::fromJsonString(
                 $this->serializer->serialize(
-                    ['data'=>$subscriptionData],
+                    ['data' => $subscriptionData],
                     'json'
                 ),
                 Response::HTTP_OK
             );
            
         } catch (\Exception $e) {
+            $this->logger->error('Failed to get subscription data', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+            
             return $this->errorResponse(
                 $this->responseDTOFactory->createErrorResponse('Failed to get subscription data'),
                 Response::HTTP_INTERNAL_SERVER_ERROR
@@ -446,6 +491,109 @@ class UserController extends AbstractController
                 'success' => false,
                 'message' => 'Failed to create plan'
             ], 500);
+        }
+    }
+
+    /**
+     * Download prepared data export file
+     * 
+     * Serves the prepared data export file for download. Files are secured
+     * with request IDs and automatically expire after 7 days.
+     * This endpoint is publicly accessible via email links.
+     * 
+     * @param string $requestId The request ID for the data export
+     * @return JsonResponse The download file or error if not found/expired
+     */
+    #[Route('/settings/privacy/download/{requestId}', name: 'download_file', methods: ['GET'])]
+    public function downloadDataFile(string $requestId): JsonResponse
+    {
+        try {
+            /** @var User $user */
+            $user = $this->getUser();
+            
+            // Verify request ID belongs to current user (extract user ID from request ID)
+            $requestParts = explode('_', $requestId);
+            if (count($requestParts) < 3 || $requestParts[1] !== (string)$user->getId()) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Invalid download request'),
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            
+            // Check rate limit for downloads
+            if ($this->rateLimitService->isRateLimited('data_download_access', $user->getId(), 10, 3600)) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Download rate limit exceeded'),
+                    Response::HTTP_TOO_MANY_REQUESTS
+                );
+            }
+            
+            // Look for the export file
+            $exportDir = $this->getParameter('kernel.project_dir') . '/storage/data_exports';
+            $files = glob($exportDir . '/' . $requestId . '_*.json');
+            
+            if (empty($files)) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Download file not found or expired'),
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            
+            $filePath = $files[0];
+            
+            // Check if file exists and is readable
+            if (!file_exists($filePath) || !is_readable($filePath)) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Download file not accessible'),
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            
+            // Read and validate file content
+            $fileContent = file_get_contents($filePath);
+            $exportData = json_decode($fileContent, true);
+            
+            if (!$exportData || !isset($exportData['metadata'])) {
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Invalid export file format'),
+                    Response::HTTP_INTERNAL_SERVER_ERROR
+                );
+            }
+            
+            // Check if file has expired
+            $expiresAt = new \DateTimeImmutable($exportData['metadata']['expires_at']);
+            if ($expiresAt < new \DateTimeImmutable()) {
+                // Clean up expired file
+                unlink($filePath);
+                
+                return $this->errorResponse(
+                    $this->responseDTOFactory->createErrorResponse('Download file has expired'),
+                    Response::HTTP_GONE
+                );
+            }
+            
+            // Log download access
+            $this->auditLogService->logPrivacyAction($user, 'data_download_accessed', [
+                'request_id' => $requestId,
+                'file_size' => filesize($filePath),
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+            
+            // Return file content as JSON response
+            return new JsonResponse($exportData['data'], Response::HTTP_OK);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to serve data download', [
+                'user_id' => $user->getId(),
+                'request_id' => $requestId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return $this->errorResponse(
+                $this->responseDTOFactory->createErrorResponse('Failed to process download'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 

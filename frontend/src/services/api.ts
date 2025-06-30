@@ -551,15 +551,10 @@ export const userAPI = {
   deleteAccount: () => api.delete<ApiResponse<{ message: string }>>('/user/settings/privacy/delete'),
 
   // POST /user/settings/privacy/download
-  downloadData: () => api.post('/user/settings/privacy/download', {}, { responseType: 'blob' }),
+  downloadData: () => api.post<ApiResponse<{ message: string; requestId: string }>>('/user/settings/privacy/download'),
 
-  // POST /user/settings/privacy/export
-  exportData: (data: {
-    format: 'json' | 'csv' | 'xml'
-    includeDesigns?: boolean
-    includeMedia?: boolean
-    includeProjects?: boolean
-  }) => api.post<ApiResponse<{ downloadUrl: string }>>('/user/settings/privacy/export', data),
+  // GET /user/settings/privacy/download/{requestId}
+  downloadDataFile: (requestId: string) => api.get<any>(`/user/settings/privacy/download/${requestId}`),
 
   // GET /user/subscription
   getSubscription: () => api.get<ApiResponse<UserSubscription>>('/user/subscription'),

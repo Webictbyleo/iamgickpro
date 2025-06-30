@@ -34,6 +34,9 @@ readonly class UserService
 
     public function updateProfile(User $user, array $profileData): User
     {
+        // Sanitize and validate input data
+        $profileData = $this->sanitizeProfileData($profileData);
+        
         // Update basic profile fields
         if (isset($profileData['firstName'])) {
             $user->setFirstName($profileData['firstName']);
@@ -44,6 +47,14 @@ readonly class UserService
         }
         
         if (isset($profileData['username'])) {
+            // Check if username is unique (excluding current user)
+            $existingUser = $this->entityManager->getRepository(User::class)
+                ->findOneBy(['username' => $profileData['username']]);
+            
+            if ($existingUser && $existingUser->getId() !== $user->getId()) {
+                throw new \InvalidArgumentException('Username is already taken');
+            }
+            
             $user->setUsername($profileData['username']);
         }
         
@@ -93,6 +104,85 @@ readonly class UserService
         ]);
 
         return $user;
+    }
+
+    /**
+     * Sanitize profile data to prevent XSS and other security issues
+     */
+    private function sanitizeProfileData(array $profileData): array
+    {
+        $sanitized = [];
+        
+        foreach ($profileData as $key => $value) {
+            if ($value === null) {
+                $sanitized[$key] = null;
+                continue;
+            }
+            
+            switch ($key) {
+                case 'firstName':
+                case 'lastName':
+                case 'username':
+                case 'jobTitle':
+                case 'company':
+                case 'timezone':
+                case 'language':
+                    // Basic string sanitization - trim and remove dangerous characters
+                    $sanitized[$key] = trim(strip_tags((string) $value));
+                    break;
+                    
+                case 'website':
+                case 'portfolio':
+                    // URL sanitization
+                    $url = trim(strip_tags((string) $value));
+                    if (!empty($url) && !str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
+                        $url = 'https://' . $url;
+                    }
+                    $sanitized[$key] = filter_var($url, FILTER_SANITIZE_URL) ?: null;
+                    break;
+                    
+                case 'bio':
+                    // Allow basic formatting but strip dangerous tags
+                    $sanitized[$key] = trim(strip_tags((string) $value, '<p><br><strong><em><ul><ol><li>'));
+                    break;
+                    
+                case 'socialLinks':
+                    // Sanitize social links array (platform=url format)
+                    if (is_array($value)) {
+                        $sanitizedLinks = [];
+                        foreach ($value as $platform => $url) {
+                            $cleanPlatform = trim(strip_tags((string) $platform));
+                            $cleanUrl = trim(strip_tags((string) $url));
+                            
+                            // Skip empty URLs - they are optional
+                            if (empty($cleanUrl)) {
+                                continue;
+                            }
+                            
+                            // Ensure URL has protocol if not empty
+                            if (!str_starts_with($cleanUrl, 'http://') && !str_starts_with($cleanUrl, 'https://')) {
+                                $cleanUrl = 'https://' . $cleanUrl;
+                            }
+                            
+                            // Only add if platform name is valid and URL is valid
+                            if (preg_match('/^[a-zA-Z0-9_-]+$/', $cleanPlatform) && filter_var($cleanUrl, FILTER_VALIDATE_URL)) {
+                                $sanitizedLinks[$cleanPlatform] = $cleanUrl;
+                            }
+                        }
+                        $sanitized[$key] = $sanitizedLinks;
+                    } else {
+                        $sanitized[$key] = [];
+                    }
+                    break;
+                    
+                default:
+                    // For any unknown fields, just sanitize as string
+                    $sanitized[$key] = trim(strip_tags((string) $value));
+                    break;
+            }
+        }
+        
+        return $sanitized;
     }
 
     public function changePassword(User $user, string $currentPassword, string $newPassword): void
@@ -196,6 +286,177 @@ readonly class UserService
         return $userData;
     }
 
+    /**
+     * Generate comprehensive data export for a user
+     */
+    public function generateComprehensiveDataExport(User $user): array
+    {
+        $this->logger->info('Starting comprehensive data export', [
+            'user_id' => $user->getId()
+        ]);
+        
+        $exportData = [
+            'user_profile' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'username' => $user->getUsername(),
+                'first_name' => $user->getFirstName(),
+                'last_name' => $user->getLastName(),
+                'bio' => $user->getBio(),
+                'portfolio' => $user->getPortfolio(),
+                'social_links' => $user->getSocialLinks(),
+                'is_verified' => $user->isVerified(),
+                'email_verified' => $user->getEmailVerified(),
+                'is_active' => $user->getIsActive(),
+                'created_at' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
+                'updated_at' => $user->getUpdatedAt()?->format('Y-m-d H:i:s'),
+                'last_login_at' => $user->getLastLoginAt()?->format('Y-m-d H:i:s'),
+                'avatar' => $user->getAvatar(),
+                'plan' => $user->getPlan(),
+                'settings' => $user->getSettings(),
+                'roles' => $user->getRoles()
+            ],
+            'subscription_data' => [],
+            'designs' => [],
+            'templates' => [],
+            'media_files' => [],
+            'audit_logs' => [],
+            'export_metadata' => [
+                'generated_at' => (new \DateTime())->format('Y-m-d H:i:s'),
+                'format_version' => '1.0',
+                'privacy_policy_version' => '1.0'
+            ]
+        ];
+
+        // Get subscription data
+        $subscriptions = $user->getSubscriptions();
+        foreach ($subscriptions as $subscription) {
+            $exportData['subscription_data'][] = [
+                'id' => $subscription->getId(),
+                'plan_code' => $subscription->getPlan()?->getCode(),
+                'plan_name' => $subscription->getPlan()?->getName(),
+                'status' => $subscription->getStatus(),
+                'start_date' => $subscription->getStartDate()?->format('Y-m-d H:i:s'),
+                'end_date' => $subscription->getEndDate()?->format('Y-m-d H:i:s'),
+                'created_at' => $subscription->getCreatedAt()?->format('Y-m-d H:i:s'),
+                'updated_at' => $subscription->getUpdatedAt()?->format('Y-m-d H:i:s')
+            ];
+        }
+
+        // Get user designs (if Design entity exists)
+        try {
+            $designRepository = $this->entityManager->getRepository('App\Entity\Design');
+            if ($designRepository) {
+                $designs = $designRepository->findBy(['user' => $user]);
+                foreach ($designs as $design) {
+                    $exportData['designs'][] = [
+                        'id' => $design->getId(),
+                        'title' => $design->getTitle(),
+                        'name' => $design->getName(),
+                        'description' => $design->getDescription(),
+                        'data' => $design->getData(),
+                        'width' => $design->getWidth(),
+                        'height' => $design->getHeight(),
+                        'canvas_width' => $design->getCanvasWidth(),
+                        'canvas_height' => $design->getCanvasHeight(),
+                        'background' => $design->getBackground(),
+                        'created_at' => $design->getCreatedAt()?->format('Y-m-d H:i:s'),
+                        'updated_at' => $design->getUpdatedAt()?->format('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Could not export designs', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Get user templates (if Template entity exists)
+        try {
+            $templateRepository = $this->entityManager->getRepository('App\Entity\Template');
+            if ($templateRepository) {
+                $templates = $templateRepository->findBy(['user' => $user]);
+                foreach ($templates as $template) {
+                    $exportData['templates'][] = [
+                        'id' => $template->getId(),
+                        'uuid' => $template->getUuid()?->__toString(),
+                        'name' => $template->getName(),
+                        'description' => $template->getDescription(),
+                        'category' => $template->getCategory(),
+                        'tags' => $template->getTags(),
+                        'width' => $template->getWidth(),
+                        'height' => $template->getHeight(),
+                        'canvas_settings' => $template->getCanvasSettings(),
+                        'layers' => $template->getLayers(),
+                        'thumbnail_url' => $template->getThumbnailUrl(),
+                        'created_at' => $template->getCreatedAt()?->format('Y-m-d H:i:s'),
+                        'updated_at' => $template->getUpdatedAt()?->format('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Could not export templates', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Get user media files (if MediaFile entity exists)
+        try {
+            $mediaRepository = $this->entityManager->getRepository('App\Entity\MediaFile');
+            if ($mediaRepository) {
+                $mediaFiles = $mediaRepository->findBy(['user' => $user]);
+                foreach ($mediaFiles as $media) {
+                    $exportData['media_files'][] = [
+                        'id' => $media->getId(),
+                        'filename' => $media->getFilename(),
+                        'original_name' => $media->getOriginalName(),
+                        'mime_type' => $media->getMimeType(),
+                        'size' => $media->getSize(),
+                        'path' => $media->getPath(),
+                        'created_at' => $media->getCreatedAt()?->format('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Could not export media files', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Get audit logs (if AuditLog entity exists)
+        try {
+            $auditRepository = $this->entityManager->getRepository('App\Entity\AuditLog');
+            if ($auditRepository) {
+                $auditLogs = $auditRepository->findBy(['user' => $user], ['createdAt' => 'DESC'], 100); // Last 100 entries
+                foreach ($auditLogs as $log) {
+                    $exportData['audit_logs'][] = [
+                        'id' => $log->getId(),
+                        'action' => $log->getAction(),
+                        'ip_address' => $log->getIpAddress(),
+                        'user_agent' => $log->getUserAgent(),
+                        'metadata' => $log->getMetadata(),
+                        'created_at' => $log->getCreatedAt()?->format('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Could not export audit logs', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        $this->logger->info('Comprehensive data export completed', [
+            'user_id' => $user->getId(),
+            'export_size' => strlen(json_encode($exportData))
+        ]);
+
+        return $exportData;
+    }
+
     public function deleteUserAccount(User $user): void
     {
         $userId = $user->getId();
@@ -227,206 +488,196 @@ readonly class UserService
         ]);
     }
 
-    public function getSubscriptionData(User $user): array
+    /**
+     * Perform account deletion (soft or hard delete)
+     */
+    public function performAccountDeletion(User $user, bool $hardDelete = false): void
     {
-        $planName = $this->planService->getUserPlanName($user);
-        $subscription = $this->planService->getUserSubscription($user);
+        $userId = $user->getId();
+        $userEmail = $user->getEmail();
         
-        return [
-            'plan' => $planName,
-            'isActive' => $user->isActive(),
-            'subscription' => $subscription ? [
-                'status' => $subscription->getStatus(),
-                'start_date' => $subscription->getStartDate()->format('Y-m-d H:i:s'),
-                'end_date' => $subscription->getEndDate()?->format('Y-m-d H:i:s'),
-                'is_active' => $subscription->isActive()
-            ] : null,
-            'usage' => [
-                'projects' => $user->getProjects()->count(),
-                'mediaFiles' => $user->getMediaFiles()->count(),
-                'exportJobs' => $user->getExportJobs()->count(),
-                'storageUsed' => $this->calculateStorageUsage($user),
-            ],
-            'limits' => $this->planService->getPlanLimits($planName),
-            'features' => $this->planService->getPlanFeatures($planName),
-            'planInfo' => [
-                'name' => $this->planService->getPlanDisplayName($planName),
-                'description' => $this->planService->getPlanDescription($planName),
-                'pricing' => $this->planService->getPlanPricing($planName),
-            ],
-            'constraints' => $this->constraintService->getUserLimitsSummary($user)
-        ];
+        $this->logger->info('Starting account deletion process', [
+            'user_id' => $userId,
+            'user_email' => $userEmail,
+            'hard_delete' => $hardDelete
+        ]);
+
+        if ($hardDelete) {
+            // Hard delete: Remove all user data permanently
+            $this->performHardAccountDeletion($user);
+        } else {
+            // Soft delete: Anonymize user data but keep records for compliance
+            $this->performSoftAccountDeletion($user);
+        }
+
+        $this->logger->info('Account deletion completed', [
+            'user_id' => $userId,
+            'user_email' => $userEmail,
+            'hard_delete' => $hardDelete
+        ]);
     }
 
-    public function registerUser(RegisterRequestDTO $dto): User
+    /**
+     * Perform hard account deletion - permanently remove all user data
+     */
+    private function performHardAccountDeletion(User $user): void
     {
-        if ($this->userRepository->findOneBy(['email' => $dto->email])) {
-            throw new \InvalidArgumentException('User with this email already exists');
-        }
-        if ($dto->username && $this->userRepository->findOneBy(['username' => $dto->username])) {
-            throw new \InvalidArgumentException('Username is already taken');
-        }
-        $user = new User();
-        $user->setEmail($dto->email);
-        $user->setFirstName($this->sanitizeInput($dto->firstName));
-        $user->setLastName($this->sanitizeInput($dto->lastName));
-        if ($dto->username) {
-            $user->setUsername(trim($dto->username));
-        }
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->password);
-        $user->setPassword($hashedPassword);
-        $user->setRoles(['ROLE_USER']);
-        $user->setIsActive(true);
-        $user->setEmailVerified(false);
+        $userId = $user->getId();
         
-        // Generate email verification token
-        $verificationToken = bin2hex(random_bytes(32));
-        $user->setEmailVerificationToken($verificationToken);
-        $user->setEmailVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+        // Delete related entities in correct order to avoid foreign key constraints
         
-        $errors = $this->validator->validate($user);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
+        // Delete user designs
+        try {
+            $designRepository = $this->entityManager->getRepository('App\Entity\Design');
+            if ($designRepository) {
+                $designs = $designRepository->findBy(['user' => $user]);
+                foreach ($designs as $design) {
+                    $this->entityManager->remove($design);
+                }
             }
-            throw new \InvalidArgumentException(implode(", ", $errorMessages));
+        } catch (\Exception $e) {
+            $this->logger->warning('Error deleting user designs', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
         }
-        $this->entityManager->persist($user);
+
+        // Delete user templates
+        try {
+            $templateRepository = $this->entityManager->getRepository('App\Entity\Template');
+            if ($templateRepository) {
+                $templates = $templateRepository->findBy(['user' => $user]);
+                foreach ($templates as $template) {
+                    $this->entityManager->remove($template);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Error deleting user templates', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Delete user media files
+        try {
+            $mediaRepository = $this->entityManager->getRepository('App\Entity\MediaFile');
+            if ($mediaRepository) {
+                $mediaFiles = $mediaRepository->findBy(['user' => $user]);
+                foreach ($mediaFiles as $media) {
+                    // Delete physical file if it exists
+                    $filePath = $media->getPath();
+                    if ($filePath && file_exists($filePath)) {
+                        unlink($filePath);
+                    }
+                    $this->entityManager->remove($media);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Error deleting user media files', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Delete user subscriptions
+        $subscriptions = $user->getSubscriptions();
+        foreach ($subscriptions as $subscription) {
+            $this->entityManager->remove($subscription);
+        }
+
+        // Delete audit logs
+        try {
+            $auditRepository = $this->entityManager->getRepository('App\Entity\AuditLog');
+            if ($auditRepository) {
+                $auditLogs = $auditRepository->findBy(['user' => $user]);
+                foreach ($auditLogs as $log) {
+                    $this->entityManager->remove($log);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Error deleting audit logs', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Delete user avatar file if it exists
+        if ($user->getAvatar()) {
+            $avatarPath = $this->avatarUploadDirectory . '/' . $user->getAvatar();
+            if (file_exists($avatarPath)) {
+                unlink($avatarPath);
+            }
+        }
+
+        // Finally, delete the user entity
+        $this->entityManager->remove($user);
         $this->entityManager->flush();
-        
-        // Assign default plan to new user
-        try {
-            $this->assignDefaultPlanToUser($user);
-            $this->logger->info('Default plan assigned to new user', [
-                'user_id' => $user->getId(),
-                'user_email' => $user->getEmail()
-            ]);
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to assign default plan to new user', [
-                'user_id' => $user->getId(),
-                'user_email' => $user->getEmail(),
-                'error' => $e->getMessage()
-            ]);
-            // Don't throw exception here - user registration should succeed even if plan assignment fails
-        }
-        
-        // Send welcome email
-        try {
-            $this->emailService->sendWelcome($user);
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to send welcome email during registration', [
-                'user_id' => $user->getId(),
-                'error' => $e->getMessage()
-            ]);
-        }
-        
-        // Send email verification
-        try {
-            $this->emailService->sendEmailVerification($user, $verificationToken);
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to send verification email during registration', [
-                'user_id' => $user->getId(),
-                'error' => $e->getMessage()
-            ]);
-        }
-        
-        return $user;
     }
 
-    public function authenticateUser(string $email, string $password): ?User
+    /**
+     * Perform soft account deletion - anonymize user data but keep records
+     */
+    private function performSoftAccountDeletion(User $user): void
     {
-        $user = $this->userRepository->findOneBy(['email' => $email]);
-        if (!$user || !$this->passwordHasher->isPasswordValid($user, $password)) {
-            return null;
-        }
-        return $user;
-    }
-
-    public function requestPasswordReset(string $email): void
-    {
-        $user = $this->userRepository->findOneBy(['email' => $email]);
-        if (!$user) {
-            // Do not reveal user existence
-            return;
-        }
-        $token = bin2hex(random_bytes(32));
-        $user->setPasswordResetToken($token);
-        $user->setPasswordResetTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
-        $this->entityManager->flush();
-        $this->emailService->sendPasswordResetEmail($user, $token);
-    }
-
-    public function resetPassword(string $token, string $newPassword): void
-    {
-        $user = $this->userRepository->findOneBy(['passwordResetToken' => $token]);
-        if (!$user) {
-            throw new \InvalidArgumentException('Invalid or expired reset token');
-        }
-        $expiresAt = $user->getPasswordResetTokenExpiresAt();
-        if (!$expiresAt || $expiresAt < new \DateTimeImmutable()) {
-            throw new \InvalidArgumentException('Reset token expired');
-        }
-        if (strlen($newPassword) < 8) {
-            throw new \InvalidArgumentException('Password must be at least 8 characters long');
-        }
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $newPassword);
-        $user->setPassword($hashedPassword);
+        $userId = $user->getId();
+        $anonymousId = 'deleted_user_' . $userId . '_' . time();
+        
+        // Anonymize user data
+        $user->setEmail($anonymousId . '@deleted.local');
+        $user->setUsername($anonymousId);
+        $user->setFirstName('Deleted');
+        $user->setLastName('User');
+        $user->setBio(null);
+        $user->setPortfolio(null);
+        $user->setSocialLinks([]);
+        $user->setPassword(''); // Clear password
+        $user->setRoles(['ROLE_DELETED']);
+        $user->setIsVerified(false);
+        $user->setEmailVerified(false);
         $user->setPasswordResetToken(null);
         $user->setPasswordResetTokenExpiresAt(null);
-        $this->entityManager->flush();
-        $this->logger->info('User password reset', ['user_id' => $user->getId()]);
-    }
-
-    public function verifyEmail(string $token): bool
-    {
-        $user = $this->userRepository->findOneBy(['emailVerificationToken' => $token]);
-        if (!$user) {
-            return false;
-        }
-        
-        if (!$user->isEmailVerificationTokenValid()) {
-            return false;
-        }
-        
-        $user->setEmailVerified(true);
         $user->setEmailVerificationToken(null);
-        $user->setEmailVerificationTokenExpiresAt(null);
         
-        $this->entityManager->flush();
+        // Delete avatar file if it exists
+        if ($user->getAvatar()) {
+            $avatarPath = $this->avatarUploadDirectory . '/' . $user->getAvatar();
+            if (file_exists($avatarPath)) {
+                unlink($avatarPath);
+            }
+            $user->setAvatar(null);
+        }
         
-        $this->logger->info('Email verified successfully', [
-            'user_id' => $user->getId()
-        ]);
+        // Mark user as deleted with timestamp using the touch method
+        // The touch() method will update the updatedAt automatically
         
-        return true;
-    }
+        // Anonymize user designs
+        try {
+            $designRepository = $this->entityManager->getRepository('App\Entity\Design');
+            if ($designRepository) {
+                $designs = $designRepository->findBy(['user' => $user]);
+                foreach ($designs as $design) {
+                    $design->setTitle('Deleted Design');
+                    $design->setName('Deleted Design');
+                    $design->setDescription('Design from deleted user account');
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Error anonymizing user designs', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+        }
 
-    public function resendEmailVerification(string $email): void
-    {
-        $user = $this->userRepository->findOneBy(['email' => $email]);
-        if (!$user) {
-            // Don't reveal user existence
-            return;
+        // Cancel all active subscriptions
+        $subscriptions = $user->getSubscriptions();
+        foreach ($subscriptions as $subscription) {
+            if ($subscription->getStatus() === 'active') {
+                $subscription->setStatus('cancelled');
+                $subscription->setEndDate(new \DateTime());
+            }
         }
-        
-        if ($user->getEmailVerified()) {
-            throw new \InvalidArgumentException('Email is already verified');
-        }
-        
-        // Generate new verification token
-        $verificationToken = bin2hex(random_bytes(32));
-        $user->setEmailVerificationToken($verificationToken);
-        $user->setEmailVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
-        
+
         $this->entityManager->flush();
-        
-        // Send verification email
-        $this->emailService->sendEmailVerification($user, $verificationToken);
-        
-        $this->logger->info('Email verification resent', [
-            'user_id' => $user->getId()
-        ]);
     }
 
     private function sanitizeInput(string $input): string
@@ -488,5 +739,125 @@ readonly class UserService
             'plan_id' => $defaultPlan->getId(),
             'plan_code' => $defaultPlan->getCode()
         ]);
+    }
+
+    /**
+     * Get comprehensive subscription data for a user
+     * Returns data structure that matches frontend UserSubscription interface
+     */
+    public function getSubscriptionData(User $user): array
+    {
+        $subscriptions = $user->getSubscriptions();
+        $activeSubscription = null;
+        
+        // Find active subscription
+        foreach ($subscriptions as $subscription) {
+            if ($subscription->getStatus() === 'active') {
+                $activeSubscription = $subscription;
+                break;
+            }
+        }
+        
+        $isActive = $activeSubscription !== null;
+        $userPlan = $user->getPlan() ?? 'free';
+        
+        // Initialize default values
+        $planInfo = [
+            'name' => 'Free Plan',
+            'description' => 'Basic plan with essential features',
+            'price' => [
+                'monthly' => 0,
+                'yearly' => 0,
+                'currency' => 'USD'
+            ]
+        ];
+        
+        $limits = [
+            'storage' => 1073741824, // 1GB for free plan
+            'projects' => 5,
+            'exports' => 10,
+            'media_files' => 50
+        ];
+        
+        $features = [
+            'basic_templates' => true,
+            'cloud_storage' => true,
+            'standard_exports' => true,
+            'premium_templates' => false,
+            'priority_support' => false,
+            'team_collaboration' => false,
+            'advanced_exports' => false,
+            'custom_branding' => false
+        ];
+        
+        // If user has active subscription, get plan details
+        if ($activeSubscription) {
+            $plan = $activeSubscription->getPlan();
+            
+            if ($plan) {
+                $planInfo = [
+                    'name' => $plan->getName(),
+                    'description' => $plan->getDescription(),
+                    'price' => [
+                        'monthly' => (float) $plan->getMonthlyPrice(),
+                        'yearly' => (float) $plan->getYearlyPrice(),
+                        'currency' => $plan->getCurrency() ?? 'USD'
+                    ]
+                ];
+                
+                // Get plan limits
+                $planLimits = [];
+                foreach ($plan->getLimits() as $limit) {
+                    $planLimits[$limit->getType()] = $limit->getValue();
+                }
+                if (!empty($planLimits)) {
+                    $limits = array_merge($limits, $planLimits);
+                }
+                
+                // Get plan features
+                $planFeatures = [];
+                foreach ($plan->getFeatures() as $feature) {
+                    $planFeatures[$feature->getCode()] = $feature->isEnabled();
+                }
+                if (!empty($planFeatures)) {
+                    $features = array_merge($features, $planFeatures);
+                }
+            }
+        }
+        
+        // Get current usage statistics
+        $projects = $user->getProjects();
+        $mediaFiles = $user->getMediaFiles();
+        
+        $usage = [
+            'projects' => count($projects),
+            'mediaFiles' => count($mediaFiles),
+            'storageUsed' => $this->calculateStorageUsed($user),
+            'exportJobs' => 0 // TODO: Implement export job tracking
+        ];
+        
+        // Return structure matching frontend UserSubscription interface
+        return [
+            'plan' => $userPlan,
+            'isActive' => $isActive,
+            'usage' => $usage,
+            'limits' => $limits,
+            'features' => $features,
+            'planInfo' => $planInfo
+        ];
+    }
+
+    /**
+     * Calculate storage used by user
+     */
+    private function calculateStorageUsed(User $user): int
+    {
+        $totalSize = 0;
+        
+        foreach ($user->getMediaFiles() as $mediaFile) {
+            $totalSize += $mediaFile->getSize() ?? 0;
+        }
+        
+        return $totalSize;
     }
 }

@@ -44,6 +44,16 @@ readonly class MediaService
         }
     }
 
+    /**
+     * Upload a file and create a Media entity
+     * 
+     * @param UploadedFile $file The uploaded file
+     * @param User $user The user uploading the file
+     * @param string|null $alt Optional alt text for the media
+     * @return Media The created Media entity
+     * @throws \InvalidArgumentException If file validation fails or SVG security checks fail
+     * @throws \RuntimeException If file upload fails
+     */
     public function uploadFile(UploadedFile $file, User $user, ?string $alt = null): Media
     {
         $this->validateFile($file);
@@ -69,6 +79,13 @@ readonly class MediaService
         $filePath = $this->mediaUploadDirectory . '/' . $fileName;
         $fileSize = filesize($filePath);
         $mimeType = mime_content_type($filePath);
+
+        // Handle SVG files with security sanitization
+        if ($this->isSvgFile($filePath, $mimeType, $fileName)) {
+            $this->sanitizeSvgFile($filePath);
+            // Override MIME type for SVG files that might be misdetected
+            $mimeType = 'image/svg+xml';
+        }
 
         // Determine media type from MIME type
         $type = $this->getMediaTypeFromMimeType($mimeType);
@@ -626,6 +643,12 @@ readonly class MediaService
         return false;
     }
 
+    /**
+     * Validate uploaded file for size, type, and content security
+     * 
+     * @param UploadedFile $file The file to validate
+     * @throws \InvalidArgumentException If file is invalid, too large, wrong type, or fails security checks
+     */
     private function validateFile(UploadedFile $file): void
     {
         if (!$file->isValid()) {
@@ -641,11 +664,83 @@ readonly class MediaService
         }
 
         $mimeType = $file->getMimeType();
-        if (!in_array($mimeType, $this->allowedMimeTypes, true)) {
+        
+        // Special handling for files that might be SVG but have generic MIME types
+        if ($this->isSvgFile($file->getPathname(), $mimeType, $file->getClientOriginalName())) {
+            // If content is SVG but MIME type is not image/svg+xml, validate it's really SVG
+            if ($mimeType !== 'image/svg+xml') {
+                $this->logger->warning('File detected as SVG with non-standard MIME type', [
+                    'filename' => $file->getClientOriginalName(),
+                    'detected_mime' => $mimeType,
+                    'file_size' => $file->getSize()
+                ]);
+            }
+            $this->validateSvgFile($file);
+        } elseif (!in_array($mimeType, $this->allowedMimeTypes, true)) {
             throw new \InvalidArgumentException(sprintf(
                 'File type "%s" is not allowed',
                 $mimeType
             ));
+        }
+    }
+
+    /**
+     * Validate SVG file content for basic security checks before upload
+     */
+    private function validateSvgFile(UploadedFile $file): void
+    {
+        try {
+            $content = file_get_contents($file->getPathname());
+            if ($content === false) {
+                throw new \InvalidArgumentException('Cannot read SVG file');
+            }
+
+            // Check file size limit for SVG (stricter than general file limit)
+            $maxSvgSize = min($this->maxFileSize, 2 * 1024 * 1024); // Max 2MB for SVG
+            if (strlen($content) > $maxSvgSize) {
+                throw new \InvalidArgumentException('SVG file is too large');
+            }
+
+            // Basic content validation - check for obviously malicious patterns
+            $dangerousPatterns = [
+                '/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi',
+                '/javascript:/i',
+                '/data:\s*text\/html/i',
+                '/vbscript:/i',
+                '/<iframe\b/i',
+                '/<object\b/i',
+                '/<embed\b/i',
+                '/<form\b/i',
+                '/on\w+\s*=/i' // Event handlers like onclick, onload, etc.
+            ];
+
+            foreach ($dangerousPatterns as $pattern) {
+                if (preg_match($pattern, $content)) {
+                    throw new \InvalidArgumentException('SVG file contains potentially malicious content');
+                }
+            }
+
+            // Verify it's valid XML
+            $dom = new \DOMDocument();
+            $previousSetting = libxml_use_internal_errors(true);
+            $loaded = $dom->loadXML($content, LIBXML_NOENT | LIBXML_DTDLOAD | LIBXML_DTDATTR);
+            libxml_use_internal_errors($previousSetting);
+
+            if (!$loaded) {
+                throw new \InvalidArgumentException('SVG file is not valid XML');
+            }
+
+            // Check if root element is SVG
+            if ($dom->documentElement->nodeName !== 'svg') {
+                throw new \InvalidArgumentException('File is not a valid SVG');
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->warning('SVG validation failed', [
+                'filename' => $file->getClientOriginalName(),
+                'error' => $e->getMessage()
+            ]);
+            throw new \InvalidArgumentException('SVG file validation failed: ' . $e->getMessage());
         }
     }
 
@@ -665,6 +760,130 @@ readonly class MediaService
     private function isImageFile(Media $media): bool
     {
         return str_starts_with($media->getMimeType(), 'image/');
+    }
+
+    /**
+     * Robust SVG file detection using MIME type and content verification
+     * 
+     * @param string $filePath Path to the file
+     * @param string $mimeType MIME type from mime_content_type()
+     * @param string $fileName Original filename (for logging only)
+     * @return bool True if the file is an SVG
+     * @throws \InvalidArgumentException If MIME type suggests SVG but content verification fails
+     */
+    private function isSvgFile(string $filePath, string $mimeType, string $fileName): bool
+    {
+        // Method 1: Check MIME type (multiple possible values for SVG)
+        $svgMimeTypes = [
+            'image/svg+xml',
+            'image/svg',
+            'text/xml',
+            'application/xml',
+            'text/plain' // Some systems report SVG as plain text
+        ];
+        
+        if (in_array($mimeType, $svgMimeTypes)) {
+            // If MIME type suggests it could be SVG, verify by content
+            $isValidSvg = $this->verifySvgContent($filePath);
+            
+            if (!$isValidSvg) {
+                // Security concern: MIME type suggests SVG but content verification failed
+                $this->logger->warning('File rejected: MIME type suggests SVG but content verification failed', [
+                    'filename' => $fileName,
+                    'mime_type' => $mimeType,
+                    'file_path' => $filePath
+                ]);
+                
+                throw new \InvalidArgumentException(
+                    'File appears to be SVG based on MIME type but fails content validation. This may indicate a malicious file.'
+                );
+            }
+            
+            return true;
+        }
+
+        // Method 2: Content-based detection as fallback for misdetected MIME types
+        return $this->verifySvgContent($filePath);
+    }
+
+    /**
+     * Verify if file content is actually SVG by examining the content
+     * Requires strong evidence that the file is SVG
+     * 
+     * @param string $filePath Path to the file
+     * @return bool True if content appears to be SVG
+     */
+    private function verifySvgContent(string $filePath): bool
+    {
+        try {
+            // Read first 2KB of file to check for SVG markers
+            $handle = fopen($filePath, 'r');
+            if (!$handle) {
+                return false;
+            }
+            
+            $content = fread($handle, 2048);
+            fclose($handle);
+            
+            if ($content === false) {
+                return false;
+            }
+
+            // Look for SVG indicators in the content
+            $content = trim($content);
+            
+            // Must have XML declaration OR start with <svg
+            $hasXmlDeclaration = stripos($content, '<?xml') === 0;
+            $startWithSvg = stripos(ltrim($content), '<svg') === 0;
+            
+            if (!$hasXmlDeclaration && !$startWithSvg) {
+                return false;
+            }
+
+            // Must contain SVG namespace or svg element
+            $svgRequiredIndicators = [
+                'xmlns="http://www.w3.org/2000/svg"',
+                'xmlns:svg="http://www.w3.org/2000/svg"',
+                '<svg',
+                '</svg>'
+            ];
+
+            $foundRequired = false;
+            foreach ($svgRequiredIndicators as $indicator) {
+                if (stripos($content, $indicator) !== false) {
+                    $foundRequired = true;
+                    break;
+                }
+            }
+
+            if (!$foundRequired) {
+                return false;
+            }
+
+            // Additional verification: try to parse as XML and check root element
+            try {
+                $dom = new \DOMDocument();
+                $previousSetting = libxml_use_internal_errors(true);
+                $loaded = $dom->loadXML($content, LIBXML_NOENT);
+                libxml_use_internal_errors($previousSetting);
+                
+                if ($loaded && $dom->documentElement && $dom->documentElement->nodeName === 'svg') {
+                    return true;
+                }
+            } catch (\Exception $e) {
+                // If XML parsing fails, it's not a valid SVG
+                return false;
+            }
+
+            return false;
+            
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to verify SVG content', [
+                'file_path' => $filePath,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 
     private function optimizeFile(Media $media, string $filePath): void
@@ -717,5 +936,155 @@ readonly class MediaService
         }
         
         return 'other';
+    }
+
+    /**
+     * Sanitize SVG files to remove potentially malicious content
+     * 
+     * @param string $filePath Path to the SVG file
+     * @throws \RuntimeException If the SVG file is invalid or cannot be sanitized
+     */
+    private function sanitizeSvgFile(string $filePath): void
+    {
+        try {
+            $svgContent = file_get_contents($filePath);
+            if ($svgContent === false) {
+                throw new \RuntimeException('Cannot read SVG file');
+            }
+
+            // Parse the SVG as XML
+            $dom = new \DOMDocument();
+            $dom->loadXML($svgContent, LIBXML_NOENT | LIBXML_DTDLOAD | LIBXML_DTDATTR);
+
+            // Remove dangerous elements and attributes
+            $this->removeDangerousElements($dom);
+            $this->removeDangerousAttributes($dom);
+
+            // Save sanitized SVG back to file
+            $sanitizedContent = $dom->saveXML();
+            if ($sanitizedContent === false || file_put_contents($filePath, $sanitizedContent) === false) {
+                throw new \RuntimeException('Failed to save sanitized SVG');
+            }
+
+            $this->logger->info('SVG file sanitized successfully', [
+                'file_path' => $filePath,
+                'original_size' => strlen($svgContent),
+                'sanitized_size' => strlen($sanitizedContent)
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to sanitize SVG file', [
+                'file_path' => $filePath,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Delete the potentially malicious file
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            
+            throw new \RuntimeException('SVG file contains invalid or potentially malicious content');
+        }
+    }
+
+    /**
+     * Remove dangerous elements from SVG DOM
+     */
+    private function removeDangerousElements(\DOMDocument $dom): void
+    {
+        $dangerousElements = [
+            'script',
+            'object',
+            'embed',
+            'iframe',
+            'form',
+            'input',
+            'textarea',
+            'button',
+            'link',
+            'meta',
+            'base',
+            'applet',
+            'audio',
+            'video',
+            'source',
+            'track',
+            'canvas',
+            'foreignObject'
+        ];
+
+        foreach ($dangerousElements as $tagName) {
+            $elements = $dom->getElementsByTagName($tagName);
+            $elementsToRemove = [];
+            
+            // Collect elements to remove (can't modify during iteration)
+            foreach ($elements as $element) {
+                $elementsToRemove[] = $element;
+            }
+            
+            // Remove collected elements
+            foreach ($elementsToRemove as $element) {
+                if ($element->parentNode) {
+                    $element->parentNode->removeChild($element);
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove dangerous attributes from all SVG elements
+     */
+    private function removeDangerousAttributes(\DOMDocument $dom): void
+    {
+        $dangerousAttributes = [
+            'onload',
+            'onerror',
+            'onclick',
+            'onmouseover',
+            'onmouseout',
+            'onmousemove',
+            'onmousedown',
+            'onmouseup',
+            'onfocus',
+            'onblur',
+            'onkeydown',
+            'onkeyup',
+            'onkeypress',
+            'onsubmit',
+            'onreset',
+            'onselect',
+            'onchange',
+            'href',
+            'xlink:href'
+        ];
+
+        $xpath = new \DOMXPath($dom);
+        $allElements = $xpath->query('//*');
+
+        if ($allElements) {
+            foreach ($allElements as $element) {
+                if ($element instanceof \DOMElement) {
+                    foreach ($dangerousAttributes as $attr) {
+                        if ($element->hasAttribute($attr)) {
+                            $element->removeAttribute($attr);
+                        }
+                    }
+                    
+                    // Remove any attribute that starts with "on" (event handlers)
+                    $attributesToRemove = [];
+                    if ($element->attributes) {
+                        foreach ($element->attributes as $attribute) {
+                            if ($attribute instanceof \DOMAttr && str_starts_with(strtolower($attribute->name), 'on')) {
+                                $attributesToRemove[] = $attribute->name;
+                            }
+                        }
+                    }
+                    
+                    foreach ($attributesToRemove as $attrName) {
+                        $element->removeAttribute($attrName);
+                    }
+                }
+            }
+        }
     }
 }

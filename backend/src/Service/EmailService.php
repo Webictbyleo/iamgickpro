@@ -256,4 +256,134 @@ readonly class EmailService
             throw $e;
         }
     }
+
+    /**
+     * Send data download ready notification email
+     */
+    public function sendDataDownloadReady(string $email, string $firstName, string $downloadUrl, string $requestId): void
+    {
+        try {
+            $emailMessage = (new TemplatedEmail())
+                ->from(new Address($this->fromEmail, $this->appName))
+                ->to(new Address($email, $firstName))
+                ->subject('Your data download is ready')
+                ->htmlTemplate('emails/data_download_ready.html.twig')
+                ->context([
+                    'first_name' => $firstName,
+                    'download_url' => $downloadUrl,
+                    'request_id' => $requestId,
+                    'app_name' => $this->appName,
+                    'expiry_days' => 7
+                ]);
+
+            $this->mailer->send($emailMessage);
+            
+            $this->logger->info('Data download ready email sent', [
+                'email' => $email,
+                'request_id' => $requestId
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send data download ready email', [
+                'email' => $email,
+                'request_id' => $requestId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send data download error notification email
+     */
+    public function sendDataDownloadError(string $email, string $firstName, string $requestId): void
+    {
+        try {
+            $emailMessage = (new TemplatedEmail())
+                ->from(new Address($this->fromEmail, $this->appName))
+                ->to(new Address($email, $firstName))
+                ->subject('Data download request failed')
+                ->htmlTemplate('emails/data_download_error.html.twig')
+                ->context([
+                    'first_name' => $firstName,
+                    'request_id' => $requestId,
+                    'app_name' => $this->appName
+                ]);
+
+            $this->mailer->send($emailMessage);
+            
+            $this->logger->info('Data download error email sent', [
+                'email' => $email,
+                'request_id' => $requestId
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send data download error email', [
+                'email' => $email,
+                'request_id' => $requestId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send account deletion completion confirmation email (with request ID)
+     */
+    public function sendAccountDeletionCompletion(string $email, string $firstName, string $requestId): void
+    {
+        try {
+            $emailMessage = (new TemplatedEmail())
+                ->from(new Address($this->fromEmail, $this->appName))
+                ->to(new Address($email, $firstName))
+                ->subject('Account deletion completed')
+                ->htmlTemplate('emails/account_deletion_confirmation.html.twig')
+                ->context([
+                    'first_name' => $firstName,
+                    'request_id' => $requestId,
+                    'app_name' => $this->appName
+                ]);
+
+            $this->mailer->send($emailMessage);
+            
+            $this->logger->info('Account deletion completion email sent', [
+                'email' => $email,
+                'request_id' => $requestId
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send account deletion completion email', [
+                'email' => $email,
+                'request_id' => $requestId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send account deletion error notification email
+     */
+    public function sendAccountDeletionError(string $email, string $firstName, string $requestId): void
+    {
+        try {
+            $emailMessage = (new TemplatedEmail())
+                ->from(new Address($this->fromEmail, $this->appName))
+                ->to(new Address($email, $firstName))
+                ->subject('Account deletion request failed')
+                ->htmlTemplate('emails/account_deletion_error.html.twig')
+                ->context([
+                    'first_name' => $firstName,
+                    'request_id' => $requestId,
+                    'app_name' => $this->appName
+                ]);
+
+            $this->mailer->send($emailMessage);
+            
+            $this->logger->info('Account deletion error email sent', [
+                'email' => $email,
+                'request_id' => $requestId
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send account deletion error email', [
+                'email' => $email,
+                'request_id' => $requestId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 }

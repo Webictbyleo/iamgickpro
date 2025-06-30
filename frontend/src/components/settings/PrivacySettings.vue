@@ -25,41 +25,36 @@
       
       <div class="p-6 space-y-6">
         <!-- Download Data -->
-        <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <div class="flex-1">
-            <h4 class="text-sm font-medium text-blue-900">Download Your Data</h4>
-            <p class="text-sm text-blue-700 mt-1">Get a copy of all your personal data and designs</p>
+        <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-blue-900">Download My Data</h4>
+              <p class="text-sm text-blue-700 mt-1">Get a complete copy of all your personal data, designs, and account information in JSON format for GDPR compliance and data portability</p>
+              <div v-if="dataDownload.lastRequest" class="text-xs text-blue-600 mt-2">
+                Last requested: {{ dataDownload.lastRequest.toLocaleString() }}
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button
+                @click="requestDataDownload"
+                :disabled="dataDownload.loading"
+                class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span v-if="dataDownload.loading" class="flex items-center">
+                  <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Preparing...
+                </span>
+                <span v-else>Download My Data</span>
+              </button>
+              <button
+                v-if="dataDownload.requestId"
+                @click="downloadDataFile(dataDownload.requestId)"
+                class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-colors"
+              >
+                Download File
+              </button>
+            </div>
           </div>
-          <button
-            @click="requestDataDownload"
-            :disabled="dataDownload.loading"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span v-if="dataDownload.loading" class="flex items-center">
-              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Processing...
-            </span>
-            <span v-else>Request Download</span>
-          </button>
-        </div>
-
-        <!-- Data Portability -->
-        <div class="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200">
-          <div class="flex-1">
-            <h4 class="text-sm font-medium text-green-900">Data Portability</h4>
-            <p class="text-sm text-green-700 mt-1">Export your data in a standard format for use elsewhere</p>
-          </div>
-          <button
-            @click="exportPortableData"
-            :disabled="dataExport.loading"
-            class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span v-if="dataExport.loading" class="flex items-center">
-              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Exporting...
-            </span>
-            <span v-else>Export Data</span>
-          </button>
         </div>
 
         <!-- Delete Account -->
@@ -126,12 +121,8 @@ const showDeleteConfirmation = ref(false)
 // Data management state
 const dataDownload = reactive({
   loading: false,
-  lastRequest: null as Date | null
-})
-
-const dataExport = reactive({
-  loading: false,
-  lastExport: null as Date | null
+  lastRequest: null as Date | null,
+  requestId: null as string | null
 })
 
 // Methods
@@ -140,8 +131,9 @@ const requestDataDownload = async () => {
   try {
     const response = await userAPI.downloadData()
     dataDownload.lastRequest = new Date()
-    showSuccess('Data download request submitted successfully. You will receive an email with download instructions within 24 hours.')
-    console.log('Data download requested successfully')
+    dataDownload.requestId = response.data?.data?.requestId || null
+    showSuccess('Data download request submitted successfully. You will receive an email when your data is ready for download.')
+    console.log('Data download requested successfully:', response.data)
   } catch (error) {
     console.error('Failed to request data download:', error)
     showError('Failed to request data download. Please try again later.')
@@ -150,35 +142,26 @@ const requestDataDownload = async () => {
   }
 }
 
-const exportPortableData = async () => {
-  dataExport.loading = true
+const downloadDataFile = async (requestId: string) => {
   try {
-    const response = await userAPI.exportData({
-      format: 'json',
-      includeDesigns: true,
-      includeMedia: true,
-      includeProjects: true
-    })
+    const response = await userAPI.downloadDataFile(requestId)
     
-    dataExport.lastExport = new Date()
+    // Convert JSON data to blob for download
+    const jsonData = JSON.stringify(response.data, null, 2)
+    const blob = new Blob([jsonData], { type: 'application/json' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `igpro-data-export-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
     
-    if (response.data?.data?.downloadUrl) {
-      // Use the download URL provided by the backend
-      const link = document.createElement('a')
-      link.href = response.data.data.downloadUrl
-      link.download = `igpro-data-export-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-    
-    showSuccess('Data exported successfully! Your file has been downloaded.')
-    console.log('Data export completed')
+    showSuccess('Data file downloaded successfully!')
   } catch (error) {
-    console.error('Failed to export data:', error)
-    showError('Failed to export data. Please try again later.')
-  } finally {
-    dataExport.loading = false
+    console.error('Failed to download data file:', error)
+    showError('Failed to download data file. It may not be ready yet or may have expired.')
   }
 }
 

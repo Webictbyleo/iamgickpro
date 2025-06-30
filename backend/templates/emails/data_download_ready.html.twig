@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Data Download is Ready</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6f42c1;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #28a745;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .download-section {
+            background-color: #e8f5e8;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .download-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #6c757d;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        .request-id {
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">{{ app_name }}</div>
+            <div class="title">Your Data Download is Ready</div>
+        </div>
+
+        <div class="content">
+            <p>Hello {{ first_name }},</p>
+
+            <p>Your data download request has been processed successfully. Your comprehensive data export is now ready for download.</p>
+
+            <div class="download-section">
+                <h3>🔒 Secure Download</h3>
+                <p>Your data has been securely prepared and is available for download. This download link is unique to you and will expire in 7 days for security.</p>
+                
+                <a href="{{ download_url }}" class="download-button">Download My Data</a>
+                
+                <p><strong>Download URL:</strong><br>
+                <code>{{ download_url }}</code></p>
+            </div>
+
+            <div class="info-box">
+                <h4>What's Included in Your Download:</h4>
+                <ul>
+                    <li>Complete user profile information</li>
+                    <li>All your designs and projects</li>
+                    <li>Uploaded media files metadata</li>
+                    <li>Account settings and preferences</li>
+                    <li>Subscription and billing history</li>
+                    <li>Privacy and security logs (last 100 entries)</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>Important Information:</h4>
+                <ul>
+                    <li><strong>Expiration:</strong> This download link expires in 7 days</li>
+                    <li><strong>Format:</strong> Data is provided in JSON format</li>
+                    <li><strong>Security:</strong> Only you can access this download with your unique link</li>
+                    <li><strong>One-time use:</strong> The link can be accessed multiple times until expiration</li>
+                </ul>
+            </div>
+
+            <p>If you did not request this data export, or if you have concerns about your account security, please contact our support team immediately.</p>
+
+            <p>Best regards,<br>
+            The {{ app_name }} Team</p>
+        </div>
+
+        <div class="footer">
+            <p>Request ID: <span class="request-id">{{ request_id }}</span></p>
+            <p>This email was sent to you as part of your data privacy rights.</p>
+            <p>{{ app_name }} - Empowering your creativity</p>
+        </div>
+    </div>
+</body>
+</html>
