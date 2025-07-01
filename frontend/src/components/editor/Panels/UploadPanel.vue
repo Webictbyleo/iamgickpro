@@ -143,7 +143,7 @@
           :selected-items="selectedItems"
           :actions="mediaActions"
           :columns="2"
-          :gap="16"
+          :gap="0"
           @media-click="addMedia"
           @toggle-selection="toggleSelection"
           @action="handleMediaAction"
