@@ -452,7 +452,16 @@ const loadStockMedia = async () => {
     isLoading.value = true
     
     // Use default search term if no query is provided for stock media
-    const query = searchQuery.value.trim() || 'business'
+    // Rotate through popular terms for variety when using defaults
+    const getDefaultQuery = () => {
+      const defaultTerms = ['business', 'technology', 'nature', 'lifestyle', 'design'];
+      const hourOfDay = new Date().getHours();
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+      const index = (hourOfDay + dayOfYear) % defaultTerms.length;
+      return defaultTerms[index];
+    }
+    
+    const query = searchQuery.value.trim() || getDefaultQuery()
     
     const response = await mediaAPI.searchStockMedia({
       query: query,
