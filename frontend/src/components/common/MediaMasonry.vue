@@ -222,62 +222,59 @@ const positionDropdown = (itemId: string) => {
   const buttonEl = dropdownButtonRefs.value[itemId]
   if (!buttonEl) return
 
-  const buttonRect = buttonEl.getBoundingClientRect()
-  const windowWidth = window.innerWidth
-  const windowHeight = window.innerHeight
-  const dropdownWidth = 192 // w-48 = 192px
-  const estimatedHeight = 150 // Better estimate to reduce repositioning
-  
-  // Calculate optimal position with better estimation
-  let left = buttonRect.right - dropdownWidth
-  let top = buttonRect.bottom + 4
-  
-  // Horizontal adjustments
-  if (left < 16) {
-    left = buttonRect.left
-  }
-  if (left + dropdownWidth > windowWidth - 16) {
-    left = windowWidth - dropdownWidth - 16
-  }
-  
-  // Check if we need to position above with estimated height
-  if (top + estimatedHeight > windowHeight - 16) {
-    top = buttonRect.top - estimatedHeight - 4
-  }
-  
-  // Set initial position with better estimation
-  dropdownPosition.value = {
-    top: `${Math.round(top)}px`,
-    left: `${Math.round(left)}px`
-  }
-  
-  // Fine-tune position with actual height after render
-  setTimeout(() => {
+  const calculatePosition = () => {
+    const buttonRect = buttonEl.getBoundingClientRect()
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
+    const dropdownWidth = 192 // w-48 = 192px
+    
+    // Calculate horizontal position
+    let left = buttonRect.right - dropdownWidth
+    if (left < 16) {
+      left = buttonRect.left
+    }
+    if (left + dropdownWidth > windowWidth - 16) {
+      left = windowWidth - dropdownWidth - 16
+    }
+    
+    // Calculate vertical position
+    let top = buttonRect.bottom + 4
+    
+    // Get actual dropdown element to check height
     const dropdownEl = document.querySelector('.fixed.w-48.bg-white.rounded-lg.shadow-xl') as HTMLElement
-    if (!dropdownEl) return
-    
-    const actualHeight = dropdownEl.offsetHeight
-    const newButtonRect = buttonEl.getBoundingClientRect()
-    
-    // Only adjust if our estimation was significantly off
-    let newTop = newButtonRect.bottom + 4
-    
-    if (newTop + actualHeight > windowHeight - 16) {
-      newTop = newButtonRect.top - actualHeight - 4
-    }
-    
-    if (newTop < 16) {
-      newTop = newButtonRect.bottom + 4
-    }
-    
-    // Only update if position actually needs to change
-    if (Math.abs(newTop - top) > 5) {
-      dropdownPosition.value = {
-        top: `${Math.round(newTop)}px`,
-        left: `${Math.round(left)}px`
+    if (dropdownEl) {
+      const actualHeight = dropdownEl.offsetHeight
+      
+      // Position above if dropdown would overflow below
+      if (top + actualHeight > windowHeight - 16) {
+        top = buttonRect.top - actualHeight - 4
+      }
+      
+      // Ensure dropdown doesn't go above viewport
+      if (top < 16) {
+        top = Math.min(buttonRect.bottom + 4, windowHeight - actualHeight - 16)
+      }
+    } else {
+      // Fallback estimation when dropdown element is not yet available
+      const estimatedHeight = 150
+      if (top + estimatedHeight > windowHeight - 16) {
+        top = buttonRect.top - estimatedHeight - 4
       }
     }
-  }, 5)
+    
+    return {
+      top: `${Math.round(top)}px`,
+      left: `${Math.round(left)}px`
+    }
+  }
+
+  // Set initial position
+  dropdownPosition.value = calculatePosition()
+  
+  // Fine-tune position after dropdown is rendered
+  nextTick(() => {
+    dropdownPosition.value = calculatePosition()
+  })
 }
 
 const getFileById = (id: string | null): MediaItem | null => {
