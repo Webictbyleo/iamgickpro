@@ -8,7 +8,7 @@
       :ref="(el: any) => setDropdownRef(file.id, el as HTMLElement)"
     >
       <!-- Selection Checkbox -->
-      <div class="absolute top-3 left-3 z-10 transition-opacity duration-200" 
+      <div v-if="showSelection" class="absolute top-3 left-3 z-10 transition-opacity duration-200" 
            :class="selectedItems.has(file.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
         <label class="relative flex items-center justify-center cursor-pointer group/checkbox">
           <input
@@ -82,7 +82,7 @@
   <Teleport to="body">
     <div 
       v-if="dropdownOpen && getFileById(dropdownOpen)"
-      class="fixed w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-[9999]"
+      class="fixed w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-[9999] transition-all duration-200 ease-out"
       :style="dropdownPosition"
       @click.stop
     >
@@ -134,13 +134,15 @@ interface Props {
   actions?: MediaAction[]
   columns?: number
   gap?: number
+  showSelection?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selectedItems: () => new Set(),
   actions: () => [],
   columns: 2,
-  gap: 16
+  gap: 16,
+  showSelection: true
 })
 
 const emit = defineEmits<{
@@ -193,13 +195,13 @@ const positionDropdown = (itemId: string) => {
   const buttonEl = dropdownButtonRefs.value[itemId]
   if (!buttonEl) return
 
-  // Position immediately, then adjust after dropdown renders
   const buttonRect = buttonEl.getBoundingClientRect()
   const windowWidth = window.innerWidth
   const windowHeight = window.innerHeight
   const dropdownWidth = 192 // w-48 = 192px
+  const estimatedHeight = 150 // Better estimate to reduce repositioning
   
-  // Initial positioning - place below button
+  // Calculate optimal position with better estimation
   let left = buttonRect.right - dropdownWidth
   let top = buttonRect.bottom + 4
   
@@ -211,40 +213,44 @@ const positionDropdown = (itemId: string) => {
     left = windowWidth - dropdownWidth - 16
   }
   
-  // Set initial position
+  // Check if we need to position above with estimated height
+  if (top + estimatedHeight > windowHeight - 16) {
+    top = buttonRect.top - estimatedHeight - 4
+  }
+  
+  // Set initial position with better estimation
   dropdownPosition.value = {
     top: `${Math.round(top)}px`,
     left: `${Math.round(left)}px`
   }
   
-  // Wait for dropdown to render, then get actual height and adjust
+  // Fine-tune position with actual height after render
   setTimeout(() => {
     const dropdownEl = document.querySelector('.fixed.w-48.bg-white.rounded-lg.shadow-xl') as HTMLElement
     if (!dropdownEl) return
     
-    const dropdownHeight = dropdownEl.offsetHeight
+    const actualHeight = dropdownEl.offsetHeight
     const newButtonRect = buttonEl.getBoundingClientRect()
     
-    // Recalculate with actual dropdown height
+    // Only adjust if our estimation was significantly off
     let newTop = newButtonRect.bottom + 4
     
-    // Check if dropdown fits below
-    if (newTop + dropdownHeight > windowHeight - 16) {
-      // Position above with minimal gap
-      newTop = newButtonRect.top - dropdownHeight - 4
+    if (newTop + actualHeight > windowHeight - 16) {
+      newTop = newButtonRect.top - actualHeight - 4
     }
     
-    // Ensure it doesn't go above viewport
     if (newTop < 16) {
       newTop = newButtonRect.bottom + 4
     }
     
-    // Update position with actual measurements
-    dropdownPosition.value = {
-      top: `${Math.round(newTop)}px`,
-      left: `${Math.round(left)}px`
+    // Only update if position actually needs to change
+    if (Math.abs(newTop - top) > 5) {
+      dropdownPosition.value = {
+        top: `${Math.round(newTop)}px`,
+        left: `${Math.round(left)}px`
+      }
     }
-  }, 10)
+  }, 5)
 }
 
 const getFileById = (id: string | null): MediaItem | null => {

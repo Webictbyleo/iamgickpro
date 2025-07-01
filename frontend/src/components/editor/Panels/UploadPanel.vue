@@ -69,7 +69,7 @@
 
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-y-auto" :class="{ 'pb-24': selectedItems.size > 0 }">
+    <div class="flex-1 overflow-y-auto" :class="{ 'pb-20': selectedItems.size > 0 }">
       <!-- Enhanced Loading State -->
       <div v-if="isLoadingUserMedia && userMedia.length === 0" class="space-y-4">
         <div class="text-center py-8">
@@ -230,39 +230,36 @@
       class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg transform transition-transform duration-300 ease-out"
       :class="selectedItems.size > 0 ? 'translate-y-0' : 'translate-y-full'"
     >
-      <div class="p-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <span class="text-sm font-semibold text-blue-600">{{ selectedItems.size }}</span>
+      <div class="p-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+              <span class="text-xs font-semibold text-blue-600">{{ selectedItems.size }}</span>
             </div>
-            <div>
-              <p class="text-sm font-medium text-gray-900">
-                {{ selectedItems.size === 1 ? '1 item selected' : `${selectedItems.size} items selected` }}
-              </p>
-              <p class="text-xs text-gray-500">Choose an action below</p>
-            </div>
+            <p class="text-sm font-medium text-gray-900">
+              {{ selectedItems.size === 1 ? '1 selected' : `${selectedItems.size} selected` }}
+            </p>
           </div>
           <button
             @click="clearSelection"
-            class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
             title="Clear selection"
           >
             <XMarkIcon class="w-4 h-4" />
           </button>
         </div>
         
-        <div class="flex gap-3 mt-4">
+        <div class="flex gap-2">
           <button
             @click="confirmBulkDelete"
-            class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
           >
-            <TrashIcon class="w-4 h-4" />
-            Delete Selected
+            <TrashIcon class="w-3.5 h-3.5" />
+            Delete
           </button>
           <button
             @click="clearSelection"
-            class="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
           >
             Cancel
           </button>
@@ -279,6 +276,7 @@ import { useUserMedia } from '@/composables/useUserMedia'
 import { mediaAPI } from '@/services/api'
 import type { MediaItem } from '@/types'
 import MediaMasonry from '@/components/common/MediaMasonry.vue'
+import { GeometryUtils } from '@/utils/GeometryUtils'
 
 const emit = defineEmits<{
   addMedia: [mediaData: any]
@@ -495,11 +493,43 @@ const handleDrop = async (event: DragEvent) => {
 
 // Media addition
 const addMedia = (mediaData: MediaItem) => {
+  // Function to calculate appropriate dimensions for the design stage using GeometryUtils
+  const calculateDimensions = (originalWidth: number, originalHeight: number) => {
+    const sourceDimensions = {
+      width: originalWidth || 400,
+      height: originalHeight || 400
+    }
+    
+    // Define target constraints for design stage
+    const targetDimensions = {
+      width: 600,  // Maximum width for design stage
+      height: 400  // Maximum height for design stage
+    }
+    
+    // Use GeometryUtils to resize with contain mode (maintains aspect ratio, fits within bounds)
+    const resizeResult = GeometryUtils.resize(sourceDimensions, targetDimensions, {
+      mode: 'contain',
+      minWidth: 100,  // Minimum width to ensure visibility
+      minHeight: 100, // Minimum height to ensure visibility
+      allowUpscaling: true // Allow small images to be scaled up
+    })
+    
+    return {
+      width: Math.round(resizeResult.width),
+      height: Math.round(resizeResult.height)
+    }
+  }
+
+  const dimensions = calculateDimensions(mediaData.width || 400, mediaData.height || 400)
   const imageData = {
     src: mediaData.url || mediaData.thumbnailUrl,
     alt: mediaData.name || 'Uploaded media'
   }
-  emit('addMedia', imageData)
+  emit('addMedia', { 
+    type: 'image', 
+    data: imageData,
+    transform: dimensions
+  })
 }
 
 // Utility functions
