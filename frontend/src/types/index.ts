@@ -463,7 +463,7 @@ export interface MediaItem {
   width?: number
   height?: number
   duration?: number
-  source: 'upload' | 'stock'
+  source: 'unsplash'| 'pexels'| 'iconfinder'| 'giphy'| 'upload'| 'generated'
   sourceId?: string
   metadata?: any
   tags: string[]

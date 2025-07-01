@@ -86,17 +86,17 @@
               <span v-if="file.width && file.height">{{ file.width }}×{{ file.height }}</span>
               <span v-if="file.size" class="ml-auto">{{ formatFileSize(file.size) }}</span>
             </div>
-            <div v-if="file.attribution || file.source === 'stock'" class="text-xs text-gray-300 truncate">
+            <div v-if="file.attribution || isStockMedia(file)" class="text-xs text-gray-300 truncate">
               <span v-if="file.attribution">{{ file.attribution }}</span>
-              <span v-if="file.attribution && file.source === 'stock'"> • </span>
-              <span v-if="file.source === 'stock'" class="capitalize">Stock Image</span>
+              <span v-if="file.attribution && isStockMedia(file)"> • </span>
+              <span v-if="isStockMedia(file)" class="capitalize">{{ getSourceDisplayName(file.source) }}</span>
             </div>
           </div>
         </div>
         
         <!-- Premium Badge for Stock Media -->
         <div 
-          v-if="file.isPremium && file.source === 'stock'"
+          v-if="file.isPremium && isStockMedia(file)"
           class="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg"
         >
           ⭐ PRO
@@ -355,6 +355,24 @@ const formatFileSize = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// Helper function to check if media is from stock providers
+const isStockMedia = (file: MediaItem): boolean => {
+  return ['unsplash', 'pexels', 'iconfinder', 'giphy'].includes(file.source)
+}
+
+// Helper function to get display name for source
+const getSourceDisplayName = (source: MediaItem['source']): string => {
+  const sourceNames: Record<MediaItem['source'], string> = {
+    'unsplash': 'Unsplash',
+    'pexels': 'Pexels',
+    'iconfinder': 'Iconfinder',
+    'giphy': 'Giphy',
+    'upload': 'Upload',
+    'generated': 'Generated'
+  }
+  return sourceNames[source] || 'Stock Image'
 }
 </script>
 
