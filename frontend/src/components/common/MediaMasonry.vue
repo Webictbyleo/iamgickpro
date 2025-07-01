@@ -40,20 +40,18 @@
 
       <!-- Dropdown Menu -->
       <div class="absolute top-2 right-2 z-20">
-        <div class="relative">
-          <button
-            :ref="(el: any) => setDropdownButtonRef(file.id, el as HTMLElement)"
-            class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all"
-            :class="dropdownOpen === file.id ? 'opacity-100 bg-white' : 'opacity-0 group-hover:opacity-100'"
-            @click.stop="toggleDropdown(file.id)"
-          >
-            <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-              <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
-              <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
-            </svg>
-          </button>
-        </div>
+        <button
+          :ref="(el: any) => setDropdownButtonRef(file.id, el as HTMLElement)"
+          class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
+          :class="dropdownOpen === file.id ? 'opacity-100 bg-white shadow-md' : 'opacity-0 group-hover:opacity-100'"
+          @click.stop="toggleDropdown(file.id)"
+        >
+          <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+            <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
+            <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Media Preview -->
@@ -84,25 +82,38 @@
   <Teleport to="body">
     <div 
       v-if="dropdownOpen && getFileById(dropdownOpen)"
-      class="fixed w-40 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-[9999]"
+      class="fixed w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-[9999]"
       :style="dropdownPosition"
       @click.stop
     >
-      <button
-        v-for="action in actions"
-        :key="action.key"
-        @click="handleAction(action.key, getFileById(dropdownOpen)!)"
-        :class="[
-          'w-full px-4 py-2 text-left text-sm flex items-center transition-colors',
-          action.key === 'delete' 
-            ? 'text-red-600 hover:bg-red-50' 
-            : 'text-gray-700 hover:bg-gray-50'
-        ]"
-      >
-        <component :is="action.icon" class="w-4 h-4 mr-2" />
-        {{ action.label }}
-      </button>
-      <hr v-if="actions.some(a => a.key === 'delete')" class="my-1 border-gray-100">
+      <!-- File Info Section -->
+      <div class="px-4 py-3 border-b border-gray-100">
+        <p class="text-sm font-medium text-gray-900 truncate">{{ getFileById(dropdownOpen)?.name }}</p>
+        <div class="flex items-center justify-between mt-1 text-xs text-gray-500">
+          <span v-if="getFileById(dropdownOpen)?.size">{{ formatFileSize(getFileById(dropdownOpen)!.size) }}</span>
+          <span v-if="getFileById(dropdownOpen)?.width && getFileById(dropdownOpen)?.height">
+            {{ getFileById(dropdownOpen)?.width }}×{{ getFileById(dropdownOpen)?.height }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="py-1">
+        <button
+          v-for="action in actions"
+          :key="action.key"
+          @click="handleAction(action.key, getFileById(dropdownOpen)!)"
+          :class="[
+            'w-full px-4 py-2 text-left text-sm flex items-center transition-colors',
+            action.key === 'delete' 
+              ? 'text-red-600 hover:bg-red-50' 
+              : 'text-gray-700 hover:bg-gray-50'
+          ]"
+        >
+          <component :is="action.icon" class="w-4 h-4 mr-2" />
+          {{ action.label }}
+        </button>
+      </div>
     </div>
   </Teleport>
 </template>
@@ -182,39 +193,58 @@ const positionDropdown = (itemId: string) => {
   const buttonEl = dropdownButtonRefs.value[itemId]
   if (!buttonEl) return
 
+  // Position immediately, then adjust after dropdown renders
   const buttonRect = buttonEl.getBoundingClientRect()
   const windowWidth = window.innerWidth
   const windowHeight = window.innerHeight
-  const dropdownWidth = 160 // 40 * 0.25rem = 160px (w-40)
-  const dropdownHeight = 200 // Approximate height
-
-  let left = buttonRect.left
+  const dropdownWidth = 192 // w-48 = 192px
+  
+  // Initial positioning - place below button
+  let left = buttonRect.right - dropdownWidth
   let top = buttonRect.bottom + 4
-
-  // Adjust horizontal position if dropdown would go off-screen
-  if (left + dropdownWidth > windowWidth) {
-    left = buttonRect.right - dropdownWidth
+  
+  // Horizontal adjustments
+  if (left < 16) {
+    left = buttonRect.left
   }
-
-  // Adjust vertical position if dropdown would go off-screen
-  if (top + dropdownHeight > windowHeight) {
-    top = buttonRect.top - dropdownHeight - 4
+  if (left + dropdownWidth > windowWidth - 16) {
+    left = windowWidth - dropdownWidth - 16
   }
-
-  // Ensure dropdown doesn't go above viewport
-  if (top < 0) {
-    top = buttonRect.bottom + 4
-  }
-
-  // Ensure dropdown doesn't go left of viewport
-  if (left < 0) {
-    left = 4
-  }
-
+  
+  // Set initial position
   dropdownPosition.value = {
-    top: `${top}px`,
-    left: `${left}px`
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`
   }
+  
+  // Wait for dropdown to render, then get actual height and adjust
+  setTimeout(() => {
+    const dropdownEl = document.querySelector('.fixed.w-48.bg-white.rounded-lg.shadow-xl') as HTMLElement
+    if (!dropdownEl) return
+    
+    const dropdownHeight = dropdownEl.offsetHeight
+    const newButtonRect = buttonEl.getBoundingClientRect()
+    
+    // Recalculate with actual dropdown height
+    let newTop = newButtonRect.bottom + 4
+    
+    // Check if dropdown fits below
+    if (newTop + dropdownHeight > windowHeight - 16) {
+      // Position above with minimal gap
+      newTop = newButtonRect.top - dropdownHeight - 4
+    }
+    
+    // Ensure it doesn't go above viewport
+    if (newTop < 16) {
+      newTop = newButtonRect.bottom + 4
+    }
+    
+    // Update position with actual measurements
+    dropdownPosition.value = {
+      top: `${Math.round(newTop)}px`,
+      left: `${Math.round(left)}px`
+    }
+  }, 10)
 }
 
 const getFileById = (id: string | null): MediaItem | null => {
@@ -236,7 +266,7 @@ const handleClickOutside = (event: Event) => {
   }
   
   // Check if click is on the floating dropdown itself
-  const dropdownEl = document.querySelector('.fixed.w-40.bg-white.rounded-lg.shadow-xl')
+  const dropdownEl = document.querySelector('.fixed.w-48.bg-white.rounded-lg.shadow-xl')
   if (dropdownEl && dropdownEl.contains(target)) {
     return
   }
