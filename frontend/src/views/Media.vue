@@ -200,15 +200,15 @@
 
     <!-- Media Preview Modal -->
     <div v-if="previewItem" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click="closePreview">
-      <div class="relative max-w-4xl max-h-[90vh] m-4" @click.stop>
+      <div class="relative w-full h-full max-w-7xl max-h-full p-4 flex items-center justify-center" @click.stop>
         <img
           :src="previewItem.url"
           :alt="previewItem.name"
-          class="max-w-full max-h-full rounded-2xl shadow-2xl"
+          class="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
         />
         <button
           @click="closePreview"
-          class="absolute top-4 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200"
+          class="absolute top-8 right-8 w-12 h-12 bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-all duration-200 z-10"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
