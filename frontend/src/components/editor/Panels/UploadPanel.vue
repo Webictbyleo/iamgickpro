@@ -144,6 +144,7 @@
           :actions="mediaActions"
           :columns="2"
           :gap="0"
+          :show-info-overlay="false"
           @media-click="addMedia"
           @toggle-selection="toggleSelection"
           @action="handleMediaAction"

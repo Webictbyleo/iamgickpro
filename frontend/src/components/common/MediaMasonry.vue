@@ -77,7 +77,7 @@
         
         <!-- Info Overlay for Stock Media -->
         <div 
-          v-if="file.source !== 'upload'"
+          v-if="showInfoOverlay && file.source !== 'upload'"
           class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         >
           <div class="space-y-1">
@@ -162,6 +162,7 @@ interface Props {
   columns?: number
   gap?: number
   showSelection?: boolean
+  showInfoOverlay?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -169,7 +170,8 @@ const props = withDefaults(defineProps<Props>(), {
   actions: () => [],
   columns: 2,
   gap: 16,
-  showSelection: true
+  showSelection: true,
+  showInfoOverlay: true
 })
 
 const emit = defineEmits<{
