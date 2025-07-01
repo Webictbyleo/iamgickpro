@@ -3,16 +3,45 @@
     <div
       v-for="item in items"
       :key="item.id"
-      class="media-item"
-      @click="$emit('openInEditor', item)"
+      class="media-item group"
+      :class="{ 'selected': selectedItems.has(item.uuid || item.id) }"
     >
+      <!-- Selection Checkbox (only for user uploads) -->
+      <div 
+        v-if="showSelection && canDelete(item)"
+        class="absolute top-2 left-2 z-10"
+        @click.stop
+      >
+        <input
+          type="checkbox"
+          :checked="selectedItems.has(item.uuid || item.id)"
+          @change="toggleSelection(item)"
+          class="w-4 h-4 text-violet-600 bg-white border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
+        />
+      </div>
+
       <!-- Media Image -->
       <img
         :src="item.thumbnail || item.url"
         :alt="item.name || 'Media item'"
         class="media-image"
         loading="lazy"
+        @click="$emit('openInEditor', item)"
       />
+      
+      <!-- Action Buttons Overlay -->
+      <div 
+        v-if="canDelete(item)"
+        class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      >
+        <button
+          @click.stop="$emit('deleteItem', item)"
+          class="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg"
+          title="Delete media"
+        >
+          <TrashIcon class="w-4 h-4" />
+        </button>
+      </div>
       
       <!-- Simple Info Overlay -->
       <div class="media-info-overlay">
@@ -31,18 +60,38 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 import type { MediaItem } from '@/types'
 
 interface Props {
   items: MediaItem[]
+  selectedItems?: Set<string>
+  showSelection?: boolean
 }
 
 interface Emits {
   openInEditor: [item: MediaItem]
+  deleteItem: [item: MediaItem]
+  toggleSelection: [item: MediaItem]
 }
 
-defineProps<Props>()
-defineEmits<Emits>()
+const props = withDefaults(defineProps<Props>(), {
+  selectedItems: () => new Set(),
+  showSelection: false
+})
+
+const emit = defineEmits<Emits>()
+
+// Check if item can be deleted (only user uploads)
+const canDelete = (item: MediaItem): boolean => {
+  return item.source === 'upload' || !item.source
+}
+
+// Toggle item selection
+const toggleSelection = (item: MediaItem) => {
+  emit('toggleSelection', item)
+}
 
 // Optimized utility functions with caching
 const fileSizeCache = new Map<number, string>()

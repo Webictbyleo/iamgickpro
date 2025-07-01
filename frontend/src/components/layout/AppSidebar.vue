@@ -88,14 +88,14 @@
             </div>
           </router-link>
 
-          <!-- Stock Media -->
+          <!-- Media -->
           <router-link
             to="/media"
             class="sidebar-nav-item group"
             :class="{ 'sidebar-nav-item-active': $route.name === 'Media' }"
           >
             <component :is="icons.image" class="w-5 h-5 mr-3 transition-colors" />
-            <span>Stock Media</span>
+            <span>Media</span>
             <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
               <component :is="icons.arrowRight" class="w-4 h-4" />
             </div>

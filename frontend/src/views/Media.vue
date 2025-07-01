@@ -118,6 +118,7 @@
         v-else-if="mediaItems.length > 0"
         :items="mediaItems"
         @openInEditor="openInEditor"
+        @deleteItem="handleDeleteItem"
       />
 
       <!-- Simplified Empty State -->
@@ -212,6 +213,40 @@
         </button>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="deleteItem" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-center w-12 h-12 bg-red-100 rounded-lg mx-auto mb-4">
+          <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </div>
+        
+        <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">
+          Delete Image?
+        </h3>
+        <p class="text-gray-600 text-center mb-6">
+          This action cannot be undone. The image will be permanently removed from your library.
+        </p>
+        
+        <div class="flex space-x-3">
+          <button
+            @click="cancelDelete"
+            class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmDelete"
+            :disabled="isDeleting"
+            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -242,6 +277,8 @@ const fileInput = ref<HTMLInputElement>()
 const previewItem = ref<MediaItem | null>(null)
 const searchTimeout = ref<NodeJS.Timeout>()
 const lastSearchQuery = ref('')
+const deleteItem = ref<MediaItem | null>(null)
+const isDeleting = ref(false)
 
 // Enhanced tabs with icons
 const tabs = [
@@ -324,11 +361,7 @@ const getPaginationPages = (): number[] => {
 
 // Media operations
 const searchMedia = async () => {
-  // Skip if already loading or if query hasn't changed
-  if (isLoading.value || lastSearchQuery.value === searchQuery.value) {
-    return
-  }
-  
+ 
   lastSearchQuery.value = searchQuery.value
   currentPage.value = 1 // Reset to first page for new search
   
@@ -455,6 +488,42 @@ const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
     searchMedia()
+  }
+}
+
+// Delete functions
+const handleDeleteItem = (item: MediaItem) => {
+  // Only allow deleting uploaded media
+  if (item.source !== 'upload') {
+    console.warn('Cannot delete stock media')
+    return
+  }
+  deleteItem.value = item
+}
+
+const cancelDelete = () => {
+  deleteItem.value = null
+  isDeleting.value = false
+}
+
+const confirmDelete = async () => {
+  if (!deleteItem.value || !deleteItem.value.uuid) return
+  
+  try {
+    isDeleting.value = true
+    await mediaAPI.deleteMedia(deleteItem.value.uuid)
+    
+    // Remove the item from the current view
+    mediaItems.value = mediaItems.value.filter(item => item.uuid !== deleteItem.value?.uuid)
+    
+    // Close the modal
+    deleteItem.value = null
+    
+    console.log('Media deleted successfully')
+  } catch (error) {
+    console.error('Failed to delete media:', error)
+  } finally {
+    isDeleting.value = false
   }
 }
 
