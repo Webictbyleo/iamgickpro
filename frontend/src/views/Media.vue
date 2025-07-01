@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div ref="contentContainer" class="space-y-6">
       <!-- Simplified Header Section -->
       <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <div class="flex items-center justify-between">
@@ -57,7 +57,7 @@
                 <input
                   v-model="searchQuery"
                   type="text"
-                  placeholder="Search for images..."
+                  :placeholder="activeTab === 'stock' ? 'Search stock images... (e.g., business, nature, technology)' : 'Search your images...'"
                   class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
                   @keyup.enter="searchMedia"
                   @input="debouncedSearch"
@@ -262,7 +262,8 @@ import {
   PhotoIcon,
   EyeIcon,
   TrashIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import MediaMasonry from '@/components/common/MediaMasonry.vue'
@@ -284,6 +285,7 @@ const searchTimeout = ref<NodeJS.Timeout>()
 const lastSearchQuery = ref('')
 const deleteItem = ref<MediaItem | null>(null)
 const isDeleting = ref(false)
+const contentContainer = ref<HTMLElement>()
 
 // Enhanced tabs with icons
 const tabs = [
@@ -303,6 +305,11 @@ const mediaActions = computed(() => [
     label: 'Edit in Designer',
     icon: PencilSquareIcon
   },
+  {
+    key: 'download',
+    label: 'Download',
+    icon: ArrowDownTrayIcon
+  },
   ...(activeTab.value === 'uploads' ? [{
     key: 'delete',
     label: 'Delete',
@@ -319,13 +326,25 @@ const userMediaCount = computed(() => {
 const columns = ref(2)
 
 const updateColumns = () => {
-  if (typeof window === 'undefined') return
-  const width = window.innerWidth
-  if (width >= 1280) columns.value = 6      // xl
-  else if (width >= 1024) columns.value = 5 // lg
-  else if (width >= 768) columns.value = 4  // md
-  else if (width >= 640) columns.value = 3  // sm
-  else columns.value = 2                    // base
+  if (!contentContainer.value) return
+  
+  const containerWidth = contentContainer.value.clientWidth
+  
+  // Calculate columns based on container width, not window width
+  // Account for gaps between columns (16px default gap)
+  const gap = 16
+  const minColumnWidth = 200 // Minimum width for each column
+  
+  let calculatedColumns = Math.floor((containerWidth + gap) / (minColumnWidth + gap))
+  
+  // Apply responsive constraints
+  if (containerWidth >= 1280) calculatedColumns = Math.min(calculatedColumns, 6)      // xl: max 6
+  else if (containerWidth >= 1024) calculatedColumns = Math.min(calculatedColumns, 5) // lg: max 5  
+  else if (containerWidth >= 768) calculatedColumns = Math.min(calculatedColumns, 4)  // md: max 4
+  else if (containerWidth >= 640) calculatedColumns = Math.min(calculatedColumns, 3)  // sm: max 3
+  else calculatedColumns = Math.min(calculatedColumns, 2)                             // base: max 2
+  
+  columns.value = Math.max(1, calculatedColumns) // Ensure at least 1 column
 }
 
 // Handle media actions from MediaMasonry
@@ -336,6 +355,9 @@ const handleMediaAction = (action: string, file: MediaItem) => {
       break
     case 'edit':
       openInEditor(file)
+      break
+    case 'download':
+      downloadMedia(file)
       break
     case 'delete':
       handleDeleteItem(file)
@@ -390,7 +412,7 @@ const getEmptyStateDescription = (): string => {
   }
   return searchQuery.value 
     ? 'Try different keywords or browse our stock collection' 
-    : 'Search through millions of high-quality images for your designs'
+    : 'Browse through our curated collection of high-quality images'
 }
 
 const getPaginationPages = (): number[] => {
@@ -415,7 +437,6 @@ const getPaginationPages = (): number[] => {
 
 // Media operations
 const searchMedia = async () => {
- 
   lastSearchQuery.value = searchQuery.value
   currentPage.value = 1 // Reset to first page for new search
   
@@ -429,8 +450,12 @@ const searchMedia = async () => {
 const loadStockMedia = async () => {
   try {
     isLoading.value = true
+    
+    // Use default search term if no query is provided for stock media
+    const query = searchQuery.value.trim() || 'business'
+    
     const response = await mediaAPI.searchStockMedia({
-      query: searchQuery.value,
+      query: query,
       type: 'image', // Only search for images
       page: currentPage.value,
       limit: 24
@@ -581,6 +606,59 @@ const confirmDelete = async () => {
   }
 }
 
+// Download function
+const downloadMedia = async (item: MediaItem) => {
+  try {
+    const response = await fetch(item.url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'image/*',
+      },
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download: ${response.statusText}`)
+    }
+    
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Generate filename with proper extension from mimeType
+    const getExtensionFromMimeType = (mimeType: string): string => {
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
+        'image/tiff': 'tiff',
+        'image/x-icon': 'ico'
+      }
+      return mimeToExt[mimeType.toLowerCase()] || 'jpg'
+    }
+    
+    const extension = getExtensionFromMimeType(item.mimeType)
+    const filename = item.name 
+      ? `${item.name.replace(/\.[^/.]+$/, "")}.${extension}`
+      : `media_${item.id}.${extension}`
+    
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    console.log(`Downloaded: ${filename}`)
+  } catch (error) {
+    console.error('Failed to download media:', error)
+    // You could add a toast notification here
+  }
+}
+
 // Watchers
 watch(activeTab, () => {
   currentPage.value = 1
@@ -591,13 +669,29 @@ watch(activeTab, () => {
 // Initialize with stock media
 onMounted(() => {
   searchMedia()
-  updateColumns()
-  window.addEventListener('resize', updateColumns)
+  
+  // Set up ResizeObserver for better performance than window resize
+  if (contentContainer.value) {
+    updateColumns()
+    
+    const resizeObserver = new ResizeObserver(() => {
+      updateColumns()
+    })
+    
+    resizeObserver.observe(contentContainer.value)
+    
+    // Store observer for cleanup
+    ;(contentContainer.value as any)._resizeObserver = resizeObserver
+  }
 })
 
 // Cleanup caches on unmount to prevent memory leaks
 onUnmounted(() => {
   fileSizeCache.clear()
-  window.removeEventListener('resize', updateColumns)
+  
+  // Clean up ResizeObserver
+  if (contentContainer.value && (contentContainer.value as any)._resizeObserver) {
+    ;(contentContainer.value as any)._resizeObserver.disconnect()
+  }
 })
 </script>

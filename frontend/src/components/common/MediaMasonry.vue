@@ -74,6 +74,33 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
+        
+        <!-- Info Overlay for Stock Media -->
+        <div 
+          v-if="file.source !== 'upload'"
+          class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        >
+          <div class="space-y-1">
+            <p class="text-sm font-medium truncate">{{ file.name || 'Untitled' }}</p>
+            <div class="flex items-center justify-between text-xs text-gray-200">
+              <span v-if="file.width && file.height">{{ file.width }}×{{ file.height }}</span>
+              <span v-if="file.size" class="ml-auto">{{ formatFileSize(file.size) }}</span>
+            </div>
+            <div v-if="file.attribution || file.source === 'stock'" class="text-xs text-gray-300 truncate">
+              <span v-if="file.attribution">{{ file.attribution }}</span>
+              <span v-if="file.attribution && file.source === 'stock'"> • </span>
+              <span v-if="file.source === 'stock'" class="capitalize">Stock Image</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Premium Badge for Stock Media -->
+        <div 
+          v-if="file.isPremium && file.source === 'stock'"
+          class="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg"
+        >
+          ⭐ PRO
+        </div>
       </div>
     </div>
   </div>
