@@ -5,10 +5,11 @@
       :key="file.id"
       class="masonry-item relative group border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-[1.02]"
       :class="{ 'ring-2 ring-blue-500 border-blue-500': selectedItems.has(file.id) }"
+      :ref="(el: any) => setDropdownRef(file.id, el as HTMLElement)"
     >
       <!-- Selection Checkbox -->
-      <div class="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <label class="relative flex items-center justify-center w-6 h-6 bg-white/90 rounded-full shadow-sm cursor-pointer hover:bg-white transition-all">
+      <div class="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <label class="relative flex items-center justify-center cursor-pointer group/checkbox">
           <input
             type="checkbox"
             :checked="selectedItems.has(file.id)"
@@ -17,28 +18,31 @@
             class="sr-only"
           />
           <div 
-            class="w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center"
+            class="w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center backdrop-blur-sm"
             :class="selectedItems.has(file.id) 
-              ? 'bg-blue-600 border-blue-600' 
-              : 'border-gray-300 hover:border-blue-400'"
+              ? 'bg-blue-500 border-blue-500 shadow-lg' 
+              : 'bg-white/90 border-white/70 shadow-md hover:bg-white hover:border-blue-400 hover:shadow-lg'"
           >
             <svg 
               v-if="selectedItems.has(file.id)"
-              class="w-2.5 h-2.5 text-white"
-              fill="currentColor" 
-              viewBox="0 0 20 20"
+              class="w-3 h-3 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="3"
             >
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
         </label>
       </div>
 
       <!-- Dropdown Menu -->
-      <div class="absolute top-2 right-2 z-20 dropdown-container">
+      <div class="absolute top-2 right-2 z-20">
         <div class="relative">
           <button
-            class="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all"
+            :ref="(el: any) => setDropdownButtonRef(file.id, el as HTMLElement)"
+            class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all"
             :class="dropdownOpen === file.id ? 'opacity-100 bg-white' : 'opacity-0 group-hover:opacity-100'"
             @click.stop="toggleDropdown(file.id)"
           >
@@ -48,30 +52,6 @@
               <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
             </svg>
           </button>
-          
-          <!-- Dropdown Menu -->
-          <div 
-            v-if="dropdownOpen === file.id"
-            class="absolute left-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50"
-            @click.stop
-          >
-            <button
-              v-for="action in actions"
-              :key="action.key"
-              @click="handleAction(action.key, file)"
-              :class="[
-                'w-full px-4 py-2 text-left text-sm flex items-center transition-colors',
-                action.key === 'delete' 
-                  ? 'text-red-600 hover:bg-red-50' 
-                  : 'text-gray-700 hover:bg-gray-50'
-              ]"
-            >
-              <component :is="action.icon" class="w-4 h-4 mr-2" />
-              {{ action.label }}
-            </button>
-            
-            <hr v-if="actions.some(a => a.key === 'delete')" class="my-1 border-gray-100">
-          </div>
         </div>
       </div>
 
@@ -95,29 +75,39 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        
-        <!-- Enhanced selection indicator -->
-        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-          <div class="bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <!-- File info overlay -->
-      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-b-lg">
-        <p class="text-white text-xs truncate">{{ file.name }}</p>
-        <p v-if="file.size" class="text-white/80 text-xs">{{ formatFileSize(file.size) }}</p>
-        <p v-if="file.width && file.height" class="text-white/80 text-xs">{{ file.width }}×{{ file.height }}</p>
       </div>
     </div>
   </div>
+
+  <!-- Floating Dropdown Portal -->
+  <Teleport to="body">
+    <div 
+      v-if="dropdownOpen && getFileById(dropdownOpen)"
+      class="fixed w-40 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-[9999]"
+      :style="dropdownPosition"
+      @click.stop
+    >
+      <button
+        v-for="action in actions"
+        :key="action.key"
+        @click="handleAction(action.key, getFileById(dropdownOpen)!)"
+        :class="[
+          'w-full px-4 py-2 text-left text-sm flex items-center transition-colors',
+          action.key === 'delete' 
+            ? 'text-red-600 hover:bg-red-50' 
+            : 'text-gray-700 hover:bg-gray-50'
+        ]"
+      >
+        <component :is="action.icon" class="w-4 h-4 mr-2" />
+        {{ action.label }}
+      </button>
+      <hr v-if="actions.some(a => a.key === 'delete')" class="my-1 border-gray-100">
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import type { MediaItem } from '@/types'
 
 interface MediaAction {
@@ -149,7 +139,10 @@ const emit = defineEmits<{
 
 // Local state
 const dropdownOpen = ref<string | null>(null)
+const dropdownRefs = ref<Record<string, HTMLElement | null>>({})
+const dropdownButtonRefs = ref<Record<string, HTMLElement | null>>({})
 const imageErrors = ref<Set<string>>(new Set())
+const dropdownPosition = ref({ top: '0px', left: '0px' })
 
 // Methods
 const toggleSelection = (itemId: string) => {
@@ -157,7 +150,14 @@ const toggleSelection = (itemId: string) => {
 }
 
 const toggleDropdown = (itemId: string) => {
-  dropdownOpen.value = dropdownOpen.value === itemId ? null : itemId
+  if (dropdownOpen.value === itemId) {
+    dropdownOpen.value = null
+  } else {
+    dropdownOpen.value = itemId
+    nextTick(() => {
+      positionDropdown(itemId)
+    })
+  }
 }
 
 const closeDropdown = () => {
@@ -169,59 +169,103 @@ const handleAction = (action: string, file: MediaItem) => {
   closeDropdown()
 }
 
-// Handle click outside to close dropdown
-const handleClickOutside = (event: Event) => {
-  const target = event.target as Element
-  if (!target.closest('.dropdown-container')) {
-    closeDropdown()
+const setDropdownRef = (id: string, el: HTMLElement | null) => {
+  if (el) dropdownRefs.value[id] = el
+}
+
+const setDropdownButtonRef = (id: string, el: HTMLElement | null) => {
+  if (el) dropdownButtonRefs.value[id] = el
+}
+
+const positionDropdown = (itemId: string) => {
+  const buttonEl = dropdownButtonRefs.value[itemId]
+  if (!buttonEl) return
+
+  const buttonRect = buttonEl.getBoundingClientRect()
+  const windowWidth = window.innerWidth
+  const windowHeight = window.innerHeight
+  const dropdownWidth = 160 // 40 * 0.25rem = 160px (w-40)
+  const dropdownHeight = 200 // Approximate height
+
+  let left = buttonRect.left
+  let top = buttonRect.bottom + 4
+
+  // Adjust horizontal position if dropdown would go off-screen
+  if (left + dropdownWidth > windowWidth) {
+    left = buttonRect.right - dropdownWidth
+  }
+
+  // Adjust vertical position if dropdown would go off-screen
+  if (top + dropdownHeight > windowHeight) {
+    top = buttonRect.top - dropdownHeight - 4
+  }
+
+  // Ensure dropdown doesn't go above viewport
+  if (top < 0) {
+    top = buttonRect.bottom + 4
+  }
+
+  // Ensure dropdown doesn't go left of viewport
+  if (left < 0) {
+    left = 4
+  }
+
+  dropdownPosition.value = {
+    top: `${top}px`,
+    left: `${left}px`
   }
 }
 
+const getFileById = (id: string | null): MediaItem | null => {
+  if (!id) return null
+  return props.mediaItems.find(file => file.id === id) || null
+}
+
+// Handle click outside to close dropdown
+const handleClickOutside = (event: Event) => {
+  if (!dropdownOpen.value) return
+  
+  const target = event.target as HTMLElement
+  const openId = dropdownOpen.value
+  const buttonEl = dropdownButtonRefs.value[openId]
+  
+  // Check if click is on the dropdown button
+  if (buttonEl && buttonEl.contains(target)) {
+    return
+  }
+  
+  // Check if click is on the floating dropdown itself
+  const dropdownEl = document.querySelector('.fixed.w-40.bg-white.rounded-lg.shadow-xl')
+  if (dropdownEl && dropdownEl.contains(target)) {
+    return
+  }
+  
+  // Close dropdown if clicked outside
+  closeDropdown()
+}
+
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+  document.addEventListener('mousedown', handleClickOutside)
 })
-
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('mousedown', handleClickOutside)
 })
 
-// Smart media item styling that maintains image proportions with reduced spacing
+// Smart media item styling that maintains image proportions 
 const getMediaItemStyle = (file: MediaItem) => {
   if (!file.width || !file.height || file.type !== 'image') {
     return {
-      height: '200px' // Fixed height fallback
+      aspectRatio: '1 / 1' // Square fallback
     }
   }
   
   const aspectRatio = file.width / file.height
-  let height: number
   
-  // Use a more conservative height calculation to reduce gaps
-  if (aspectRatio > 2) {
-    // Very wide images: smaller height
-    height = 150
-  } else if (aspectRatio > 1.5) {
-    // Wide landscape images
-    height = 180
-  } else if (aspectRatio > 1) {
-    // Landscape images
-    height = 200
-  } else if (aspectRatio > 0.75) {
-    // Square-ish images
-    height = 220
-  } else if (aspectRatio > 0.5) {
-    // Portrait images
-    height = 260
-  } else {
-    // Very tall images: limited height
-    height = 300
-  }
-  
-  // Ensure reasonable bounds - tighter range for better grid consistency
-  height = Math.max(150, Math.min(300, height))
+  // Return natural aspect ratio but constrain extreme values
+  const constrainedRatio = Math.max(0.5, Math.min(3, aspectRatio))
   
   return {
-    height: `${height}px`
+    aspectRatio: `${constrainedRatio} / 1`
   }
 }
 
@@ -252,38 +296,27 @@ const formatFileSize = (bytes: number): string => {
 </script>
 
 <style scoped>
-/* Improved Masonry Grid Layout */
+/* True Masonry Layout using CSS Columns */
 .media-masonry {
-  display: grid;
-  grid-template-columns: repeat(v-bind(columns), minmax(0, 1fr));
-  gap: v-bind(gap + 'px');
+  column-count: v-bind(columns);
+  column-gap: v-bind(gap + 'px');
   width: 100%;
-  /* Enable CSS Grid masonry when supported */
-  grid-template-rows: masonry;
-}
-
-/* Fallback for browsers that don't support masonry */
-@supports not (grid-template-rows: masonry) {
-  .media-masonry {
-    display: grid;
-    grid-template-columns: repeat(v-bind(columns), minmax(0, 1fr));
-    gap: v-bind(gap + 'px');
-    align-items: start;
-  }
 }
 
 .masonry-item {
+  display: inline-block;
   width: 100%;
-  min-width: 0;
+  margin-bottom: v-bind(gap + 'px');
   position: relative;
   break-inside: avoid;
+  vertical-align: top;
 }
 
 .media-preview {
   position: relative;
   width: 100%;
   overflow: hidden;
-  /* Remove padding-bottom approach for better spacing */
+  /* Use aspect-ratio for natural image proportions */
 }
 
 .media-preview img {
@@ -293,7 +326,6 @@ const formatFileSize = (bytes: number): string => {
   border-radius: inherit;
 }
 
-/* Enhanced selection indicator overlay */
 .media-preview .absolute.inset-0 {
   position: absolute;
   top: 0;
@@ -302,7 +334,6 @@ const formatFileSize = (bytes: number): string => {
   bottom: 0;
 }
 
-/* File info overlay positioning */
 .media-preview .absolute.bottom-0 {
   position: absolute;
   bottom: 0;
@@ -313,13 +344,21 @@ const formatFileSize = (bytes: number): string => {
 /* Responsive adjustments */
 @media (min-width: 768px) {
   .media-masonry {
-    gap: v-bind((gap + 4) + 'px');
+    column-gap: v-bind((gap + 4) + 'px');
+  }
+  
+  .masonry-item {
+    margin-bottom: v-bind((gap + 4) + 'px');
   }
 }
 
 @media (min-width: 1024px) {
   .media-masonry {
-    gap: v-bind((gap + 8) + 'px');
+    column-gap: v-bind((gap + 8) + 'px');
+  }
+  
+  .masonry-item {
+    margin-bottom: v-bind((gap + 8) + 'px');
   }
 }
 
