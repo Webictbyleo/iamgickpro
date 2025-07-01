@@ -129,11 +129,11 @@ const tools: Tool[] = [
 // Panel configuration
 const panels: Panel[] = [
   { id: 'elements', icon: Squares2X2Icon, label: 'Elements' },
+  { id: 'colors', icon: SwatchIcon, label: 'Colors' },
   { id: 'templates', icon: 'TemplateIcon', label: 'Templates' },
   { id: 'uploads', icon: CloudArrowUpIcon, label: 'Uploads' },
   { id: 'media', icon: FilmIcon, label: 'Stock Media' },
-  { id: 'layers', icon: LayersIcon, label: 'Layers' },
-  { id: 'colors', icon: SwatchIcon, label: 'Colors' }
+  { id: 'layers', icon: LayersIcon, label: 'Layers' }
 ]
 
 const setActiveTool = (toolId: string) => {
