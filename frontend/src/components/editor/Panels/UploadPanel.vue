@@ -1,9 +1,13 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full relative">
     <!-- Header -->
     <div class="p-4 border-b border-gray-200 bg-white">
-      <h3 class="text-lg font-semibold text-gray-900">Your Uploads</h3>
-      <p class="text-sm text-gray-600 mt-1">Manage and use your uploaded image files</p>
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900">Your Uploads</h3>
+          <p class="text-sm text-gray-600 mt-1">Manage and use your uploaded image files</p>
+        </div>
+      </div>
     </div>
 
     <!-- Hidden file input (only accept images) -->
@@ -65,7 +69,7 @@
 
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto" :class="{ 'pb-24': selectedItems.size > 0 }">
       <!-- Enhanced Loading State -->
       <div v-if="isLoadingUserMedia && userMedia.length === 0" class="space-y-4">
         <div class="text-center py-8">
@@ -133,47 +137,17 @@
           </button>
         </div>
 
-        <!-- Enhanced Grid -->
-        <div class="grid grid-cols-2 gap-3">
-          <div
-            v-for="file in filteredUploads"
-            :key="file.id"
-            @click="addMedia(file)"
-            class="relative group cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-[1.02]"
-          >
-            <!-- Enhanced Media Preview - Images only -->
-            <div class="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden">
-              <img
-                v-if="file.type === 'image'"
-                :src="file.thumbnail || file.url"
-                :alt="file.name"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                loading="lazy"
-                @error="handleImageError"
-              />
-              <div v-else class="text-gray-400 bg-gray-100 w-full h-full flex items-center justify-center">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              
-              <!-- Enhanced selection indicator -->
-              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                <div class="bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- File info overlay -->
-            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <p class="text-white text-xs truncate">{{ file.name }}</p>
-              <p v-if="file.size" class="text-white/80 text-xs">{{ formatFileSize(file.size) }}</p>
-            </div>
-          </div>
-        </div>
+        <!-- Media Masonry Grid -->
+        <MediaMasonry
+          :media-items="filteredUploads"
+          :selected-items="selectedItems"
+          :actions="mediaActions"
+          :columns="2"
+          :gap="16"
+          @media-click="addMedia"
+          @toggle-selection="toggleSelection"
+          @action="handleMediaAction"
+        />
         
         <!-- Enhanced Load More Button -->
         <div v-if="hasMoreUserMedia && !isLoadingUserMedia" class="pt-2">
@@ -197,13 +171,114 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Media</h3>
+        <p class="text-gray-600 mb-4">
+          Are you sure you want to delete "{{ itemToDelete?.name }}"? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            @click="cancelDelete"
+            :disabled="isDeleting"
+            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            @click="deleteSingleItem"
+            :disabled="isDeleting"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Delete Confirmation Modal -->
+    <div v-if="showBulkDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Selected Media</h3>
+        <p class="text-gray-600 mb-4">
+          Are you sure you want to delete {{ selectedItems.size }} selected media items? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            @click="cancelDelete"
+            :disabled="isDeleting"
+            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            @click="deleteSelectedItems"
+            :disabled="isDeleting"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Delete Selected' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet for Selected Items -->
+    <div 
+      v-if="selectedItems.size > 0"
+      class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg transform transition-transform duration-300 ease-out"
+      :class="selectedItems.size > 0 ? 'translate-y-0' : 'translate-y-full'"
+    >
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <span class="text-sm font-semibold text-blue-600">{{ selectedItems.size }}</span>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900">
+                {{ selectedItems.size === 1 ? '1 item selected' : `${selectedItems.size} items selected` }}
+              </p>
+              <p class="text-xs text-gray-500">Choose an action below</p>
+            </div>
+          </div>
+          <button
+            @click="clearSelection"
+            class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Clear selection"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div class="flex gap-3 mt-4">
+          <button
+            @click="confirmBulkDelete"
+            class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            <TrashIcon class="w-4 h-4" />
+            Delete Selected
+          </button>
+          <button
+            @click="clearSelection"
+            class="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { TrashIcon, ArrowDownTrayIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useUserMedia } from '@/composables/useUserMedia'
+import { mediaAPI } from '@/services/api'
 import type { MediaItem } from '@/types'
+import MediaMasonry from '@/components/common/MediaMasonry.vue'
 
 const emit = defineEmits<{
   addMedia: [mediaData: any]
@@ -217,6 +292,14 @@ const searchQuery = ref('')
 const searchTimeout = ref<NodeJS.Timeout | null>(null)
 const isDragOver = ref(false)
 
+// Selection management
+const selectedItems = ref<Set<string>>(new Set())
+
+// Delete confirmation
+const showDeleteConfirmation = ref(false)
+const showBulkDeleteConfirmation = ref(false)
+const itemToDelete = ref<MediaItem | null>(null)
+const isDeleting = ref(false)
 
 // User media management
 const {
@@ -247,14 +330,136 @@ const filteredUploads = computed(() => {
   return filtered
 })
 
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
+// Media actions for the masonry component
+const mediaActions = computed(() => [
+  {
+    key: 'download',
+    label: 'Download',
+    icon: ArrowDownTrayIcon
+  },
+  {
+    key: 'delete',
+    label: 'Delete',
+    icon: TrashIcon
+  }
+])
+
+// Handle media actions from the masonry component
+const handleMediaAction = (action: string, file: MediaItem) => {
+  switch (action) {
+    case 'download':
+      downloadMedia(file)
+      break
+    case 'delete':
+      confirmDeleteSingle(file)
+      break
+  }
+}
+
+// Selection management
+const toggleSelection = (itemId: string) => {
+  if (selectedItems.value.has(itemId)) {
+    selectedItems.value.delete(itemId)
+  } else {
+    selectedItems.value.add(itemId)
+  }
+}
+
+const clearSelection = () => {
+  selectedItems.value.clear()
+}
+
+// Delete functionality
+const confirmDeleteSingle = (media: MediaItem) => {
+  itemToDelete.value = media
+  showDeleteConfirmation.value = true
+}
+
+const confirmBulkDelete = () => {
+  showBulkDeleteConfirmation.value = true
+}
+
+const deleteSelectedItems = async () => {
+  const selectedIds = Array.from(selectedItems.value)
+  if (selectedIds.length === 0) return
+  
+  try {
+    isDeleting.value = true
+    
+    // Get the UUIDs for the selected items
+    const selectedUuids = selectedIds.map(id => {
+      const media = userMedia.value.find(item => item.id === id)
+      return media?.uuid || media?.id // Fallback to id if uuid not available
+    }).filter((uuid): uuid is string => Boolean(uuid))
+    
+    await mediaAPI.bulkDeleteMedia({ uuids: selectedUuids })
+    
+    // Remove from local store
+    selectedIds.forEach(id => {
+      const index = userMedia.value.findIndex(item => item.id === id)
+      if (index !== -1) {
+        userMedia.value.splice(index, 1)
+      }
+    })
+    
+    clearSelection()
+    showBulkDeleteConfirmation.value = false
+  } catch (error) {
+    console.error('Failed to delete media items:', error)
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+const deleteSingleItem = async () => {
+  if (!itemToDelete.value) return
+  
+  try {
+    isDeleting.value = true
+    const uuid = itemToDelete.value.uuid || itemToDelete.value.id
+    await mediaAPI.deleteMedia(uuid)
+    
+    // Remove from local store
+    const index = userMedia.value.findIndex(item => item.id === itemToDelete.value!.id)
+    if (index !== -1) {
+      userMedia.value.splice(index, 1)
+    }
+    
+    showDeleteConfirmation.value = false
+    itemToDelete.value = null
+  } catch (error) {
+    console.error('Failed to delete media item:', error)
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+const cancelDelete = () => {
+  showDeleteConfirmation.value = false
+  showBulkDeleteConfirmation.value = false
+  itemToDelete.value = null
+}
+
+// Download functionality
+const downloadMedia = (media: MediaItem) => {
+  // Create a temporary link and trigger download
+  const link = document.createElement('a')
+  link.href = media.url
+  link.download = media.name || 'download'
+  link.target = '_blank'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 // Enhanced search functionality
 const handleSearch = () => {
   if (!searchQuery.value.trim()) return
   // The filtering is handled by the computed property, so no additional action needed
-}
-
-const clearSearch = () => {
-  searchQuery.value = ''
 }
 
 // File upload handling
@@ -270,23 +475,6 @@ const handleFileUpload = async (event: Event) => {
     target.value = ''
   } catch (error) {
     console.error('Upload failed:', error)
-  }
-}
-
-// Error handling
-const handleImageError = (event: Event) => {
-  const target = event.target as HTMLImageElement
-  target.style.display = 'none'
-  const parent = target.parentElement
-  if (parent) {
-    // Show a fallback icon or placeholder
-    parent.innerHTML = `
-      <div class="w-full h-full bg-gray-100 flex items-center justify-center">
-        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      </div>
-    `
   }
 }
 
@@ -328,6 +516,10 @@ onMounted(() => {
   searchUserMedia('')
 })
 
+onUnmounted(() => {
+  // Cleanup if needed
+})
+
 // Enhanced search with debouncing
 watch(searchQuery, (newQuery) => {
   if (searchTimeout.value) clearTimeout(searchTimeout.value)
@@ -337,3 +529,104 @@ watch(searchQuery, (newQuery) => {
   }, 500) // 500ms debounce
 })
 </script>
+
+<style scoped>
+/* Responsive Grid Layout with Proper Aspect Ratio Preservation */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.media-item {
+  width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.media-preview {
+  position: relative;
+  width: 100%;
+  height: 0; /* Height set by padding-bottom */
+  overflow: hidden;
+}
+
+.media-preview img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Fallback when no image or error */
+.media-preview svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Enhanced selection indicator overlay */
+.media-preview .absolute.inset-0 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* File info overlay positioning */
+.media-preview .absolute.bottom-0 {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Responsive adjustments */
+@media (min-width: 480px) {
+  .media-grid {
+    gap: 18px;
+  }
+}
+
+@media (min-width: 768px) {
+  .media-grid {
+    gap: 20px;
+  }
+}
+
+/* For very large sidebars, add 3rd column */
+@media (min-width: 1400px) {
+  .media-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Smooth transitions for hover effects */
+.media-item {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.media-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Handle selection states */
+.media-item.ring-2 {
+  transform: translateY(-1px);
+}
+
+.media-item.ring-2:hover {
+  transform: translateY(-2px);
+}
+
+/* Ensure no overflow */
+.media-grid * {
+  box-sizing: border-box;
+}
+</style>

@@ -289,7 +289,7 @@ export const mediaAPI = {
 
   // DELETE /media/bulk/delete
   bulkDeleteMedia: (data: {
-    mediaIds: string[]
+    uuids: string[]
   }) => api.delete<ApiResponse<{ message: string }>>('/media/bulk/delete', { data }),
 
   // POST /media/duplicate/{uuid}
