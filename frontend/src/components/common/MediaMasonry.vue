@@ -8,7 +8,8 @@
       :ref="(el: any) => setDropdownRef(file.id, el as HTMLElement)"
     >
       <!-- Selection Checkbox -->
-      <div class="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div class="absolute top-3 left-3 z-10 transition-opacity duration-200" 
+           :class="selectedItems.has(file.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
         <label class="relative flex items-center justify-center cursor-pointer group/checkbox">
           <input
             type="checkbox"
