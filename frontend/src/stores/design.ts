@@ -314,7 +314,6 @@ export const useDesignStore = defineStore('design', () => {
       // Only trigger change if name actually changed
       if (previousName !== name) {
         // This will be detected by watchers but should not trigger thumbnail generation
-        console.log('📝 Design name updated:', name)
       }
     }
   }

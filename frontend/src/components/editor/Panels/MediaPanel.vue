@@ -116,6 +116,7 @@
             :actions="photoActions"
             :columns="2"
             :gap="0"
+            :show-info-overlay="false"
             @media-click="addMedia"
             @action="handleMediaAction"
           />
