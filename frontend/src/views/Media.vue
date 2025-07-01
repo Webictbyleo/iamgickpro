@@ -114,11 +114,14 @@
       </div>
 
       <!-- Optimized Media Grid -->
-      <MediaGrid
+      <MediaMasonry
         v-else-if="mediaItems.length > 0"
-        :items="mediaItems"
-        @openInEditor="openInEditor"
-        @deleteItem="handleDeleteItem"
+        :mediaItems="mediaItems"
+        :actions="mediaActions"
+        :columns="columns"
+        :showSelection="false"
+        @mediaClick="openInEditor"
+        @action="handleMediaAction"
       />
 
       <!-- Simplified Empty State -->
@@ -257,10 +260,12 @@ import {
   MagnifyingGlassIcon, 
   ArrowUpTrayIcon, 
   PhotoIcon,
-  EyeIcon
+  EyeIcon,
+  TrashIcon,
+  PencilSquareIcon
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import MediaGrid from '@/components/MediaGrid.vue'
+import MediaMasonry from '@/components/common/MediaMasonry.vue'
 import { mediaAPI } from '@/services/api'
 import type { MediaItem } from '@/types'
 
@@ -286,10 +291,59 @@ const tabs = [
   { id: 'uploads', name: 'My Images', icon: '📁' },
 ]
 
+// MediaMasonry actions configuration
+const mediaActions = computed(() => [
+  {
+    key: 'view',
+    label: 'View',
+    icon: EyeIcon
+  },
+  {
+    key: 'edit',
+    label: 'Edit in Designer',
+    icon: PencilSquareIcon
+  },
+  ...(activeTab.value === 'uploads' ? [{
+    key: 'delete',
+    label: 'Delete',
+    icon: TrashIcon
+  }] : [])
+])
+
 // Computed properties
 const userMediaCount = computed(() => {
   return activeTab.value === 'uploads' ? mediaItems.value.length : 0
 })
+
+// Responsive columns for MediaMasonry
+const columns = ref(2)
+
+const updateColumns = () => {
+  if (typeof window === 'undefined') return
+  const width = window.innerWidth
+  if (width >= 1280) columns.value = 6      // xl
+  else if (width >= 1024) columns.value = 5 // lg
+  else if (width >= 768) columns.value = 4  // md
+  else if (width >= 640) columns.value = 3  // sm
+  else columns.value = 2                    // base
+}
+
+// Handle media actions from MediaMasonry
+const handleMediaAction = (action: string, file: MediaItem) => {
+  switch (action) {
+    case 'view':
+      previewItem.value = file
+      break
+    case 'edit':
+      openInEditor(file)
+      break
+    case 'delete':
+      handleDeleteItem(file)
+      break
+    default:
+      console.warn('Unknown action:', action)
+  }
+}
 
 // Utility functions (optimized)
 const debouncedSearch = () => {
@@ -537,10 +591,13 @@ watch(activeTab, () => {
 // Initialize with stock media
 onMounted(() => {
   searchMedia()
+  updateColumns()
+  window.addEventListener('resize', updateColumns)
 })
 
 // Cleanup caches on unmount to prevent memory leaks
 onUnmounted(() => {
   fileSizeCache.clear()
+  window.removeEventListener('resize', updateColumns)
 })
 </script>
