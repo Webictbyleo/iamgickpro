@@ -109,42 +109,16 @@
             </button>
           </div>
           
-          <!-- Enhanced Grid -->
-          <div class="grid grid-cols-2 gap-3">
-            <div
-              v-for="photo in filteredPhotos"
-              :key="photo.id"
-              class="relative group border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all duration-200"
-            >
-              <div class="aspect-square bg-gray-100">
-                <img
-                  :src="photo.thumbnail"
-                  :alt="photo.alt"
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                  @error="handleImageError"
-                />
-              </div>
-              <!-- Action buttons overlay -->
-              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
-                <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    @click="addMedia(photo)"
-                    class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors"
-                    title="Add to current design"
-                  >
-                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <!-- Photo info overlay -->
-              <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p class="text-white text-xs truncate">{{ photo.alt }}</p>
-              </div>
-            </div>
-          </div>
+          <!-- MediaMasonry for Photos Grid -->
+          <MediaMasonry
+            :media-items="formattedPhotos"
+            :show-selection="false"
+            :actions="photoActions"
+            :columns="2"
+            :gap="0"
+            @media-click="addMedia"
+            @action="handleMediaAction"
+          />
           
           <!-- Enhanced Load More Button -->
           <div v-if="hasMorePhotos && !isLoadingPhotos" class="pt-2">
@@ -368,12 +342,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import BaseButton from '@/components/common/BaseButton.vue'
+import MediaMasonry from '@/components/common/MediaMasonry.vue'
 import { useStockMedia, type StockMediaItem } from '../../../composables/useStockMedia'
 import type { MediaItem } from '@/types'
+import { GeometryUtils } from '@/utils/GeometryUtils'
 import { 
   PhotoIcon,
   SparklesIcon,
-  Square3Stack3DIcon
+  Square3Stack3DIcon,
+  PlusIcon
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
@@ -453,29 +430,118 @@ const filteredPhotos = computed(() => stockPhotos.value)
 const filteredIcons = computed(() => stockIcons.value)
 const filteredShapes = computed(() => stockShapes.value)
 
+// Formatted photos for MediaMasonry component
+const formattedPhotos = computed(() => {
+  return filteredPhotos.value.map(photo => ({
+    id: photo.id,
+    uuid: photo.id, // Use id as uuid for stock photos
+    name: photo.alt || 'Untitled Photo',
+    type: 'image' as const,
+    mimeType: 'image/jpeg',
+    size: 0, // Stock photos don't have size info
+    url:   photo.src || photo.thumbnail,
+    thumbnailUrl: photo.thumbnail || photo.src,
+    width: photo.width, // Default dimensions for stock photos
+    height: photo.height,
+    source: 'stock' as const,
+    sourceId: photo.id,
+    metadata: photo,
+    tags: [], // Stock photos don't have tags in our current format
+    isPremium: false,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }))
+})
+
+// Actions for stock photos
+const photoActions = computed(() => [
+  {
+    key: 'add',
+    label: 'Add to Design',
+    icon: PlusIcon
+  }
+])
+
 // Media addition
 const addMedia = (mediaData: any) => {
-  // Handle shapes from stock media as SVG layers
-  if (activeTab.value === 'shapes') {
-    const svgData = {
-      src: mediaData.src || mediaData.thumbnail || mediaData.url,
-      name: mediaData.alt || mediaData.name || 'Shape',
-      viewBox: '0 0 100 100', // Default viewBox, will be updated when SVG is loaded
-      preserveAspectRatio: 'xMidYMid meet',
-      fillColors: {},
-      strokeColors: {},
-      strokeWidths: {},
-      originalWidth: 100, // Default size, will be updated when SVG is loaded
-      originalHeight: 100
+  // Check if this is a MediaItem (from MediaMasonry) or raw stock media data
+  const isMediaItem = mediaData.uuid && mediaData.source
+  
+  // Function to calculate appropriate dimensions for the design stage using GeometryUtils
+  const calculateDimensions = (originalWidth: number, originalHeight: number) => {
+    const sourceDimensions = {
+      width: originalWidth || 400,
+      height: originalHeight || 400
     }
-    emit('addMedia', { type: 'svg', data: svgData })
-  } else {
-    // Handle images and other media (both uploaded and stock)
+    
+    // Define target constraints for design stage
+    const targetDimensions = {
+      width: 600,  // Maximum width for design stage
+      height: 400  // Maximum height for design stage
+    }
+    
+    // Use GeometryUtils to resize with contain mode (maintains aspect ratio, fits within bounds)
+    const resizeResult = GeometryUtils.resize(sourceDimensions, targetDimensions, {
+      mode: 'contain',
+      minWidth: 100,  // Minimum width to ensure visibility
+      minHeight: 100, // Minimum height to ensure visibility
+      allowUpscaling: true // Allow small images to be scaled up
+    })
+    
+    return {
+      width: Math.round(resizeResult.width),
+      height: Math.round(resizeResult.height)
+    }
+  }
+  
+  if (isMediaItem) {
+    // Handle MediaItem from MediaMasonry
+    const dimensions = calculateDimensions(mediaData.width, mediaData.height)
     const imageData = {
-      src: mediaData.src || mediaData.thumbnail || mediaData.url || mediaData.thumbnailUrl,
-      alt: mediaData.alt || mediaData.name || 'Image'
+      src: mediaData.src || mediaData.url || mediaData.thumbnail,
+      alt: mediaData.alt || mediaData.name
     }
-    emit('addMedia', { type: 'image', data: imageData })
+    emit('addMedia', { 
+      type: 'image', 
+      data: imageData,
+      transform: dimensions
+    })
+  } else {
+    // Handle shapes from stock media as SVG layers
+    if (activeTab.value === 'shapes') {
+      const svgData = {
+        src: mediaData.url || mediaData.src || mediaData.thumbnail,
+        name: mediaData.alt || mediaData.name || 'Shape',
+        viewBox: '0 0 100 100', // Default viewBox, will be updated when SVG is loaded
+        preserveAspectRatio: 'xMidYMid meet',
+        fillColors: {},
+        strokeColors: {},
+        strokeWidths: {},
+        originalWidth: 100, // Default size, will be updated when SVG is loaded
+        originalHeight: 100
+      }
+      emit('addMedia', { type: 'svg', data: svgData })
+    } else {
+      // Handle images and other media (both uploaded and stock)
+      const dimensions = calculateDimensions(mediaData.width, mediaData.height)
+      const imageData = {
+        src: mediaData.src || mediaData.url || mediaData.thumbnail || mediaData.thumbnailUrl,
+        alt: mediaData.alt || mediaData.name || 'Image'
+      }
+      emit('addMedia', { 
+        type: 'image', 
+        data: imageData,
+        transform: dimensions
+      })
+    }
+  }
+}
+
+// Handle MediaMasonry actions
+const handleMediaAction = (action: string, file: any) => {
+  if (action === 'add') {
+    addMedia(file)
   }
 }
 

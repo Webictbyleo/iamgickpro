@@ -654,29 +654,11 @@ class MediaController extends AbstractController
             // Transform results to our standard media format
             $mediaData = [];
             foreach ($results['items'] as $item) {
-                $mediaData[] = [
-                    'id' => $item['id'],
-                    'name' => $item['name'],
-                    'type' => $item['type'],
-                    'mime_type' => $item['mimeType'],
-                    'size' => $item['size'],
-                    'url' => $item['url'],
-                    'thumbnail_url' => $item['thumbnailUrl'],
-                    'thumbnail' => $item['thumbnailUrl'],
-                    'thumbnailUrl' => $item['thumbnailUrl'],
-                    'width' => $item['width'],
-                    'height' => $item['height'],
-                    'duration' => $item['duration'] ?? null,
-                    'source' => $item['source'],
-                    'source_id' => $item['sourceId'],
-                    'license' => $item['license'],
-                    'attribution' => $item['attribution'],
-                    'tags' => $item['tags'],
-                    'is_premium' => $item['isPremium'],
-                    'metadata' => $item['metadata'],
-                    'created_at' => null,
-                    'updated_at' => null
-                ];
+                $mediaData[] = array_merge($item, [
+                    'thumbnailUrl' => $item['thumbnailUrl'] ?? null,
+                    'thumbnail_url' => $item['thumbnailUrl'] ?? null,
+                    'thumbnail' => $item['thumbnailUrl'] ?? null,
+                ]);;
             }
 
             $paginatedResponse = $this->responseDTOFactory->createPaginatedResponse(

@@ -860,4 +860,223 @@ readonly class UserService
         
         return $totalSize;
     }
+
+    /**
+     * Register a new user account
+     * 
+     * Creates a new user with the provided information and returns the user entity.
+     * Generates email verification token and sends welcome/verification emails.
+     * 
+     * @param RegisterRequestDTO $dto User registration data
+     * @return User The created user entity
+     * @throws \InvalidArgumentException If validation fails or user already exists
+     */
+    public function registerUser(RegisterRequestDTO $dto): User
+    {
+        if ($this->userRepository->findOneBy(['email' => $dto->email])) {
+            throw new \InvalidArgumentException('User with this email already exists');
+        }
+        if ($dto->username && $this->userRepository->findOneBy(['username' => $dto->username])) {
+            throw new \InvalidArgumentException('Username is already taken');
+        }
+        
+        $user = new User();
+        $user->setEmail($dto->email);
+        $user->setFirstName($this->sanitizeInput($dto->firstName));
+        $user->setLastName($this->sanitizeInput($dto->lastName));
+        if ($dto->username) {
+            $user->setUsername(trim($dto->username));
+        }
+        
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->password);
+        $user->setPassword($hashedPassword);
+        $user->setRoles(['ROLE_USER']);
+        $user->setIsActive(true);
+        $user->setEmailVerified(false);
+        
+        // Generate email verification token
+        $verificationToken = bin2hex(random_bytes(32));
+        $user->setEmailVerificationToken($verificationToken);
+        $user->setEmailVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+        
+        $errors = $this->validator->validate($user);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            throw new \InvalidArgumentException(implode(", ", $errorMessages));
+        }
+        
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+        
+        // Send welcome email
+        try {
+            $this->emailService->sendWelcome($user);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to send welcome email during registration', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        // Send email verification
+        try {
+            $this->emailService->sendEmailVerification($user, $verificationToken);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to send verification email during registration', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $user;
+    }
+
+    /**
+     * Authenticate user with email and password
+     * 
+     * Validates user credentials and returns the user entity if authentication succeeds.
+     * 
+     * @param string $email User's email address
+     * @param string $password User's password
+     * @return User|null The authenticated user or null if authentication fails
+     */
+    public function authenticateUser(string $email, string $password): ?User
+    {
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user || !$this->passwordHasher->isPasswordValid($user, $password)) {
+            return null;
+        }
+        return $user;
+    }
+
+    /**
+     * Request password reset
+     * 
+     * Generates a password reset token and sends reset email.
+     * Does not reveal if the email exists for security reasons.
+     * 
+     * @param string $email User's email address
+     */
+    public function requestPasswordReset(string $email): void
+    {
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user) {
+            // Do not reveal user existence
+            return;
+        }
+        
+        $token = bin2hex(random_bytes(32));
+        $user->setPasswordResetToken($token);
+        $user->setPasswordResetTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
+        
+        $this->entityManager->flush();
+        
+        $this->emailService->sendPasswordResetEmail($user, $token);
+    }
+
+    /**
+     * Reset password using token
+     * 
+     * Validates the reset token and updates the user's password.
+     * 
+     * @param string $token Password reset token
+     * @param string $newPassword New password
+     * @throws \InvalidArgumentException If token is invalid/expired or password is weak
+     */
+    public function resetPassword(string $token, string $newPassword): void
+    {
+        $user = $this->userRepository->findOneBy(['passwordResetToken' => $token]);
+        if (!$user) {
+            throw new \InvalidArgumentException('Invalid or expired reset token');
+        }
+        
+        $expiresAt = $user->getPasswordResetTokenExpiresAt();
+        if (!$expiresAt || $expiresAt < new \DateTimeImmutable()) {
+            throw new \InvalidArgumentException('Reset token expired');
+        }
+        
+        if (strlen($newPassword) < 8) {
+            throw new \InvalidArgumentException('Password must be at least 8 characters long');
+        }
+        
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $newPassword);
+        $user->setPassword($hashedPassword);
+        $user->setPasswordResetToken(null);
+        $user->setPasswordResetTokenExpiresAt(null);
+        
+        $this->entityManager->flush();
+        
+        $this->logger->info('User password reset', ['user_id' => $user->getId()]);
+    }
+
+    /**
+     * Verify email using token
+     * 
+     * Validates the email verification token and marks the email as verified.
+     * 
+     * @param string $token Email verification token
+     * @return bool True if verification succeeds, false otherwise
+     */
+    public function verifyEmail(string $token): bool
+    {
+        $user = $this->userRepository->findOneBy(['emailVerificationToken' => $token]);
+        if (!$user) {
+            return false;
+        }
+        
+        if (!$user->isEmailVerificationTokenValid()) {
+            return false;
+        }
+        
+        $user->setEmailVerified(true);
+        $user->setEmailVerificationToken(null);
+        $user->setEmailVerificationTokenExpiresAt(null);
+        
+        $this->entityManager->flush();
+        
+        $this->logger->info('Email verified successfully', [
+            'user_id' => $user->getId()
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Resend email verification
+     * 
+     * Generates a new verification token and sends verification email.
+     * Does not reveal if the email exists for security reasons.
+     * 
+     * @param string $email User's email address
+     * @throws \InvalidArgumentException If email is already verified
+     */
+    public function resendEmailVerification(string $email): void
+    {
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user) {
+            // Don't reveal user existence
+            return;
+        }
+        
+        if ($user->getEmailVerified()) {
+            throw new \InvalidArgumentException('Email is already verified');
+        }
+        
+        // Generate new verification token
+        $verificationToken = bin2hex(random_bytes(32));
+        $user->setEmailVerificationToken($verificationToken);
+        $user->setEmailVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+        
+        $this->entityManager->flush();
+        
+        // Send verification email
+        $this->emailService->sendEmailVerification($user, $verificationToken);
+        
+        $this->logger->info('Email verification resent', [
+            'user_id' => $user->getId()
+        ]);
+    }
 }

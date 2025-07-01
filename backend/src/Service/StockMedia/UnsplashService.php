@@ -40,13 +40,17 @@ class UnsplashService implements StockMediaServiceInterface
                 'filters' => $filters
             ]);
 
+            // Implement variety strategies to avoid repetitive results
+            $orderBy = $this->getVariedOrderBy($filters);
+            $enhancedQuery = $this->enhanceQueryForVariety($query, $filters);
+
             $params = [
-                'query' => $query,
+                'query' => $enhancedQuery,
                 'page' => $page,
                 'per_page' => min($limit, 30), // Unsplash max per page is 30
                 'orientation' => $filters['orientation'] ?? null,
                 'color' => $filters['color'] ?? null,
-                'order_by' => 'relevant'
+                'order_by' => $orderBy
             ];
 
             // Remove null values
@@ -83,6 +87,11 @@ class UnsplashService implements StockMediaServiceInterface
                 ['id', 'urls'] // Required fields for each photo
             );
 
+            // Apply additional randomization if needed
+            if ($this->shouldRandomizeResults($filters)) {
+                $photos = $this->randomizePhotos($photos);
+            }
+
             foreach ($photos as $photo) {
                 $transformedPhoto = $this->transformPhotoData($photo);
                 
@@ -92,7 +101,8 @@ class UnsplashService implements StockMediaServiceInterface
             }
 
             $this->logger->info('Unsplash search completed', [
-                'query' => $query,
+                'query' => $enhancedQuery,
+                'order_by' => $orderBy,
                 'total_results' => $results['total'],
                 'returned_items' => count($results['items'])
             ]);
@@ -373,5 +383,94 @@ class UnsplashService implements StockMediaServiceInterface
         
         // Return proxied URL through our media controller
         return '/api/media/proxy/' . $encodedUrl;
+    }
+
+    /**
+     * Get varied order by parameter to avoid repetitive results
+     */
+    private function getVariedOrderBy(array $filters): string
+    {
+        // If specific order is requested, use it
+        if (isset($filters['order_by'])) {
+            return $filters['order_by'];
+        }
+
+        // For default searches (especially repeated ones), vary the order
+        $orderOptions = ['relevant', 'latest', 'popular'];
+        
+        // Use current hour to create time-based variation
+        $hourSeed = (int) date('H');
+        $dayOfYearSeed = (int) date('z');
+        
+        // Combine seeds for better distribution
+        $seedIndex = ($hourSeed + $dayOfYearSeed) % count($orderOptions);
+        
+        return $orderOptions[$seedIndex];
+    }
+
+    /**
+     * Enhance query with variety to get different results for same base query
+     */
+    private function enhanceQueryForVariety(string $query, array $filters): string
+    {
+        // If query is very specific or long, don't modify it
+        if (strlen($query) > 20 || str_word_count($query) > 3) {
+            return $query;
+        }
+
+        // For broad/default queries, add variety terms occasionally
+        $varietyTerms = [
+            'business' => ['professional', 'office', 'corporate', 'meeting', 'teamwork'],
+            'nature' => ['landscape', 'outdoor', 'wildlife', 'forest', 'mountain'],
+            'technology' => ['digital', 'computer', 'innovation', 'tech', 'modern'],
+            'people' => ['person', 'human', 'portrait', 'lifestyle', 'community'],
+            'background' => ['abstract', 'texture', 'minimal', 'pattern', 'clean']
+        ];
+
+        $baseTerm = strtolower(trim($query));
+        
+        // 30% chance to add variety term for common queries
+        if (isset($varietyTerms[$baseTerm]) && rand(1, 10) <= 3) {
+            $varietyOptions = $varietyTerms[$baseTerm];
+            $selectedVariety = $varietyOptions[array_rand($varietyOptions)];
+            return $query . ' ' . $selectedVariety;
+        }
+
+        return $query;
+    }
+
+    /**
+     * Determine if results should be randomized
+     */
+    private function shouldRandomizeResults(array $filters): bool
+    {
+        // Don't randomize if specific order was requested
+        if (isset($filters['order_by'])) {
+            return false;
+        }
+
+        // Randomize 20% of the time for default searches
+        return rand(1, 100) <= 20;
+    }
+
+    /**
+     * Randomize photo order while maintaining quality
+     */
+    private function randomizePhotos(array $photos): array
+    {
+        // Don't randomize if we have few results
+        if (count($photos) <= 3) {
+            return $photos;
+        }
+
+        // Keep first few results (usually highest quality) and randomize the rest
+        $keepFirst = min(3, count($photos));
+        $firstPhotos = array_slice($photos, 0, $keepFirst);
+        $restPhotos = array_slice($photos, $keepFirst);
+        
+        // Shuffle the remaining photos
+        shuffle($restPhotos);
+        
+        return array_merge($firstPhotos, $restPhotos);
     }
 }

@@ -205,7 +205,10 @@ const handleDesignNameFocus = (event: Event) => {
 }
 
 const handleDesignNameBlur = () => {
-  emit('save')
+  // Only save if the value actually changed
+  if (originalDesignName.value !== props.designName) {
+    emit('save')
+  }
 }
 
 const handleDesignNameEnter = (event: KeyboardEvent) => {

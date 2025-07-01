@@ -234,7 +234,12 @@ export function useDesignEditor() {
   }
 
   // Debounced thumbnail generation to avoid excessive API calls
-  const debouncedThumbnailGeneration = () => {
+  const debouncedThumbnailGeneration = (triggerSource?: string) => {
+    // Skip thumbnail generation for design name changes
+    if (triggerSource === 'name-change') {
+      return
+    }
+    
     if (thumbnailUpdateTimeout) {
       clearTimeout(thumbnailUpdateTimeout)
     }
@@ -274,7 +279,7 @@ export function useDesignEditor() {
           console.error('Failed to generate thumbnail:', error)
         }
       }
-    }, 3000) // Wait 3 seconds after last change before generating thumbnail
+    }, 1500) // Reduced from 3 seconds to 1.5 seconds for faster response
   }
 
   // Enhanced debounced layer update with sync status tracking
@@ -377,7 +382,7 @@ export function useDesignEditor() {
       saveError.value = false // Clear previous save errors
       
       // Trigger thumbnail generation after all layer updates
-      debouncedThumbnailGeneration()
+      debouncedThumbnailGeneration('layer-change')
     }, 500) // Wait 500ms after last change before persisting to backend
   }
 
@@ -502,7 +507,7 @@ export function useDesignEditor() {
     saveError.value = false
     
     // Trigger thumbnail generation
-    debouncedThumbnailGeneration()
+    debouncedThumbnailGeneration('layer-add')
     
     // Add to history with updated design data
     const actionMap = {
@@ -568,7 +573,7 @@ export function useDesignEditor() {
         console.log('📦 Design store layers after add:', designStore.currentDesign?.layers)
         
         // Trigger thumbnail generation
-        debouncedThumbnailGeneration()
+        debouncedThumbnailGeneration('layer-add')
         
         // Add to history
         if (designStore.currentDesign) {
@@ -679,7 +684,7 @@ export function useDesignEditor() {
         
         // Add to history
         if (designStore.currentDesign) {
-           debouncedThumbnailGeneration()
+           debouncedThumbnailGeneration('canvas-change')
           addCanvasHistoryEntry(designStore.currentDesign, 'settings')
         }
       }

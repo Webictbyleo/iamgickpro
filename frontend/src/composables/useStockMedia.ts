@@ -10,6 +10,8 @@ export interface StockMediaItem {
   tags?: string[]
   source?: string
   type?: string
+  width?: number
+  height?: number
 }
 
 interface UseStockMediaReturn {
@@ -373,7 +375,9 @@ export function useStockMedia(): UseStockMediaReturn {
       src: item.url,
       alt: item.name || 'Stock media',
       tags: item.tags || [],
-      source: item.source || 'stock'
+      source: item.source || 'stock',
+      width: item.width || 400,
+      height: item.height || 400
     }
   }
   

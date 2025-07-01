@@ -46,7 +46,8 @@ class IconfinderService implements StockMediaServiceInterface
                 'license' => 'free,commercial', // Include both free and commercial icons
                 'vector' => 1, // Prefer vector formats
                 'minimum_size' => 32,
-                'maximum_size' => 512
+                'maximum_size' => 512,
+                'premium' => 0 // Exclude premium icons by default
             ];
 
             // Add style filters if provided

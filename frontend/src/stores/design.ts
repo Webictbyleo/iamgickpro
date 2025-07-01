@@ -307,8 +307,15 @@ export const useDesignStore = defineStore('design', () => {
   
   const updateDesignName = (name: string) => {
     if (currentDesign.value) {
+      const previousName = currentDesign.value.name
       currentDesign.value.name = name
       currentDesign.value.updatedAt = new Date().toISOString()
+      
+      // Only trigger change if name actually changed
+      if (previousName !== name) {
+        // This will be detected by watchers but should not trigger thumbnail generation
+        console.log('📝 Design name updated:', name)
+      }
     }
   }
   
