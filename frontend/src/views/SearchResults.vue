@@ -46,23 +46,90 @@
         </div>
       </div>
 
-      <!-- Search Statistics and Filters -->
+      <!-- Enhanced Search Statistics and Filters -->
       <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div class="p-6">
-          <!-- Search Stats -->
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+          <!-- Search Stats with Better Layout -->
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
               <div class="text-sm text-gray-600">
-                <span class="font-semibold text-gray-900">{{ totalResults }}</span>
-                {{ totalResults === 1 ? 'result' : 'results' }} found
-                <span v-if="searchQuery" class="text-indigo-600">for "{{ searchQuery }}"</span>
+                <span class="font-semibold text-gray-900 text-lg">{{ totalResults.toLocaleString() }}</span>
+                <span class="ml-1">{{ totalResults === 1 ? 'result' : 'results' }}</span>
+                <span v-if="searchQuery" class="text-indigo-600 font-medium ml-1">for "{{ searchQuery }}"</span>
               </div>
-              <div v-if="searchTime" class="text-sm text-gray-500">
-                ({{ searchTime }}ms)
+              <div v-if="searchTime" class="text-sm text-gray-500 flex items-center">
+                <div class="w-1 h-1 bg-gray-400 rounded-full mr-2"></div>
+                {{ searchTime }}ms
               </div>
             </div>
             
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <!-- View Mode Toggle -->
+              <div class="flex items-center bg-gray-100 rounded-xl p-1">
+                <button
+                  @click="viewMode = 'masonry'"
+                  :class="[
+                    viewMode === 'masonry' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700',
+                    'p-2 rounded-lg transition-all duration-200'
+                  ]"
+                  title="Masonry View"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="4" rx="1"/>
+                    <rect x="14" y="9" width="7" height="12" rx="1"/>
+                    <rect x="3" y="12" width="7" height="9" rx="1"/>
+                  </svg>
+                </button>
+                <button
+                  @click="viewMode = 'grid'"
+                  :class="[
+                    viewMode === 'grid' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700',
+                    'p-2 rounded-lg transition-all duration-200'
+                  ]"
+                  title="Grid View"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                </button>
+                <button
+                  @click="viewMode = 'list'"
+                  :class="[
+                    viewMode === 'list' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700',
+                    'p-2 rounded-lg transition-all duration-200'
+                  ]"
+                  title="List View"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="2" rx="1"/>
+                    <rect x="3" y="11" width="18" height="2" rx="1"/>
+                    <rect x="3" y="17" width="18" height="2" rx="1"/>
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- Results Per Page -->
+              <select
+                v-model="resultsPerPage"
+                class="appearance-none bg-white border border-gray-200 rounded-xl px-3 py-2 pr-8 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+                @change="handleResultsPerPageChange"
+              >
+                <option value="12">12 per page</option>
+                <option value="24">24 per page</option>
+                <option value="48">48 per page</option>
+                <option value="96">96 per page</option>
+              </select>
+              
               <!-- Sort Options -->
               <select
                 v-model="sortBy"
@@ -77,8 +144,24 @@
             </div>
           </div>
           
-          <!-- Content Type Filters -->
+          <!-- Enhanced Content Type Filters -->
           <div class="flex flex-wrap gap-3">
+            <button
+              @click="clearAllFilters"
+              :class="[
+                activeFilters.length === 0
+                  ? 'bg-gray-900 text-white shadow-lg border-gray-900'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200',
+                'inline-flex items-center px-4 py-2 border rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-md'
+              ]"
+            >
+              <span class="mr-2">🔍</span>
+              All
+              <span v-if="totalResults > 0" class="ml-2 px-2 py-0.5 bg-black/10 rounded-full text-xs">
+                {{ totalResults }}
+              </span>
+            </button>
+            
             <button
               v-for="filter in contentFilters"
               :key="filter.type"
@@ -92,7 +175,7 @@
             >
               <span class="mr-2 text-lg">{{ filter.icon }}</span>
               {{ filter.label }}
-              <span v-if="filter.count > 0" class="ml-2 px-2 py-0.5 bg-black/10 rounded-full text-xs">
+              <span v-if="filter.count > 0" class="ml-2 px-2 py-0.5 bg-black/10 rounded-full text-xs font-medium">
                 {{ filter.count }}
               </span>
             </button>
@@ -100,184 +183,290 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="i in 9"
-          :key="i"
-          class="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse"
-        >
-          <div class="aspect-video bg-gradient-to-br from-gray-100 to-gray-200"></div>
-          <div class="p-4 space-y-3">
-            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+      <!-- Enhanced Loading State with Skeletons -->
+      <div v-if="isLoading" class="space-y-6">
+        <!-- Loading Stats Bar -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="h-6 bg-gray-200 rounded-lg w-32 animate-pulse"></div>
+              <div class="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+            </div>
+            <div class="flex space-x-3">
+              <div class="h-10 bg-gray-200 rounded-xl w-24 animate-pulse"></div>
+              <div class="h-10 bg-gray-200 rounded-xl w-32 animate-pulse"></div>
+            </div>
+          </div>
+          <div class="flex space-x-3 mt-6">
+            <div v-for="i in 5" :key="i" class="h-10 bg-gray-200 rounded-xl w-20 animate-pulse"></div>
+          </div>
+        </div>
+        
+        <!-- Loading Grid based on view mode -->
+        <div :class="getGridClasses()">
+          <div
+            v-for="i in parseInt(resultsPerPage)"
+            :key="i"
+            class="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse"
+            :class="viewMode === 'list' ? 'flex items-center space-x-4 p-4' : ''"
+          >
+            <div 
+              v-if="viewMode !== 'list'"
+              class="aspect-video bg-gradient-to-br from-gray-100 to-gray-200"
+            ></div>
+            <div 
+              v-else 
+              class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex-shrink-0"
+            ></div>
+            <div :class="viewMode === 'list' ? 'flex-1 space-y-2' : 'p-4 space-y-3'">
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div v-if="viewMode === 'list'" class="h-3 bg-gray-200 rounded w-2/3"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Search Results Grid with improved aspect ratio handling -->
-      <div v-else-if="searchResults.length > 0" class="masonry-grid">
-        <div
-          v-for="result in searchResults"
-          :key="`${result.type}-${result.id}`"
-          class="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer break-inside-avoid mb-6"
-          @click="openResult(result)"
-        >
-          <!-- Result Image/Thumbnail with adaptive container -->
-          <div 
-            class="relative bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden"
-            :class="getThumbnailContainerClass(result)"
+      <!-- Search Results with Multiple View Modes -->
+      <div v-else-if="searchResults.length > 0" class="space-y-6">
+        <!-- Results Container -->
+        <div :class="getGridClasses()">
+          <div
+            v-for="result in searchResults"
+            :key="`${result.type}-${result.id}`"
+            :class="getResultCardClasses(result)"
+            @click="openResult(result)"
           >
-            <img
-              v-if="result.thumbnail"
-              :src="result.thumbnail"
-              :alt="result.title"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <component :is="getResultIcon(result.type)" class="w-12 h-12 text-gray-400" />
-            </div>
-            
-            <!-- Badges Container -->
-            <div class="absolute top-3 left-3 flex flex-wrap items-start gap-2 max-w-[calc(100%-6rem)]">
-              <!-- Type Badge -->
-              <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-black/70 backdrop-blur-sm text-white border border-white/20">
-                <span class="mr-1.5">{{ getTypeIcon(result.type) }}</span>
-                {{ result.type.toUpperCase() }}
-              </span>
+            <!-- Result Image/Thumbnail with optimized loading -->
+            <div 
+              v-if="viewMode !== 'list'"
+              class="relative bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden"
+              :class="getThumbnailContainerClass(result)"
+            >
+              <img
+                v-if="result.thumbnail"
+                :src="result.thumbnail"
+                :alt="result.title"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                @error="handleImageError"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <component :is="getResultIcon(result.type)" class="w-12 h-12 text-gray-400" />
+              </div>
               
-              <!-- Animation Badge -->
-              <span v-if="result.hasAnimation" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg">
-                🎬 ANIMATED
-              </span>
-              
-              <!-- Video Badge -->
-              <span v-if="result.isVideo && result.type !== 'template'" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg">
-                🎥 VIDEO
-              </span>
-              
-              <!-- Duration Badge -->
-              <span v-if="result.duration && (result.hasAnimation || result.isVideo) && result.type !== 'template'" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-black/70 text-white shadow-lg">
-                {{ formatDuration(result.duration) }}
-              </span>
-            </div>
-            
-            <!-- Premium Badge -->
-            <div v-if="result.isPremium" class="absolute top-3 right-3">
-              <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg">
-                ⭐ PRO
-              </span>
-            </div>
-            
-            <!-- Hover Actions -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                <!-- Primary Action Button -->
-                <div class="flex items-center space-x-2">
-                  <!-- Design Actions -->
-                  <template v-if="result.type === 'design'">
-                    <button 
-                      @click.stop="editDesign(result)"
-                      class="bg-white/90 backdrop-blur-sm text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <PencilIcon class="w-4 h-4" />
-                      <span>Edit</span>
-                    </button>
-                    <button 
-                      @click.stop="exportDesign(result)"
-                      class="bg-indigo-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <ArrowDownTrayIcon class="w-4 h-4" />
-                      <span>Export</span>
-                    </button>
-                  </template>
-                  
-                  <!-- Template Actions -->
-                  <template v-else-if="result.type === 'template'">
-                    <button 
-                      @click.stop="useTemplate(result)"
-                      class="bg-white/90 backdrop-blur-sm text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <DocumentDuplicateIcon class="w-4 h-4" />
-                      <span>Use Template</span>
-                    </button>
-                  </template>
-                  
-                  <!-- Media Actions -->
-                  <template v-else-if="result.type === 'media'">
-                    <button 
-                      @click.stop="addToDesign(result)"
-                      class="bg-white/90 backdrop-blur-sm text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <PlusIcon class="w-4 h-4" />
-                      <span>Add to Design</span>
-                    </button>
-                    <button 
-                      @click.stop="openInEditor(result)"
-                      class="bg-indigo-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <PencilIcon class="w-4 h-4" />
-                      <span>Open in Editor</span>
-                    </button>
-                  </template>
-                  
-                  <!-- Export Actions -->
-                  <template v-else-if="result.type === 'export'">
-                    <button 
-                      v-if="result.exportStatus === 'completed'"
-                      @click.stop="downloadExport(result)"
-                      class="bg-green-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <ArrowDownTrayIcon class="w-4 h-4" />
-                      <span>Download</span>
-                    </button>
-                    <div 
-                      v-else
-                      class="bg-amber-100/90 backdrop-blur-sm text-amber-800 px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2"
-                    >
-                      <div class="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" v-if="result.exportStatus === 'processing'"></div>
-                      <ClockIcon class="w-4 h-4" v-else />
-                      <span>{{ getExportStatusLabel(result.exportStatus) }}</span>
-                    </div>
-                  </template>
-                </div>
+              <!-- Enhanced Badges Container -->
+              <div class="absolute top-3 right-3 flex flex-col items-end gap-2 max-w-[calc(100%-6rem)]">
+                <!-- Type Badge -->
+                <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-black/70 backdrop-blur-sm text-white border border-white/20">
+                  <span class="mr-1.5">{{ getTypeIcon(result.type) }}</span>
+                  {{ result.type.toUpperCase() }}
+                </span>
                 
-                <!-- Preview Button - Only for media types -->
-                <button 
-                  v-if="result.type === 'media'"
-                  @click.stop="openMediaPreview(result)"
-                  class="bg-black/20 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-black/30 transition-all duration-200"
-                  title="Preview Media"
-                >
-                  <EyeIcon class="w-4 h-4" />
-                </button>
+                <!-- Additional Badges -->
+                <div class="flex flex-col items-end gap-1">
+                  <span v-if="result.hasAnimation" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg">
+                    🎬 ANIMATED
+                  </span>
+                  
+                  <span v-if="result.isVideo && result.type !== 'template'" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg">
+                    🎥 VIDEO
+                  </span>
+                  
+                  <span v-if="result.duration && (result.hasAnimation || result.isVideo) && result.type !== 'template'" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-black/70 text-white shadow-lg">
+                    {{ formatDuration(result.duration) }}
+                  </span>
+                  
+                  <span v-if="result.isPremium" class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg">
+                    ⭐ PRO
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Enhanced Hover Actions -->
+              <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <div class="absolute bottom-3 left-3 right-3">
+                  <div class="flex items-center justify-center gap-2">
+                    <template v-if="result.type === 'design'">
+                      <button 
+                        @click.stop="editDesign(result)"
+                        class="flex-1 bg-white/90 backdrop-blur-md text-gray-900 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white hover:scale-105 transform transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg border border-white/20"
+                      >
+                        <PencilIcon class="w-4 h-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button 
+                        @click.stop="exportDesign(result)"
+                        class="flex-1 bg-indigo-600/90 backdrop-blur-md text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 hover:scale-105 transform transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg border border-indigo-500/30"
+                      >
+                        <ArrowDownTrayIcon class="w-4 h-4" />
+                        <span>Export</span>
+                      </button>
+                    </template>
+                    
+                    <template v-else-if="result.type === 'template'">
+                      <button 
+                        @click.stop="useTemplate(result)"
+                        class="w-full bg-white/90 backdrop-blur-md text-gray-900 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white hover:scale-105 transform transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg border border-white/20"
+                      >
+                        <DocumentDuplicateIcon class="w-4 h-4" />
+                        <span>Use Template</span>
+                      </button>
+                    </template>
+                    
+                    <template v-else-if="result.type === 'media'">
+                      <button 
+                        @click.stop="addToDesign(result)"
+                        class="flex-1 bg-white/90 backdrop-blur-md text-gray-900 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white hover:scale-105 transform transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg border border-white/20"
+                      >
+                        <PlusIcon class="w-4 h-4" />
+                        <span>Add</span>
+                      </button>
+                      <button 
+                        @click.stop="openMediaPreview(result)"
+                        class="flex-1 bg-indigo-600/90 backdrop-blur-md text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 hover:scale-105 transform transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg border border-indigo-500/30"
+                      >
+                        <EyeIcon class="w-4 h-4" />
+                        <span>Preview</span>
+                      </button>
+                    </template>
+                    
+                    <template v-else-if="result.type === 'export'">
+                      <button 
+                        v-if="result.exportStatus === 'completed'"
+                        @click.stop="downloadExport(result)"
+                        class="w-full bg-green-600/90 backdrop-blur-md text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 hover:scale-105 transform transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg border border-green-500/30"
+                      >
+                        <ArrowDownTrayIcon class="w-4 h-4" />
+                        <span>Download</span>
+                      </button>
+                      <div 
+                        v-else
+                        class="w-full bg-amber-500/90 backdrop-blur-md text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 shadow-lg border border-amber-400/30"
+                      >
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" v-if="result.exportStatus === 'processing'"></div>
+                        <ClockIcon class="w-4 h-4" v-else />
+                        <span>{{ getExportStatusLabel(result.exportStatus) }}</span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Result Info -->
-          <div class="p-4">
-            <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-200 line-clamp-2">
-              {{ result.title }}
-            </h3>
-            <p v-if="result.description" class="text-sm text-gray-600 mt-1 line-clamp-2">
-              {{ result.description }}
-            </p>
-            <div class="flex items-center justify-between mt-3">
-              <div class="flex items-center space-x-2 text-xs text-gray-500">
-                <span>{{ formatDate(result.created_at) }}</span>
-                <span v-if="result.author">• by {{ result.author }}</span>
+            
+            <!-- List View Thumbnail -->
+            <div v-if="viewMode === 'list'" class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+              <img
+                v-if="result.thumbnail"
+                :src="result.thumbnail"
+                :alt="result.title"
+                class="w-full h-full object-cover"
+                loading="lazy"
+                @error="handleImageError"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <component :is="getResultIcon(result.type)" class="w-8 h-8 text-gray-400" />
               </div>
-              <div v-if="result.stats" class="flex items-center space-x-3 text-xs text-gray-500">
-                <span class="flex items-center">
-                  <HeartIcon class="w-3 h-3 mr-1" />
-                  {{ result.stats.likes }}
-                </span>
-                <span class="flex items-center">
-                  <EyeIcon class="w-3 h-3 mr-1" />
-                  {{ result.stats.views }}
-                </span>
+            </div>
+            
+            <!-- Result Info -->
+            <div :class="viewMode === 'list' ? 'flex-1 min-w-0 px-4' : 'p-4'">
+              <div class="flex items-start justify-between mb-2">
+                <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-200 line-clamp-2 flex-1">
+                  {{ result.title }}
+                </h3>
+                <div v-if="viewMode === 'list'" class="ml-4">
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                    {{ result.type.toUpperCase() }}
+                  </span>
+                </div>
+              </div>
+              
+              <p v-if="result.description" class="text-sm text-gray-600 mb-3 line-clamp-2">
+                {{ result.description }}
+              </p>
+              
+              <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center space-x-2 text-gray-500">
+                  <span v-if="result.created_at">{{ formatDate(result.created_at) }}</span>
+                  <span v-if="result.author" class="flex items-center">
+                    <template v-if="result.created_at">• by {{ result.author }}</template>
+                    <template v-else>by {{ result.author }}</template>
+                  </span>
+                </div>
+                <div v-if="result.stats" class="flex items-center space-x-3 text-gray-500">
+                  <span class="flex items-center">
+                    <HeartIcon class="w-3 h-3 mr-1" />
+                    {{ formatNumber(result.stats.likes) }}
+                  </span>
+                  <span class="flex items-center">
+                    <EyeIcon class="w-3 h-3 mr-1" />
+                    {{ formatNumber(result.stats.views) }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- List View Actions -->
+              <div v-if="viewMode === 'list'" class="flex items-center gap-2 mt-3">
+                <template v-if="result.type === 'design'">
+                  <button 
+                    @click.stop="editDesign(result)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+                  >
+                    <PencilIcon class="w-3 h-3" />
+                    Edit
+                  </button>
+                  <button 
+                    @click.stop="exportDesign(result)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    <ArrowDownTrayIcon class="w-3 h-3" />
+                    Export
+                  </button>
+                </template>
+                
+                <template v-else-if="result.type === 'template'">
+                  <button 
+                    @click.stop="useTemplate(result)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+                  >
+                    <DocumentDuplicateIcon class="w-3 h-3" />
+                    Use Template
+                  </button>
+                </template>
+                
+                <template v-else-if="result.type === 'media'">
+                  <button 
+                    @click.stop="addToDesign(result)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+                  >
+                    <PlusIcon class="w-3 h-3" />
+                    Add to Design
+                  </button>
+                  <button 
+                    @click.stop="openMediaPreview(result)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    <EyeIcon class="w-3 h-3" />
+                    Preview
+                  </button>
+                </template>
+                
+                <template v-else-if="result.type === 'export'">
+                  <button 
+                    v-if="result.exportStatus === 'completed'"
+                    @click.stop="downloadExport(result)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors"
+                  >
+                    <ArrowDownTrayIcon class="w-3 h-3" />
+                    Download
+                  </button>
+                  <span v-else class="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium">
+                    <div class="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" v-if="result.exportStatus === 'processing'"></div>
+                    <ClockIcon class="w-3 h-3" v-else />
+                    {{ getExportStatusLabel(result.exportStatus) }}
+                  </span>
+                </template>
               </div>
             </div>
           </div>
@@ -366,6 +555,15 @@
       @duplicate="handleExportDuplicate"
       @edit-original="handleEditOriginal"
     />
+    
+    <!-- Using Template Loading Overlay -->
+    <div v-if="isUsingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Creating Design</h3>
+        <p class="text-gray-600">Please wait while we set up your template...</p>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -394,7 +592,8 @@ import Pagination from '@/components/common/Pagination.vue'
 import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
 import MediaPreviewModal from '@/components/modals/MediaPreviewModal.vue'
 import ExportDetailsModal from '@/components/modals/ExportDetailsModal.vue'
-import { searchAPI } from '@/services/api'
+import { searchAPI, templateAPI } from '@/services/api'
+import { useDesignStore } from '@/stores/design'
 import type { SearchResult, ContentFilter, MediaItem, MediaSearchItem } from '@/types'
 
 // Define interface for MediaPreviewModal compatibility
@@ -405,7 +604,7 @@ interface MediaPreviewItem {
   type: string
   size?: number
   author?: string
-  created_at: string
+  created_at: string // Always provide a default value
   thumbnail?: string
   dimensions?: {
     width: number
@@ -419,6 +618,9 @@ interface MediaPreviewItem {
 const route = useRoute()
 const router = useRouter()
 
+// Stores
+const designStore = useDesignStore()
+
 // Reactive data
 const searchQuery = ref('')
 const isLoading = ref(false)
@@ -431,6 +633,10 @@ const activeFilters = ref<string[]>([])
 const searchTimeout = ref<NodeJS.Timeout>()
 const searchTime = ref<number | null>(null)
 
+// View and interaction state
+const viewMode = ref<'masonry' | 'grid' | 'list'>('masonry')
+const resultsPerPage = ref('24')
+
 // Export modal state
 const showExportModal = ref(false)
 const designToExport = ref<SearchResult | null>(null)
@@ -442,6 +648,9 @@ const exportToView = ref<SearchResult | null>(null)
 // Media preview modal state
 const showMediaPreview = ref(false)
 const mediaToPreview = ref<MediaPreviewItem | null>(null)
+
+// Template usage state
+const isUsingTemplate = ref(false)
 
 // Content filters
 const contentFilters = ref<ContentFilter[]>([
@@ -457,6 +666,56 @@ const debouncedSearch = () => {
     clearTimeout(searchTimeout.value)
   }
   searchTimeout.value = setTimeout(performSearch, 500)
+}
+
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toString()
+}
+
+const getGridClasses = (): string => {
+  switch (viewMode.value) {
+    case 'list':
+      return 'space-y-4'
+    case 'grid':
+      return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+    case 'masonry':
+    default:
+      return 'masonry-grid'
+  }
+}
+
+const getResultCardClasses = (result: SearchResult): string => {
+  const baseClasses = 'group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer relative'
+  
+  if (viewMode.value === 'list') {
+    return `${baseClasses} flex items-center space-x-4 p-4`
+  } else if (viewMode.value === 'masonry') {
+    return `${baseClasses} break-inside-avoid mb-6`
+  } else {
+    return baseClasses
+  }
+}
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.style.display = 'none'
+}
+
+const handleResultsPerPageChange = () => {
+  currentPage.value = 1
+  performSearch()
+}
+
+const clearAllFilters = () => {
+  activeFilters.value = []
+  currentPage.value = 1
+  performSearch()
 }
 
 const getResultIcon = (type: string) => {
@@ -533,7 +792,7 @@ const performSearch = async () => {
     const searchParams = {
       q: searchQuery.value || '',
       page: currentPage.value,
-      limit: 12,
+      limit: parseInt(resultsPerPage.value),
       sort: sortBy.value !== 'relevance' ? (sortBy.value as 'newest' | 'popular' | 'name') : undefined,
     }
     
@@ -547,7 +806,7 @@ const performSearch = async () => {
           ...template,
           type: 'template',
           title: template.name,
-          created_at: template.created_at || template.updatedAt
+          ...(template.created_at || template.updatedAt ? { created_at: template.created_at || template.updatedAt } : {})
         }))
         totalResults.value = response.data.pagination.total
         totalPages.value = response.data.pagination.totalPages
@@ -669,12 +928,12 @@ const openResult = (result: SearchResult) => {
       openMediaPreview(result)
       break
     case 'design':
-      // For designs, open in editor
+      // For designs, open in editor directly (same as Designs.vue)
       router.push(`/editor/${result.id}`)
       break
     case 'template':
-      // For templates, load template in editor (create new design from template)
-      router.push(`/editor/new?template=${result.id}`)
+      // For templates, use the template API to create a new design (same as Templates.vue)
+      handleTemplateSelected(result)
       break
     case 'export':
       // For exports, show export details modal
@@ -767,7 +1026,7 @@ const convertToMediaItem = (result: SearchResult): MediaPreviewItem => {
       height: result.height || 600
     }, // Use actual dimensions from result, default to standard size if not available
     tags: ['media'], // Tags not available in SearchResult type
-    created_at: result.created_at
+    created_at: result.created_at || new Date().toISOString() // Provide default if missing
   }
 }
 
@@ -818,6 +1077,7 @@ const closeExportDetailsModal = () => {
 
 // Type-specific action handlers
 const editDesign = (result: SearchResult) => {
+  // Follow the same pattern as Designs.vue - direct navigation to editor
   router.push(`/editor/${result.id}`)
 }
 
@@ -827,13 +1087,83 @@ const exportDesign = (result: SearchResult) => {
 }
 
 const useTemplate = (result: SearchResult) => {
-  // Create new design from template
-  router.push(`/editor?template=${result.id}`)
+  // Follow the same pattern as Templates.vue - use the template API to create a new design
+  handleTemplateSelected(result)
+}
+
+const handleTemplateSelected = async (template: SearchResult) => {
+  if (isUsingTemplate.value) return // Prevent multiple clicks
+  
+  try {
+    isUsingTemplate.value = true
+    console.log(`🔗 Using template: ${template.title} (ID: ${template.id})`)
+    
+    // Use the template API to create a design from template
+    // Templates have both id and uuid - use uuid for the API if available, fallback to id
+    const templateId = (template as any).uuid || template.id
+    const response = await templateAPI.useTemplate(templateId, {
+      name: `${template.title} Copy`
+    })
+    
+    if (response.data?.success && response.data.data) {
+      console.log('Template used successfully, navigating to editor...')
+      // Navigate to editor with the new design
+      router.push(`/editor/${response.data.data.id}`)
+    } else {
+      throw new Error('Failed to create design from template')
+    }
+  } catch (error) {
+    console.error('Failed to create design from template:', error)
+    console.error('Template application failed, trying fallback method...')
+    
+    // Fallback to manual creation if API fails (same as Templates.vue)
+    try {
+      const newDesign = designStore.createNewDesign(
+        (template as any).width || 800,
+        (template as any).height || 600
+      )
+      
+      if ((template as any).designData) {
+        newDesign.data = { ...(template as any).designData }
+      }
+      
+      newDesign.name = `${template.title} Copy`
+      
+      const result = await designStore.saveDesign(newDesign, true)
+      
+      if (result.success) {
+        console.log('Fallback template creation successful')
+        router.push(`/editor/${newDesign.id}`)
+      } else {
+        console.error('Failed to save design:', result.error)
+        throw new Error('Failed to save design')
+      }
+    } catch (fallbackError) {
+      console.error('Fallback creation also failed:', fallbackError)
+      console.error('Both template application methods failed')
+      // Final fallback: navigate to editor with template query parameter
+      router.push({ 
+        name: 'Editor', 
+        query: { template: template.id }
+      })
+    }
+  } finally {
+    isUsingTemplate.value = false
+  }
 }
 
 const addToDesign = (result: SearchResult) => {
-  // Create new design with media as layer
-  router.push(`/editor?media=${result.id}`)
+  // Navigate to editor with media query parameter
+  // The editor should handle adding this media to a new design
+  if (result.type === 'media') {
+    router.push({ 
+      name: 'Editor', 
+      query: { media: result.id }
+    })
+    console.log(`🔗 Adding media to design: ${result.title} (ID: ${result.id})`)
+  } else {
+    console.warn('addToDesign called with non-media result:', result)
+  }
 }
 
 const downloadExport = (result: SearchResult) => {
@@ -947,7 +1277,7 @@ const exportJobFromResult = computed(() => {
     description: result.description,
     thumbnail: result.thumbnail,
     exportStatus: result.exportStatus || 'pending',
-    created_at: result.created_at,
+    created_at: result.created_at || new Date().toISOString(), // Provide default if missing
     author: result.author,
     url: result.url,
     dimensions: {
@@ -1052,13 +1382,13 @@ watch(() => route.query, () => {
   overflow: hidden;
 }
 
-/* Masonry-style grid for varied content */
+/* Enhanced Masonry-style grid for varied content */
 .masonry-grid {
   columns: 1;
   column-gap: 1.5rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .masonry-grid {
     columns: 2;
   }
@@ -1070,9 +1400,228 @@ watch(() => route.query, () => {
   }
 }
 
-@media (min-width: 1536px) {
+@media (min-width: 1280px) {
   .masonry-grid {
     columns: 4;
+  }
+}
+
+@media (min-width: 1536px) {
+  .masonry-grid {
+    columns: 5;
+  }
+}
+
+/* Enhanced button styling and hover effects */
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Improved hover actions with better backdrop effects */
+.group:hover .hover-actions {
+  backdrop-filter: blur(12px);
+}
+
+/* Enhanced button animations */
+@keyframes buttonPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.button-pulse:hover {
+  animation: buttonPulse 0.3s ease-in-out;
+}
+
+/* Better shadow effects for buttons */
+.button-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.button-shadow:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Improved loading states */
+.loading-button {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Better focus states for accessibility */
+button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Enhanced disabled state */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Improved animations and transitions */
+.group:hover .group-hover\:scale-105 {
+  transform: scale(1.05);
+}
+
+/* Enhanced focus states */
+input:focus,
+select:focus,
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Loading animation improvements */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-pulse {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Improved checkbox styling */
+input[type="checkbox"] {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: white;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #4f46e5;
+}
+
+/* Badge styling improvements */
+.badge-glow {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+}
+
+/* Improved hover effects for different view modes */
+.grid-view-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.list-view-card:hover {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.masonry-view-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 640px) {
+  .masonry-grid {
+    columns: 1;
+    column-gap: 1rem;
+  }
+  
+  .grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .bg-white {
+    background-color: #1f2937;
+  }
+  
+  .text-gray-900 {
+    color: #f9fafb;
+  }
+  
+  .text-gray-600 {
+    color: #d1d5db;
+  }
+  
+  .border-gray-100 {
+    border-color: #374151;
+  }
+}
+
+/* Print styles */
+@media print {
+  .hover\:shadow-xl,
+  .hover\:shadow-indigo-500\/10,
+  .transform,
+  .hover\:-translate-y-1 {
+    box-shadow: none !important;
+    transform: none !important;
   }
 }
 </style>

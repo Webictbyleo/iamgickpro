@@ -498,9 +498,10 @@ readonly class SearchService
     {
         return [
             'id' => $template->getId(),
+            'uuid' => $template->getUuid(), // Unique identifier for the template
             'name' => $template->getName(),
             'description' => $template->getDescription(),
-            'thumbnail_url' => $template->getThumbnailUrl(), // Template preview image
+            'thumbnail' => $template->getThumbnailUrl(), // Template preview image
             'category' => $template->getCategory(), // Template category (social-media, print, etc.)
             'tags' => $template->getTags(), // Array of tags for filtering
             'is_premium' => $template->isPremium(), // Whether template requires premium access
@@ -535,7 +536,7 @@ readonly class SearchService
             'mime_type' => $media->getMimeType(), // Specific MIME type (image/jpeg, video/mp4, etc.)
             'size' => $media->getSize(), // File size in bytes
             'url' => $media->getUrl(), // Direct URL to media file
-            'thumbnail_url' => $media->getThumbnailUrl(), // URL to thumbnail/preview
+            'thumbnail' => $media->getThumbnailUrl(), // URL to thumbnail/preview
             'tags' => $media->getTags(), // User-assigned tags for organization
             'created_at' => $media->getCreatedAt()?->format('Y-m-d H:i:s'), // Upload timestamp
             'type' => 'media'
