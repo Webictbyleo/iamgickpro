@@ -914,7 +914,7 @@ const handleAddMedia = (mediaData: any) => {
   // Handle new structured media data
   if (mediaData.type && mediaData.data) {
     // New format: { type: 'svg'|'image', data: properties }
-    addElement(mediaData.type, mediaData.data,mediaData.transform || undefined)
+    addElement(mediaData.type, mediaData.data, mediaData.transform || undefined)
   } else {
     // Legacy format: direct properties (for backward compatibility)
     addElement('image', mediaData)
