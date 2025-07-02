@@ -15,6 +15,10 @@ export default defineConfig(({ command, mode }) => {
         '@': resolve(__dirname, 'src'),
       },
     },
+    define: {
+      // Make environment variables available at build time
+      __VITE_BASE_PATH__: JSON.stringify(basePath),
+    },
     esbuild: {
       // Strip console logs and debugger statements in production
       drop: mode === 'production' ? ['console', 'debugger'] : []
