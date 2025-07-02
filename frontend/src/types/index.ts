@@ -463,7 +463,7 @@ export interface MediaItem {
   width?: number
   height?: number
   duration?: number
-  source: 'upload' | 'stock'
+  source: 'unsplash'| 'pexels'| 'iconfinder'| 'giphy'| 'upload'| 'generated'
   sourceId?: string
   metadata?: any
   tags: string[]
@@ -592,7 +592,7 @@ export interface SearchResult {
   thumbnail?: string
   url?: string
   author?: string
-  created_at: string
+  created_at?: string // Optional for templates that may not have creation dates
   isPremium?: boolean
   exportStatus?: 'pending' | 'processing' | 'completed' | 'failed'
   hasAnimation?: boolean

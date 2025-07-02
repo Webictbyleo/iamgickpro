@@ -25,11 +25,14 @@
               {{ mediaItems.length }} items loaded
             </div>
             <button
+              v-if="shouldShowMainUploadButton"
               @click="triggerFileUpload"
-              class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
+              :disabled="isUploading"
+              class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ArrowUpTrayIcon class="w-5 h-5 mr-2" />
-              Upload Image
+              <div v-if="isUploading" class="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <ArrowUpTrayIcon v-else class="w-5 h-5 mr-2" />
+              {{ isUploading ? 'Uploading...' : 'Upload Image' }}
             </button>
             
             <input
@@ -113,6 +116,23 @@
         ></div>
       </div>
 
+      <!-- Upload Progress Indicator -->
+      <div v-if="isUploading" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center">
+            <div class="w-5 h-5 mr-2 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-blue-800 font-medium">Uploading images...</span>
+          </div>
+          <span class="text-blue-600 text-sm">{{ uploadProgress }}%</span>
+        </div>
+        <div class="w-full bg-blue-200 rounded-full h-2">
+          <div 
+            class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            :style="{ width: `${uploadProgress}%` }"
+          ></div>
+        </div>
+      </div>
+
       <!-- Optimized Media Grid -->
       <MediaMasonry
         v-else-if="mediaItems.length > 0"
@@ -141,10 +161,12 @@
           <button
             v-if="activeTab === 'uploads'"
             @click="triggerFileUpload"
-            class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
+            :disabled="isUploading"
+            class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
-            Upload Your First Image
+            <div v-if="isUploading" class="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <ArrowUpTrayIcon v-else class="h-5 w-5 mr-2" />
+            {{ isUploading ? 'Uploading...' : 'Upload Your First Image' }}
           </button>
           
           <button
@@ -200,15 +222,15 @@
 
     <!-- Media Preview Modal -->
     <div v-if="previewItem" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click="closePreview">
-      <div class="relative max-w-4xl max-h-[90vh] m-4" @click.stop>
+      <div class="relative w-full h-full max-w-7xl max-h-full p-4 flex items-center justify-center" @click.stop>
         <img
           :src="previewItem.url"
           :alt="previewItem.name"
-          class="max-w-full max-h-full rounded-2xl shadow-2xl"
+          class="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
         />
         <button
           @click="closePreview"
-          class="absolute top-4 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-all duration-200"
+          class="absolute top-8 right-8 w-12 h-12 bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-all duration-200 z-10"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -276,6 +298,8 @@ const router = useRouter()
 const searchQuery = ref('')
 const activeTab = ref('stock')
 const isLoading = ref(false)
+const isUploading = ref(false)
+const uploadProgress = ref(0)
 const mediaItems = ref<MediaItem[]>([])
 const currentPage = ref(1)
 const totalPages = ref(1)
@@ -320,6 +344,15 @@ const mediaActions = computed(() => [
 // Computed properties
 const userMediaCount = computed(() => {
   return activeTab.value === 'uploads' ? mediaItems.value.length : 0
+})
+
+// Show upload button logic
+const shouldShowMainUploadButton = computed(() => {
+  // Hide main upload button when on uploads tab and there are no items (empty state shows its own upload button)
+  if (activeTab.value === 'uploads' && mediaItems.value.length === 0 && !isLoading.value) {
+    return false
+  }
+  return true
 })
 
 // Responsive columns for MediaMasonry
@@ -512,26 +545,66 @@ const handleFileUpload = async (event: Event) => {
   const files = (event.target as HTMLInputElement).files
   if (!files || files.length === 0) return
   
+  const fileArray = Array.from(files)
+  
   try {
-    isLoading.value = true
+    isUploading.value = true
+    uploadProgress.value = 0
     
-    for (const file of Array.from(files)) {
-      await mediaAPI.uploadMedia(file)
+    // Switch to "My Uploads" tab to show the uploading progress
+    activeTab.value = 'uploads'
+    
+    // If we're currently showing empty state, load existing uploads first
+    if (mediaItems.value.length === 0) {
+      await loadUserUploads()
     }
     
-    // Switch to "My Uploads" tab to show the uploaded files
-    activeTab.value = 'uploads'
-    currentPage.value = 1
+    // Upload files with progress tracking
+    const uploadedItems: MediaItem[] = []
     
-    // Load user uploads to show the newly uploaded files
-    await loadUserUploads()
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i]
+      
+      try {
+        const response = await mediaAPI.uploadMedia(file)
+        
+        // Add the uploaded item to our list optimistically
+        if (response.data?.data?.media) {
+          const uploadedItem = response.data.data.media
+          uploadedItems.push(uploadedItem)
+          
+          // Insert at the beginning of the list (most recent first)
+          mediaItems.value.unshift(uploadedItem)
+        }
+        
+        // Update progress
+        uploadProgress.value = Math.round(((i + 1) / fileArray.length) * 100)
+        
+      } catch (error) {
+        console.error(`Failed to upload ${file.name}:`, error)
+        // Continue with other files even if one fails
+      }
+    }
+    
+    // Reset file input
+    if (event.target) {
+      (event.target as HTMLInputElement).value = ''
+    }
     
     // Show success message
-    console.log(`Successfully uploaded ${files.length} file(s)`)
+    if (uploadedItems.length > 0) {
+      console.log(`Successfully uploaded ${uploadedItems.length} file(s)`)
+    }
+    
+    if (uploadedItems.length !== fileArray.length) {
+      console.warn(`${fileArray.length - uploadedItems.length} file(s) failed to upload`)
+    }
+    
   } catch (error) {
     console.error('Failed to upload media:', error)
   } finally {
-    isLoading.value = false
+    isUploading.value = false
+    uploadProgress.value = 0
   }
 }
 

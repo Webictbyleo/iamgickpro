@@ -444,7 +444,7 @@ const formattedPhotos = computed(() => {
     thumbnailUrl: photo.thumbnail || photo.src,
     width: photo.width, // Default dimensions for stock photos
     height: photo.height,
-    source: 'stock' as const,
+    source: (photo.source as MediaItem['source']) || 'unsplash',
     sourceId: photo.id,
     metadata: photo,
     tags: [], // Stock photos don't have tags in our current format

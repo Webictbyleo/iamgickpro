@@ -31,7 +31,6 @@
         :title="title"
         :subtitle="subtitle"
         @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        @search="handleSearch"
         @create-design="handleCreateDesign"
         @logout="handleLogout"
       />
@@ -66,16 +65,11 @@ withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  search: [query: string]
   createDesign: []
   logout: []
 }>()
 
 const sidebarOpen = ref(false)
-
-const handleSearch = (query: string) => {
-  emit('search', query)
-}
 
 const handleLogout = () => {
   emit('logout')

@@ -71,13 +71,15 @@
             <div 
               v-for="i in 12"
               :key="`loading-${i}`"
-              class="bg-white rounded-lg border border-gray-100 animate-pulse overflow-hidden h-80 flex flex-col"
+              class="bg-white rounded-lg border border-gray-100 animate-pulse overflow-hidden flex flex-col"
             >
-              <div class="h-48 bg-gray-200"></div>
-              <div class="flex-1 p-3 space-y-2">
+              <div class="h-40 bg-gray-200"></div>
+              <div class="p-3 space-y-2">
                 <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                <div class="mt-2 h-6 bg-gray-200 rounded w-16"></div>
+                <div class="flex justify-between items-center">
+                  <div class="h-3 bg-gray-200 rounded w-1/3"></div>
+                  <div class="h-5 bg-gray-200 rounded w-16"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -89,10 +91,10 @@
               :key="design.id"
               class="group"
             >
-              <!-- Design Card with Fixed Height -->
-              <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden h-80 flex flex-col">
-                <!-- Design Thumbnail Container - Fixed height but proper aspect ratio -->
-                <div class="relative h-48 bg-gray-50 flex items-center justify-center p-2">
+              <!-- Design Card with Compact Height -->
+              <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden flex flex-col">
+                <!-- Design Thumbnail Container - Responsive height -->
+                <div class="relative h-40 bg-gray-50 flex items-center justify-center p-2">
                   <div 
                     v-if="design.thumbnail"
                     class="relative max-w-full max-h-full"
@@ -196,19 +198,15 @@
                   </div>
                 </div>
                 
-                <!-- Design Info - Takes remaining space -->
-                <div class="flex-1 p-3 flex flex-col justify-between">
-                  <div>
-                    <h3 class="font-medium text-gray-900 truncate text-sm cursor-pointer hover:text-violet-600 transition-colors" @click="editDesign(design)">
-                      {{ design.title || design.name || 'Untitled Design' }}
-                    </h3>
-                    <p class="text-xs text-gray-500 mt-1">
+                <!-- Design Info - Compact layout -->
+                <div class="p-3">
+                  <h3 class="font-medium text-gray-900 truncate text-sm cursor-pointer hover:text-violet-600 transition-colors mb-1" @click="editDesign(design)">
+                    {{ design.title || design.name || 'Untitled Design' }}
+                  </h3>
+                  <div class="flex items-center justify-between">
+                    <p class="text-xs text-gray-500">
                       {{ formatDate(design.updatedAt || design.createdAt) }}
                     </p>
-                  </div>
-                  
-                  <!-- Design dimensions -->
-                  <div class="mt-2">
                     <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
                       {{ design.width }}×{{ design.height }}
                     </span>
