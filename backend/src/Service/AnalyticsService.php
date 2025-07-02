@@ -457,6 +457,9 @@ class AnalyticsService
             // Get subscription metrics
             $subscriptionMetrics = $this->getSubscriptionMetrics($startDate, $endDate);
             
+            // Calculate activity metrics with real data
+            $activityMetrics = $this->calculateActivityMetrics($startDate, $endDate);
+            
             return [
                 'metrics' => [
                     'totalUsers' => $systemAnalytics['platformStats']['total_users'] ?? 0,
@@ -471,9 +474,9 @@ class AnalyticsService
                 'timeSeriesData' => $timeSeriesData,
                 'topPlans' => $subscriptionMetrics['top_plans'] ?? [],
                 'activityMetrics' => [
-                    'dailyActiveUsers' => 0,
-                    'weeklyActiveUsers' => 0,
-                    'avgSessionDuration' => 0,
+                    'dailyActiveUsers' => $activityMetrics['daily_active_users'] ?? 0,
+                    'weeklyActiveUsers' => $activityMetrics['weekly_active_users'] ?? 0,
+                    'avgSessionDuration' => $activityMetrics['avg_session_duration'] ?? 0,
                     'projectsPerUser' => $contentAnalytics['projects_per_user'] ?? 0,
                     'exportsPerUser' => $exportAnalytics['exports_per_user'] ?? 0,
                 ],
@@ -1686,5 +1689,268 @@ class AnalyticsService
         $variation = rand(-5, 5) / 100; // ±0.05% variation
         
         return round(min(99.95, max(99.0, $baseUptime + $variation)), 1);
+    }
+
+    /**
+     * Calculate activity metrics for the specified period
+     * 
+     * @param \DateTimeInterface $startDate Start date for analytics
+     * @param \DateTimeInterface $endDate End date for analytics
+     * @return array Activity metrics data
+     */
+    private function calculateActivityMetrics(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    {
+        // Calculate daily active users (users who have been active in the last 24 hours)
+        $oneDayAgo = new \DateTimeImmutable();
+        $oneDayAgo = $oneDayAgo->modify('-1 day');
+        
+        // Get all unique users who have been active in the last 24 hours across different activities
+        $dailyActiveUsers = $this->getActiveUsersForPeriod($oneDayAgo, new \DateTimeImmutable());
+
+        // Calculate weekly active users (users who have been active in the last 7 days)
+        $oneWeekAgo = new \DateTimeImmutable();
+        $oneWeekAgo = $oneWeekAgo->modify('-7 days');
+        
+        // Get all unique users who have been active in the last 7 days across different activities
+        $weeklyActiveUsers = $this->getActiveUsersForPeriod($oneWeekAgo, new \DateTimeImmutable());
+
+        // Calculate average session duration (estimated from user activity patterns)
+        $avgSessionDuration = $this->calculateEstimatedSessionDuration($startDate, $endDate);
+
+        return [
+            'daily_active_users' => $dailyActiveUsers,
+            'weekly_active_users' => $weeklyActiveUsers,
+            'avg_session_duration' => $avgSessionDuration
+        ];
+    }
+
+    /**
+     * Get active users for a specific period based on multiple activity types
+     * 
+     * @param \DateTimeInterface $startDate Start date for activity check
+     * @param \DateTimeInterface $endDate End date for activity check
+     * @return int Number of unique active users
+     */
+    private function getActiveUsersForPeriod(\DateTimeInterface $startDate, \DateTimeInterface $endDate): int
+    {
+        $conn = $this->userRepository->getEntityManager()->getConnection();
+        
+        // Use a UNION query to get all unique users who have been active across different areas
+        // Note: designs are related to users through projects (designs.project_id -> projects.user_id)
+        $activeUsersData = $conn->executeQuery(
+            "SELECT DISTINCT user_id FROM (
+                SELECT id as user_id 
+                FROM users 
+                WHERE last_login_at BETWEEN ? AND ? 
+                AND deleted_at IS NULL 
+                AND is_active = 1
+                
+                UNION
+                
+                SELECT user_id 
+                FROM projects 
+                WHERE (created_at BETWEEN ? AND ? OR updated_at BETWEEN ? AND ?)
+                AND deleted_at IS NULL
+                
+                UNION
+                
+                SELECT p.user_id 
+                FROM designs d
+                JOIN projects p ON d.project_id = p.id
+                WHERE (d.created_at BETWEEN ? AND ? OR d.updated_at BETWEEN ? AND ?)
+                AND d.deleted_at IS NULL
+                AND p.deleted_at IS NULL
+                
+                UNION
+                
+                SELECT user_id 
+                FROM media 
+                WHERE (created_at BETWEEN ? AND ? OR updated_at BETWEEN ? AND ?)
+                AND deleted_at IS NULL
+                
+                UNION
+                
+                SELECT user_id 
+                FROM export_jobs 
+                WHERE created_at BETWEEN ? AND ?
+            ) AS active_users",
+            [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchAllAssociative();
+
+        return count($activeUsersData);
+    }
+
+    /**
+     * Calculate estimated session duration based on comprehensive user activity patterns
+     * 
+     * @param \DateTimeInterface $startDate Start date for analytics
+     * @param \DateTimeInterface $endDate End date for analytics
+     * @return int Estimated average session duration in seconds
+     */
+    private function calculateEstimatedSessionDuration(\DateTimeInterface $startDate, \DateTimeInterface $endDate): int
+    {
+        $conn = $this->userRepository->getEntityManager()->getConnection();
+        
+        // Get comprehensive user activity patterns to estimate session duration
+        // Look at users who have multiple activities in short time spans
+        // Note: designs are related to users through projects
+        $activityData = $conn->executeQuery(
+            "SELECT 
+                user_activities.user_id,
+                COUNT(user_activities.activity_time) as activity_count,
+                MIN(user_activities.activity_time) as first_activity,
+                MAX(user_activities.activity_time) as last_activity,
+                TIMESTAMPDIFF(MINUTE, MIN(user_activities.activity_time), MAX(user_activities.activity_time)) as activity_span_minutes
+             FROM (
+                SELECT user_id, created_at as activity_time FROM projects 
+                WHERE created_at BETWEEN ? AND ? AND deleted_at IS NULL
+                
+                UNION ALL
+                
+                SELECT user_id, updated_at as activity_time FROM projects 
+                WHERE updated_at BETWEEN ? AND ? AND deleted_at IS NULL
+                
+                UNION ALL
+                
+                SELECT p.user_id, d.created_at as activity_time FROM designs d
+                JOIN projects p ON d.project_id = p.id
+                WHERE d.created_at BETWEEN ? AND ? AND d.deleted_at IS NULL AND p.deleted_at IS NULL
+                
+                UNION ALL
+                
+                SELECT p.user_id, d.updated_at as activity_time FROM designs d
+                JOIN projects p ON d.project_id = p.id
+                WHERE d.updated_at BETWEEN ? AND ? AND d.deleted_at IS NULL AND p.deleted_at IS NULL
+                
+                UNION ALL
+                
+                SELECT user_id, created_at as activity_time FROM media 
+                WHERE created_at BETWEEN ? AND ? AND deleted_at IS NULL
+                
+                UNION ALL
+                
+                SELECT user_id, updated_at as activity_time FROM media 
+                WHERE updated_at BETWEEN ? AND ? AND deleted_at IS NULL
+                
+                UNION ALL
+                
+                SELECT user_id, created_at as activity_time FROM export_jobs 
+                WHERE created_at BETWEEN ? AND ?
+             ) AS user_activities
+             GROUP BY user_activities.user_id
+             HAVING activity_count > 1
+             ORDER BY activity_span_minutes DESC",
+            [
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), // projects created
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), // projects updated
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), // designs created
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), // designs updated
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), // media created
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), // media updated
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')  // export jobs
+            ]
+        )->fetchAllAssociative();
+
+        if (empty($activityData)) {
+            return $this->getFallbackSessionDuration($startDate, $endDate);
+        }
+
+        // Calculate average session duration based on user activity patterns
+        $totalSessionTime = 0;
+        $validSessions = 0;
+
+        foreach ($activityData as $activity) {
+            $spanMinutes = (int)$activity['activity_span_minutes'];
+            $activityCount = (int)$activity['activity_count'];
+            
+            // If user had multiple activities within a reasonable timeframe (up to 4 hours)
+            // we consider this a single session
+            if ($spanMinutes > 0 && $spanMinutes <= 240) { // Max 4 hours
+                // Estimate session duration based on activity span and count
+                // Base time + time based on activity intensity
+                $estimatedSessionMinutes = max(5, $spanMinutes) + ($activityCount * 2); // Base span + 2 min per activity
+                $estimatedSessionMinutes = min($estimatedSessionMinutes, 120); // Cap at 2 hours
+                
+                $totalSessionTime += $estimatedSessionMinutes;
+                $validSessions++;
+            }
+        }
+
+        if ($validSessions > 0) {
+            $avgSessionMinutes = $totalSessionTime / $validSessions;
+            return (int)($avgSessionMinutes * 60); // Convert to seconds
+        }
+
+        return $this->getFallbackSessionDuration($startDate, $endDate);
+    }
+
+    /**
+     * Get fallback session duration when activity data is insufficient
+     * 
+     * @param \DateTimeInterface $startDate Start date for analytics
+     * @param \DateTimeInterface $endDate End date for analytics
+     * @return int Fallback session duration in seconds
+     */
+    private function getFallbackSessionDuration(\DateTimeInterface $startDate, \DateTimeInterface $endDate): int
+    {
+        // Calculate fallback based on overall user engagement level
+        $totalUsers = $this->userRepository->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where('u.deletedAt IS NULL')
+            ->andWhere('u.isActive = true')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Count all activities in the period (using correct relationships)
+        $conn = $this->userRepository->getEntityManager()->getConnection();
+        $totalActivities = $conn->executeQuery(
+            "SELECT COUNT(*) as total FROM (
+                SELECT id FROM projects WHERE created_at BETWEEN ? AND ? AND deleted_at IS NULL
+                UNION ALL
+                SELECT d.id FROM designs d 
+                JOIN projects p ON d.project_id = p.id
+                WHERE d.created_at BETWEEN ? AND ? AND d.deleted_at IS NULL AND p.deleted_at IS NULL
+                UNION ALL
+                SELECT id FROM media WHERE created_at BETWEEN ? AND ? AND deleted_at IS NULL
+                UNION ALL
+                SELECT id FROM export_jobs WHERE created_at BETWEEN ? AND ?
+            ) AS all_activities",
+            [
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'),
+                $startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')
+            ]
+        )->fetchOne();
+
+        // Estimate based on engagement: more activities per user = longer sessions
+        $activitiesPerUser = $totalUsers > 0 ? $totalActivities / $totalUsers : 0;
+        
+        if ($activitiesPerUser > 5) {
+            return 2400; // 40 minutes for highly engaged users
+        } elseif ($activitiesPerUser > 2) {
+            return 1800; // 30 minutes for moderately engaged users
+        } elseif ($activitiesPerUser > 1) {
+            return 1200; // 20 minutes for active users
+        } else {
+            return 900;  // 15 minutes for low engagement
+        }
     }
 }
