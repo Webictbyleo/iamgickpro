@@ -22,21 +22,7 @@
 
       <!-- Right side -->
       <div class="flex items-center space-x-3">
-        <!-- Simple Search -->
-        <div class="hidden sm:block">
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <component :is="icons.search" class="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search designs, templates, media..."
-              class="block w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50/50 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 focus:bg-white transition-all duration-200"
-              @keyup.enter="navigateToSearch"
-            />
-          </div>
-        </div>
+
 
         <!-- Quick Actions -->
         <div class="flex items-center space-x-2">
@@ -327,7 +313,6 @@ defineProps<Props>()
 
 defineEmits<{
   toggleSidebar: []
-  search: [query: string]
   createDesign: [type?: string]
   logout: []
 }>()
@@ -335,7 +320,6 @@ defineEmits<{
 const router = useRouter()
 const authStore = useAuthStore()
 const icons = useIcons()
-const searchQuery = ref('')
 const isLoggingOut = ref(false)
 const showDesignSizeModal = ref(false)
 
@@ -358,18 +342,6 @@ const userInitials = computed(() => {
   }
   return 'DU'
 })
-
-// Search functionality
-const navigateToSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({
-      name: 'SearchResults',
-      query: { q: searchQuery.value.trim() }
-    })
-  } else {
-    router.push({ name: 'SearchResults' })
-  }
-}
 
 // Create design functionality
 const handleCreateDesign = (type?: string) => {
