@@ -731,6 +731,14 @@ export const adminAPI = {
   updateUserRoles: (id: number, data: { roles: string[] }) =>
     api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/roles`, data),
 
+  // PUT /admin/users/{id}/plan - Assign plan to user
+  assignPlanToUser: (id: number, data: { plan_code: string }) =>
+    api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/plan`, data),
+
+  // PUT /admin/users/bulk/plan - Bulk assign plan to users
+  bulkAssignPlanToUsers: (data: { user_ids: number[], plan_code: string }) =>
+    api.put<ApiResponse<{ users: any[] }>>('/admin/users/bulk/plan', data),
+
   // GET /admin/stats - Get platform statistics
   getPlatformStats: () => api.get<ApiResponse<{
     users: {
@@ -759,17 +767,54 @@ export const adminAPI = {
     }
   }>>('/admin/stats'),
 
-  // Plans management - UserController endpoints (only GET and POST available)
-  getPlans: () => api.get<ApiResponse<{ plans: any[] }>>('/user/admin/plans'),
-  createPlan: (data: any) => api.post<ApiResponse<{ plan: any }>>('/user/admin/plans', data),
-  // Note: Update and Delete not implemented in backend yet
-  updatePlan: (id: number, data: any) => Promise.reject(new Error('Plan update not implemented')),
-  deletePlan: (id: number) => Promise.reject(new Error('Plan deletion not implemented')),
+  // Plans management - AdminController endpoints
+  getPlans: () => api.get<ApiResponse<{ plans: any[] }>>('/admin/plans'),
+  createPlan: (data: any) => api.post<ApiResponse<{ plan: any }>>('/admin/plans', data),
+  updatePlan: (id: number, data: any) => api.put<ApiResponse<{ plan: any }>>(`/admin/plans/${id}`, data),
+  deletePlan: (id: number) => api.delete<ApiResponse<{}>>(`/admin/plans/${id}`),
 
-  // Analytics - placeholder for future implementation, using platform stats for now
+  // Analytics - real implementation
   getAnalytics: (params?: {
     startDate?: string
     endDate?: string
     granularity?: 'day' | 'week' | 'month'
-  }) => Promise.reject(new Error('Analytics endpoint not implemented yet')),
+  }) => api.get<ApiResponse<{
+    metrics: {
+      totalUsers: number
+      userGrowth: number
+      activeSubscriptions: number
+      subscriptionGrowth: number
+      monthlyRevenue: number
+      revenueGrowth: number
+      projectsCreated: number
+      projectGrowth: number
+    }
+    timeSeriesData: {
+      userGrowth: any[]
+      contentCreation: any[]
+      exportActivity: any[]
+      revenue: any[]
+    }
+    topPlans: Array<{
+      name: string
+      subscribers: number
+      revenue: number
+      percentage: number
+    }>
+    activityMetrics: {
+      dailyActiveUsers: number
+      weeklyActiveUsers: number
+      avgSessionDuration: number
+      projectsPerUser: number
+      exportsPerUser: number
+    }
+    systemMetrics: {
+      apiResponseTime: number
+      errorRate: number
+      storageUsage: number
+      uptime: number
+    }
+    exportAnalytics: any
+    contentTrends: any[]
+  }>>('/admin/analytics', { params }),
 }

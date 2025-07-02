@@ -268,11 +268,11 @@ class MediaRepository extends ServiceEntityRepository
     public function findByFileSize(int $minSize, int $maxSize): array
     {
         return $this->createQueryBuilder('m')
-            ->andWhere('m.fileSize >= :minSize AND m.fileSize <= :maxSize')
+            ->andWhere('m.size >= :minSize AND m.size <= :maxSize')
             ->andWhere('m.deletedAt IS NULL')
             ->setParameter('minSize', $minSize)
             ->setParameter('maxSize', $maxSize)
-            ->orderBy('m.fileSize', 'ASC')
+            ->orderBy('m.size', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -409,6 +409,25 @@ class MediaRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result ? (int) $result : 0;
+    }
+
+    /**
+     * Get total storage size of all active media files.
+     * 
+     * Calculates the total size in bytes of all non-deleted media files.
+     * Used for analytics and storage usage reporting.
+     * 
+     * @return int Total size in bytes
+     */
+    public function getTotalStorageSize(): int
+    {
+        $result = $this->createQueryBuilder('m')
+            ->select('COALESCE(SUM(m.size), 0)')
+            ->where('m.deletedAt IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+        
+        return (int) ($result ?? 0);
     }
 
     /**

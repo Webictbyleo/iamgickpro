@@ -9,7 +9,7 @@
             <p class="mt-2 text-gray-600">Manage platform users, roles, and permissions</p>
           </div>
           <div class="flex items-center space-x-4">
-            <!-- Platform Stats -->Move the 
+            <!-- Platform Stats -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
               <div class="flex items-center space-x-4">
                 <div class="text-center">
@@ -84,6 +84,32 @@
 
       <!-- Users Table -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <!-- Bulk Actions Header -->
+        <div v-if="selectedUserIds.length > 0" class="px-6 py-3 bg-blue-50 border-b border-blue-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="text-sm font-medium text-blue-900">
+                {{ selectedUserIds.length }} user{{ selectedUserIds.length === 1 ? '' : 's' }} selected
+              </span>
+              <button
+                @click="selectedUserIds = []"
+                class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button
+                @click="bulkAssignPlan"
+                class="px-3 py-1 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors flex items-center space-x-1"
+              >
+                <CreditCardIcon class="w-4 h-4" />
+                <span>Assign Plan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="overflow-hidden">
           <!-- Loading State -->
           <div v-if="loading" class="p-8 text-center">
@@ -96,6 +122,15 @@
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="relative px-6 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      :checked="selectedUserIds.length === users.length && users.length > 0"
+                      :indeterminate="selectedUserIds.length > 0 && selectedUserIds.length < users.length"
+                      @change="toggleSelectAll"
+                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
@@ -107,6 +142,15 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50">
+                  <!-- Checkbox -->
+                  <td class="relative px-6 py-4 whitespace-nowrap">
+                    <input
+                      v-model="selectedUserIds"
+                      :value="user.id"
+                      type="checkbox"
+                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </td>
                   <!-- User Info -->
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
@@ -243,6 +287,15 @@
                       >
                         <KeyIcon class="w-4 h-4" />
                       </button>
+
+                      <!-- Assign Plan -->
+                      <button
+                        @click="assignPlanToUser(user)"
+                        class="text-orange-600 hover:text-orange-900 p-1 rounded transition-colors"
+                        title="Assign Plan"
+                      >
+                        <CreditCardIcon class="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -306,6 +359,16 @@
       @close="editingUser = null"
       @updated="handleUserUpdated"
     />
+
+    <!-- Plan Assignment Modal -->
+    <PlanAssignmentModal
+      v-if="showPlanAssignmentModal"
+      :mode="planAssignmentMode"
+      :user="userForPlanAssignment"
+      :selectedUsers="selectedUsersForBulkPlan"
+      @close="showPlanAssignmentModal = false"
+      @assigned="handlePlanAssigned"
+    />
   </AppLayout>
 </template>
 
@@ -319,6 +382,7 @@ import { debounce } from 'lodash-es'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import UserDetailsModal from './components/UserDetailsModal.vue'
 import EditRolesModal from './components/EditRolesModal.vue'
+import PlanAssignmentModal from './components/PlanAssignmentModal.vue'
 import type { User } from '@/types'
 
 // Heroicons
@@ -331,7 +395,8 @@ import {
   EyeIcon,
   UserMinusIcon,
   UserPlusIcon,
-  UsersIcon
+  UsersIcon,
+  CreditCardIcon
 } from '@heroicons/vue/24/outline'
 
 // Access control
@@ -418,6 +483,11 @@ const filters = ref({
 // Modals
 const selectedUser = ref<AdminUser | null>(null)
 const editingUser = ref<AdminUser | null>(null)
+const showPlanAssignmentModal = ref(false)
+const planAssignmentMode = ref<'single' | 'bulk'>('single')
+const userForPlanAssignment = ref<AdminUser | null>(null)
+const selectedUsersForBulkPlan = ref<AdminUser[]>([])
+const selectedUserIds = ref<number[]>([]) // For bulk selection
 
 // Search debounce
 const debouncedSearch = debounce(() => {
@@ -485,6 +555,38 @@ const toggleUserStatus = async (user: AdminUser) => {
   }
 }
 
+const assignPlanToUser = (user: AdminUser) => {
+  planAssignmentMode.value = 'single'
+  userForPlanAssignment.value = user
+  showPlanAssignmentModal.value = true
+}
+
+const bulkAssignPlan = () => {
+  if (selectedUserIds.value.length === 0) {
+    showError('Please select users first')
+    return
+  }
+  
+  const selectedUsers = users.value.filter(user => selectedUserIds.value.includes(user.id))
+  planAssignmentMode.value = 'bulk'
+  selectedUsersForBulkPlan.value = selectedUsers
+  showPlanAssignmentModal.value = true
+}
+
+const handlePlanAssigned = (assignedUsers: AdminUser[], planCode: string) => {
+  // Update users in the list
+  assignedUsers.forEach(assignedUser => {
+    const index = users.value.findIndex((u: AdminUser) => u.id === assignedUser.id)
+    if (index !== -1) {
+      users.value[index].plan = planCode
+    }
+  })
+  
+  // Clear selections
+  selectedUserIds.value = []
+  showPlanAssignmentModal.value = false
+}
+
 const handleUserUpdated = (updatedUser?: AdminUser) => {
   // If no updatedUser is provided, reload the users list
   if (!updatedUser) {
@@ -514,6 +616,16 @@ const handleEditRolesFromModal = (user: AdminUser) => {
 const changePage = (page: number) => {
   filters.value.page = page
   loadUsers()
+}
+
+// Bulk selection functions
+const toggleSelectAll = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.checked) {
+    selectedUserIds.value = users.value.map(user => user.id)
+  } else {
+    selectedUserIds.value = []
+  }
 }
 
 // Utility functions

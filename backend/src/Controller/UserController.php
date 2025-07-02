@@ -12,15 +12,11 @@ use App\DTO\Response\ErrorResponseDTO;
 use App\DTO\Response\SuccessResponseDTO;
 use App\DTO\Response\UserProfileResponseDTO;
 use App\Entity\User;
-use App\Entity\SubscriptionPlan;
-use App\Entity\PlanLimit;
-use App\Entity\PlanFeature;
 use App\Message\PrepareUserDataDownloadMessage;
 use App\Message\DeleteUserAccountMessage;
 use App\Service\ResponseDTOFactory;
 use App\Service\UserService;
 use App\Service\FileUploadService;
-use App\Service\DatabasePlanService;
 use App\Service\RateLimitService;
 use App\Service\AuditLogService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -57,7 +53,6 @@ class UserController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly ResponseDTOFactory $responseDTOFactory,
         private readonly EntityManagerInterface $entityManager,
-        private readonly DatabasePlanService $planService,
         private readonly LoggerInterface $logger,
         private readonly MessageBusInterface $messageBus,
         private readonly RateLimitService $rateLimitService,
@@ -382,117 +377,7 @@ class UserController extends AbstractController
         }
     }
 
-    // ========================================
-    // ADMIN PLAN MANAGEMENT ENDPOINTS
-    // ========================================
 
-    /**
-     * Get all subscription plans (Admin only)
-     * 
-     * Returns all subscription plans including inactive ones for admin management.
-     * Only accessible to users with ROLE_ADMIN.
-     * 
-     * @return JsonResponse List of all plans with their limits and features
-     */
-    #[Route('/admin/plans', name: 'admin_plans_list', methods: ['GET'])]
-    #[IsGranted('ROLE_ADMIN')]
-    public function listPlansAdmin(): JsonResponse
-    {
-        try {
-            $plans = $this->entityManager->getRepository(SubscriptionPlan::class)
-                ->findBy([], ['sortOrder' => 'ASC']);
-
-            $plansData = array_map(function (SubscriptionPlan $plan) {
-                return $this->formatPlanForAdmin($plan);
-            }, $plans);
-
-            return new JsonResponse([
-                'success' => true,
-                'message' => 'Plans retrieved successfully',
-                'data' => ['plans' => $plansData]
-            ]);
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to retrieve plans for admin', [
-                'error' => $e->getMessage(),
-                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
-            ]);
-
-            return new JsonResponse([
-                'success' => false,
-                'message' => 'Failed to retrieve plans'
-            ], 500);
-        }
-    }
-
-    /**
-     * Create a new subscription plan (Admin only)
-     * 
-     * Creates a new subscription plan with limits and features.
-     * Only accessible to users with ROLE_ADMIN.
-     * 
-     * @param Request $request Plan data including name, price, limits, and features
-     * @return JsonResponse Created plan data or validation errors
-     */
-    #[Route('/admin/plans', name: 'admin_plans_create', methods: ['POST'])]
-    #[IsGranted('ROLE_ADMIN')]
-    public function createPlanAdmin(Request $request): JsonResponse
-    {
-        try {
-            $data = json_decode($request->getContent(), true);
-
-            if (!$data) {
-                return new JsonResponse([
-                    'success' => false,
-                    'message' => 'Invalid JSON data'
-                ], 400);
-            }
-
-            // Create new plan
-            $plan = new SubscriptionPlan();
-            $this->updatePlanFromData($plan, $data);
-
-            // Validate the plan
-            $errors = $this->validator->validate($plan);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                
-                return new JsonResponse([
-                    'success' => false,
-                    'message' => 'Validation failed: ' . implode(', ', $errorMessages)
-                ], 400);
-            }
-
-            $this->entityManager->persist($plan);
-            $this->entityManager->flush();
-
-            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
-            $this->logger->info('Subscription plan created', [
-                'plan_id' => $plan->getId(),
-                'plan_code' => $plan->getCode(),
-                'admin_user' => $userId
-            ]);
-
-            return new JsonResponse([
-                'success' => true,
-                'message' => 'Plan created successfully',
-                'data' => ['plan' => $this->formatPlanForAdmin($plan)]
-            ], 201);
-        } catch (\Exception $e) {
-            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
-            $this->logger->error('Failed to create plan', [
-                'error' => $e->getMessage(),
-                'admin_user' => $userId
-            ]);
-
-            return new JsonResponse([
-                'success' => false,
-                'message' => 'Failed to create plan'
-            ], 500);
-        }
-    }
 
     /**
      * Download prepared data export file
@@ -597,153 +482,5 @@ class UserController extends AbstractController
         }
     }
 
-    // ========================================
-    // PRIVATE HELPER METHODS FOR ADMIN PLANS
-    // ========================================
 
-    /**
-     * Update plan from request data
-     */
-    private function updatePlanFromData(SubscriptionPlan $plan, array $data): void
-    {
-        if (isset($data['code'])) {
-            $plan->setCode($data['code']);
-        }
-
-        if (isset($data['name'])) {
-            $plan->setName($data['name']);
-        }
-
-        if (isset($data['description'])) {
-            $plan->setDescription($data['description']);
-        }
-
-        if (isset($data['monthly_price'])) {
-            $plan->setMonthlyPrice((string) $data['monthly_price']);
-        }
-
-        if (isset($data['yearly_price'])) {
-            $plan->setYearlyPrice((string) $data['yearly_price']);
-        }
-
-        if (isset($data['currency'])) {
-            $plan->setCurrency($data['currency']);
-        }
-
-        if (isset($data['is_active'])) {
-            $plan->setIsActive((bool) $data['is_active']);
-        }
-
-        if (isset($data['is_default'])) {
-            // If setting this plan as default, remove default from others
-            if ($data['is_default']) {
-                $this->clearOtherDefaultPlans();
-            }
-            $plan->setIsDefault((bool) $data['is_default']);
-        }
-
-        if (isset($data['sort_order'])) {
-            $plan->setSortOrder((int) $data['sort_order']);
-        }
-
-        // Update limits
-        if (isset($data['limits']) && is_array($data['limits'])) {
-            $this->updatePlanLimits($plan, $data['limits']);
-        }
-
-        // Update features
-        if (isset($data['features']) && is_array($data['features'])) {
-            $this->updatePlanFeatures($plan, $data['features']);
-        }
-    }
-
-    /**
-     * Update plan limits
-     */
-    private function updatePlanLimits(SubscriptionPlan $plan, array $limits): void
-    {
-        // Remove existing limits
-        foreach ($plan->getLimits() as $limit) {
-            $this->entityManager->remove($limit);
-        }
-        $plan->getLimits()->clear();
-
-        // Add new limits
-        foreach ($limits as $limitName => $limitValue) {
-            $limit = new PlanLimit();
-            $limit->setPlan($plan);
-            $limit->setType($limitName);
-            $limit->setValue((int) $limitValue);
-            
-            $plan->addLimit($limit);
-            $this->entityManager->persist($limit);
-        }
-    }
-
-    /**
-     * Update plan features
-     */
-    private function updatePlanFeatures(SubscriptionPlan $plan, array $features): void
-    {
-        // Remove existing features
-        foreach ($plan->getFeatures() as $feature) {
-            $this->entityManager->remove($feature);
-        }
-        $plan->getFeatures()->clear();
-
-        // Add new features
-        foreach ($features as $featureName => $isEnabled) {
-            $feature = new PlanFeature();
-            $feature->setPlan($plan);
-            $feature->setCode($featureName);
-            $feature->setName(ucwords(str_replace('_', ' ', $featureName)));
-            $feature->setEnabled((bool) $isEnabled);
-            
-            $plan->addFeature($feature);
-            $this->entityManager->persist($feature);
-        }
-    }
-
-    /**
-     * Clear default flag from other plans
-     */
-    private function clearOtherDefaultPlans(): void
-    {
-        $this->entityManager->createQuery(
-            'UPDATE App\Entity\SubscriptionPlan p SET p.isDefault = false WHERE p.isDefault = true'
-        )->execute();
-    }
-
-    /**
-     * Format plan data for admin interface
-     */
-    private function formatPlanForAdmin(SubscriptionPlan $plan): array
-    {
-        $limits = [];
-        foreach ($plan->getLimits() as $limit) {
-            $limits[$limit->getType()] = $limit->getValue();
-        }
-
-        $features = [];
-        foreach ($plan->getFeatures() as $feature) {
-            $features[$feature->getCode()] = $feature->isEnabled();
-        }
-
-        return [
-            'id' => $plan->getId(),
-            'code' => $plan->getCode(),
-            'name' => $plan->getName(),
-            'description' => $plan->getDescription(),
-            'monthly_price' => $plan->getMonthlyPrice(),
-            'yearly_price' => $plan->getYearlyPrice(),
-            'currency' => $plan->getCurrency(),
-            'is_active' => $plan->isActive(),
-            'is_default' => $plan->isDefault(),
-            'sort_order' => $plan->getSortOrder(),
-            'limits' => $limits,
-            'features' => $features,
-            'created_at' => $plan->getCreatedAt()->format('Y-m-d H:i:s'),
-            'updated_at' => $plan->getUpdatedAt()?->format('Y-m-d H:i:s'),
-        ];
-    }
 }

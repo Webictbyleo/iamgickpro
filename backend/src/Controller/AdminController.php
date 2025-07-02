@@ -8,9 +8,12 @@ use App\Controller\Trait\TypedResponseTrait;
 use App\DTO\Response\ErrorResponseDTO;
 use App\Entity\User;
 use App\Entity\SubscriptionPlan;
+use App\Entity\PlanLimit;
+use App\Entity\PlanFeature;
 use App\Repository\UserRepository;
 use App\Service\ResponseDTOFactory;
 use App\Service\AuthService;
+use App\Service\AnalyticsService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -42,6 +45,7 @@ class AdminController extends AbstractController
         private readonly ResponseDTOFactory $responseDTOFactory,
         private readonly AuthService $authService,
         private readonly LoggerInterface $logger,
+        private readonly AnalyticsService $analyticsService,
     ) {}
 
     /**
@@ -439,5 +443,614 @@ class AdminController extends AbstractController
         ];
         
         return $basicData;
+    }
+
+    /**
+     * Assign plan to user
+     * 
+     * @param int $userId User ID
+     * @param Request $request Request containing plan assignment data
+     * @return JsonResponse Success or error response
+     */
+    #[Route('/users/{userId}/plan', name: 'user_assign_plan', methods: ['PUT'])]
+    public function assignPlanToUser(int $userId, Request $request): JsonResponse
+    {
+        try {
+            $user = $this->userRepository->find($userId);
+            
+            if (!$user) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            
+            if (!isset($data['plan_code'])) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan code is required'
+                ], 400);
+            }
+
+            $plan = $this->entityManager->getRepository(SubscriptionPlan::class)
+                ->findOneBy(['code' => $data['plan_code']]);
+
+            if (!$plan) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan not found'
+                ], 404);
+            }
+
+            $user->setPlan($plan->getCode());
+            $this->entityManager->flush();
+
+            $this->logger->info('Plan assigned to user by admin', [
+                'user_id' => $user->getId(),
+                'user_email' => $user->getEmail(),
+                'plan_code' => $plan->getCode(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Plan assigned successfully',
+                'data' => ['user' => $this->formatUserForAdmin($user)]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to assign plan to user', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to assign plan to user'
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk assign plan to multiple users
+     * 
+     * @param Request $request Request containing user IDs and plan assignment data
+     * @return JsonResponse Success or error response
+     */
+    #[Route('/users/bulk/plan', name: 'users_bulk_assign_plan', methods: ['PUT'])]
+    public function bulkAssignPlanToUsers(Request $request): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+            
+            if (!isset($data['user_ids']) || !is_array($data['user_ids'])) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'User IDs array is required'
+                ], 400);
+            }
+
+            if (!isset($data['plan_code'])) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan code is required'
+                ], 400);
+            }
+
+            $userIds = array_map('intval', $data['user_ids']);
+            $planCode = $data['plan_code'];
+
+            // Validate plan exists
+            $plan = $this->entityManager->getRepository(SubscriptionPlan::class)
+                ->findOneBy(['code' => $planCode]);
+
+            if (!$plan) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan not found'
+                ], 404);
+            }
+
+            // Get all users
+            $users = $this->userRepository->findBy(['id' => $userIds]);
+            
+            if (count($users) !== count($userIds)) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Some users not found'
+                ], 404);
+            }
+
+            // Update all users
+            $updatedUsers = [];
+            foreach ($users as $user) {
+                $user->setPlan($plan->getCode());
+                $updatedUsers[] = $this->formatUserForAdmin($user);
+            }
+
+            $this->entityManager->flush();
+
+            $this->logger->info('Bulk plan assignment completed by admin', [
+                'user_count' => count($users),
+                'user_ids' => $userIds,
+                'plan_code' => $plan->getCode(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => "Plan assigned to " . count($users) . " users successfully",
+                'data' => ['users' => $updatedUsers]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to bulk assign plan to users', [
+                'error' => $e->getMessage(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to bulk assign plan to users'
+            ], 500);
+        }
+    }
+
+    // ========================================
+    // PLAN MANAGEMENT ENDPOINTS
+    // ========================================
+
+    /**
+     * Get all subscription plans (Admin only)
+     * 
+     * Returns all subscription plans including inactive ones for admin management.
+     * Only accessible to users with ROLE_ADMIN.
+     * 
+     * @return JsonResponse List of all plans with their limits and features
+     */
+    #[Route('/plans', name: 'admin_plans_list', methods: ['GET'])]
+    public function listPlans(): JsonResponse
+    {
+        try {
+            $plans = $this->entityManager->getRepository(SubscriptionPlan::class)
+                ->findBy([], ['sortOrder' => 'ASC']);
+
+            $plansData = array_map(function (SubscriptionPlan $plan) {
+                return $this->formatPlanForAdmin($plan);
+            }, $plans);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Plans retrieved successfully',
+                'data' => ['plans' => $plansData]
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve plans for admin', [
+                'error' => $e->getMessage(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to retrieve plans'
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new subscription plan (Admin only)
+     * 
+     * Creates a new subscription plan with limits and features.
+     * Only accessible to users with ROLE_ADMIN.
+     * 
+     * @param Request $request Plan data including name, price, limits, and features
+     * @return JsonResponse Created plan data or validation errors
+     */
+    #[Route('/plans', name: 'admin_plans_create', methods: ['POST'])]
+    public function createPlan(Request $request): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Invalid JSON data'
+                ], 400);
+            }
+
+            // Create new plan
+            $plan = new SubscriptionPlan();
+            $this->updatePlanFromData($plan, $data);
+
+            // Validate the plan
+            $errors = $this->validator->validate($plan);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', $errorMessages)
+                ], 400);
+            }
+
+            $this->entityManager->persist($plan);
+            $this->entityManager->flush();
+
+            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
+            $this->logger->info('Subscription plan created', [
+                'plan_id' => $plan->getId(),
+                'plan_code' => $plan->getCode(),
+                'admin_user' => $userId
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Plan created successfully',
+                'data' => ['plan' => $this->formatPlanForAdmin($plan)]
+            ], 201);
+        } catch (\Exception $e) {
+            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
+            $this->logger->error('Failed to create plan', [
+                'error' => $e->getMessage(),
+                'admin_user' => $userId
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to create plan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a subscription plan (Admin only)
+     * 
+     * Updates an existing subscription plan with new data.
+     * 
+     * @param int $id Plan ID
+     * @param Request $request Plan data to update
+     * @return JsonResponse Updated plan data or validation errors
+     */
+    #[Route('/plans/{id}', name: 'admin_plans_update', methods: ['PUT'])]
+    public function updatePlan(int $id, Request $request): JsonResponse
+    {
+        try {
+            $plan = $this->entityManager->getRepository(SubscriptionPlan::class)->find($id);
+
+            if (!$plan) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan not found'
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Invalid JSON data'
+                ], 400);
+            }
+
+            $this->updatePlanFromData($plan, $data);
+
+            // Validate the plan
+            $errors = $this->validator->validate($plan);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', $errorMessages)
+                ], 400);
+            }
+
+            $this->entityManager->flush();
+
+            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
+            $this->logger->info('Subscription plan updated', [
+                'plan_id' => $plan->getId(),
+                'plan_code' => $plan->getCode(),
+                'admin_user' => $userId
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Plan updated successfully',
+                'data' => ['plan' => $this->formatPlanForAdmin($plan)]
+            ]);
+        } catch (\Exception $e) {
+            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
+            $this->logger->error('Failed to update plan', [
+                'plan_id' => $id,
+                'error' => $e->getMessage(),
+                'admin_user' => $userId
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to update plan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a subscription plan (Admin only)
+     * 
+     * Deletes a subscription plan. Cannot delete plans that have active subscriptions.
+     * 
+     * @param int $id Plan ID
+     * @return JsonResponse Success or error response
+     */
+    #[Route('/plans/{id}', name: 'admin_plans_delete', methods: ['DELETE'])]
+    public function deletePlan(int $id): JsonResponse
+    {
+        try {
+            $plan = $this->entityManager->getRepository(SubscriptionPlan::class)->find($id);
+
+            if (!$plan) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan not found'
+                ], 404);
+            }
+
+            // Check if plan is in use by users
+            $usersCount = $this->userRepository->createQueryBuilder('u')
+                ->select('COUNT(u.id)')
+                ->where('u.plan = :planCode')
+                ->setParameter('planCode', $plan->getCode())
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            if ($usersCount > 0) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Cannot delete plan with active subscriptions'
+                ], 400);
+            }
+
+            $this->entityManager->remove($plan);
+            $this->entityManager->flush();
+
+            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
+            $this->logger->info('Subscription plan deleted', [
+                'plan_id' => $plan->getId(),
+                'plan_code' => $plan->getCode(),
+                'admin_user' => $userId
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Plan deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            $userId = $this->getUser()?->getUserIdentifier() ?? 'unknown';
+            $this->logger->error('Failed to delete plan', [
+                'plan_id' => $id,
+                'error' => $e->getMessage(),
+                'admin_user' => $userId
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to delete plan'
+            ], 500);
+        }
+    }
+
+    // ========================================
+    // ANALYTICS ENDPOINTS
+    // ========================================
+
+    /**
+     * Get comprehensive analytics data
+     * 
+     * @param Request $request Request with analytics parameters
+     * @return JsonResponse Analytics data or error response
+     */
+    #[Route('/analytics', name: 'admin_analytics', methods: ['GET'])]
+    public function getAnalytics(Request $request): JsonResponse
+    {
+        try {
+            $startDate = $request->query->get('startDate');
+            $endDate = $request->query->get('endDate');
+            $granularity = $request->query->get('granularity', 'day');
+
+            // Validate granularity
+            if (!in_array($granularity, ['day', 'week', 'month'])) {
+                $granularity = 'day';
+            }
+
+            // Set default date range if not provided
+            if (!$startDate || !$endDate) {
+                $endDate = new \DateTimeImmutable();
+                $startDate = $endDate->modify('-30 days');
+            } else {
+                $startDate = new \DateTimeImmutable($startDate);
+                $endDate = new \DateTimeImmutable($endDate);
+            }
+
+            // Get analytics data from service
+            $analyticsData = $this->analyticsService->getAdminAnalytics($startDate, $endDate, $granularity);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Analytics data retrieved successfully',
+                'data' => $analyticsData
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve analytics data', [
+                'error' => $e->getMessage(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ========================================
+    // PRIVATE HELPER METHODS
+    // ========================================
+
+    /**
+     * Update plan from request data
+     */
+    private function updatePlanFromData(SubscriptionPlan $plan, array $data): void
+    {
+        if (isset($data['code'])) {
+            $plan->setCode($data['code']);
+        }
+
+        if (isset($data['name'])) {
+            $plan->setName($data['name']);
+        }
+
+        if (isset($data['description'])) {
+            $plan->setDescription($data['description']);
+        }
+
+        if (isset($data['monthly_price'])) {
+            $plan->setMonthlyPrice((string) $data['monthly_price']);
+        }
+
+        if (isset($data['yearly_price'])) {
+            $plan->setYearlyPrice((string) $data['yearly_price']);
+        }
+
+        if (isset($data['currency'])) {
+            $plan->setCurrency($data['currency']);
+        }
+
+        if (isset($data['is_active'])) {
+            $plan->setIsActive((bool) $data['is_active']);
+        }
+
+        if (isset($data['is_default'])) {
+            // If setting this plan as default, remove default from others
+            if ($data['is_default']) {
+                $this->clearOtherDefaultPlans();
+            }
+            $plan->setIsDefault((bool) $data['is_default']);
+        }
+
+        if (isset($data['sort_order'])) {
+            $plan->setSortOrder((int) $data['sort_order']);
+        }
+
+        // Update limits
+        if (isset($data['limits']) && is_array($data['limits'])) {
+            $this->updatePlanLimits($plan, $data['limits']);
+        }
+
+        // Update features
+        if (isset($data['features']) && is_array($data['features'])) {
+            $this->updatePlanFeatures($plan, $data['features']);
+        }
+    }
+
+    /**
+     * Update plan limits
+     */
+    private function updatePlanLimits(SubscriptionPlan $plan, array $limits): void
+    {
+        // Remove existing limits
+        foreach ($plan->getLimits() as $limit) {
+            $this->entityManager->remove($limit);
+        }
+        $plan->getLimits()->clear();
+
+        // Add new limits
+        foreach ($limits as $limitName => $limitValue) {
+            $limit = new PlanLimit();
+            $limit->setPlan($plan);
+            $limit->setType($limitName);
+            $limit->setValue((int) $limitValue);
+            
+            $plan->addLimit($limit);
+            $this->entityManager->persist($limit);
+        }
+    }
+
+    /**
+     * Update plan features
+     */
+    private function updatePlanFeatures(SubscriptionPlan $plan, array $features): void
+    {
+        // Remove existing features
+        foreach ($plan->getFeatures() as $feature) {
+            $this->entityManager->remove($feature);
+        }
+        $plan->getFeatures()->clear();
+
+        // Add new features
+        foreach ($features as $featureName => $isEnabled) {
+            $feature = new PlanFeature();
+            $feature->setPlan($plan);
+            $feature->setCode($featureName);
+            $feature->setName(ucwords(str_replace('_', ' ', $featureName)));
+            $feature->setEnabled((bool) $isEnabled);
+            
+            $plan->addFeature($feature);
+            $this->entityManager->persist($feature);
+        }
+    }
+
+    /**
+     * Clear default flag from other plans
+     */
+    private function clearOtherDefaultPlans(): void
+    {
+        $this->entityManager->createQuery(
+            'UPDATE App\Entity\SubscriptionPlan p SET p.isDefault = false WHERE p.isDefault = true'
+        )->execute();
+    }
+
+    /**
+     * Format plan data for admin interface
+     */
+    private function formatPlanForAdmin(SubscriptionPlan $plan): array
+    {
+        $limits = [];
+        foreach ($plan->getLimits() as $limit) {
+            $limits[$limit->getType()] = $limit->getValue();
+        }
+
+        $features = [];
+        foreach ($plan->getFeatures() as $feature) {
+            $features[$feature->getCode()] = $feature->isEnabled();
+        }
+
+        return [
+            'id' => $plan->getId(),
+            'code' => $plan->getCode(),
+            'name' => $plan->getName(),
+            'description' => $plan->getDescription(),
+            'monthly_price' => $plan->getMonthlyPrice(),
+            'yearly_price' => $plan->getYearlyPrice(),
+            'currency' => $plan->getCurrency(),
+            'is_active' => $plan->isActive(),
+            'is_default' => $plan->isDefault(),
+            'sort_order' => $plan->getSortOrder(),
+            'limits' => $limits,
+            'features' => $features,
+            'created_at' => $plan->getCreatedAt()->format('Y-m-d H:i:s'),
+            'updated_at' => $plan->getUpdatedAt()?->format('Y-m-d H:i:s'),
+        ];
     }
 }

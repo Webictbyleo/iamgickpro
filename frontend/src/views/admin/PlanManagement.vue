@@ -76,8 +76,11 @@
                 <span class="text-3xl font-bold text-gray-900">${{ formatPrice(plan.monthly_price || 0) }}</span>
                 <span class="ml-1 text-gray-500">/ month</span>
               </div>
-              <p v-if="plan.yearly_price" class="text-sm text-blue-600 mt-1">
-                ${{ formatPrice(plan.yearly_price) }}/year (save {{ Math.round((1 - (plan.yearly_price / (plan.monthly_price * 12))) * 100) }}%)
+              <p v-if="plan.yearly_price && parseFloat(plan.monthly_price || '0') > 0" class="text-sm text-blue-600 mt-1">
+                ${{ formatPrice(plan.yearly_price) }}/year (save {{ calculateSavings(plan.monthly_price, plan.yearly_price) }}%)
+              </p>
+              <p v-else-if="parseFloat(plan.monthly_price || '0') === 0" class="text-sm text-green-600 mt-1">
+                Free Plan - No charge
               </p>
             </div>
 
@@ -295,10 +298,8 @@ const savePlan = async (planData: any) => {
   submitting.value = true
   try {
     if (editingPlan.value) {
-      showError('Plan editing is not implemented yet')
-      // TODO: Implement when backend endpoint is available
-      // await adminAPI.updatePlan(editingPlan.value.id, planData)
-      // showSuccess('Plan updated successfully')
+      await adminAPI.updatePlan(editingPlan.value.id, planData)
+      showSuccess('Plan updated successfully')
     } else {
       await adminAPI.createPlan(planData)
       showSuccess('Plan created successfully')
@@ -316,13 +317,11 @@ const savePlan = async (planData: any) => {
 
 const togglePlanStatus = async (plan: any) => {
   try {
-    showError('Plan status update is not implemented yet')
-    // TODO: Implement when backend endpoint is available
-    // await adminAPI.updatePlan(plan.id, { 
-    //   is_active: !plan.isActive 
-    // })
-    // plan.isActive = !plan.isActive
-    // showSuccess('Plan status updated successfully')
+    await adminAPI.updatePlan(plan.id, { 
+      is_active: !plan.is_active 
+    })
+    plan.is_active = !plan.is_active
+    showSuccess('Plan status updated successfully')
   } catch (error) {
     console.error('Failed to toggle plan status:', error)
     showError('Failed to update plan status')
@@ -335,15 +334,26 @@ const deletePlan = async (plan: any) => {
   }
 
   try {
-    showError('Plan deletion is not implemented yet')
-    // TODO: Implement when backend endpoint is available
-    // await adminAPI.deletePlan(plan.id)
-    // showSuccess('Plan deleted successfully')
-    // await loadPlans()
+    await adminAPI.deletePlan(plan.id)
+    showSuccess('Plan deleted successfully')
+    await loadPlans()
   } catch (error) {
     console.error('Failed to delete plan:', error)
     showError('Failed to delete plan')
   }
+}
+
+const calculateSavings = (monthlyPrice: string | number, yearlyPrice: string | number): number => {
+  const monthly = typeof monthlyPrice === 'string' ? parseFloat(monthlyPrice) : monthlyPrice
+  const yearly = typeof yearlyPrice === 'string' ? parseFloat(yearlyPrice) : yearlyPrice
+  
+  // If monthly price is 0 or yearly price is 0, no savings calculation
+  if (monthly === 0 || yearly === 0) return 0
+  
+  const annualMonthly = monthly * 12
+  const savings = ((annualMonthly - yearly) / annualMonthly) * 100
+  
+  return Math.round(savings)
 }
 
 // Utility functions
