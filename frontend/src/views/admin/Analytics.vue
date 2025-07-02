@@ -1,16 +1,12 @@
 <template>
   <AppLayout title="Analytics & Reports" subtitle="Monitor platform performance and user engagement">
     <div class="max-w-7xl mx-auto">
-      <!-- Header -->
+      <!-- Header Controls -->
       <div class="mb-8">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900 analytics-title">Analytics & Reports</h1>
-            <p class="mt-1 text-gray-600">Monitor platform performance and user engagement</p>
-            <div class="mt-2 flex items-center text-sm text-gray-500">
-              <CalendarDaysIcon class="w-4 h-4 mr-1" />
-              Last updated: {{ formatLastUpdated() }}
-            </div>
+          <div class="flex items-center text-sm text-gray-500">
+            <CalendarDaysIcon class="w-4 h-4 mr-1" />
+            Last updated: {{ formatLastUpdated() }}
           </div>
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <!-- Auto Refresh Toggle -->
@@ -1118,10 +1114,6 @@ onUnmounted(() => {
 
 /* Responsive improvements */
 @media (max-width: 640px) {
-  .analytics-title {
-    font-size: 1.5rem;
-  }
-  
   .metric-value {
     font-size: 1.25rem;
   }

@@ -1,13 +1,9 @@
 <template>
   <AppLayout title="User Management" subtitle="Manage platform users, roles, and permissions">
     <div class="max-w-7xl mx-auto">
-      <!-- Header -->
+      <!-- Header Controls -->
       <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
-            <p class="mt-2 text-gray-600">Manage platform users, roles, and permissions</p>
-          </div>
+        <div class="flex items-center justify-end">
           <div class="flex items-center space-x-4">
             <!-- Platform Stats -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">

@@ -1,13 +1,9 @@
 <template>
-  <AppLayout title="Plan Management" subtitle="Create and manage subscription plans">
+  <AppLayout title="Plan Management" subtitle="Manage subscription plans, pricing, and features">
     <div class="max-w-7xl mx-auto">
-      <!-- Header -->
+      <!-- Header Controls -->
       <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">Plan Management</h1>
-            <p class="mt-2 text-gray-600">Manage subscription plans, pricing, and features</p>
-          </div>
+        <div class="flex items-center justify-end">
           <div class="flex items-center space-x-4">
             <!-- Plan Stats -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
