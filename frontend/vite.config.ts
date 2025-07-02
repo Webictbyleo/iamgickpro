@@ -8,27 +8,12 @@ export default defineConfig(({ command, mode }) => {
   const basePath = process.env.VITE_BASE_PATH || '/'
   
   return {
-    plugins: [
-      vue(),
-      // Custom plugin to replace HTML template variables
-      {
-        name: 'html-transform',
-        transformIndexHtml(html) {
-          return html
-            .replace(/%VITE_BASE_PATH%/g, basePath)
-            .replace(/%VITE_APP_TITLE%/g, process.env.VITE_APP_TITLE || 'IAMGickPro')
-        }
-      }
-    ],
+    plugins: [vue()],
     base: basePath,
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
       },
-    },
-    define: {
-      // Make environment variables available at build time
-      __VITE_BASE_PATH__: JSON.stringify(basePath),
     },
     esbuild: {
       // Strip console logs and debugger statements in production
