@@ -8,7 +8,18 @@ export default defineConfig(({ command, mode }) => {
   const basePath = process.env.VITE_BASE_PATH || '/'
   
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      // Custom plugin to replace HTML template variables
+      {
+        name: 'html-transform',
+        transformIndexHtml(html) {
+          return html
+            .replace(/%VITE_BASE_PATH%/g, basePath)
+            .replace(/%VITE_APP_TITLE%/g, process.env.VITE_APP_TITLE || 'IAMGickPro')
+        }
+      }
+    ],
     base: basePath,
     resolve: {
       alias: {
