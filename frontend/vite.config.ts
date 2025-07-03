@@ -5,7 +5,13 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   // Get base path from environment variable, default to '/'
-  const basePath = process.env.VITE_BASE_PATH || '/'
+  // Ensure base path starts and ends with '/' for proper routing
+  let basePath = process.env.VITE_BASE_PATH || '/'
+  if (!basePath.startsWith('/')) basePath = '/' + basePath
+  if (!basePath.endsWith('/')) basePath = basePath + '/'
+  
+  // Debug logging to verify base path is being read correctly
+  console.log(`Vite base path configured as: ${basePath}`)
   
   return {
     plugins: [vue()],
@@ -22,6 +28,8 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 3000,
       host: true,
+      // Force assets to use the base path in development
+      origin: command === 'serve' ? `http://localhost:3000${basePath}` : undefined,
       proxy: {
         // Proxy media file serving to backend
         '/media/': {
@@ -52,10 +60,10 @@ export default defineConfig(({ command, mode }) => {
           secure: false,
         },
         // Proxy stock media original media serving to backend
-        'api/media/proxy':{
+        '/api/media/proxy':{
           target: 'http://localhost:8000',
           changeOrigin: true,
-          secure: true,
+          secure: false,
           rewrite: (path) => path.replace(/^\/api\/media\/proxy/, '/api/media/proxy')
         },
         // Proxy API endpoints to backend
@@ -69,6 +77,8 @@ export default defineConfig(({ command, mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: mode === 'development',
+      // Ensure assets are built with the correct base path
+      assetsDir: 'assets',
       rollupOptions: {
         output: {
           manualChunks: {
