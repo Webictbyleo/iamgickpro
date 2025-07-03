@@ -27,17 +27,17 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-2xl transition-all">
+            <DialogPanel class="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left align-middle shadow-2xl transition-all">
               <!-- Modal Header -->
-              <div class="relative px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-yellow-50">
+              <div class="relative px-6 py-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div class="flex items-center justify-between">
-                  <DialogTitle as="h3" class="text-xl font-bold text-gray-900 flex items-center">
-                    <CreditCardIcon class="w-6 h-6 text-orange-600 mr-3" />
+                  <DialogTitle as="h3" class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                    <CreditCardIcon class="w-6 h-6 text-primary-600 dark:text-primary-400 mr-3" />
                     {{ mode === 'single' ? 'Assign Plan to User' : 'Bulk Plan Assignment' }}
                   </DialogTitle>
                   <button
                     @click="$emit('close')"
-                    class="rounded-full p-2 text-gray-400 hover:text-gray-600 hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all duration-200"
+                    class="rounded-full p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
                     aria-label="Close modal"
                   >
                     <XMarkIcon class="w-5 h-5" />
@@ -49,22 +49,22 @@
               <div class="p-6">
                 <!-- Loading State -->
                 <div v-if="loading" class="text-center py-8">
-                  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
-                  <p class="mt-4 text-gray-600">Loading plans...</p>
+                  <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-primary-600 mx-auto"></div>
+                  <p class="mt-4 text-gray-600 dark:text-gray-400">Loading plans...</p>
                 </div>
 
                 <!-- Content -->
                 <div v-else class="space-y-6">
                   <!-- Users Section -->
-                  <div v-if="mode === 'single' && user" class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-4 border border-blue-100">
-                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                      <UserIcon class="w-4 h-4 mr-2 text-gray-600" />
+                  <div v-if="mode === 'single' && user" class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                      <UserIcon class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" />
                       Target User
                     </h4>
                     <div class="flex items-center space-x-4">
                       <!-- Avatar -->
                       <div class="relative">
-                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <div class="h-12 w-12 rounded-xl bg-gray-600 dark:bg-gray-500 flex items-center justify-center shadow-lg">
                           <span class="text-white font-bold text-sm">{{ getUserInitials(user) }}</span>
                         </div>
                         <!-- Status Badge -->
@@ -72,7 +72,7 @@
                           <span 
                             :class="[
                               'inline-flex items-center justify-center w-4 h-4 rounded-full text-white font-semibold text-xs shadow-md',
-                              user.isActive ? 'bg-green-500' : 'bg-red-500'
+                              user.isActive ? 'bg-success-500' : 'bg-danger-500'
                             ]"
                           >
                             <CheckCircleIcon v-if="user.isActive" class="w-2.5 h-2.5" />
@@ -83,14 +83,14 @@
 
                       <!-- User Info -->
                       <div class="flex-1 min-w-0">
-                        <h5 class="text-base font-semibold text-gray-900 truncate">
+                        <h5 class="text-base font-semibold text-gray-900 dark:text-white truncate">
                           {{ user.firstName }} {{ user.lastName }}
                         </h5>
-                        <p class="text-sm text-gray-600 truncate">{{ user.email }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ user.email }}</p>
                         
                         <!-- Current Plan -->
                         <div class="mt-1">
-                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
                             Current: {{ user.plan || 'Free' }} Plan
                           </span>
                         </div>
@@ -99,29 +99,29 @@
                   </div>
 
                   <!-- Bulk Users Section -->
-                  <div v-else-if="mode === 'bulk'" class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-xl p-4 border border-green-100">
-                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                      <UsersIcon class="w-4 h-4 mr-2 text-gray-600" />
+                  <div v-else-if="mode === 'bulk'" class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                      <UsersIcon class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" />
                       Selected Users ({{ selectedUsers?.length || 0 }})
                     </h4>
                     <div class="space-y-2 max-h-32 overflow-y-auto">
-                      <div v-for="user in selectedUsers || []" :key="user.id" class="flex items-center space-x-3 p-2 bg-white rounded-lg border border-green-200">
-                        <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-sm">
+                      <div v-for="user in selectedUsers || []" :key="user.id" class="flex items-center space-x-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div class="h-8 w-8 rounded-lg bg-gray-600 dark:bg-gray-500 flex items-center justify-center shadow-sm">
                           <span class="text-white font-bold text-xs">{{ getUserInitials(user) }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">{{ user.firstName }} {{ user.lastName }}</p>
-                          <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+                          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.firstName }} {{ user.lastName }}</p>
+                          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
                         </div>
-                        <span class="text-xs text-gray-400">{{ user.plan || 'Free' }}</span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ user.plan || 'Free' }}</span>
                       </div>
                     </div>
                   </div>
 
                   <!-- Plan Selection -->
                   <div>
-                    <h4 class="text-sm font-semibold text-gray-900 mb-4 flex items-center">
-                      <SparklesIcon class="w-4 h-4 mr-2 text-gray-600" />
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                      <SparklesIcon class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" />
                       Select New Plan
                     </h4>
                     
@@ -135,8 +135,8 @@
                           :class="[
                             'flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200',
                             selectedPlan === plan.code
-                              ? 'border-orange-500 bg-orange-50 shadow-lg'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              ? 'border-gray-400 dark:border-gray-500 bg-gray-100 dark:bg-gray-700 shadow-lg'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                           ]"
                         >
                           <div class="flex items-center justify-between mb-3">
@@ -145,19 +145,19 @@
                                 v-model="selectedPlan"
                                 :value="plan.code"
                                 type="radio"
-                                class="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 transition-colors"
+                                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 transition-colors bg-white dark:bg-gray-700"
                               />
-                              <span class="ml-3 text-base font-semibold text-gray-900">{{ plan.name }}</span>
+                              <span class="ml-3 text-base font-semibold text-gray-900 dark:text-white">{{ plan.name }}</span>
                             </div>
                             <!-- Plan Badge -->
                             <span
                               :class="[
                                 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                                 plan.is_default
-                                  ? 'bg-blue-100 text-blue-800'
+                                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
                                   : plan.is_active
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
+                                    ? 'bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200 border border-success-200 dark:border-success-800'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
                               ]"
                             >
                               {{ plan.is_default ? 'Default' : plan.is_active ? 'Active' : 'Inactive' }}
@@ -165,30 +165,30 @@
                           </div>
 
                           <!-- Plan Description -->
-                          <p v-if="plan.description" class="text-sm text-gray-600 mb-3">{{ plan.description }}</p>
+                          <p v-if="plan.description" class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ plan.description }}</p>
 
                           <!-- Pricing -->
                           <div class="mb-3">
                             <div class="flex items-baseline">
-                              <span class="text-2xl font-bold text-gray-900">${{ formatPrice(plan.monthly_price || 0) }}</span>
-                              <span class="ml-1 text-gray-500">/ month</span>
+                              <span class="text-2xl font-bold text-gray-900 dark:text-white">${{ formatPrice(plan.monthly_price || 0) }}</span>
+                              <span class="ml-1 text-gray-500 dark:text-gray-400">/ month</span>
                             </div>
-                            <p v-if="plan.yearly_price && parseFloat(plan.monthly_price) > 0" class="text-sm text-orange-600 mt-1">
+                            <p v-if="plan.yearly_price && parseFloat(plan.monthly_price) > 0" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                               ${{ formatPrice(plan.yearly_price) }}/year (save {{ calculateSavings(plan.monthly_price, plan.yearly_price) }}%)
                             </p>
-                            <p v-else-if="parseFloat(plan.monthly_price) === 0" class="text-sm text-green-600 mt-1">
+                            <p v-else-if="parseFloat(plan.monthly_price) === 0" class="text-sm text-success-600 dark:text-success-400 mt-1">
                               Free Plan - No charge
                             </p>
                           </div>
 
                           <!-- Features -->
                           <div v-if="plan.features && Object.keys(plan.features).length > 0">
-                            <h5 class="text-xs font-medium text-gray-700 mb-2">Features</h5>
+                            <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Features</h5>
                             <ul class="space-y-1">
                               <li v-for="(isEnabled, featureName) in plan.features" :key="String(featureName)" class="flex items-center text-xs">
-                                <CheckCircleIcon v-if="isEnabled" class="w-3 h-3 mr-1 flex-shrink-0 text-green-500" />
-                                <XMarkIcon v-else class="w-3 h-3 mr-1 flex-shrink-0 text-red-500" />
-                                <span :class="isEnabled ? 'text-gray-700' : 'text-gray-400 line-through'">
+                                <CheckCircleIcon v-if="isEnabled" class="w-3 h-3 mr-1 flex-shrink-0 text-success-500" />
+                                <XMarkIcon v-else class="w-3 h-3 mr-1 flex-shrink-0 text-danger-700 dark:text-danger-300" />
+                                <span :class="isEnabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400 line-through'">
                                   {{ formatFeatureName(String(featureName)) }}
                                 </span>
                               </li>
@@ -197,9 +197,9 @@
 
                           <!-- Limits -->
                           <div v-if="plan.limits && Object.keys(plan.limits).length > 0" class="mt-3">
-                            <h5 class="text-xs font-medium text-gray-700 mb-2">Limits</h5>
+                            <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Limits</h5>
                             <div class="grid grid-cols-2 gap-1">
-                              <div v-for="(value, limitName) in plan.limits" :key="String(limitName)" class="text-xs text-gray-600">
+                              <div v-for="(value, limitName) in plan.limits" :key="String(limitName)" class="text-xs text-gray-600 dark:text-gray-400">
                                 <span class="font-medium">{{ formatLimitName(String(limitName)) }}:</span>
                                 <span class="ml-1">{{ formatLimitValue(value) }}</span>
                               </div>
@@ -213,24 +213,24 @@
               </div>
 
               <!-- Modal Footer -->
-              <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                <div class="text-sm text-gray-600">
+              <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
                   <span v-if="mode === 'single'">Assigning plan to 1 user</span>
-                  <span v-else>Assigning plan to {{ selectedUsers?.length || 0 }} users</span>
+                  <span v-else">Assigning plan to {{ selectedUsers?.length || 0 }} users</span>
                 </div>
                 <div class="flex items-center space-x-3">
                   <button
                     @click="$emit('close')"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     @click="assignPlan"
                     :disabled="!selectedPlan || assigning"
-                    class="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                   >
-                    <div v-if="assigning" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div v-if="assigning" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                     <span>{{ assigning ? 'Assigning...' : 'Assign Plan' }}</span>
                   </button>
                 </div>

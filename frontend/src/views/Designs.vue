@@ -2,16 +2,16 @@
   <AppLayout
     title="My Designs"
     subtitle="Manage all your creative projects"
-    @search="handleSearch"
-  >
+    @search="handleSearch">
+  
     <div class="p-6">
       <!-- Filter and Sort Bar -->
-      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div class="flex items-center space-x-4">
             <select
               v-model="selectedCategory"
-              class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Categories</option>
               <option value="social-media">Social Media</option>
@@ -22,7 +22,7 @@
             
             <select
               v-model="sortBy"
-              class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="updated_at">Recently Updated</option>
               <option value="created_at">Recently Created</option>
@@ -35,7 +35,7 @@
               @click="viewMode = 'grid'"
               :class="[
                 'p-2 rounded-md',
-                viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                viewMode === 'grid' ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
               ]"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@
               @click="viewMode = 'list'"
               :class="[
                 'p-2 rounded-md',
-                viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                viewMode === 'list' ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
               ]"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,9 +58,9 @@
       </div>
 
       <!-- Designs Content -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <!-- Results Summary -->
-        <div v-if="!loading && totalResults > 0" class="text-sm text-gray-600 mb-4">
+        <div v-if="!loading && totalResults > 0" class="text-sm text-gray-600 dark:text-gray-300 mb-4">
           Showing {{ designs.length }} of {{ totalResults }} designs
         </div>
         
@@ -71,14 +71,14 @@
             <div 
               v-for="i in 12"
               :key="`loading-${i}`"
-              class="bg-white rounded-lg border border-gray-100 animate-pulse overflow-hidden flex flex-col"
+              class="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 animate-pulse overflow-hidden flex flex-col"
             >
-              <div class="h-40 bg-gray-200"></div>
+              <div class="h-40 bg-gray-200 dark:bg-gray-700"></div>
               <div class="p-3 space-y-2">
-                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                 <div class="flex justify-between items-center">
-                  <div class="h-3 bg-gray-200 rounded w-1/3"></div>
-                  <div class="h-5 bg-gray-200 rounded w-16"></div>
+                  <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
                 </div>
               </div>
             </div>
@@ -92,9 +92,9 @@
               class="group"
             >
               <!-- Design Card with Compact Height -->
-              <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden flex flex-col">
+              <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transition-colors overflow-hidden flex flex-col">
                 <!-- Design Thumbnail Container - Responsive height -->
-                <div class="relative h-40 bg-gray-50 flex items-center justify-center p-2">
+                <div class="relative h-40 bg-gray-50 dark:bg-gray-700 flex items-center justify-center p-2">
                   <div 
                     v-if="design.thumbnail"
                     class="relative max-w-full max-h-full"
@@ -126,10 +126,10 @@
                   <div class="absolute top-2 right-2">
                     <div class="relative">
                       <button
-                        class="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                        class="w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-all opacity-0 group-hover:opacity-100"
                         @click.stop="toggleDropdown(design.id)"
                       >
-                        <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                           <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
                           <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
@@ -139,13 +139,13 @@
                       <!-- Dropdown Menu -->
                       <div 
                         :class="[
-                          'absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 transition-all duration-200 z-10',
+                          'absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 transition-all duration-200 z-10',
                           dropdownOpen === design.id ? 'opacity-100 visible' : 'opacity-0 invisible'
                         ]"
                       >
                         <button
                           @click.stop="editDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
                         >
                           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
@@ -154,7 +154,7 @@
                         </button>
                         <button
                           @click.stop="duplicateDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
                         >
                           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -163,7 +163,7 @@
                         </button>
                         <button
                           @click.stop="downloadDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
                         >
                           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -175,7 +175,7 @@
                         <button
                           v-if="authStore.isAdmin"
                           @click.stop="openConvertModal(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-violet-600 hover:bg-violet-50 flex items-center"
+                          class="w-full px-4 py-2 text-left text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center"
                         >
                           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -183,10 +183,10 @@
                           Convert to Template
                         </button>
                         
-                        <hr class="my-1 border-gray-100">
+                        <hr class="my-1 border-gray-100 dark:border-gray-600">
                         <button
                           @click.stop="deleteDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                          class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
                         >
                           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -200,14 +200,14 @@
                 
                 <!-- Design Info - Compact layout -->
                 <div class="p-3">
-                  <h3 class="font-medium text-gray-900 truncate text-sm cursor-pointer hover:text-violet-600 transition-colors mb-1" @click="editDesign(design)">
+                  <h3 class="font-medium text-gray-900 dark:text-white truncate text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-1" @click="editDesign(design)">
                     {{ design.title || design.name || 'Untitled Design' }}
                   </h3>
                   <div class="flex items-center justify-between">
-                    <p class="text-xs text-gray-500">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
                       {{ formatDate(design.updatedAt || design.createdAt) }}
                     </p>
-                    <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                    <span class="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded">
                       {{ design.width }}×{{ design.height }}
                     </span>
                   </div>
@@ -222,10 +222,10 @@
           <div
             v-for="design in filteredDesigns"
             :key="design.id"
-            class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+            class="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
             @click="openDesign(design)"
           >
-            <div class="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0 overflow-hidden">
               <img
                 v-if="design.thumbnail"
                 :src="design.thumbnail"
@@ -233,22 +233,22 @@
                 class="w-full h-full object-cover"
               />
               <div v-else class="w-full h-full flex items-center justify-center">
-                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
               </div>
             </div>
             
             <div class="ml-4 flex-1">
-              <h3 class="font-semibold text-gray-900">{{ design.title }}</h3>
-              <p class="text-sm text-gray-500">{{ design.width }}×{{ design.height }}</p>
-              <p class="text-sm text-gray-500">Updated {{ formatDate(design.updatedAt) }}</p>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{{ design.title }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ design.width }}×{{ design.height }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Updated {{ formatDate(design.updatedAt) }}</p>
             </div>
             
             <div class="flex items-center space-x-2">
               <button
                 @click.stop="editDesign(design)"
-                class="p-2 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50"
+                class="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -256,7 +256,7 @@
               </button>
               <button
                 @click.stop="duplicateDesign(design)"
-                class="p-2 text-gray-400 hover:text-green-600 rounded-md hover:bg-green-50"
+                class="p-2 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -264,7 +264,7 @@
               </button>
               <button
                 @click.stop="downloadDesign(design)"
-                class="p-2 text-gray-400 hover:text-purple-600 rounded-md hover:bg-purple-50"
+                class="p-2 text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/20"
                 title="Download"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,15 +273,7 @@
               </button>
               <button
                 @click.stop="deleteDesign(design)"
-                class="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
-              <button
-                @click.stop="deleteDesign(design)"
-                class="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
+                class="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -293,8 +285,8 @@
 
         <!-- Empty State -->
         <div v-if="!loading && designs.length === 0" class="text-center py-12">
-          <div class="text-gray-400 text-lg mb-4">No designs found</div>
-          <p class="text-gray-600 mb-6">
+          <div class="text-gray-400 dark:text-gray-500 text-lg mb-4">No designs found</div>
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
             {{ searchQuery ? 'Try adjusting your search criteria' : 'No designs available yet' }}
           </p>
         </div>
@@ -325,7 +317,7 @@
       @close="closeConvertModal"
       @convert="handleConversionSubmit"
     />
-  </AppLayout>``
+  </AppLayout>
 </template>
 
 <script setup lang="ts">

@@ -5,11 +5,11 @@
   >
     <div ref="contentContainer" class="space-y-6">
       <!-- Upload and Status Section -->
-      <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div class="flex items-center justify-between">
           <!-- Upload Button -->
           <div class="flex items-center space-x-3">
-            <div class="hidden sm:flex items-center text-sm text-gray-500">
+            <div class="hidden sm:flex items-center text-sm text-gray-500 dark:text-gray-400">
               <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
               {{ mediaItems.length }} items loaded
             </div>
@@ -17,7 +17,7 @@
               v-if="shouldShowMainUploadButton"
               @click="triggerFileUpload"
               :disabled="isUploading"
-              class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <div v-if="isUploading" class="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <ArrowUpTrayIcon v-else class="w-5 h-5 mr-2" />
@@ -37,20 +37,20 @@
       </div>
 
       <!-- Simplified Search and Filters -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="p-4">
           <div class="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
             <!-- Search Input -->
             <div class="flex-1">
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
+                  <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   v-model="searchQuery"
                   type="text"
                   :placeholder="activeTab === 'stock' ? 'Search stock images... (e.g., business, nature, technology)' : 'Search your images...'"
-                  class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                  class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   @keyup.enter="searchMedia"
                   @input="debouncedSearch"
                 />
@@ -62,7 +62,7 @@
               <button
                 @click="searchMedia"
                 :disabled="isLoading"
-                class="inline-flex items-center px-4 py-2.5 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="inline-flex items-center px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <MagnifyingGlassIcon v-if="!isLoading" class="w-4 h-4 mr-2" />
                 <div v-else class="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -73,7 +73,7 @@
         </div>
         
         <!-- Simplified Tabs -->
-        <div class="border-t border-gray-200 bg-gray-50">
+        <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
           <nav class="flex">
             <button
               v-for="tab in tabs"
@@ -81,14 +81,14 @@
               @click="activeTab = tab.id"
               :class="[
                 activeTab === tab.id
-                  ? 'border-violet-500 text-violet-600 bg-white'
-                  : 'border-transparent text-gray-500 hover:text-gray-700',
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
                 'whitespace-nowrap py-3 px-6 border-b-2 font-medium text-sm transition-colors flex items-center space-x-2'
               ]"
             >
               <span>{{ tab.icon }}</span>
               <span>{{ tab.name }}</span>
-              <span v-if="tab.id === 'uploads' && userMediaCount > 0" class="bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full text-xs font-medium">
+              <span v-if="tab.id === 'uploads' && userMediaCount > 0" class="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-full text-xs font-medium">
                 {{ userMediaCount }}
               </span>
             </button>
@@ -101,22 +101,22 @@
         <div
           v-for="i in 18"
           :key="i"
-          class="aspect-square bg-gray-200 rounded-lg animate-pulse"
+          class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
         ></div>
       </div>
 
       <!-- Upload Progress Indicator -->
-      <div v-if="isUploading" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+      <div v-if="isUploading" class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4 mb-4">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center">
-            <div class="w-5 h-5 mr-2 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-blue-800 font-medium">Uploading images...</span>
+            <div class="w-5 h-5 mr-2 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-primary-800 dark:text-primary-200 font-medium">Uploading images...</span>
           </div>
-          <span class="text-blue-600 text-sm">{{ uploadProgress }}%</span>
+          <span class="text-primary-600 dark:text-primary-400 text-sm">{{ uploadProgress }}%</span>
         </div>
-        <div class="w-full bg-blue-200 rounded-full h-2">
+        <div class="w-full bg-primary-200 dark:bg-primary-800 rounded-full h-2">
           <div 
-            class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            class="bg-primary-600 dark:bg-primary-400 h-2 rounded-full transition-all duration-300"
             :style="{ width: `${uploadProgress}%` }"
           ></div>
         </div>
@@ -135,14 +135,14 @@
 
       <!-- Simplified Empty State -->
       <div v-else class="text-center py-12">
-        <div class="w-16 h-16 bg-violet-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+        <div class="w-16 h-16 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-4">
           <PhotoIcon class="w-8 h-8 text-white" />
         </div>
         
-        <h3 class="text-xl font-semibold text-gray-900 mb-2">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           {{ getEmptyStateTitle() }}
         </h3>
-        <p class="text-gray-600 mb-6 max-w-md mx-auto">
+        <p class="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
           {{ getEmptyStateDescription() }}
         </p>
         
@@ -151,7 +151,7 @@
             v-if="activeTab === 'uploads'"
             @click="triggerFileUpload"
             :disabled="isUploading"
-            class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <div v-if="isUploading" class="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             <ArrowUpTrayIcon v-else class="h-5 w-5 mr-2" />
@@ -161,7 +161,7 @@
           <button
             v-else
             @click="clearSearch"
-            class="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             <MagnifyingGlassIcon class="h-5 w-5 mr-2" />
             Try Different Search
@@ -174,7 +174,7 @@
         <button
           @click="goToPage(currentPage - 1)"
           :disabled="currentPage === 1"
-          class="p-2 rounded border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="p-2 rounded border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -188,8 +188,8 @@
             @click="goToPage(page)"
             :class="[
               page === currentPage
-                ? 'bg-violet-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+                ? 'bg-primary-600 text-white'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600',
               'px-3 py-2 rounded text-sm font-medium transition-colors min-w-[40px]'
             ]"
           >
@@ -230,31 +230,31 @@
 
     <!-- Delete Confirmation Modal -->
     <div v-if="deleteItem" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-        <div class="flex items-center justify-center w-12 h-12 bg-red-100 rounded-lg mx-auto mb-4">
-          <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-center w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg mx-auto mb-4">
+          <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
           </svg>
         </div>
         
-        <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">
           Delete Image?
         </h3>
-        <p class="text-gray-600 text-center mb-6">
+        <p class="text-gray-600 dark:text-gray-300 text-center mb-6">
           This action cannot be undone. The image will be permanently removed from your library.
         </p>
         
         <div class="flex space-x-3">
           <button
             @click="cancelDelete"
-            class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             Cancel
           </button>
           <button
             @click="confirmDelete"
             :disabled="isDeleting"
-            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex-1 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </button>

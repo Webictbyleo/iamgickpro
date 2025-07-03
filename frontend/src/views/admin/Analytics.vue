@@ -4,25 +4,25 @@
       <!-- Header Controls -->
       <div class="mb-8">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div class="flex items-center text-sm text-gray-500">
+          <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <CalendarDaysIcon class="w-4 h-4 mr-1" />
             Last updated: {{ formatLastUpdated() }}
           </div>
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <!-- Auto Refresh Toggle -->
             <div class="flex items-center space-x-2">
-              <label class="text-sm text-gray-700">Auto-refresh</label>
+              <label class="text-sm text-gray-700 dark:text-gray-300">Auto-refresh</label>
               <button
                 @click="toggleAutoRefresh"
                 :class="[
-                  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-                  autoRefreshEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900',
+                  autoRefreshEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700'
                 ]"
               >
                 <span
                   :class="[
-                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                    autoRefreshEnabled ? 'translate-x-5' : 'translate-x-0'
+                    'pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out',
+                    autoRefreshEnabled ? 'bg-white translate-x-5' : 'bg-white dark:bg-gray-100 translate-x-0'
                   ]"
                 />
               </button>
@@ -33,7 +33,7 @@
               v-model="selectedPeriod"
               @change="loadAnalytics"
               :disabled="loading"
-              class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed min-w-0"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed min-w-0"
             >
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
@@ -46,7 +46,7 @@
               <button
                 @click="loadAnalytics"
                 :disabled="loading"
-                class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': loading }" />
                 <span class="hidden sm:inline">Refresh</span>
@@ -54,7 +54,7 @@
               <button
                 @click="exportReport"
                 :disabled="loading"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowDownTrayIcon class="w-4 h-4" />
                 <span class="hidden sm:inline">Export</span>
@@ -67,84 +67,84 @@
       <!-- Key Metrics Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
         <!-- Total Users -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 analytics-card fade-in">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 analytics-card fade-in">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg">
+            <div class="p-3 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg">
               <UsersIcon class="w-6 h-6 text-white" />
             </div>
             <div class="ml-4 flex-1">
-              <p class="text-sm font-medium text-gray-600">Total Users</p>
-              <p class="text-2xl font-bold text-gray-900 metric-value">{{ formatNumber(metrics.totalUsers) }}</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white metric-value">{{ formatNumber(metrics.totalUsers) }}</p>
               <div class="flex items-center mt-1">
-                <ArrowTrendingUpIcon v-if="metrics.userGrowth >= 0" class="w-4 h-4 text-green-600 mr-1" />
-                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-red-600 mr-1" />
-                <p :class="metrics.userGrowth >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-medium">
+                <ArrowTrendingUpIcon v-if="metrics.userGrowth >= 0" class="w-4 h-4 text-success-600 dark:text-success-400 mr-1" />
+                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-danger-600 dark:text-danger-400 mr-1" />
+                <p :class="metrics.userGrowth >= 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'" class="text-sm font-medium">
                   {{ metrics.userGrowth >= 0 ? '+' : '' }}{{ metrics.userGrowth }}%
                 </p>
-                <span class="text-gray-500 text-xs ml-1">vs last period</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs ml-1">vs last period</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Active Subscriptions -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 shadow-lg">
+            <div class="p-3 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 shadow-lg">
               <CurrencyDollarIcon class="w-6 h-6 text-white" />
             </div>
             <div class="ml-4 flex-1">
-              <p class="text-sm font-medium text-gray-600">Active Subscriptions</p>
-              <p class="text-2xl font-bold text-gray-900">{{ formatNumber(metrics.activeSubscriptions) }}</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Subscriptions</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(metrics.activeSubscriptions) }}</p>
               <div class="flex items-center mt-1">
-                <ArrowTrendingUpIcon v-if="metrics.subscriptionGrowth >= 0" class="w-4 h-4 text-green-600 mr-1" />
-                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-red-600 mr-1" />
-                <p :class="metrics.subscriptionGrowth >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-medium">
+                <ArrowTrendingUpIcon v-if="metrics.subscriptionGrowth >= 0" class="w-4 h-4 text-success-600 dark:text-success-400 mr-1" />
+                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-danger-600 dark:text-danger-400 mr-1" />
+                <p :class="metrics.subscriptionGrowth >= 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'" class="text-sm font-medium">
                   {{ metrics.subscriptionGrowth >= 0 ? '+' : '' }}{{ metrics.subscriptionGrowth }}%
                 </p>
-                <span class="text-gray-500 text-xs ml-1">vs last period</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs ml-1">vs last period</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Revenue -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg">
+            <div class="p-3 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg">
               <CurrencyDollarIcon class="w-6 h-6 text-white" />
             </div>
             <div class="ml-4 flex-1">
-              <p class="text-sm font-medium text-gray-600">Monthly Revenue</p>
-              <p class="text-2xl font-bold text-gray-900">${{ formatNumber(metrics.monthlyRevenue) }}</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Revenue</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ formatNumber(metrics.monthlyRevenue) }}</p>
               <div class="flex items-center mt-1">
-                <ArrowTrendingUpIcon v-if="metrics.revenueGrowth >= 0" class="w-4 h-4 text-green-600 mr-1" />
-                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-red-600 mr-1" />
-                <p :class="metrics.revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-medium">
+                <ArrowTrendingUpIcon v-if="metrics.revenueGrowth >= 0" class="w-4 h-4 text-success-600 dark:text-success-400 mr-1" />
+                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-danger-600 dark:text-danger-400 mr-1" />
+                <p :class="metrics.revenueGrowth >= 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'" class="text-sm font-medium">
                   {{ metrics.revenueGrowth >= 0 ? '+' : '' }}{{ metrics.revenueGrowth }}%
                 </p>
-                <span class="text-gray-500 text-xs ml-1">vs last period</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs ml-1">vs last period</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Projects Created -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 shadow-lg">
+            <div class="p-3 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 shadow-lg">
               <DocumentDuplicateIcon class="w-6 h-6 text-white" />
             </div>
             <div class="ml-4 flex-1">
-              <p class="text-sm font-medium text-gray-600">Projects Created</p>
-              <p class="text-2xl font-bold text-gray-900">{{ formatNumber(metrics.projectsCreated) }}</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Projects Created</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(metrics.projectsCreated) }}</p>
               <div class="flex items-center mt-1">
-                <ArrowTrendingUpIcon v-if="metrics.projectGrowth >= 0" class="w-4 h-4 text-green-600 mr-1" />
-                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-red-600 mr-1" />
-                <p :class="metrics.projectGrowth >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-medium">
+                <ArrowTrendingUpIcon v-if="metrics.projectGrowth >= 0" class="w-4 h-4 text-success-600 dark:text-success-400 mr-1" />
+                <ArrowTrendingDownIcon v-else class="w-4 h-4 text-danger-600 dark:text-danger-400 mr-1" />
+                <p :class="metrics.projectGrowth >= 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'" class="text-sm font-medium">
                   {{ metrics.projectGrowth >= 0 ? '+' : '' }}{{ metrics.projectGrowth }}%
                 </p>
-                <span class="text-gray-500 text-xs ml-1">vs last period</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs ml-1">vs last period</span>
               </div>
             </div>
           </div>
@@ -156,32 +156,32 @@
         <!-- Charts Header -->
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-xl font-bold text-gray-900">Analytics Trends</h2>
-            <p class="text-sm text-gray-600 mt-1">Visual insights into platform performance</p>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Analytics Trends</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Visual insights into platform performance</p>
           </div>
-          <div class="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span class="text-sm text-gray-600 font-medium">{{ selectedPeriod }}</span>
+          <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+            <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ selectedPeriod }}</span>
           </div>
         </div>
 
         <!-- Primary Charts Row -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <!-- User Registration Chart - Featured -->
-          <div class="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 xl:col-span-1">
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 xl:col-span-1">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center space-x-3">
-                <div class="p-2 bg-blue-100 rounded-lg">
-                  <UsersIcon class="w-5 h-5 text-blue-600" />
+                <div class="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <UsersIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900">User Growth</h3>
-                  <p class="text-sm text-gray-500">New user registrations over time</p>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">User Growth</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">New user registrations over time</p>
                 </div>
               </div>
               <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                <span class="text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded font-medium">Live</span>
+                <div class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400 bg-primary-50 dark:bg-primary-900 px-2 py-1 rounded font-medium">Live</span>
               </div>
             </div>
             
@@ -191,37 +191,37 @@
                 :data="userRegistrationChartData"
                 :options="chartOptions"
               />
-              <div v-else-if="loading" class="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+              <div v-else-if="loading" class="absolute inset-0 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800 rounded-lg flex items-center justify-center">
                 <div class="text-center">
-                  <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                  <p class="text-blue-600 font-medium">Loading user data...</p>
+                  <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto mb-3"></div>
+                  <p class="text-primary-600 dark:text-primary-400 font-medium">Loading user data...</p>
                 </div>
               </div>
-              <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+              <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-lg flex items-center justify-center">
                 <div class="text-center">
-                  <ChartBarIcon class="w-16 h-16 text-gray-400 mx-auto mb-3" />
-                  <p class="text-gray-600 font-medium">No user registration data</p>
-                  <p class="text-xs text-gray-400 mt-1">Registration trends will appear here when data is available</p>
+                  <ChartBarIcon class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+                  <p class="text-gray-600 dark:text-gray-400 font-medium">No user registration data</p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Registration trends will appear here when data is available</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Content Creation Chart - Featured -->
-          <div class="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 xl:col-span-1">
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 xl:col-span-1">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center space-x-3">
-                <div class="p-2 bg-green-100 rounded-lg">
-                  <DocumentDuplicateIcon class="w-5 h-5 text-green-600" />
+                <div class="p-2 bg-accent-100 dark:bg-accent-900 rounded-lg">
+                  <DocumentDuplicateIcon class="w-5 h-5 text-accent-600 dark:text-accent-400" />
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900">Content Creation</h3>
-                  <p class="text-sm text-gray-500">Projects and designs created over time</p>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Content Creation</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Projects and designs created over time</p>
                 </div>
               </div>
               <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded font-medium">Live</span>
+                <div class="w-3 h-3 bg-accent-500 rounded-full animate-pulse"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400 bg-accent-50 dark:bg-accent-900 px-2 py-1 rounded font-medium">Live</span>
               </div>
             </div>
             
@@ -231,17 +231,17 @@
                 :data="contentCreationChartData"
                 :options="chartOptions"
               />
-              <div v-else-if="loading" class="absolute inset-0 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+              <div v-else-if="loading" class="absolute inset-0 bg-gradient-to-br from-accent-50 to-accent-100 dark:from-accent-900 dark:to-accent-800 rounded-lg flex items-center justify-center">
                 <div class="text-center">
-                  <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto mb-3"></div>
-                  <p class="text-green-600 font-medium">Loading content data...</p>
+                  <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-600 mx-auto mb-3"></div>
+                  <p class="text-accent-600 dark:text-accent-400 font-medium">Loading content data...</p>
                 </div>
               </div>
-              <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+              <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-lg flex items-center justify-center">
                 <div class="text-center">
-                  <DocumentDuplicateIcon class="w-16 h-16 text-gray-400 mx-auto mb-3" />
-                  <p class="text-gray-600 font-medium">No content creation data</p>
-                  <p class="text-xs text-gray-400 mt-1">Project creation trends will appear here when data is available</p>
+                  <DocumentDuplicateIcon class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+                  <p class="text-gray-600 dark:text-gray-400 font-medium">No content creation data</p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Project creation trends will appear here when data is available</p>
                 </div>
               </div>
             </div>
@@ -251,20 +251,20 @@
         <!-- Secondary Charts Row -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <!-- Export Activity Chart -->
-          <div class="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 xl:col-span-2">
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 xl:col-span-2">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center space-x-3">
-                <div class="p-2 bg-yellow-100 rounded-lg">
-                  <CloudArrowUpIcon class="w-5 h-5 text-yellow-600" />
+                <div class="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <CloudArrowUpIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900">Export Activity</h3>
-                  <p class="text-sm text-gray-500">Content exports and downloads over time</p>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Export Activity</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Content exports and downloads over time</p>
                 </div>
               </div>
               <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                <span class="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded font-medium">Live</span>
+                <div class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400 bg-primary-50 dark:bg-primary-900 px-2 py-1 rounded font-medium">Live</span>
               </div>
             </div>
             
@@ -274,80 +274,80 @@
                 :data="exportActivityChartData"
                 :options="chartOptions"
               />
-              <div v-else-if="loading" class="absolute inset-0 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg flex items-center justify-center">
+              <div v-else-if="loading" class="absolute inset-0 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800 rounded-lg flex items-center justify-center">
                 <div class="text-center">
-                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-2"></div>
-                  <p class="text-yellow-600 font-medium text-sm">Loading export data...</p>
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+                  <p class="text-primary-600 dark:text-primary-400 font-medium text-sm">Loading export data...</p>
                 </div>
               </div>
-              <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+              <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-lg flex items-center justify-center">
                 <div class="text-center">
-                  <CloudArrowUpIcon class="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p class="text-gray-600 font-medium">No export data</p>
-                  <p class="text-xs text-gray-400 mt-1">Export activity will appear here when data is available</p>
+                  <CloudArrowUpIcon class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-2" />
+                  <p class="text-gray-600 dark:text-gray-400 font-medium">No export data</p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Export activity will appear here when data is available</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Charts Summary Panel -->
-          <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
             <div class="mb-4">
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">Data Summary</h3>
-              <p class="text-sm text-gray-600">Key metrics for {{ selectedPeriod }}</p>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Data Summary</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Key metrics for {{ selectedPeriod }}</p>
             </div>
             
             <div class="space-y-4">
               <!-- Total New Users -->
-              <div class="bg-white/70 rounded-lg p-3 border border-white/50">
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-700">New Users</span>
+                    <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">New Users</span>
                   </div>
-                  <span class="text-lg font-bold text-blue-600">{{ getTotalGrowthThisPeriod('userGrowth') }}</span>
+                  <span class="text-lg font-bold text-primary-600 dark:text-primary-400">{{ getTotalGrowthThisPeriod('userGrowth') }}</span>
                 </div>
               </div>
 
               <!-- Total Projects -->
-              <div class="bg-white/70 rounded-lg p-3 border border-white/50">
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-700">Projects</span>
+                    <div class="w-2 h-2 bg-accent-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Projects</span>
                   </div>
-                  <span class="text-lg font-bold text-green-600">{{ getTotalGrowthThisPeriod('contentCreation') }}</span>
+                  <span class="text-lg font-bold text-accent-600 dark:text-accent-400">{{ getTotalGrowthThisPeriod('contentCreation') }}</span>
                 </div>
               </div>
 
               <!-- Total Exports -->
-              <div class="bg-white/70 rounded-lg p-3 border border-white/50">
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-700">Exports</span>
+                    <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Exports</span>
                   </div>
-                  <span class="text-lg font-bold text-yellow-600">{{ getTotalGrowthThisPeriod('exportActivity') }}</span>
+                  <span class="text-lg font-bold text-primary-600 dark:text-primary-400">{{ getTotalGrowthThisPeriod('exportActivity') }}</span>
                 </div>
               </div>
 
               <!-- Average Daily Activity -->
-              <div class="bg-white/70 rounded-lg p-3 border border-white/50">
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-700">Daily Avg</span>
+                    <div class="w-2 h-2 bg-accent-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Daily Avg</span>
                   </div>
-                  <span class="text-lg font-bold text-purple-600">{{ getAverageDaily('contentCreation') }}</span>
+                  <span class="text-lg font-bold text-accent-600 dark:text-accent-400">{{ getAverageDaily('contentCreation') }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Period Indicator -->
-            <div class="mt-4 pt-4 border-t border-white/50">
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
               <div class="flex items-center justify-center space-x-2">
-                <CalendarDaysIcon class="w-4 h-4 text-indigo-600" />
-                <span class="text-xs text-indigo-600 font-medium">{{ selectedPeriod.replace('d', ' days').replace('y', ' year') }}</span>
+                <CalendarDaysIcon class="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <span class="text-xs text-primary-600 dark:text-primary-400 font-medium">{{ selectedPeriod.replace('d', ' days').replace('y', ' year') }}</span>
               </div>
             </div>
           </div>
@@ -357,46 +357,46 @@
       <!-- Detailed Analytics Tables -->
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
         <!-- Top Plans by Revenue -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">Top Plans by Revenue</h3>
-                <p class="text-sm text-gray-500 mt-1">Revenue breakdown by subscription plan</p>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Top Plans by Revenue</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Revenue breakdown by subscription plan</p>
               </div>
-              <div class="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
+              <div class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                 {{ topPlans.length }} plans
               </div>
             </div>
             
             <div v-if="loading" class="py-8 text-center">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p class="text-gray-500 text-sm">Loading revenue data...</p>
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+              <p class="text-gray-500 dark:text-gray-400 text-sm">Loading revenue data...</p>
             </div>
 
             <div v-else-if="topPlans.length > 0" class="space-y-3">
-              <div v-for="(plan, index) in topPlans" :key="plan.name" class="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors duration-150 border border-gray-100">
+              <div v-for="(plan, index) in topPlans" :key="plan.name" class="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center space-x-3">
                   <div class="flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium text-white" :style="{ backgroundColor: getColorForIndex(index) }">
                     {{ index + 1 }}
                   </div>
-                  <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                  <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-600 rounded-lg flex items-center justify-center shadow-sm">
                     <span class="text-white font-medium text-sm">{{ plan.name.charAt(0) }}</span>
                   </div>
                   <div>
-                    <p class="font-medium text-gray-900">{{ plan.name }}</p>
-                    <p class="text-sm text-gray-500">{{ formatNumber(plan.subscribers) }} subscribers</p>
+                    <p class="font-medium text-gray-900 dark:text-white">{{ plan.name }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ formatNumber(plan.subscribers) }} subscribers</p>
                   </div>
                 </div>
                 <div class="text-right">
-                  <p class="font-semibold text-gray-900">${{ formatNumber(plan.revenue) }}</p>
-                  <p class="text-xs text-gray-500">{{ plan.percentage }}% of total</p>
+                  <p class="font-semibold text-gray-900 dark:text-white">${{ formatNumber(plan.revenue) }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ plan.percentage }}% of total</p>
                 </div>
               </div>
             </div>
 
             <div v-else class="py-8 text-center">
-              <div class="text-gray-400">
+              <div class="text-gray-400 dark:text-gray-600">
                 <CurrencyDollarIcon class="w-12 h-12 mx-auto mb-2" />
                 <p class="text-sm font-medium">No revenue data available</p>
                 <p class="text-xs mt-1">Revenue breakdown will appear here</p>
@@ -406,62 +406,62 @@
         </div>
 
         <!-- User Activity -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">User Activity Insights</h3>
-                <p class="text-sm text-gray-500 mt-1">Key engagement and usage metrics</p>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">User Activity Insights</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Key engagement and usage metrics</p>
               </div>
-              <div class="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
+              <div class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                 Live data
               </div>
             </div>
             
             <div class="space-y-4">
               <!-- Daily Active Users -->
-              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-green-50 border border-green-200">
+              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center space-x-3">
-                  <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span class="text-gray-700 font-medium">Daily Active Users</span>
+                  <div class="w-3 h-3 bg-accent-500 rounded-full animate-pulse"></div>
+                  <span class="text-gray-700 dark:text-gray-300 font-medium">Daily Active Users</span>
                 </div>
-                <span class="font-bold text-green-700">{{ formatNumber(activityMetrics.dailyActiveUsers) }}</span>
+                <span class="font-bold text-accent-700 dark:text-accent-300">{{ formatNumber(activityMetrics.dailyActiveUsers) }}</span>
               </div>
 
               <!-- Weekly Active Users -->
-              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-blue-50 border border-blue-200">
+              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center space-x-3">
-                  <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span class="text-gray-700 font-medium">Weekly Active Users</span>
+                  <div class="w-3 h-3 bg-primary-500 rounded-full"></div>
+                  <span class="text-gray-700 dark:text-gray-300 font-medium">Weekly Active Users</span>
                 </div>
-                <span class="font-bold text-blue-700">{{ formatNumber(activityMetrics.weeklyActiveUsers) }}</span>
+                <span class="font-bold text-primary-700 dark:text-primary-300">{{ formatNumber(activityMetrics.weeklyActiveUsers) }}</span>
               </div>
 
               <!-- Average Session Duration -->
-              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-purple-50 border border-purple-200">
+              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center space-x-3">
-                  <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  <span class="text-gray-700 font-medium">Avg. Session Duration</span>
+                  <div class="w-3 h-3 bg-accent-500 rounded-full"></div>
+                  <span class="text-gray-700 dark:text-gray-300 font-medium">Avg. Session Duration</span>
                 </div>
-                <span class="font-bold text-purple-700">{{ activityMetrics.avgSessionDuration }}m</span>
+                <span class="font-bold text-accent-700 dark:text-accent-300">{{ activityMetrics.avgSessionDuration }}m</span>
               </div>
 
               <!-- Projects per User -->
-              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-yellow-50 border border-yellow-200">
+              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center space-x-3">
-                  <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span class="text-gray-700 font-medium">Avg. Projects per User</span>
+                  <div class="w-3 h-3 bg-primary-500 rounded-full"></div>
+                  <span class="text-gray-700 dark:text-gray-300 font-medium">Avg. Projects per User</span>
                 </div>
-                <span class="font-bold text-yellow-700">{{ activityMetrics.projectsPerUser }}</span>
+                <span class="font-bold text-primary-700 dark:text-primary-300">{{ activityMetrics.projectsPerUser }}</span>
               </div>
 
               <!-- Exports per User -->
-              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-red-50 border border-red-200">
+              <div class="flex items-center justify-between py-3 px-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center space-x-3">
-                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span class="text-gray-700 font-medium">Avg. Exports per User</span>
+                  <div class="w-3 h-3 bg-accent-500 rounded-full"></div>
+                  <span class="text-gray-700 dark:text-gray-300 font-medium">Avg. Exports per User</span>
                 </div>
-                <span class="font-bold text-red-700">{{ activityMetrics.exportsPerUser }}</span>
+                <span class="font-bold text-accent-700 dark:text-accent-300">{{ activityMetrics.exportsPerUser }}</span>
               </div>
             </div>
           </div>
@@ -469,98 +469,98 @@
       </div>
 
       <!-- System Performance Metrics -->
-      <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
+      <div class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">System Performance</h3>
-              <p class="text-sm text-gray-500 mt-1">Real-time system health and performance metrics</p>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">System Performance</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Real-time system health and performance metrics</p>
             </div>
             <div class="flex items-center space-x-2">
-              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span class="text-sm text-gray-500">Live</span>
+              <div class="w-2 h-2 bg-accent-500 rounded-full animate-pulse"></div>
+              <span class="text-sm text-gray-500 dark:text-gray-400">Live</span>
             </div>
           </div>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- API Response Time -->
-            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <div class="p-2 bg-green-100 rounded-lg">
-                  <ArrowPathIcon class="w-5 h-5 text-green-600" />
+                <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <ArrowPathIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
-                <div :class="systemMetrics.apiResponseTime < 200 ? 'text-green-600' : 'text-yellow-600'" class="text-xs font-medium px-2 py-1 rounded-full" :style="{ backgroundColor: systemMetrics.apiResponseTime < 200 ? 'rgb(220 252 231)' : 'rgb(254 249 195)' }">
+                <div :class="systemMetrics.apiResponseTime < 200 ? 'text-success-800 dark:text-success-100 bg-success-100 dark:bg-success-800' : 'text-warning-800 dark:text-warning-100 bg-warning-100 dark:bg-warning-800'" class="text-xs font-medium px-2 py-1 rounded-full">
                   {{ systemMetrics.apiResponseTime < 200 ? 'Excellent' : 'Good' }}
                 </div>
               </div>
-              <div class="text-2xl font-bold text-gray-900 mb-1">{{ systemMetrics.apiResponseTime }}ms</div>
-              <div class="text-sm text-gray-600">Avg API Response Time</div>
-              <div class="mt-2 bg-gray-200 rounded-full h-2">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ systemMetrics.apiResponseTime }}ms</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">Avg API Response Time</div>
+              <div class="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   class="h-2 rounded-full transition-all duration-500"
-                  :class="systemMetrics.apiResponseTime < 200 ? 'bg-green-500' : 'bg-yellow-500'"
+                  :class="systemMetrics.apiResponseTime < 200 ? 'bg-success-500' : 'bg-warning-500'"
                   :style="{ width: `${Math.min(100, (systemMetrics.apiResponseTime / 500) * 100)}%` }"
                 ></div>
               </div>
             </div>
 
             <!-- Error Rate -->
-            <div class="bg-gradient-to-br from-blue-50 to-sky-50 rounded-lg p-4 border border-blue-200">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <div class="p-2 bg-blue-100 rounded-lg">
-                  <ExclamationTriangleIcon class="w-5 h-5 text-blue-600" />
+                <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <ExclamationTriangleIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
-                <div :class="systemMetrics.errorRate < 1 ? 'text-green-600' : 'text-red-600'" class="text-xs font-medium px-2 py-1 rounded-full" :style="{ backgroundColor: systemMetrics.errorRate < 1 ? 'rgb(220 252 231)' : 'rgb(254 226 226)' }">
+                <div :class="systemMetrics.errorRate < 1 ? 'text-success-800 dark:text-success-100 bg-success-100 dark:bg-success-800' : 'text-danger-800 dark:text-danger-100 bg-danger-100 dark:bg-danger-800'" class="text-xs font-medium px-2 py-1 rounded-full">
                   {{ systemMetrics.errorRate < 1 ? 'Excellent' : 'Needs Attention' }}
                 </div>
               </div>
-              <div class="text-2xl font-bold text-gray-900 mb-1">{{ systemMetrics.errorRate }}%</div>
-              <div class="text-sm text-gray-600">Error Rate</div>
-              <div class="mt-2 bg-gray-200 rounded-full h-2">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ systemMetrics.errorRate }}%</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">Error Rate</div>
+              <div class="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   class="h-2 rounded-full transition-all duration-500"
-                  :class="systemMetrics.errorRate < 1 ? 'bg-green-500' : 'bg-red-500'"
+                  :class="systemMetrics.errorRate < 1 ? 'bg-success-500' : 'bg-danger-500'"
                   :style="{ width: `${Math.min(100, (systemMetrics.errorRate / 5) * 100)}%` }"
                 ></div>
               </div>
             </div>
 
             <!-- Storage Usage -->
-            <div class="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-4 border border-purple-200">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <div class="p-2 bg-purple-100 rounded-lg">
-                  <ServerIcon class="w-5 h-5 text-purple-600" />
+                <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <ServerIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
-                <div :class="systemMetrics.storageUsage < 80 ? 'text-green-600' : 'text-yellow-600'" class="text-xs font-medium px-2 py-1 rounded-full" :style="{ backgroundColor: systemMetrics.storageUsage < 80 ? 'rgb(220 252 231)' : 'rgb(254 249 195)' }">
+                <div :class="systemMetrics.storageUsage < 80 ? 'text-success-800 dark:text-success-100 bg-success-100 dark:bg-success-800' : 'text-warning-800 dark:text-warning-100 bg-warning-100 dark:bg-warning-800'" class="text-xs font-medium px-2 py-1 rounded-full">
                   {{ systemMetrics.storageUsage < 80 ? 'Good' : 'Monitor' }}
                 </div>
               </div>
-              <div class="text-2xl font-bold text-gray-900 mb-1">{{ systemMetrics.storageUsage }}%</div>
-              <div class="text-sm text-gray-600">Storage Usage</div>
-              <div class="mt-2 bg-gray-200 rounded-full h-2">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ systemMetrics.storageUsage }}%</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">Storage Usage</div>
+              <div class="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   class="h-2 rounded-full transition-all duration-500"
-                  :class="systemMetrics.storageUsage < 80 ? 'bg-green-500' : systemMetrics.storageUsage < 90 ? 'bg-yellow-500' : 'bg-red-500'"
+                  :class="systemMetrics.storageUsage < 80 ? 'bg-success-500' : systemMetrics.storageUsage < 90 ? 'bg-warning-500' : 'bg-danger-500'"
                   :style="{ width: `${systemMetrics.storageUsage}%` }"
                 ></div>
               </div>
             </div>
 
             <!-- Uptime -->
-            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-200">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between mb-2">
-                <div class="p-2 bg-emerald-100 rounded-lg">
-                  <CheckCircleIcon class="w-5 h-5 text-emerald-600" />
+                <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <CheckCircleIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
-                <div class="text-green-600 text-xs font-medium px-2 py-1 rounded-full bg-green-100">
+                <div class="text-success-800 dark:text-success-100 text-xs font-medium px-2 py-1 rounded-full bg-success-100 dark:bg-success-800">
                   Excellent
                 </div>
               </div>
-              <div class="text-2xl font-bold text-gray-900 mb-1">{{ systemMetrics.uptime }}%</div>
-              <div class="text-sm text-gray-600">System Uptime</div>
-              <div class="mt-2 bg-gray-200 rounded-full h-2">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ systemMetrics.uptime }}%</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">System Uptime</div>
+              <div class="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
-                  class="bg-green-500 h-2 rounded-full transition-all duration-500"
+                  class="bg-success-500 h-2 rounded-full transition-all duration-500"
                   :style="{ width: `${systemMetrics.uptime}%` }"
                 ></div>
               </div>
@@ -701,10 +701,10 @@ const chartOptions = computed(() => ({
       display: false
     },
     tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.85)',
-      titleColor: 'white',
-      bodyColor: 'white',
-      borderColor: 'rgba(255, 255, 255, 0.1)',
+      backgroundColor: 'rgba(15, 23, 42, 0.95)', // secondary-900 with opacity
+      titleColor: 'rgb(248 250 252)', // secondary-50
+      bodyColor: 'rgb(248 250 252)', // secondary-50
+      borderColor: 'rgba(148 163 184, 0.2)', // secondary-400 with opacity
       borderWidth: 1,
       cornerRadius: 8,
       displayColors: false,
@@ -726,7 +726,7 @@ const chartOptions = computed(() => ({
         display: false
       },
       ticks: {
-        color: '#6b7280',
+        color: 'rgb(100 116 139)', // secondary-500 for light mode
         font: {
           size: window.innerWidth < 768 ? 10 : 11,
           family: 'Inter, sans-serif'
@@ -738,11 +738,11 @@ const chartOptions = computed(() => ({
       display: true,
       beginAtZero: true,
       grid: {
-        color: 'rgba(243, 244, 246, 0.8)',
+        color: 'rgba(148 163 184, 0.3)', // secondary-400 with opacity for better contrast
         drawBorder: false
       },
       ticks: {
-        color: '#6b7280',
+        color: 'rgb(100 116 139)', // secondary-500 for better contrast
         font: {
           size: window.innerWidth < 768 ? 10 : 11,
           family: 'Inter, sans-serif'

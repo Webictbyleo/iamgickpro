@@ -3,8 +3,8 @@
     <div
       v-for="file in mediaItems"
       :key="file.id"
-      class="masonry-item relative group border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-[1.02]"
-      :class="{ 'ring-2 ring-blue-500 border-blue-500': selectedItems.has(file.id) }"
+      class="masonry-item relative group border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 transform hover:scale-[1.02]"
+      :class="{ 'ring-2 ring-primary-500 dark:ring-primary-400 border-primary-500 dark:border-primary-400': selectedItems.has(file.id) }"
       :ref="(el: any) => setDropdownRef(file.id, el as HTMLElement)"
     >
       <!-- Selection Checkbox -->
@@ -21,8 +21,8 @@
           <div 
             class="w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center backdrop-blur-sm"
             :class="selectedItems.has(file.id) 
-              ? 'bg-blue-500 border-blue-500 shadow-lg' 
-              : 'bg-white/90 border-white/70 shadow-md hover:bg-white hover:border-blue-400 hover:shadow-lg'"
+              ? 'bg-primary-500 dark:bg-primary-400 border-primary-500 dark:border-primary-400 shadow-lg' 
+              : 'bg-white/90 dark:bg-gray-800/90 border-white/70 dark:border-gray-600/70 shadow-md hover:bg-white dark:hover:bg-gray-800 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-lg'"
           >
             <svg 
               v-if="selectedItems.has(file.id)"

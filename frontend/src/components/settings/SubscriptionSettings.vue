@@ -2,46 +2,46 @@
   <div class="space-y-8">
     <!-- Section Header -->
     <div class="text-center">
-      <h2 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+      <h2 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
         Subscription Plans
       </h2>
-      <p class="text-gray-600 mt-2">
+      <p class="text-gray-600 dark:text-gray-300 mt-2">
         Manage your subscription and view plan details
       </p>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center py-12">
-      <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      <span class="ml-3 text-gray-600">Loading subscription data...</span>
+      <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+      <span class="ml-3 text-gray-600 dark:text-gray-300">Loading subscription data...</span>
     </div>
 
     <!-- Content -->
     <div v-else class="space-y-8">
       <!-- Current Plan -->
-      <div class="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl p-8 border border-indigo-100">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
         <div class="flex items-start justify-between mb-6">
           <div>
             <div class="flex items-center space-x-3 mb-2">
-              <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center">
                 <component :is="icons.star" class="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 class="text-2xl font-bold text-gray-900">{{ subscriptionData?.planInfo?.name || 'Free' }} Plan</h3>
-                <span v-if="subscriptionData?.isActive" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ subscriptionData?.planInfo?.name || 'Free' }} Plan</h3>
+                <span v-if="subscriptionData?.isActive" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400">
                   <component :is="icons.check" class="w-3 h-3 mr-1" />
                   Active
                 </span>
-                <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
                   Inactive
                 </span>
               </div>
             </div>
-            <p class="text-gray-600">{{ subscriptionData?.planInfo?.description || 'Basic plan with essential features' }}</p>
+            <p class="text-gray-600 dark:text-gray-300">{{ subscriptionData?.planInfo?.description || 'Basic plan with essential features' }}</p>
             <div v-if="subscriptionData?.planInfo?.price?.monthly && subscriptionData.planInfo.price.monthly > 0" class="mt-3">
-              <span class="text-2xl font-bold text-gray-900">${{ subscriptionData.planInfo.price.monthly }}</span>
-              <span class="text-gray-600">/month</span>
-              <span v-if="subscriptionData.planInfo.price.yearly" class="ml-4 text-sm text-green-600">
+              <span class="text-2xl font-bold text-gray-900 dark:text-white">${{ subscriptionData.planInfo.price.monthly }}</span>
+              <span class="text-gray-600 dark:text-gray-300">/month</span>
+              <span v-if="subscriptionData.planInfo.price.yearly" class="ml-4 text-sm text-green-600 dark:text-green-400">
                 Save ${{ (subscriptionData.planInfo.price.monthly * 12 - subscriptionData.planInfo.price.yearly) }} yearly
               </span>
             </div>
@@ -50,40 +50,40 @@
 
         <!-- Usage Statistics -->
         <div v-if="subscriptionData" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-indigo-600">{{ subscriptionData.usage.projects || 0 }}</div>
-            <div class="text-sm text-gray-600">Projects</div>
-            <div v-if="subscriptionData.limits.projects > 0" class="text-xs text-gray-500 mt-1">
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center border border-gray-200 dark:border-gray-600">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ subscriptionData.usage.projects || 0 }}</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Projects</div>
+            <div v-if="subscriptionData.limits.projects > 0" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               of {{ subscriptionData.limits.projects }}
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-indigo-600">{{ formatStorage(subscriptionData.usage.storageUsed || 0) }}</div>
-            <div class="text-sm text-gray-600">Storage</div>
-            <div v-if="subscriptionData.limits.storage > 0" class="text-xs text-gray-500 mt-1">
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center border border-gray-200 dark:border-gray-600">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ formatStorage(subscriptionData.usage.storageUsed || 0) }}</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Storage</div>
+            <div v-if="subscriptionData.limits.storage > 0" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               of {{ formatStorage(subscriptionData.limits.storage) }}
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-indigo-600">{{ subscriptionData.usage.exportJobs || 0 }}</div>
-            <div class="text-sm text-gray-600">Exports</div>
-            <div v-if="subscriptionData.limits.exports > 0" class="text-xs text-gray-500 mt-1">
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center border border-gray-200 dark:border-gray-600">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ subscriptionData.usage.exportJobs || 0 }}</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Exports</div>
+            <div v-if="subscriptionData.limits.exports > 0" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               of {{ subscriptionData.limits.exports }}
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-indigo-600">{{ subscriptionData.usage.mediaFiles || 0 }}</div>
-            <div class="text-sm text-gray-600">Media Files</div>
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center border border-gray-200 dark:border-gray-600">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ subscriptionData.usage.mediaFiles || 0 }}</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Media Files</div>
           </div>
         </div>
 
         <!-- Plan Features -->
-        <div v-if="subscriptionData?.features" class="bg-white rounded-xl p-6">
-          <h4 class="text-lg font-semibold text-gray-900 mb-4">Plan Features</h4>
+        <div v-if="subscriptionData?.features" class="bg-gray-100 dark:bg-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Plan Features</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div v-for="(enabled, feature) in subscriptionData.features" :key="feature" class="flex items-center space-x-3">
-              <component :is="enabled ? icons.check : icons.x" :class="enabled ? 'w-5 h-5 text-green-500' : 'w-5 h-5 text-gray-400'" />
-              <span :class="enabled ? 'text-sm text-gray-700' : 'text-sm text-gray-400'">{{ formatFeatureName(feature) }}</span>
+              <component :is="enabled ? icons.check : icons.x" :class="enabled ? 'w-5 h-5 text-green-500 dark:text-green-400' : 'w-5 h-5 text-gray-400 dark:text-gray-500'" />
+              <span :class="enabled ? 'text-sm text-gray-700 dark:text-gray-200' : 'text-sm text-gray-500 dark:text-gray-500'">{{ formatFeatureName(feature) }}</span>
             </div>
           </div>
         </div>

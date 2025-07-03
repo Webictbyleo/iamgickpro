@@ -1,7 +1,7 @@
 <template>
-  <div class="youtube-thumbnail-plugin min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+  <div class="youtube-thumbnail-plugin min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
     <!-- Modern Header with Glass Effect -->
-    <div class="sticky top-0 z-10 backdrop-blur-lg bg-white/80 border-b border-gray-200/50 p-6 mb-8">
+    <div class="sticky top-0 z-10 backdrop-blur-lg bg-white/80 dark:bg-gray-800/80 border-b border-gray-200/50 dark:border-gray-700/50 p-6 mb-8">
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
@@ -14,17 +14,17 @@
               </div>
             </div>
             <div>
-              <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                 YouTube Thumbnail Generator
               </h1>
-              <p class="text-gray-600 text-sm font-medium">AI-powered thumbnail creation with 15+ styles</p>
+              <p class="text-gray-600 dark:text-gray-300 text-sm font-medium">AI-powered thumbnail creation with 15+ styles</p>
             </div>
           </div>
           
           <!-- Quick Stats -->
           <div v-if="generatedThumbnails.length > 0" class="hidden md:flex items-center space-x-4">
-            <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-2">
-              <div class="text-green-700 text-sm font-semibold">{{ generatedThumbnails.length }} Generated</div>
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-2">
+              <div class="text-green-700 dark:text-green-300 text-sm font-semibold">{{ generatedThumbnails.length }} Generated</div>
             </div>
           </div>
         </div>
@@ -34,10 +34,10 @@
     <div class="max-w-4xl mx-auto px-6 pb-12">
       <!-- Modern Video Input Card -->
       <div class="relative mb-8">
-        <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-        <div class="relative bg-white/60 backdrop-blur-sm border border-white/20 shadow-xl rounded-3xl p-8">
+        <div class="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-secondary-500/10 rounded-3xl blur-xl"></div>
+        <div class="relative bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-white/20 dark:border-gray-700/20 shadow-xl rounded-3xl p-8">
           <div class="mb-6">
-            <label class="block text-lg font-semibold text-gray-900 mb-3">
+            <label class="block text-lg font-semibold text-gray-900 dark:text-white mb-3">
               🎬 Enter YouTube Video URL
             </label>
             <div class="relative">
@@ -45,7 +45,7 @@
                 v-model="videoUrl"
                 type="url"
                 placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                class="w-full px-6 py-4 bg-white/80 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 text-lg placeholder-gray-400 font-medium transition-all duration-200"
+                class="w-full px-6 py-4 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-2xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 text-lg placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white font-medium transition-all duration-200"
                 :disabled="isProcessing"
                 @keyup.enter="extractVideoInfo"
               />
@@ -53,7 +53,7 @@
                 <button
                   @click="extractVideoInfo"
                   :disabled="!videoUrl || isProcessing"
-                  class="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-200 transform hover:scale-105"
+                  class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-200 transform hover:scale-105"
                 >
                   <svg v-if="isProcessing && !videoInfo" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -69,17 +69,17 @@
           </div>
           
           <!-- Error Message with Modern Design -->
-          <div v-if="errorMessage" class="mb-6 p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-2xl">
+          <div v-if="errorMessage" class="mb-6 p-4 bg-red-50/80 dark:bg-red-900/20 backdrop-blur-sm border border-red-200 dark:border-red-800 rounded-2xl">
             <div class="flex items-center space-x-3">
-              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
-              <p class="text-red-700 font-medium">{{ errorMessage }}</p>
+              <p class="text-red-700 dark:text-red-300 font-medium">{{ errorMessage }}</p>
             </div>
           </div>
           
           <!-- Enhanced Video Preview -->
-          <div v-if="videoInfo" class="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg">
+          <div v-if="videoInfo" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-lg">
             <div class="flex items-center space-x-6">
               <div class="relative group">
                 <img
@@ -94,13 +94,13 @@
                 </div>
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="text-xl font-bold text-gray-900 mb-2 truncate">{{ videoInfo.title }}</h3>
-                <p class="text-gray-600 font-medium mb-3">{{ videoInfo.channelTitle }}</p>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 truncate">{{ videoInfo.title }}</h3>
+                <p class="text-gray-600 dark:text-gray-300 font-medium mb-3">{{ videoInfo.channelTitle }}</p>
                 <div class="flex items-center space-x-4">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
                     ✅ Video Analyzed
                   </span>
-                  <span class="text-sm text-gray-500">Ready for generation</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">Ready for generation</span>
                 </div>
               </div>
             </div>
@@ -110,35 +110,35 @@
 
       <!-- Generation Options with Modern Design -->
       <div v-if="videoInfo" class="relative mb-8">
-        <div class="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-3xl blur-xl"></div>
-        <div class="relative bg-white/60  border border-white/20 shadow-xl rounded-3xl p-8">
+        <div class="absolute inset-0 bg-gradient-to-r from-secondary-500/10 to-primary-500/10 rounded-3xl blur-xl"></div>
+        <div class="relative bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-white/20 dark:border-gray-700/20 shadow-xl rounded-3xl p-8">
           <div class="flex items-center space-x-3 mb-6">
             <div class="relative">
-              <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-75"></div>
-              <div class="relative bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-xl">
+              <div class="absolute inset-0 bg-gradient-to-r from-secondary-500 to-primary-500 rounded-xl blur opacity-75"></div>
+              <div class="relative bg-gradient-to-r from-secondary-500 to-primary-500 p-2 rounded-xl">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
             </div>
-            <h4 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            <h4 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
               AI Generation Settings
             </h4>
           </div>
           
           <!-- AI Generation Info -->
-          <div class="mb-8 p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-200/50 rounded-2xl">
+          <div class="mb-8 p-4 bg-gradient-to-r from-primary-50/80 to-secondary-50/80 dark:from-primary-900/20 dark:to-secondary-900/20 backdrop-blur-sm border border-primary-200/50 dark:border-primary-700/50 rounded-2xl">
             <div class="flex items-start space-x-3">
               <div class="flex-shrink-0 mt-0.5">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
               <div>
-                <h5 class="font-semibold text-blue-900 mb-1">🤖 AI-Powered Generation</h5>
-                <p class="text-sm text-blue-700 leading-relaxed">
+                <h5 class="font-semibold text-primary-900 dark:text-primary-100 mb-1">🤖 AI-Powered Generation</h5>
+                <p class="text-sm text-primary-700 dark:text-primary-300 leading-relaxed">
                   Uses advanced AI technology for high-quality, contextual thumbnail creation with intelligent design optimization.
                 </p>
               </div>

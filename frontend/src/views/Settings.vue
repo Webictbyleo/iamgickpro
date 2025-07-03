@@ -3,12 +3,12 @@
     title="Settings"
     subtitle="Manage your account preferences and configuration"
   >
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
       <!-- Settings Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
           <!-- Tab Navigation -->
-          <div class="border-b border-gray-200">
+          <div class="border-b border-gray-200 dark:border-gray-700">
             <nav class="flex space-x-8 px-6" aria-label="Tabs">
               <RouterLink
                 v-for="tab in tabs"
@@ -17,8 +17,8 @@
                 :class="[
                   'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200',
                   activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 ]"
               >
                 <div class="flex items-center space-x-2">
@@ -50,6 +50,11 @@
             <div v-if="activeTab === 'privacy'" class="space-y-8">
               <PrivacySettings />
             </div>
+
+            <!-- Theme Tab -->
+            <div v-if="activeTab === 'theme'" class="space-y-8">
+              <ThemeSettings />
+            </div>
           </div>
         </div>
       </div>
@@ -65,13 +70,15 @@ import {
   UserIcon,
   CreditCardIcon,
   PuzzlePieceIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  PaintBrushIcon
 } from '@heroicons/vue/24/outline'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ProfileSettings from '@/components/settings/ProfileSettings.vue'
 import SubscriptionSettings from '@/components/settings/SubscriptionSettings.vue'
 import PrivacySettings from '@/components/settings/PrivacySettings.vue'
 import IntegrationsSettings from '@/components/settings/IntegrationsSettings.vue'
+import ThemeSettings from '@/components/settings/ThemeSettings.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -101,6 +108,12 @@ const tabs = ref([
     name: 'Privacy',
     icon: ShieldCheckIcon,
     description: 'Privacy and security settings'
+  },
+  {
+    id: 'theme',
+    name: 'Theme',
+    icon: PaintBrushIcon,
+    description: 'Appearance and color customization'
   }
 ])
 

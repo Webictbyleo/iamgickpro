@@ -3,7 +3,7 @@
     <button
       @click="$emit('page-change', currentPage - 1)"
       :disabled="currentPage === 1"
-      class="p-3 rounded-xl border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+      class="p-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
     >
       <ChevronLeftIcon class="w-5 h-5" />
     </button>
@@ -15,8 +15,8 @@
         @click="$emit('page-change', page)"
         :class="[
           page === currentPage
-            ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg'
-            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+            ? 'bg-primary-600 dark:bg-primary-500 text-white shadow-lg'
+            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600',
           'px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 min-w-[48px]'
         ]"
       >
@@ -27,7 +27,7 @@
     <button
       @click="$emit('page-change', currentPage + 1)"
       :disabled="currentPage === totalPages"
-      class="p-3 rounded-xl border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+      class="p-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
     >
       <ChevronRightIcon class="w-5 h-5" />
     </button>

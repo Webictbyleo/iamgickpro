@@ -3,26 +3,26 @@
     title="Export Jobs"
     subtitle="Manage and download your exported designs"
   >
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
       <!-- Stats Summary Section -->
-      <div class="bg-white border-b border-gray-200">
+      <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div class="flex items-center justify-center space-x-6">
             <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">{{ processingJobs.length }}</div>
-              <div class="text-xs text-gray-500">Processing</div>
+              <div class="text-2xl font-bold text-primary-600">{{ processingJobs.length }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Processing</div>
             </div>
               <div class="text-center">
                 <div class="text-2xl font-bold text-green-600">{{ completedJobs.length }}</div>
-                <div class="text-xs text-gray-500">Completed</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Completed</div>
               </div>
               <div class="text-center">
                 <div class="text-2xl font-bold text-yellow-600">{{ pendingJobs.length }}</div>
-                <div class="text-xs text-gray-500">Queued</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Queued</div>
               </div>
               <div class="text-center">
                 <div class="text-2xl font-bold text-red-600">{{ failedJobs.length }}</div>
-                <div class="text-xs text-gray-500">Failed</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Failed</div>
               </div>
             </div>
           </div>
@@ -31,14 +31,14 @@
 
       <!-- Filters and Controls -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <!-- Filters -->
             <div class="flex items-center space-x-4">
               <select 
                 v-model="filters.status" 
                 @change="applyFilters"
-                class="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                class="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:border-primary-500 focus:ring-primary-500"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
@@ -50,7 +50,7 @@
               <select 
                 v-model="filters.format" 
                 @change="applyFilters"
-                class="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                class="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:border-primary-500 focus:ring-primary-500"
               >
                 <option value="">All Formats</option>
                 <option value="png">PNG</option>
@@ -67,7 +67,7 @@
               <button
                 @click="refreshJobs"
                 :disabled="isLoading"
-                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
                 <component :is="refresh" class="h-4 w-4 mr-2" :class="{ 'animate-spin': isLoading }" />
                 Refresh
@@ -76,7 +76,7 @@
               <button
                 v-if="hasActiveJobs"
                 @click="showAutoRefreshModal = true"
-                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               >
                 <component :is="play" class="h-4 w-4 mr-2" />
                 Auto-refresh: {{ autoRefresh ? 'On' : 'Off' }}
@@ -88,23 +88,23 @@
 
       <!-- Export Jobs List -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div v-if="isLoading && exportJobs.length === 0" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div v-if="isLoading && exportJobs.length === 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           <div class="text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-4 text-gray-500">Loading export jobs...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="mt-4 text-gray-500 dark:text-gray-400">Loading export jobs...</p>
           </div>
         </div>
 
-        <div v-else-if="exportJobs.length === 0" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div v-else-if="exportJobs.length === 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           <div class="text-center">
-            <component :is="documentDownload" class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="mt-4 text-lg font-medium text-gray-900">No export jobs found</h3>
-            <p class="mt-2 text-gray-500">
+            <component :is="documentDownload" class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No export jobs found</h3>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">
               Export jobs will appear here once you start exporting your designs.
             </p>
             <router-link
               to="/designs"
-              class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
             >
               Go to Designs
             </router-link>
@@ -132,7 +132,7 @@
           />
         </div>
       </div>
-    </div>
+    
 
     <!-- Auto-refresh Settings Modal -->
     <AutoRefreshModal

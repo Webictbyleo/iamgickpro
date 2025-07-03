@@ -1,22 +1,22 @@
 <template>
-  <header class="bg-white/95  border-b border-gray-200/50 px-4 sm:px-6 lg:px-8 shadow-sm">
+  <header class="bg-white/95 dark:bg-gray-800/95 border-b border-gray-200/50 dark:border-gray-700/50 px-4 sm:px-6 lg:px-8 shadow-sm backdrop-blur-xl">
     <div class="flex items-center justify-between h-16">
       <!-- Left side -->
       <div class="flex items-center">
         <!-- Mobile menu button -->
         <button
           @click="$emit('toggleSidebar')"
-          class="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-all duration-200 md:hidden focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+          class="p-2.5 rounded-xl text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 md:hidden focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         >
           <component :is="icons.menu" class="w-6 h-6" />
         </button>
 
         <!-- Page title -->
         <div class="ml-4 md:ml-0">
-          <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
             {{ title }}
           </h1>
-          <p v-if="subtitle" class="text-sm text-gray-500 font-medium">{{ subtitle }}</p>
+          <p v-if="subtitle" class="text-sm text-gray-500 dark:text-gray-400 font-medium">{{ subtitle }}</p>
         </div>
       </div>
 
@@ -26,9 +26,12 @@
 
         <!-- Quick Actions -->
         <div class="flex items-center space-x-2">
+          <!-- Theme Toggle -->
+          <ThemeToggle />
+          
           <!-- Help & Support -->
           <Menu as="div" class="relative">
-            <MenuButton class="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 rounded-xl transition-all duration-200">
+            <MenuButton class="p-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 rounded-xl transition-all duration-200">
               <component :is="icons.help" class="w-6 h-6" />
             </MenuButton>
             
@@ -40,9 +43,9 @@
               leave-from-class="transform scale-100 opacity-100 translate-y-0"
               leave-to-class="transform scale-95 opacity-0 translate-y-1"
             >
-              <MenuItems class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-2 z-[9999]">
-                <div class="px-4 py-3 border-b border-gray-100">
-                  <h3 class="text-sm font-semibold text-gray-900">Help & Support</h3>
+              <MenuItems class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl py-2 z-[9999]">
+                <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Help & Support</h3>
                 </div>
                 
                 <div class="py-1">
@@ -52,16 +55,16 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       :class="[
-                        active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
+                        active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
                         'group flex w-full items-center px-4 py-3 text-sm font-medium'
                       ]"
                     >
-                      <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <component :is="icons.document" class="w-4 h-4 text-blue-600" />
+                      <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mr-3">
+                        <component :is="icons.document" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div class="text-left">
                         <div class="font-semibold">Documentation</div>
-                        <div class="text-xs text-gray-500">Learn how to use the platform</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Learn how to use the platform</div>
                       </div>
                     </a>
                   </MenuItem>
@@ -72,16 +75,16 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       :class="[
-                        active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
+                        active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
                         'group flex w-full items-center px-4 py-3 text-sm font-medium'
                       ]"
                     >
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <component :is="icons.chat" class="w-4 h-4 text-green-600" />
+                      <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mr-3">
+                        <component :is="icons.chat" class="w-4 h-4 text-green-600 dark:text-green-400" />
                       </div>
                       <div class="text-left">
                         <div class="font-semibold">Live Chat</div>
-                        <div class="text-xs text-gray-500">Get instant help from our team</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Get instant help from our team</div>
                       </div>
                     </a>
                   </MenuItem>
@@ -92,16 +95,16 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       :class="[
-                        active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
+                        active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
                         'group flex w-full items-center px-4 py-3 text-sm font-medium'
                       ]"
                     >
-                      <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                        <component :is="icons.video" class="w-4 h-4 text-purple-600" />
+                      <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mr-3">
+                        <component :is="icons.video" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div class="text-left">
                         <div class="font-semibold">Video Tutorials</div>
-                        <div class="text-xs text-gray-500">Watch step-by-step guides</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Watch step-by-step guides</div>
                       </div>
                     </a>
                   </MenuItem>
@@ -114,7 +117,7 @@
         <!-- Create new design button -->
         <Menu as="div" class="relative">
           <MenuButton
-            class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+            class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
           >
             <component :is="icons.plus" class="w-4 h-4 mr-2" />
             <span class="hidden sm:inline">Create</span>
@@ -128,21 +131,21 @@
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-1 z-[9999]">
+            <MenuItems class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl py-1 z-[9999]">
               <MenuItem v-slot="{ active }">
                 <button
                   @click="showDesignSizeModal = true"
                   :class="[
-                    active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
+                    active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
                     'group flex w-full items-center px-4 py-3 text-sm font-medium'
                   ]"
                 >
-                  <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-lg flex items-center justify-center mr-3">
                     <component :is="icons.plus" class="w-4 h-4 text-white" />
                   </div>
                   <div class="text-left">
                     <div class="font-semibold">New Design</div>
-                    <div class="text-xs text-gray-500">Choose size & start creating</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Choose size & start creating</div>
                   </div>
                 </button>
               </MenuItem>
@@ -150,7 +153,7 @@
                 <button
                   @click="handleCreateDesign('template')"
                   :class="[
-                    active ? 'bg-violet-50 text-violet-700' : 'text-gray-700',
+                    active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
                     'group flex w-full items-center px-4 py-3 text-sm font-medium'
                   ]"
                 >
@@ -159,7 +162,7 @@
                   </div>
                   <div class="text-left">
                     <div class="font-semibold">From Template</div>
-                    <div class="text-xs text-gray-500">Choose a template</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Choose a template</div>
                   </div>
                 </button>
               </MenuItem>
@@ -176,14 +179,14 @@
 
         <!-- User menu -->
         <Menu as="div" class="relative">
-          <MenuButton class="flex items-center p-1.5 rounded-xl hover:bg-gray-100/80 transition-all duration-200 group">
+          <MenuButton class="flex items-center p-1.5 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 group">
             <div class="relative">
-              <div class="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+              <div class="w-9 h-9 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
                 <span class="text-white font-semibold text-sm">{{ userInitials }}</span>
               </div>
-              <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+              <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
             </div>
-            <component :is="icons.chevronDown" class="ml-2 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            <component :is="icons.chevronDown" class="ml-2 w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
           </MenuButton>
 
           <!-- User dropdown -->
@@ -195,19 +198,19 @@
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200/50 backdrop-blur-xl py-2 z-[9999]">
+            <MenuItems class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl py-2 z-[9999]">
               <!-- User info -->
-              <div class="px-4 py-3 border-b border-gray-100">
+              <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                 <div class="flex items-center">
-                  <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center">
                     <span class="text-white font-semibold">{{ userInitials }}</span>
                   </div>
                   <div class="ml-3 flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</p>
-                    <p class="text-xs text-gray-500 truncate">{{ userEmail }}</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ userName }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ userEmail }}</p>
                   </div>
                   <div class="flex items-center">
-                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">Pro</span>
+                    <span class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs font-medium px-2 py-1 rounded-full">Pro</span>
                   </div>
                 </div>
               </div>
@@ -218,11 +221,11 @@
                   <router-link
                     to="/settings/profile"
                     :class="[
-                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
-                    <component :is="icons.user" class="w-4 h-4 mr-3 text-gray-400" />
+                    <component :is="icons.user" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
                     Profile Settings
                   </router-link>
                 </MenuItem>
@@ -230,11 +233,11 @@
                   <router-link
                     to="/settings/subscription"
                     :class="[
-                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
-                    <component :is="icons.creditCard" class="w-4 h-4 mr-3 text-gray-400" />
+                    <component :is="icons.creditCard" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
                     Subscription Plans
                   </router-link>
                 </MenuItem>
@@ -242,11 +245,11 @@
                   <router-link
                     to="/settings/general"
                     :class="[
-                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
-                    <component :is="icons.cog" class="w-4 h-4 mr-3 text-gray-400" />
+                    <component :is="icons.cog" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
                     Preferences
                   </router-link>
                 </MenuItem>
@@ -254,32 +257,32 @@
                   <router-link
                     to="/settings/integrations"
                     :class="[
-                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
-                    <component :is="icons.puzzle" class="w-4 h-4 mr-3 text-gray-400" />
+                    <component :is="icons.puzzle" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
                     Integrations
                   </router-link>
                 </MenuItem>
                 <MenuItem v-slot="{ active }">
                   <button
                     :class="[
-                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium'
                     ]"
                   >
-                    <component :is="icons.help" class="w-4 h-4 mr-3 text-gray-400" />
+                    <component :is="icons.help" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
                     Help & Support
                   </button>
                 </MenuItem>
-                <div class="border-t border-gray-100 my-1"></div>
+                <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
                 <MenuItem v-slot="{ active }">
                   <button
                     @click="handleLogout"
                     :disabled="isLoggingOut"
                     :class="[
-                      active ? 'bg-red-50 text-red-700' : 'text-red-600',
+                      active ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' : 'text-red-600 dark:text-red-400',
                       'group flex w-full items-center px-4 py-2 text-sm font-medium disabled:opacity-50'
                     ]"
                   >
@@ -303,6 +306,7 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useIcons } from '@/composables/useIcons'
 import DesignSizeSelectionModal from '@/components/modals/DesignSizeSelectionModal.vue'
+import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 
 interface Props {
   title: string

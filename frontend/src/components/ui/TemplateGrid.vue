@@ -3,12 +3,12 @@
     <!-- Header -->
     <div class="flex items-center justify-between" v-if="title">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900">{{ title }}</h2>
-        <p v-if="subtitle" class="text-sm text-gray-600 mt-1">{{ subtitle }}</p>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ title }}</h2>
+        <p v-if="subtitle" class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ subtitle }}</p>
       </div>
       <button
         v-if="showViewAll"
-        class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+        class="inline-flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
         @click="$emit('viewAll')"
       >
         View all
@@ -28,10 +28,10 @@
         @click="!disabled && handleTemplateClick(template)"
       >
         <!-- Template Card -->
-        <div class="relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-200">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all duration-200">
           <!-- Template Thumbnail -->
           <div 
-            class="relative bg-gray-50 overflow-hidden"
+            class="relative bg-gray-50 dark:bg-gray-700 overflow-hidden"
             :style="getTemplateCardStyle(template)"
           >
             <img
@@ -41,14 +41,14 @@
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
             />
-            <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-              <component :is="icons.template" class="w-8 h-8 text-gray-300" />
+            <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
+              <component :is="icons.template" class="w-8 h-8 text-gray-300 dark:text-gray-500" />
             </div>
             
             <!-- Hover Overlay -->
             <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-200 flex items-center justify-center">
               <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div class="bg-white text-gray-900 px-3 py-2 rounded-lg font-medium text-sm shadow-lg">
+                <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 rounded-lg font-medium text-sm shadow-lg border border-gray-200 dark:border-gray-600">
                   Use Template
                 </div>
               </div>
@@ -70,12 +70,12 @@
           <div class="p-3">
             <div class="flex items-center justify-end">
               <!-- Usage count or rating -->
-              <div v-if="template.usageCount > 0" class="flex items-center text-xs text-gray-400">
+              <div v-if="template.usageCount > 0" class="flex items-center text-xs text-gray-400 dark:text-gray-500">
                 <component :is="icons.users" class="w-3 h-3 mr-1" />
                 {{ formatUsageCount(template.usageCount) }}
               </div>
-              <div v-else-if="template.rating >= 4.0" class="flex items-center text-xs text-gray-400">
-                <component :is="icons.star" class="w-3 h-3 mr-1 text-yellow-400" />
+              <div v-else-if="template.rating >= 4.0" class="flex items-center text-xs text-gray-400 dark:text-gray-500">
+                <component :is="icons.star" class="w-3 h-3 mr-1 text-yellow-400 dark:text-yellow-300" />
                 {{ template.rating.toFixed(1) }}
               </div>
             </div>
@@ -90,11 +90,11 @@
         :key="`loading-${i}`"
         class="animate-pulse"
       >
-        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div class="aspect-[4/3] bg-gray-200"></div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
+          <div class="aspect-[4/3] bg-gray-200 dark:bg-gray-600"></div>
           <div class="p-3 space-y-2">
-            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
+            <div class="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
           </div>
         </div>
       </div>
@@ -102,17 +102,17 @@
 
     <!-- Empty State -->
     <div v-if="!loading && templates.length === 0" class="text-center py-20">
-      <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-        <component :is="icons.template" class="w-8 h-8 text-gray-400" />
+      <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <component :is="icons.template" class="w-8 h-8 text-gray-400 dark:text-gray-500" />
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">No templates found</h3>
-      <p class="text-gray-500 max-w-sm mx-auto mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No templates found</h3>
+      <p class="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
         {{ emptyStateMessage || "Try adjusting your search or explore our template categories" }}
       </p>
       <button
         v-if="showCreateButton"
         @click="$emit('createNew')"
-        class="inline-flex items-center px-4 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+        class="inline-flex items-center px-4 py-2 bg-gray-900 dark:bg-primary-600 text-white font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-primary-700 transition-colors"
       >
         <component :is="icons.plus" class="w-4 h-4 mr-2" />
         Create New Design

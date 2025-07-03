@@ -10,7 +10,7 @@
         leave-from="opacity-100"
         leave-to="opacity-0"
       >
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity backdrop-blur-sm" />
+        <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-85 transition-opacity backdrop-blur-sm" />
       </TransitionChild>
 
       <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -24,25 +24,25 @@
             leave-from="opacity-100 translate-y-0 sm:scale-100"
             leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <DialogPanel class="relative transform overflow-hidden rounded-2xl bg-white px-6 pb-6 pt-6 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+            <DialogPanel class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 px-6 pb-6 pt-6 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
               <!-- Header -->
               <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-400 dark:to-primary-500 rounded-xl flex items-center justify-center shadow-lg">
                     <ArrowDownTrayIcon class="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <DialogTitle as="h3" class="text-xl font-bold text-gray-900">
+                    <DialogTitle as="h3" class="text-xl font-bold text-gray-900 dark:text-white">
                       Export Design
                     </DialogTitle>
-                    <p class="text-sm text-gray-500 mt-1">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       {{ design?.title || 'Untitled Design' }}
                     </p>
                   </div>
                 </div>
                 <button
                   @click="closeModal"
-                  class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-all duration-200"
+                  class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2 transition-all duration-200"
                 >
                   <XMarkIcon class="w-5 h-5" />
                 </button>
@@ -50,22 +50,22 @@
 
               <!-- Design Preview -->
               <div class="mb-6">
-                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
                   <div class="flex items-center space-x-4">
-                    <div class="w-16 h-16 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden">
                       <img
                         v-if="design?.thumbnail"
                         :src="design.thumbnail"
                         :alt="design.title"
                         class="w-full h-full object-cover"
                       />
-                      <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center">
-                        <PaintBrushIcon class="w-6 h-6 text-gray-400" />
+                      <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
+                        <PaintBrushIcon class="w-6 h-6 text-gray-400 dark:text-gray-500" />
                       </div>
                     </div>
                     <div class="flex-1">
-                      <h4 class="font-semibold text-gray-900">{{ design?.title || 'Untitled Design' }}</h4>
-                      <p class="text-sm text-gray-600">{{ design?.width }}×{{ design?.height }} pixels</p>
+                      <h4 class="font-semibold text-gray-900 dark:text-white">{{ design?.title || 'Untitled Design' }}</h4>
+                      <p class="text-sm text-gray-600 dark:text-gray-300">{{ design?.width }}×{{ design?.height }} pixels</p>
                     </div>
                   </div>
                 </div>
@@ -75,7 +75,7 @@
               <div class="space-y-6">
                 <!-- Format Selection -->
                 <div>
-                  <label class="block text-sm font-semibold text-gray-900 mb-3">Export Format</label>
+                  <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-3">Export Format</label>
                   <div class="grid grid-cols-2 gap-3">
                     <button
                       v-for="format in exportFormats"
@@ -83,9 +83,9 @@
                       @click="selectedFormat = format.type"
                       :class="[
                         selectedFormat === format.type
-                          ? 'border-violet-500 bg-violet-50 text-violet-700'
-                          : 'border-gray-200 hover:border-violet-300 text-gray-700',
-                        'flex items-center justify-center p-3 border-2 rounded-lg transition-all duration-200 font-medium'
+                          ? 'border-2 border-primary-500 dark:border-primary-400 bg-primary-500 dark:bg-primary-600 text-white shadow-lg'
+                          : 'border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800',
+                        'flex items-center justify-center p-3 rounded-lg transition-all duration-200 font-medium'
                       ]"
                     >
                       <span class="mr-2">{{ format.icon }}</span>
@@ -96,7 +96,7 @@
 
                 <!-- Quality Setting (only for JPEG) -->
                 <div v-if="selectedFormat === 'jpeg'">
-                  <label class="block text-sm font-semibold text-gray-900 mb-3">
+                  <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
                     Quality: {{ Math.round(selectedQuality * 100) }}%
                   </label>
                   <input
@@ -105,9 +105,9 @@
                     min="0.1"
                     max="1"
                     step="0.1"
-                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider:bg-primary-500 dark:slider:bg-primary-400"
                   />
-                  <div class="flex justify-between text-xs text-gray-500 mt-1">
+                  <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                     <span>Lower file size</span>
                     <span>Higher quality</span>
                   </div>
@@ -115,7 +115,7 @@
 
                 <!-- Scale Setting -->
                 <div>
-                  <label class="block text-sm font-semibold text-gray-900 mb-3">
+                  <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
                     Size: {{ selectedScale }}x ({{ Math.round((design?.width || 800) * selectedScale) }}×{{ Math.round((design?.height || 600) * selectedScale) }} pixels)
                   </label>
                   <div class="grid grid-cols-4 gap-2">
@@ -125,8 +125,8 @@
                       @click="selectedScale = scale.value"
                       :class="[
                         selectedScale === scale.value
-                          ? 'bg-violet-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                          ? 'bg-primary-500 dark:bg-primary-400 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600',
                         'py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200'
                       ]"
                     >
@@ -138,14 +138,14 @@
 
               <!-- Export Progress -->
               <div v-if="isExporting" class="mt-6">
-                <div class="bg-gray-50 rounded-lg p-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <div class="flex items-center space-x-3">
-                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-violet-500 border-t-transparent"></div>
-                    <span class="text-sm text-gray-600">Exporting design...</span>
+                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-primary-500 dark:border-primary-400 border-t-transparent"></div>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Exporting design...</span>
                   </div>
-                  <div class="mt-2 bg-gray-200 rounded-full h-2">
+                  <div class="mt-2 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                     <div 
-                      class="bg-violet-500 h-2 rounded-full transition-all duration-300"
+                      class="bg-primary-500 dark:bg-primary-400 h-2 rounded-full transition-all duration-300"
                       :style="{ width: `${exportProgress}%` }"
                     ></div>
                   </div>
@@ -154,26 +154,26 @@
 
               <!-- Export Complete -->
               <div v-if="exportComplete" class="mt-6">
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
                   <div class="flex items-center space-x-3">
-                    <CheckCircleIcon class="w-5 h-5 text-green-500" />
-                    <span class="text-sm text-green-700 font-medium">Export completed successfully!</span>
+                    <CheckCircleIcon class="w-5 h-5 text-green-500 dark:text-green-400" />
+                    <span class="text-sm text-green-700 dark:text-green-300 font-medium">Export completed successfully!</span>
                   </div>
                 </div>
               </div>
 
               <!-- Action Buttons -->
-              <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
+              <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <button
                   @click="closeModal"
-                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   @click="handleExport"
                   :disabled="isExporting"
-                  class="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg hover:from-violet-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  class="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-400 dark:to-primary-500 rounded-lg hover:from-primary-600 hover:to-primary-700 dark:hover:from-primary-500 dark:hover:to-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {{ isExporting ? 'Exporting...' : 'Export Design' }}
                 </button>
@@ -431,7 +431,7 @@ watch(() => props.isOpen, (newValue) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #8b5cf6;
+  background: rgb(var(--primary-500));
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -441,9 +441,20 @@ watch(() => props.isOpen, (newValue) => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #8b5cf6;
+  background: rgb(var(--primary-500));
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode slider thumb */
+.dark .slider::-webkit-slider-thumb {
+  background: rgb(var(--primary-400));
+  border: 2px solid #374151;
+}
+
+.dark .slider::-moz-range-thumb {
+  background: rgb(var(--primary-400));
+  border: 2px solid #374151;
 }
 </style>

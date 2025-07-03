@@ -27,17 +27,17 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-2xl transition-all max-h-[90vh] flex flex-col">
+            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left align-middle shadow-2xl transition-all max-h-[90vh] flex flex-col">
               <!-- Modal Header -->
-              <div class="relative px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div class="relative px-6 py-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div class="flex items-center justify-between">
-                  <DialogTitle as="h3" class="text-2xl font-bold text-gray-900 flex items-center">
-                    <UserIcon class="w-8 h-8 text-blue-600 mr-3" />
+                  <DialogTitle as="h3" class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                    <UserIcon class="w-8 h-8 text-primary-600 dark:text-primary-400 mr-3" />
                     User Details
                   </DialogTitle>
                   <button
                     @click="$emit('close')"
-                    class="rounded-full p-2 text-gray-400 hover:text-gray-600 hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                    class="rounded-full p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
                     aria-label="Close modal"
                   >
                     <XMarkIcon class="w-6 h-6" />
@@ -50,23 +50,20 @@
                 <!-- Loading State -->
                 <div v-if="loading" class="p-8">
                   <div class="flex flex-col items-center justify-center py-12">
-                    <div class="relative">
-                      <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200"></div>
-                      <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent absolute top-0"></div>
-                    </div>
-                    <p class="mt-6 text-lg text-gray-600 animate-pulse">Loading user details...</p>
+                    <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 dark:border-gray-700 border-t-primary-600"></div>
+                    <p class="mt-6 text-lg text-gray-600 dark:text-gray-400 animate-pulse">Loading user details...</p>
                   </div>
                 </div>
 
                 <!-- User Details Content -->
                 <div v-else-if="user" class="p-6 space-y-6">
                   <!-- User Header Card -->
-                  <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+                  <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-start space-x-6">
                       <!-- Avatar -->
                       <div class="flex-shrink-0">
                         <div class="relative">
-                          <div class="h-24 w-24 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                          <div class="h-24 w-24 rounded-2xl bg-gray-600 dark:bg-gray-500 flex items-center justify-center shadow-lg">
                             <span class="text-white font-bold text-2xl">{{ getUserInitials }}</span>
                           </div>
                           <!-- Status Badge -->
@@ -74,7 +71,7 @@
                             <span 
                               :class="[
                                 'inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-semibold text-xs shadow-lg',
-                                user.isActive ? 'bg-green-500' : 'bg-red-500'
+                                user.isActive ? 'bg-success-500' : 'bg-danger-500'
                               ]"
                             >
                               <CheckCircleIcon v-if="user.isActive" class="w-5 h-5" />
@@ -87,19 +84,14 @@
                       <!-- User Info -->
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center space-x-3 mb-2">
-                          <h4 class="text-2xl font-bold text-gray-900 truncate">
+                          <h4 class="text-2xl font-bold text-gray-900 dark:text-white truncate">
                             {{ user.firstName }} {{ user.lastName }}
                           </h4>
                           <div class="flex space-x-2">
                             <span
                               v-for="role in user.roles"
                               :key="role"
-                              :class="[
-                                'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold',
-                                role === 'ROLE_ADMIN'
-                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                  : 'bg-blue-100 text-blue-800 border border-blue-200'
-                              ]"
+                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600"
                             >
                               <StarIcon v-if="role === 'ROLE_ADMIN'" class="w-3 h-3 mr-1" />
                               <UserIcon v-else class="w-3 h-3 mr-1" />
@@ -109,27 +101,27 @@
                         </div>
                         
                         <div class="space-y-2">
-                          <div class="flex items-center text-gray-600">
-                            <EnvelopeIcon class="w-4 h-4 mr-2 text-gray-400" />
+                          <div class="flex items-center text-gray-600 dark:text-gray-400">
+                            <EnvelopeIcon class="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" />
                             <span class="text-sm">{{ user.email }}</span>
-                            <CheckCircleIcon v-if="user.emailVerified" class="w-4 h-4 ml-2 text-green-500" title="Email verified" />
-                            <ExclamationTriangleIcon v-else class="w-4 h-4 ml-2 text-yellow-500" title="Email not verified" />
+                            <CheckCircleIcon v-if="user.emailVerified" class="w-4 h-4 ml-2 text-success-500" title="Email verified" />
+                            <ExclamationTriangleIcon v-else class="w-4 h-4 ml-2 text-warning-500" title="Email not verified" />
                           </div>
                           
-                          <div v-if="user.username" class="flex items-center text-gray-600">
-                            <AtSymbolIcon class="w-4 h-4 mr-2 text-gray-400" />
+                          <div v-if="user.username" class="flex items-center text-gray-600 dark:text-gray-400">
+                            <AtSymbolIcon class="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" />
                             <span class="text-sm">{{ user.username }}</span>
                           </div>
                           
-                          <div class="flex items-center text-gray-600">
-                            <IdentificationIcon class="w-4 h-4 mr-2 text-gray-400" />
+                          <div class="flex items-center text-gray-600 dark:text-gray-400">
+                            <IdentificationIcon class="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" />
                             <span class="text-sm font-mono">{{ user.uuid }}</span>
                             <button
                               @click="copyToClipboard(user.uuid)"
-                              class="ml-2 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              class="ml-2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
                               title="Copy UUID"
                             >
-                              <ClipboardIcon class="w-4 h-4 text-gray-400" />
+                              <ClipboardIcon class="w-4 h-4 text-gray-400 dark:text-gray-500" />
                             </button>
                           </div>
                         </div>
@@ -140,8 +132,8 @@
                             :class="[
                               'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
                               user.isActive
-                                ? 'bg-green-100 text-green-800 border border-green-200'
-                                : 'bg-red-100 text-red-800 border border-red-200'
+                                ? 'bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200 border border-success-200 dark:border-success-800'
+                                : 'bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200 border border-danger-200 dark:border-danger-800'
                             ]"
                           >
                             {{ user.isActive ? 'Active' : 'Inactive' }}
@@ -149,7 +141,7 @@
                           
                           <span
                             v-if="user.isLocked"
-                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200 border border-danger-200 dark:border-danger-800"
                           >
                             <KeyIcon class="w-3 h-3 mr-1" />
                             Account Locked
@@ -159,14 +151,14 @@
                             :class="[
                               'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
                               user.emailVerified
-                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
+                                : 'bg-warning-100 dark:bg-warning-900 text-warning-800 dark:text-warning-200 border border-warning-200 dark:border-warning-800'
                             ]"
                           >
                             {{ user.emailVerified ? 'Email Verified' : 'Email Unverified' }}
                           </span>
                           
-                          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
                             {{ user.plan || 'Free' }} Plan
                           </span>
                         </div>
@@ -176,69 +168,69 @@
 
                   <!-- Activity Statistics -->
                   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white rounded-xl p-4 border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                       <div class="flex items-center justify-between">
                         <div>
-                          <p class="text-sm font-medium text-gray-600">Projects</p>
-                          <p class="text-2xl font-bold text-blue-600">{{ user.counts?.projects || 0 }}</p>
+                          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Projects</p>
+                          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ user.counts?.projects || 0 }}</p>
                         </div>
-                        <FolderIcon class="w-8 h-8 text-blue-500" />
+                        <FolderIcon class="w-8 h-8 text-gray-500 dark:text-gray-400" />
                       </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl p-4 border border-gray-200 hover:border-green-300 transition-colors">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                       <div class="flex items-center justify-between">
                         <div>
-                          <p class="text-sm font-medium text-gray-600">Media Files</p>
-                          <p class="text-2xl font-bold text-green-600">{{ user.counts?.mediaFiles || 0 }}</p>
+                          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Media Files</p>
+                          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ user.counts?.mediaFiles || 0 }}</p>
                         </div>
-                        <PhotoIcon class="w-8 h-8 text-green-500" />
+                        <PhotoIcon class="w-8 h-8 text-gray-500 dark:text-gray-400" />
                       </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl p-4 border border-gray-200 hover:border-purple-300 transition-colors">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                       <div class="flex items-center justify-between">
                         <div>
-                          <p class="text-sm font-medium text-gray-600">Exports</p>
-                          <p class="text-2xl font-bold text-purple-600">{{ user.counts?.exportJobs || 0 }}</p>
+                          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Exports</p>
+                          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ user.counts?.exportJobs || 0 }}</p>
                         </div>
-                        <ArrowDownTrayIcon class="w-8 h-8 text-purple-500" />
+                        <ArrowDownTrayIcon class="w-8 h-8 text-gray-500 dark:text-gray-400" />
                       </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl p-4 border border-gray-200 hover:border-yellow-300 transition-colors">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                       <div class="flex items-center justify-between">
                         <div>
-                          <p class="text-sm font-medium text-gray-600">Subscriptions</p>
-                          <p class="text-2xl font-bold text-yellow-600">{{ user.counts?.subscriptions || 0 }}</p>
+                          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Subscriptions</p>
+                          <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ user.counts?.subscriptions || 0 }}</p>
                         </div>
-                        <CreditCardIcon class="w-8 h-8 text-yellow-500" />
+                        <CreditCardIcon class="w-8 h-8 text-gray-500 dark:text-gray-400" />
                       </div>
                     </div>
                   </div>
 
                   <!-- Professional Information -->
-                  <div v-if="hasProfileInfo" class="bg-white rounded-xl p-6 border border-gray-200">
-                    <h4 class="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                      <BriefcaseIcon class="w-5 h-5 mr-2 text-gray-600" />
+                  <div v-if="hasProfileInfo" class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h4 class="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <BriefcaseIcon class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
                       Professional Information
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div v-if="user.jobTitle" class="space-y-1">
-                        <label class="text-sm font-medium text-gray-500">Job Title</label>
-                        <p class="text-gray-900 font-medium">{{ user.jobTitle }}</p>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Job Title</label>
+                        <p class="text-gray-900 dark:text-white font-medium">{{ user.jobTitle }}</p>
                       </div>
                       <div v-if="user.company" class="space-y-1">
-                        <label class="text-sm font-medium text-gray-500">Company</label>
-                        <p class="text-gray-900 font-medium">{{ user.company }}</p>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Company</label>
+                        <p class="text-gray-900 dark:text-white font-medium">{{ user.company }}</p>
                       </div>
                       <div v-if="user.website" class="md:col-span-2 space-y-1">
-                        <label class="text-sm font-medium text-gray-500">Website</label>
-                        <p class="text-gray-900">
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Website</label>
+                        <p class="text-gray-900 dark:text-white">
                           <a 
                             :href="user.website" 
                             target="_blank" 
-                            class="text-blue-600 hover:text-blue-700 underline decoration-2 underline-offset-2 flex items-center"
+                            class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 underline decoration-2 underline-offset-2 flex items-center"
                           >
                             {{ user.website }}
                             <ArrowTopRightOnSquareIcon class="w-4 h-4 ml-1" />
@@ -246,12 +238,12 @@
                         </p>
                       </div>
                       <div v-if="user.portfolio" class="md:col-span-2 space-y-1">
-                        <label class="text-sm font-medium text-gray-500">Portfolio</label>
-                        <p class="text-gray-900">
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Portfolio</label>
+                        <p class="text-gray-900 dark:text-white">
                           <a 
                             :href="user.portfolio" 
                             target="_blank" 
-                            class="text-blue-600 hover:text-blue-700 underline decoration-2 underline-offset-2 flex items-center"
+                            class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 underline decoration-2 underline-offset-2 flex items-center"
                           >
                             {{ user.portfolio }}
                             <ArrowTopRightOnSquareIcon class="w-4 h-4 ml-1" />
@@ -262,36 +254,36 @@
                   </div>
 
                   <!-- Bio -->
-                  <div v-if="user.bio" class="bg-white rounded-xl p-6 border border-gray-200">
-                    <h4 class="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                      <DocumentTextIcon class="w-5 h-5 mr-2 text-gray-600" />
+                  <div v-if="user.bio" class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h4 class="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <DocumentTextIcon class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
                       Bio
                     </h4>
                     <div class="prose prose-gray max-w-none">
-                      <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{{ user.bio }}</p>
+                      <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{{ user.bio }}</p>
                     </div>
                   </div>
 
                   <!-- Social Links -->
-                  <div v-if="user.socialLinks && Object.keys(user.socialLinks).length > 0" class="bg-white rounded-xl p-6 border border-gray-200">
-                    <h4 class="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                      <LinkIcon class="w-5 h-5 mr-2 text-gray-600" />
+                  <div v-if="user.socialLinks && Object.keys(user.socialLinks).length > 0" class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h4 class="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <LinkIcon class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
                       Social Links
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div 
                         v-for="(url, platform) in user.socialLinks" 
                         :key="platform" 
-                        class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                       >
-                        <span class="text-sm font-medium text-gray-700 capitalize flex items-center">
-                          <GlobeAltIcon class="w-4 h-4 mr-2 text-gray-500" />
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize flex items-center">
+                          <GlobeAltIcon class="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
                           {{ platform }}
                         </span>
                         <a 
                           :href="url" 
                           target="_blank" 
-                          class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+                          class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center"
                         >
                           View Profile
                           <ArrowTopRightOnSquareIcon class="w-3 h-3 ml-1" />
@@ -301,59 +293,59 @@
                   </div>
 
                   <!-- Account Timeline -->
-                  <div class="bg-white rounded-xl p-6 border border-gray-200">
-                    <h4 class="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                      <ClockIcon class="w-5 h-5 mr-2 text-gray-600" />
+                  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h4 class="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <ClockIcon class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
                       Account Timeline
                     </h4>
                     <div class="space-y-4">
                       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                           <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-blue-100 rounded-full">
-                              <CalendarIcon class="w-4 h-4 text-blue-600" />
+                            <div class="p-2 bg-gray-100 dark:bg-gray-600 rounded-full">
+                              <CalendarIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
-                              <p class="text-sm font-medium text-blue-900">Account Created</p>
-                              <p class="text-sm text-blue-700">{{ formatDate(user.createdAt) }}</p>
+                              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Account Created</p>
+                              <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDate(user.createdAt) }}</p>
                             </div>
                           </div>
                         </div>
                         
-                        <div v-if="user.lastLoginAt" class="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div v-if="user.lastLoginAt" class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                           <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-green-100 rounded-full">
-                              <ArrowRightOnRectangleIcon class="w-4 h-4 text-green-600" />
+                            <div class="p-2 bg-gray-100 dark:bg-gray-600 rounded-full">
+                              <ArrowRightOnRectangleIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
-                              <p class="text-sm font-medium text-green-900">Last Login</p>
-                              <p class="text-sm text-green-700">{{ formatDate(user.lastLoginAt) }}</p>
+                              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Last Login</p>
+                              <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDate(user.lastLoginAt) }}</p>
                             </div>
                           </div>
                         </div>
                         
-                        <div v-if="user.updatedAt" class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <div v-if="user.updatedAt" class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                           <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-purple-100 rounded-full">
-                              <PencilIcon class="w-4 h-4 text-purple-600" />
+                            <div class="p-2 bg-gray-100 dark:bg-gray-600 rounded-full">
+                              <PencilIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
-                              <p class="text-sm font-medium text-purple-900">Last Updated</p>
-                              <p class="text-sm text-purple-700">{{ formatDate(user.updatedAt) }}</p>
+                              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Last Updated</p>
+                              <p class="text-sm text-gray-700 dark:text-gray-300">{{ formatDate(user.updatedAt) }}</p>
                             </div>
                           </div>
                         </div>
                       </div>
                       
                       <!-- Security Info -->
-                      <div v-if="user.failedLoginAttempts > 0" class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div v-if="user.failedLoginAttempts > 0" class="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
                         <div class="flex items-center space-x-3">
-                          <div class="p-2 bg-yellow-100 rounded-full">
-                            <ExclamationTriangleIcon class="w-4 h-4 text-yellow-600" />
+                          <div class="p-2 bg-warning-100 dark:bg-warning-900 rounded-full">
+                            <ExclamationTriangleIcon class="w-4 h-4 text-warning-600 dark:text-warning-400" />
                           </div>
                           <div>
-                            <p class="text-sm font-medium text-yellow-900">Security Alert</p>
-                            <p class="text-sm text-yellow-700">{{ user.failedLoginAttempts }} failed login attempts</p>
+                            <p class="text-sm font-medium text-warning-900 dark:text-warning-100">Security Alert</p>
+                            <p class="text-sm text-warning-700 dark:text-warning-300">{{ user.failedLoginAttempts }} failed login attempts</p>
                           </div>
                         </div>
                       </div>
@@ -361,25 +353,25 @@
                   </div>
 
                   <!-- User Settings -->
-                  <div v-if="user.settings || user.timezone || user.language" class="bg-white rounded-xl p-6 border border-gray-200">
-                    <h4 class="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                      <CogIcon class="w-5 h-5 mr-2 text-gray-600" />
+                  <div v-if="user.settings || user.timezone || user.language" class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h4 class="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <CogIcon class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
                       User Settings
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div v-if="user.timezone" class="space-y-1">
-                        <label class="text-sm font-medium text-gray-500">Timezone</label>
-                        <p class="text-gray-900 font-medium">{{ user.timezone }}</p>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Timezone</label>
+                        <p class="text-gray-900 dark:text-white font-medium">{{ user.timezone }}</p>
                       </div>
                       <div v-if="user.language" class="space-y-1">
-                        <label class="text-sm font-medium text-gray-500">Language</label>
-                        <p class="text-gray-900 font-medium">{{ user.language }}</p>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Language</label>
+                        <p class="text-gray-900 dark:text-white font-medium">{{ user.language }}</p>
                       </div>
                     </div>
                     <div v-if="user.settings && Object.keys(user.settings).length > 0" class="mt-6">
-                      <label class="text-sm font-medium text-gray-500 mb-2 block">Custom Settings</label>
-                      <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <pre class="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">{{ JSON.stringify(user.settings, null, 2) }}</pre>
+                      <label class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 block">Custom Settings</label>
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                        <pre class="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto whitespace-pre-wrap">{{ JSON.stringify(user.settings, null, 2) }}</pre>
                       </div>
                     </div>
                   </div>
@@ -388,14 +380,14 @@
                 <!-- Error State -->
                 <div v-else class="p-8">
                   <div class="flex flex-col items-center justify-center py-12">
-                    <div class="p-4 bg-red-100 rounded-full mb-4">
-                      <ExclamationCircleIcon class="w-12 h-12 text-red-600" />
+                    <div class="p-4 bg-danger-100 dark:bg-danger-900 rounded-full mb-4">
+                      <ExclamationCircleIcon class="w-12 h-12 text-danger-600 dark:text-danger-400" />
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Failed to Load User Details</h3>
-                    <p class="text-gray-600 mb-4">There was an error loading the user information.</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Failed to Load User Details</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">There was an error loading the user information.</p>
                     <button
                       @click="retryLoad"
-                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                      class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors"
                     >
                       Try Again
                     </button>
@@ -404,9 +396,9 @@
               </div>
 
               <!-- Modal Footer / Actions -->
-              <div class="border-t border-gray-200 bg-gray-50 px-6 py-4">
+              <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-6 py-4">
                 <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-2 text-sm text-gray-500">
+                  <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                     <ClockIcon class="w-4 h-4" />
                     <span>Last updated {{ user ? formatRelativeTime(user.updatedAt || user.createdAt) : '' }}</span>
                   </div>
@@ -414,7 +406,7 @@
                   <div class="flex items-center space-x-3">
                     <button
                       @click="$emit('close')"
-                      class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                      class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors"
                     >
                       Close
                     </button>
@@ -423,7 +415,7 @@
                       v-if="user && !user.isActive"
                       @click="handleActivateUser"
                       :disabled="actionLoading"
-                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg focus:ring-2 focus:ring-success-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       <UserPlusIcon v-if="!actionLoading" class="w-4 h-4 mr-2" />
                       <div v-else class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
@@ -434,7 +426,7 @@
                       v-if="user && user.isActive"
                       @click="handleDeactivateUser"
                       :disabled="actionLoading"
-                      class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      class="px-4 py-2 bg-danger-600 hover:bg-danger-700 text-white rounded-lg focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       <UserMinusIcon v-if="!actionLoading" class="w-4 h-4 mr-2" />
                       <div v-else class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
@@ -444,7 +436,7 @@
                     <button
                       v-if="user"
                       @click="handleEditRoles"
-                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center"
+                      class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors flex items-center"
                     >
                       <CogIcon class="w-4 h-4 mr-2" />
                       Edit Roles
@@ -692,23 +684,6 @@ watch(() => props.show, (show) => {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
-}
-
-/* Card hover effects */
-.hover\:border-blue-300:hover {
-  border-color: #93c5fd;
-}
-
-.hover\:border-green-300:hover {
-  border-color: #86efac;
-}
-
-.hover\:border-purple-300:hover {
-  border-color: #d8b4fe;
-}
-
-.hover\:border-yellow-300:hover {
-  border-color: #fde047;
 }
 
 /* Focus styles for better accessibility */

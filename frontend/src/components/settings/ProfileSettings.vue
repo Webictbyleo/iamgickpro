@@ -6,12 +6,12 @@
         <div v-if="userProfile.avatar" class="w-20 h-20 rounded-full overflow-hidden shadow-lg">
           <img :src="userProfile.avatar" :alt="`${userProfile.firstName} ${userProfile.lastName}`" class="w-full h-full object-cover" />
         </div>
-        <div v-else class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+        <div v-else class="w-20 h-20 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
           {{ avatarInitials }}
         </div>
         <button
           @click="uploadAvatar"
-          class="absolute -bottom-2 -right-2 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:border-indigo-300 transition-colors duration-200 shadow-sm"
+          class="absolute -bottom-2 -right-2 w-8 h-8 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-500 transition-colors duration-200 shadow-sm"
           title="Upload photo"
         >
           <CameraIcon class="w-4 h-4" />
@@ -26,9 +26,9 @@
         />
       </div>
       <div class="flex-1">
-        <h2 class="text-2xl font-bold text-gray-900">{{ userProfile.firstName }} {{ userProfile.lastName }}</h2>
-        <p class="text-gray-600 mt-1">{{ userProfile.email }}</p>
-        <p class="text-sm text-gray-500 mt-2">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ userProfile.firstName }} {{ userProfile.lastName }}</h2>
+        <p class="text-gray-600 dark:text-gray-300 mt-1">{{ userProfile.email }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
           Member since {{ formatDate(userProfile.createdAt) }}
         </p>
       </div>
@@ -37,41 +37,41 @@
     <!-- Profile Form -->
     <form @submit.prevent="saveProfile" class="space-y-6">
       <!-- Basic Information -->
-      <div class="bg-gray-50 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Basic Information</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="firstName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               First Name
             </label>
             <input
               id="firstName"
               v-model="userProfile.firstName"
               type="text"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="Enter your first name"
             />
           </div>
           <div>
-            <label for="lastName" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="lastName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Last Name
             </label>
             <input
               id="lastName"
               v-model="userProfile.lastName"
               type="text"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="Enter your last name"
             />
           </div>
           <div class="md:col-span-2">
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email Address
             </label>
-            <div class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
+            <div class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
               {{ userProfile.email }}
             </div>
-            <p class="text-xs text-gray-500 mt-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Email address cannot be changed for security reasons
             </p>
           </div>
@@ -79,54 +79,54 @@
       </div>
 
       <!-- Professional Information -->
-      <div class="bg-gray-50 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Professional Information</h3>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Professional Information</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label for="jobTitle" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="jobTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Job Title
             </label>
             <input
               id="jobTitle"
               v-model="userProfile.jobTitle"
               type="text"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="e.g. Graphic Designer"
             />
           </div>
           <div>
-            <label for="company" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="company" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Company
             </label>
             <input
               id="company"
               v-model="userProfile.company"
               type="text"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="Enter your company name"
             />
           </div>
           <div>
-            <label for="website" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="website" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Website
             </label>
             <input
               id="website"
               v-model="userProfile.website"
               type="url"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="https://your-website.com"
             />
           </div>
           <div>
-            <label for="portfolio" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="portfolio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Portfolio
             </label>
             <input
               id="portfolio"
               v-model="userProfile.portfolio"
               type="url"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="https://your-portfolio.com"
             />
           </div>
@@ -134,79 +134,79 @@
       </div>
 
       <!-- Bio -->
-      <div class="bg-gray-50 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Bio</h3>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bio</h3>
         <div>
-          <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             About You
           </label>
           <textarea
             id="bio"
             v-model="userProfile.bio"
             rows="4"
-            class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200 resize-none"
+            class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200 resize-none"
             placeholder="Tell us about yourself, your experience, and what you do..."
           ></textarea>
-          <p class="text-sm text-gray-500 mt-2">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ userProfile.bio.length }}/500 characters
           </p>
         </div>
       </div>
 
       <!-- Social Links -->
-      <div class="bg-gray-50 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Social Links</h3>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Social Links</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label for="twitter" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="twitter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Twitter
             </label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span class="text-gray-500">@</span>
+                <span class="text-gray-500 dark:text-gray-400">@</span>
               </div>
               <input
                 id="twitter"
                 v-model="userProfile.socialLinks.twitter"
                 type="text"
-                class="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+                class="w-full pl-8 pr-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
                 placeholder="username"
               />
             </div>
           </div>
           <div>
-            <label for="linkedin" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="linkedin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               LinkedIn
             </label>
             <input
               id="linkedin"
               v-model="userProfile.socialLinks.linkedin"
               type="url"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="https://linkedin.com/in/username"
             />
           </div>
           <div>
-            <label for="dribbble" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="dribbble" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Dribbble
             </label>
             <input
               id="dribbble"
               v-model="userProfile.socialLinks.dribbble"
               type="url"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="https://dribbble.com/username"
             />
           </div>
           <div>
-            <label for="behance" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="behance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Behance
             </label>
             <input
               id="behance"
               v-model="userProfile.socialLinks.behance"
               type="url"
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
               placeholder="https://behance.net/username"
             />
           </div>
@@ -214,20 +214,20 @@
       </div>
 
       <!-- Security & Password -->
-      <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border border-red-100">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <LockClosedIcon class="w-5 h-5 mr-2 text-red-600" />
+      <div class="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl p-6 border border-red-100 dark:border-red-800">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <LockClosedIcon class="w-5 h-5 mr-2 text-red-600 dark:text-red-400" />
           Security & Password
         </h3>
         <div class="flex items-center justify-between">
           <div class="flex-1">
-            <h4 class="text-sm font-medium text-gray-900">Password</h4>
-            <p class="text-sm text-gray-500">Change your account password</p>
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white">Password</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Change your account password</p>
           </div>
           <button
             @click="showPasswordChange = true"
             type="button"
-            class="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-colors"
+            class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-colors"
           >
             Change Password
           </button>
@@ -235,12 +235,12 @@
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
         <div class="flex items-center space-x-4">
           <button
             type="button"
             @click="resetForm"
-            class="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+            class="px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
           >
             Reset Changes
           </button>
@@ -249,7 +249,7 @@
           <button
             type="submit"
             :disabled="isSaving"
-            class="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+            class="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
           >
             <span v-if="isSaving" class="flex items-center">
               <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -265,15 +265,15 @@
     </form>
 
     <!-- Change Password Modal -->
-    <div v-if="showPasswordChange" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-2xl max-w-md w-full p-6">
+    <div v-if="showPasswordChange" class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4 z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center mb-4">
-          <LockClosedIcon class="w-6 h-6 text-indigo-600 mr-3" />
-          <h3 class="text-lg font-semibold text-gray-900">Change Password</h3>
+          <LockClosedIcon class="w-6 h-6 text-primary-600 dark:text-primary-400 mr-3" />
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h3>
         </div>
         <form @submit.prevent="changePassword" class="space-y-4">
           <div>
-            <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="currentPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Current Password
             </label>
             <input
@@ -281,11 +281,11 @@
               v-model="passwordForm.currentPassword"
               type="password"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
             />
           </div>
           <div>
-            <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="newPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               New Password
             </label>
             <input
@@ -293,11 +293,11 @@
               v-model="passwordForm.newPassword"
               type="password"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
             />
           </div>
           <div>
-            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Confirm New Password
             </label>
             <input
@@ -305,21 +305,21 @@
               v-model="passwordForm.confirmPassword"
               type="password"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all duration-200"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 dark:focus:border-primary-500 transition-all duration-200"
             />
           </div>
           <div class="flex space-x-3 pt-4">
             <button
               type="button"
               @click="showPasswordChange = false"
-              class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-colors"
+              class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               :disabled="passwordChanging"
-              class="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <span v-if="passwordChanging">Changing...</span>
               <span v-else>Change Password</span>

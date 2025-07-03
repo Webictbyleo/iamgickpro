@@ -6,19 +6,19 @@
         <div class="flex items-center justify-end">
           <div class="flex items-center space-x-4">
             <!-- Platform Stats -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
               <div class="flex items-center space-x-4">
                 <div class="text-center">
-                  <div class="text-2xl font-bold text-blue-600">{{ stats.users?.total || 0 }}</div>
-                  <div class="text-xs text-gray-500">Total Users</div>
+                  <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ stats.users?.total || 0 }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Total Users</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-2xl font-bold text-green-600">{{ stats.users?.active || 0 }}</div>
-                  <div class="text-xs text-gray-500">Active</div>
+                  <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ stats.users?.active || 0 }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Active</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-2xl font-bold text-purple-600">{{ stats.users?.admins || 0 }}</div>
-                  <div class="text-xs text-gray-500">Admins</div>
+                  <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ stats.users?.admins || 0 }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Admins</div>
                 </div>
               </div>
             </div>
@@ -27,19 +27,19 @@
       </div>
 
       <!-- Filters and Search -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
         <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Search -->
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Users</label>
               <div class="relative">
-                <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Search by email, name, or username..."
-                  class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   @input="debouncedSearch"
                 />
               </div>
@@ -47,10 +47,10 @@
 
             <!-- Status Filter -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
               <select
                 v-model="filters.status"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 @change="loadUsers"
               >
                 <option value="">All Status</option>
@@ -63,10 +63,10 @@
 
             <!-- Role Filter -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
               <select
                 v-model="filters.role"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 @change="loadUsers"
               >
                 <option value="">All Roles</option>
@@ -79,17 +79,17 @@
       </div>
 
       <!-- Users Table -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <!-- Bulk Actions Header -->
-        <div v-if="selectedUserIds.length > 0" class="px-6 py-3 bg-blue-50 border-b border-blue-200">
+        <div v-if="selectedUserIds.length > 0" class="px-6 py-3 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-800">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-              <span class="text-sm font-medium text-blue-900">
+              <span class="text-sm font-medium text-primary-900 dark:text-primary-100">
                 {{ selectedUserIds.length }} user{{ selectedUserIds.length === 1 ? '' : 's' }} selected
               </span>
               <button
                 @click="selectedUserIds = []"
-                class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 font-medium"
               >
                 Clear selection
               </button>
@@ -97,7 +97,7 @@
             <div class="flex items-center space-x-2">
               <button
                 @click="bulkAssignPlan"
-                class="px-3 py-1 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors flex items-center space-x-1"
+                class="px-3 py-1 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center space-x-1"
               >
                 <CreditCardIcon class="w-4 h-4" />
                 <span>Assign Plan</span>
@@ -123,14 +123,14 @@
         <div class="overflow-hidden">
           <!-- Loading State -->
           <div v-if="loading" class="p-8 text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-4 text-gray-600">Loading users...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">Loading users...</p>
           </div>
 
           <!-- Users Table -->
           <div v-else-if="users.length > 0" class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th class="relative px-6 py-3 text-left">
                     <input
@@ -138,41 +138,41 @@
                       :checked="selectedUserIds.length === users.length && users.length > 0"
                       :indeterminate="selectedUserIds.length > 0 && selectedUserIds.length < users.length"
                       @change="toggleSelectAll"
-                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                     />
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Login</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50">
+              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <!-- Checkbox -->
                   <td class="relative px-6 py-4 whitespace-nowrap">
                     <input
                       v-model="selectedUserIds"
                       :value="user.id"
                       type="checkbox"
-                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                     />
                   </td>
                   <!-- User Info -->
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10">
-                        <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div class="h-10 w-10 rounded-full bg-primary-600 dark:bg-primary-500 flex items-center justify-center">
                           <span class="text-white font-semibold text-sm">{{ getUserInitials(user) }}</span>
                         </div>
                       </div>
                       <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">{{ user.firstName }} {{ user.lastName }}</div>
-                        <div class="text-sm text-gray-500">{{ user.email }}</div>
-                        <div v-if="user.username" class="text-xs text-gray-400">@{{ user.username }}</div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ user.firstName }} {{ user.lastName }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
+                        <div v-if="user.username" class="text-xs text-gray-400 dark:text-gray-500">@{{ user.username }}</div>
                       </div>
                     </div>
                   </td>
@@ -185,8 +185,8 @@
                         :class="[
                           'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                           user.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200'
+                            : 'bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200'
                         ]"
                       >
                         <CheckCircleIcon 
@@ -204,8 +204,8 @@
                         :class="[
                           'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                           user.emailVerified
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                            ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200'
+                            : 'bg-warning-100 dark:bg-warning-900 text-warning-800 dark:text-warning-200'
                         ]"
                       >
                         <CheckCircleIcon 
@@ -221,7 +221,7 @@
                       <!-- Locked Status -->
                       <span
                         v-if="user.isLocked"
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200"
                       >
                         <KeyIcon class="w-3 h-3 mr-1" />
                         Locked
@@ -238,8 +238,8 @@
                         :class="[
                           'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                           role === 'ROLE_ADMIN'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-gray-100 text-gray-800'
+                            ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
                         ]"
                       >
                         {{ formatRole(role) }}
@@ -249,16 +249,16 @@
 
                   <!-- Plan -->
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="text-sm text-gray-900 capitalize">{{ user.plan || 'Free' }}</span>
+                    <span class="text-sm text-gray-900 dark:text-gray-100 capitalize">{{ user.plan || 'Free' }}</span>
                   </td>
 
                   <!-- Joined Date -->
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {{ formatDate(user.createdAt) }}
                   </td>
 
                   <!-- Last Login -->
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {{ user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never' }}
                   </td>
 
@@ -268,7 +268,7 @@
                       <!-- View Details -->
                       <button
                         @click="viewUserDetails(user)"
-                        class="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                        class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 p-1 rounded transition-colors"
                         title="View Details"
                       >
                         <EyeIcon class="w-4 h-4" />
@@ -280,8 +280,8 @@
                         :class="[
                           'p-1 rounded transition-colors',
                           user.isActive
-                            ? 'text-red-600 hover:text-red-900'
-                            : 'text-green-600 hover:text-green-900'
+                            ? 'text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400'
                         ]"
                         :title="user.isActive ? 'Deactivate User' : 'Activate User'"
                       >
@@ -292,7 +292,7 @@
                       <!-- Edit Roles -->
                       <button
                         @click="editUserRoles(user)"
-                        class="text-purple-600 hover:text-purple-900 p-1 rounded transition-colors"
+                        class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 p-1 rounded transition-colors"
                         title="Edit Roles"
                       >
                         <KeyIcon class="w-4 h-4" />
@@ -301,7 +301,7 @@
                       <!-- Assign Plan -->
                       <button
                         @click="assignPlanToUser(user)"
-                        class="text-orange-600 hover:text-orange-900 p-1 rounded transition-colors"
+                        class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 p-1 rounded transition-colors"
                         title="Assign Plan"
                       >
                         <CreditCardIcon class="w-4 h-4" />
@@ -315,16 +315,16 @@
 
           <!-- Empty State -->
           <div v-else class="p-8 text-center">
-            <UsersIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p class="text-gray-500">Try adjusting your search criteria or filters.</p>
+            <UsersIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No users found</h3>
+            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search criteria or filters.</p>
           </div>
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination.total_pages > 1" class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+        <div v-if="pagination.total_pages > 1" class="bg-gray-50 dark:bg-gray-700 px-6 py-3 border-t border-gray-200 dark:border-gray-600">
           <div class="flex items-center justify-between">
-            <div class="text-sm text-gray-700">
+            <div class="text-sm text-gray-700 dark:text-gray-300">
               Showing {{ ((pagination.current_page - 1) * pagination.items_per_page) + 1 }} to
               {{ Math.min(pagination.current_page * pagination.items_per_page, pagination.total_items) }} of
               {{ pagination.total_items }} results
@@ -333,17 +333,17 @@
               <button
                 @click="changePage(pagination.current_page - 1)"
                 :disabled="!pagination.has_prev"
-                class="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Previous
               </button>
-              <span class="text-sm text-gray-700">
+              <span class="text-sm text-gray-700 dark:text-gray-300">
                 Page {{ pagination.current_page }} of {{ pagination.total_pages }}
               </span>
               <button
                 @click="changePage(pagination.current_page + 1)"
                 :disabled="!pagination.has_next"
-                class="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Next
               </button>

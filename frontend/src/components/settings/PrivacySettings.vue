@@ -1,36 +1,36 @@
 <template>
   <div class="space-y-8">
     <!-- Privacy Overview -->
-    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200/50">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex items-start">
         <div class="flex-shrink-0">
-          <ShieldCheckIcon class="w-8 h-8 text-emerald-600" />
+          <ShieldCheckIcon class="w-8 h-8 text-primary-600 dark:text-primary-400" />
         </div>
         <div class="ml-4">
-          <h3 class="text-lg font-semibold text-emerald-900">Privacy & Security</h3>
-          <p class="text-emerald-700 mt-1">Manage your data and protect your account with essential privacy and security controls.</p>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Privacy & Security</h3>
+          <p class="text-gray-600 dark:text-gray-300 mt-1">Manage your data and protect your account with essential privacy and security controls.</p>
         </div>
       </div>
     </div>
 
     <!-- Data Management -->
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
-      <div class="p-6 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-          <ServerIcon class="w-5 h-5 mr-2 text-gray-600" />
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+          <ServerIcon class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
           Data Management
         </h3>
-        <p class="text-sm text-gray-600 mt-1">Manage your personal data and privacy rights</p>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Manage your personal data and privacy rights</p>
       </div>
       
       <div class="p-6 space-y-6">
         <!-- Download Data -->
-        <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+        <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
           <div class="flex items-center justify-between">
             <div class="flex-1">
-              <h4 class="text-sm font-medium text-blue-900">Download My Data</h4>
-              <p class="text-sm text-blue-700 mt-1">Get a complete copy of all your personal data, designs, and account information in JSON format for GDPR compliance and data portability</p>
-              <div v-if="dataDownload.lastRequest" class="text-xs text-blue-600 mt-2">
+              <h4 class="text-sm font-medium text-gray-900 dark:text-white">Download My Data</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">Get a complete copy of all your personal data, designs, and account information in JSON format for GDPR compliance and data portability</p>
+              <div v-if="dataDownload.lastRequest" class="text-xs text-gray-600 dark:text-gray-400 mt-2">
                 Last requested: {{ dataDownload.lastRequest.toLocaleString() }}
               </div>
             </div>
@@ -38,7 +38,7 @@
               <button
                 @click="requestDataDownload"
                 :disabled="dataDownload.loading"
-                class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <span v-if="dataDownload.loading" class="flex items-center">
                   <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -58,10 +58,10 @@
         </div>
 
         <!-- Delete Account -->
-        <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-200">
+        <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
           <div class="flex-1">
-            <h4 class="text-sm font-medium text-red-900">Delete Account</h4>
-            <p class="text-sm text-red-700 mt-1">Permanently delete your account and all associated data</p>
+            <h4 class="text-sm font-medium text-red-900 dark:text-red-100">Delete Account</h4>
+            <p class="text-sm text-red-700 dark:text-red-300 mt-1">Permanently delete your account and all associated data</p>
           </div>
           <button
             @click="showDeleteConfirmation = true"
@@ -74,19 +74,19 @@
     </div>
 
     <!-- Delete Account Confirmation Modal -->
-    <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-2xl max-w-md w-full p-6">
+    <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4 z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
         <div class="flex items-center mb-4">
           <ExclamationTriangleIcon class="w-6 h-6 text-red-600 mr-3" />
-          <h3 class="text-lg font-semibold text-gray-900">Delete Account</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete Account</h3>
         </div>
-        <p class="text-sm text-gray-600 mb-6">
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">
           This action cannot be undone. All your designs, data, and account information will be permanently deleted.
         </p>
         <div class="flex space-x-3">
           <button
             @click="showDeleteConfirmation = false"
-            class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-colors"
+            class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500/20 transition-colors"
           >
             Cancel
           </button>

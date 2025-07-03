@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen flex overflow-hidden bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/20">
+  <div class="h-screen flex overflow-hidden bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/20 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
     <!-- Sidebar -->
     <div 
       class="fixed inset-y-0 left-0 z-50 w-64 transform transition-all duration-300 ease-in-out md:relative md:translate-x-0"

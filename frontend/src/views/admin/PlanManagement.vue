@@ -6,25 +6,25 @@
         <div class="flex items-center justify-end">
           <div class="flex items-center space-x-4">
             <!-- Plan Stats -->
-            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
               <div class="flex items-center space-x-4">
                 <div class="text-center">
-                  <div class="text-2xl font-bold text-blue-600">{{ stats.plans?.total || 0 }}</div>
-                  <div class="text-xs text-gray-500">Total Plans</div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ stats.plans?.total || 0 }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Total Plans</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-2xl font-bold text-green-600">{{ stats.plans?.active || 0 }}</div>
-                  <div class="text-xs text-gray-500">Active Plans</div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ stats.plans?.active || 0 }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Active Plans</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-2xl font-bold text-purple-600">{{ stats.subscriptions?.active || 0 }}</div>
-                  <div class="text-xs text-gray-500">Active Subscriptions</div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ stats.subscriptions?.active || 0 }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Active Subscriptions</div>
                 </div>
               </div>
             </div>
             <button
               @click="showCreatePlanModal = true"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center space-x-2"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors flex items-center space-x-2"
             >
               <PlusIcon class="w-5 h-5" />
               <span>Create Plan</span>
@@ -37,62 +37,60 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <!-- Loading State -->
         <div v-if="loading" class="col-span-full">
-          <div class="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-4 text-gray-600">Loading plans...</p>
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-8 text-center shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-primary-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">Loading plans...</p>
           </div>
         </div>
 
         <!-- Plan Cards -->
-        <div v-else-if="plans.length > 0" v-for="plan in plans" :key="plan.id" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div v-else-if="plans.length > 0" v-for="plan in plans" :key="plan.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div class="p-6">
             <!-- Plan Header -->
             <div class="flex items-center justify-between mb-4">
               <div>
-                <h3 class="text-xl font-semibold text-gray-900">{{ plan.name }}</h3>
-                <p class="text-sm text-gray-500">{{ plan.description || 'No description' }}</p>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ plan.name }}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ plan.description || 'No description' }}</p>
               </div>
-              <div class="flex items-center space-x-2">
-                <span :class="plan.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'" 
-                      class="px-2 py-1 text-xs font-medium rounded-full">
-                  {{ plan.is_active ? 'Active' : 'Inactive' }}
-                </span>
-                <button
-                  @click="editPlan(plan)"
-                  class="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                >
-                  <PencilIcon class="w-4 h-4" />
-                </button>
-              </div>
+              <span 
+                :class="[
+                  'px-2 py-1 text-xs font-medium rounded-full',
+                  plan.is_active 
+                    ? 'bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200 border border-success-200 dark:border-success-800' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
+                ]"
+              >
+                {{ plan.is_active ? 'Active' : 'Inactive' }}
+              </span>
             </div>
 
             <!-- Pricing -->
             <div class="mb-4">
               <div class="flex items-baseline">
-                <span class="text-3xl font-bold text-gray-900">${{ formatPrice(plan.monthly_price || 0) }}</span>
-                <span class="ml-1 text-gray-500">/ month</span>
+                <span class="text-3xl font-bold text-gray-900 dark:text-white">${{ formatPrice(plan.monthly_price || 0) }}</span>
+                <span class="ml-1 text-gray-500 dark:text-gray-400">/ month</span>
               </div>
-              <p v-if="plan.yearly_price && parseFloat(plan.monthly_price || '0') > 0" class="text-sm text-blue-600 mt-1">
+              <p v-if="plan.yearly_price && parseFloat(plan.monthly_price || '0') > 0" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 ${{ formatPrice(plan.yearly_price) }}/year (save {{ calculateSavings(plan.monthly_price, plan.yearly_price) }}%)
               </p>
-              <p v-else-if="parseFloat(plan.monthly_price || '0') === 0" class="text-sm text-green-600 mt-1">
+              <p v-else-if="parseFloat(plan.monthly_price || '0') === 0" class="text-sm text-success-600 dark:text-success-400 mt-1">
                 Free Plan - No charge
               </p>
             </div>
 
             <!-- Features -->
             <div class="mb-6">
-              <h4 class="text-sm font-medium text-gray-900 mb-3">Features</h4>
+              <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Features</h4>
               <ul class="space-y-2">
                 <li v-for="(isEnabled, featureName) in plan.features" :key="String(featureName)" class="flex items-center text-sm">
-                  <CheckCircleIcon v-if="isEnabled" class="w-4 h-4 mr-2 flex-shrink-0 text-green-500" />
-                  <XMarkIcon v-else class="w-4 h-4 mr-2 flex-shrink-0 text-red-500" />
-                  <span :class="isEnabled ? 'text-gray-700' : 'text-gray-400 line-through'">
+                  <CheckCircleIcon v-if="isEnabled" class="w-4 h-4 mr-2 flex-shrink-0 text-success-500" />
+                  <XMarkIcon v-else class="w-4 h-4 mr-2 flex-shrink-0 text-danger-600 dark:text-danger-400" />
+                  <span :class="isEnabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500 line-through'">
                     {{ formatFeatureName(String(featureName)) }}
                   </span>
                 </li>
-                <li v-if="!plan.features || Object.keys(plan.features).length === 0" class="text-sm text-gray-400 italic flex items-center">
-                  <XMarkIcon class="w-4 h-4 mr-2 text-gray-300" />
+                <li v-if="!plan.features || Object.keys(plan.features).length === 0" class="text-sm text-gray-400 dark:text-gray-500 italic flex items-center">
+                  <XMarkIcon class="w-4 h-4 mr-2 text-gray-300 dark:text-gray-600" />
                   No features configured
                 </li>
               </ul>
@@ -100,44 +98,68 @@
 
             <!-- Limits -->
             <div class="mb-6">
-              <h4 class="text-sm font-medium text-gray-900 mb-3">Plan Limits</h4>
+              <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Plan Limits</h4>
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Projects:</span>
-                  <span class="font-medium">{{ formatLimit(plan.limits?.projects) }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">Projects:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ formatLimit(plan.limits?.projects) }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Storage:</span>
-                  <span class="font-medium">{{ formatStorage(plan.limits?.storage) }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">Storage:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ formatStorage(plan.limits?.storage) }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Monthly Exports:</span>
-                  <span class="font-medium">{{ formatLimit(plan.limits?.exports) }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">Monthly Exports:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ formatLimit(plan.limits?.exports) }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Team Members:</span>
-                  <span class="font-medium">{{ formatLimit(plan.limits?.collaborators) }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">Team Members:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ formatLimit(plan.limits?.collaborators) }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Actions -->
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-              <div class="text-sm text-gray-500">
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="text-sm text-gray-500 dark:text-gray-400">
                 {{ formatSubscriberCount(plan.subscriber_count) }}
               </div>
               <div class="flex items-center space-x-2">
+                <!-- Edit Button -->
+                <button
+                  @click="editPlan(plan)"
+                  class="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-colors"
+                  title="Edit plan details"
+                >
+                  <PencilIcon class="w-3 h-3 mr-1" />
+                  Edit
+                </button>
+                
+                <!-- Status Toggle Button -->
                 <button
                   @click="togglePlanStatus(plan)"
-                  :class="plan.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
-                  class="text-sm font-medium transition-colors"
+                  :class="[
+                    'inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-colors',
+                    plan.is_active 
+                      ? 'bg-warning-100 dark:bg-warning-900 text-warning-800 dark:text-warning-200 hover:bg-warning-200 dark:hover:bg-warning-800 focus:ring-warning-500' 
+                      : 'bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200 hover:bg-success-200 dark:hover:bg-success-800 focus:ring-success-500'
+                  ]"
+                  :title="plan.is_active ? 'Deactivate plan' : 'Activate plan'"
                 >
+                  <component 
+                    :is="plan.is_active ? 'EyeSlashIcon' : 'EyeIcon'" 
+                    class="w-3 h-3 mr-1" 
+                  />
                   {{ plan.is_active ? 'Deactivate' : 'Activate' }}
                 </button>
+                
+                <!-- Delete Button -->
                 <button
                   @click="deletePlan(plan)"
-                  class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                  class="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200 rounded-md hover:bg-danger-200 dark:hover:bg-danger-800 focus:ring-2 focus:ring-danger-500 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-colors"
+                  title="Delete plan permanently"
                 >
+                  <TrashIcon class="w-3 h-3 mr-1" />
                   Delete
                 </button>
               </div>
@@ -147,13 +169,13 @@
 
         <!-- Empty State -->
         <div v-else class="col-span-full">
-          <div class="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
-            <CurrencyDollarIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No plans created yet</h3>
-            <p class="text-gray-600 mb-4">Create your first subscription plan to get started.</p>
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-8 text-center shadow-sm border border-gray-200 dark:border-gray-700">
+            <CurrencyDollarIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No plans created yet</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Create your first subscription plan to get started.</p>
             <button
               @click="showCreatePlanModal = true"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors"
             >
               Create Plan
             </button>
@@ -162,23 +184,23 @@
       </div>
 
       <!-- Recent Activity -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Subscription Activity</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Subscription Activity</h3>
           
           <!-- Activity List -->
           <div v-if="recentActivity.length > 0" class="space-y-4">
-            <div v-for="activity in recentActivity" :key="activity.id" class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+            <div v-for="activity in recentActivity" :key="activity.id" class="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
               <div class="flex items-center space-x-3">
                 <div :class="getActivityIcon(activity.type).color" class="p-2 rounded-full">
                   <component :is="getActivityIcon(activity.type).icon" class="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
-                  <p class="text-xs text-gray-500">{{ formatDate(activity.createdAt) }}</p>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ activity.description }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(activity.createdAt) }}</p>
                 </div>
               </div>
-              <div class="text-sm text-gray-600">
+              <div class="text-sm text-gray-600 dark:text-gray-400">
                 {{ activity.planName }}
               </div>
             </div>
@@ -186,7 +208,7 @@
 
           <!-- Empty Activity State -->
           <div v-else class="text-center py-8">
-            <p class="text-gray-500">No recent subscription activity</p>
+            <p class="text-gray-500 dark:text-gray-400">No recent subscription activity</p>
           </div>
         </div>
       </div>
@@ -223,7 +245,9 @@ import {
   CurrencyDollarIcon,
   UsersIcon,
   CloudArrowUpIcon,
-  DocumentIcon
+  DocumentIcon,
+  EyeIcon,
+  EyeSlashIcon
 } from '@heroicons/vue/24/outline'
 
 // Access control
@@ -446,11 +470,11 @@ const formatDate = (dateString: string) => {
 const getActivityIcon = (type: string) => {
   switch (type) {
     case 'subscription':
-      return { icon: PlusIcon, color: 'bg-green-500' }
+      return { icon: PlusIcon, color: 'bg-success-500' }
     case 'cancellation':
-      return { icon: XMarkIcon, color: 'bg-red-500' }
+      return { icon: XMarkIcon, color: 'bg-danger-500' }
     default:
-      return { icon: DocumentIcon, color: 'bg-blue-500' }
+      return { icon: DocumentIcon, color: 'bg-gray-500' }
   }
 }
 

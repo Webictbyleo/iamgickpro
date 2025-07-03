@@ -25,25 +25,25 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
+            <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-200 dark:border-gray-700">
               <!-- Modal Header -->
-              <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                 <div class="flex items-center space-x-3">
-                  <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <CurrencyDollarIcon class="w-5 h-5 text-white" />
+                  <div class="flex-shrink-0 w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center">
+                    <CurrencyDollarIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
-                    <DialogTitle as="h3" class="text-xl font-semibold text-gray-900">
+                    <DialogTitle as="h3" class="text-xl font-semibold text-gray-900 dark:text-white">
                       {{ editingPlan ? 'Edit Plan' : 'Create New Plan' }}
                     </DialogTitle>
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
                       {{ editingPlan ? 'Modify your subscription plan settings' : 'Set up a new subscription plan for your users' }}
                     </p>
                   </div>
                 </div>
                 <button
                   @click="handleClose"
-                  class="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
+                  class="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all duration-200"
                 >
                   <XMarkIcon class="w-5 h-5" />
                 </button>
@@ -55,34 +55,34 @@
                   <!-- Basic Information Section -->
                   <div class="space-y-6">
                     <div class="flex items-center space-x-3 mb-4">
-                      <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <DocumentTextIcon class="w-4 h-4 text-blue-600" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <DocumentTextIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
-                      <h4 class="text-lg font-semibold text-gray-900">Basic Information</h4>
+                      <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h4>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                          Plan Name <span class="text-red-500">*</span>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Plan Name <span class="text-danger-500">*</span>
                         </label>
                         <input
                           v-model="form.name"
                           type="text"
                           required
-                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                           placeholder="e.g., Professional, Enterprise"
                         />
-                        <p class="mt-1 text-xs text-gray-500">A clear, descriptive name for your plan</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">A clear, descriptive name for your plan</p>
                       </div>
                       
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                          Monthly Price <span class="text-red-500">*</span>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Monthly Price <span class="text-danger-500">*</span>
                         </label>
                         <div class="relative">
                           <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span class="text-gray-500 text-lg font-medium">$</span>
+                            <span class="text-gray-500 dark:text-gray-400 text-lg font-medium">$</span>
                           </div>
                           <input
                             v-model.number="form.price"
@@ -90,21 +90,21 @@
                             step="0.01"
                             min="0"
                             required
-                            class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            class="w-full pl-8 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                             placeholder="0.00"
                           />
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">Monthly subscription price in USD</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Monthly subscription price in USD</p>
                       </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Billing Interval</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Billing Interval</label>
                         <select
                           v-model="form.billingInterval"
                           required
-                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                         >
                           <option value="month">Monthly Billing</option>
                           <option value="year">Yearly Billing</option>
@@ -112,51 +112,51 @@
                       </div>
                       
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Trial Period</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trial Period</label>
                         <div class="relative">
                           <input
                             v-model.number="form.trialPeriodDays"
                             type="number"
                             min="0"
                             max="365"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                             placeholder="0"
                           />
                           <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                            <span class="text-gray-500 text-sm">days</span>
+                            <span class="text-gray-500 dark:text-gray-400 text-sm">days</span>
                           </div>
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">Free trial period before billing starts</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Free trial period before billing starts</p>
                       </div>
                     </div>
 
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                       <textarea
                         v-model="form.description"
                         rows="3"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 resize-none"
                         placeholder="Brief description of what this plan includes..."
                       ></textarea>
-                      <p class="mt-1 text-xs text-gray-500">Help users understand what they get with this plan</p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Help users understand what they get with this plan</p>
                     </div>
                   </div>
 
                   <!-- Plan Limits Section -->
                   <div class="space-y-6">
                     <div class="flex items-center space-x-3 mb-4">
-                      <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <AdjustmentsHorizontalIcon class="w-4 h-4 text-purple-600" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <AdjustmentsHorizontalIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
-                      <h4 class="text-lg font-semibold text-gray-900">Usage Limits</h4>
+                      <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Usage Limits</h4>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <!-- Max Projects -->
-                      <div class="bg-gray-50 rounded-xl p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                           <div class="flex items-center space-x-2">
-                            <FolderIcon class="w-4 h-4 text-gray-500" />
+                            <FolderIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             <span>Max Projects</span>
                           </div>
                         </label>
@@ -166,26 +166,26 @@
                               :checked="form.limits.projects === -1"
                               @change="toggleUnlimited('projects', $event)"
                               type="checkbox"
-                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                             />
-                            <label class="ml-2 block text-sm text-gray-700 font-medium">Unlimited projects</label>
+                            <label class="ml-2 block text-sm text-gray-700 dark:text-gray-300 font-medium">Unlimited projects</label>
                           </div>
                           <input
                             v-if="form.limits.projects !== -1"
                             v-model.number="form.limits.projects"
                             type="number"
                             min="1"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Enter number of projects"
                           />
                         </div>
                       </div>
 
                       <!-- Storage -->
-                      <div class="bg-gray-50 rounded-xl p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                           <div class="flex items-center space-x-2">
-                            <CloudArrowUpIcon class="w-4 h-4 text-gray-500" />
+                            <CloudArrowUpIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             <span>Storage Limit</span>
                           </div>
                         </label>
@@ -195,9 +195,9 @@
                               :checked="form.limits.storage === -1"
                               @change="toggleUnlimited('storage', $event)"
                               type="checkbox"
-                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                             />
-                            <label class="ml-2 block text-sm text-gray-700 font-medium">Unlimited storage</label>
+                            <label class="ml-2 block text-sm text-gray-700 dark:text-gray-300 font-medium">Unlimited storage</label>
                           </div>
                           <div v-if="form.limits.storage !== -1" class="relative">
                             <input
@@ -205,21 +205,21 @@
                               type="number"
                               min="1"
                               step="0.1"
-                              class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                               placeholder="Enter storage amount"
                             />
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                              <span class="text-gray-500 text-sm">GB</span>
+                              <span class="text-gray-500 dark:text-gray-400 text-sm">GB</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       <!-- Monthly Exports -->
-                      <div class="bg-gray-50 rounded-xl p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                           <div class="flex items-center space-x-2">
-                            <ArrowDownTrayIcon class="w-4 h-4 text-gray-500" />
+                            <ArrowDownTrayIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             <span>Monthly Exports</span>
                           </div>
                         </label>
@@ -229,26 +229,26 @@
                               :checked="form.limits.exports === -1"
                               @change="toggleUnlimited('exports', $event)"
                               type="checkbox"
-                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                             />
-                            <label class="ml-2 block text-sm text-gray-700 font-medium">Unlimited exports</label>
+                            <label class="ml-2 block text-sm text-gray-700 dark:text-gray-300 font-medium">Unlimited exports</label>
                           </div>
                           <input
                             v-if="form.limits.exports !== -1"
                             v-model.number="form.limits.exports"
                             type="number"
                             min="1"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Enter monthly export limit"
                           />
                         </div>
                       </div>
 
                       <!-- Templates Access -->
-                      <div class="bg-gray-50 rounded-xl p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                           <div class="flex items-center space-x-2">
-                            <DocumentDuplicateIcon class="w-4 h-4 text-gray-500" />
+                            <DocumentDuplicateIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             <span>Template Access</span>
                           </div>
                         </label>
@@ -258,26 +258,26 @@
                               :checked="form.limits.templates === -1"
                               @change="toggleUnlimited('templates', $event)"
                               type="checkbox"
-                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                             />
-                            <label class="ml-2 block text-sm text-gray-700 font-medium">All templates</label>
+                            <label class="ml-2 block text-sm text-gray-700 dark:text-gray-300 font-medium">All templates</label>
                           </div>
                           <input
                             v-if="form.limits.templates !== -1"
                             v-model.number="form.limits.templates"
                             type="number"
                             min="1"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Enter template limit"
                           />
                         </div>
                       </div>
 
                       <!-- Collaborators -->
-                      <div class="bg-gray-50 rounded-xl p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                           <div class="flex items-center space-x-2">
-                            <UsersIcon class="w-4 h-4 text-gray-500" />
+                            <UsersIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             <span>Collaborators</span>
                           </div>
                         </label>
@@ -287,16 +287,16 @@
                               :checked="form.limits.collaborators === -1"
                               @change="toggleUnlimited('collaborators', $event)"
                               type="checkbox"
-                              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                             />
-                            <label class="ml-2 block text-sm text-gray-700 font-medium">Unlimited collaborators</label>
+                            <label class="ml-2 block text-sm text-gray-700 dark:text-gray-300 font-medium">Unlimited collaborators</label>
                           </div>
                           <input
                             v-if="form.limits.collaborators !== -1"
                             v-model.number="form.limits.collaborators"
                             type="number"
                             min="1"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Enter collaborator limit"
                           />
                         </div>
@@ -307,20 +307,20 @@
                   <!-- Features Section -->
                   <div class="space-y-6">
                     <div class="flex items-center space-x-3 mb-4">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <SparklesIcon class="w-4 h-4 text-green-600" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <SparklesIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
-                      <h4 class="text-lg font-semibold text-gray-900">Plan Features</h4>
+                      <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Plan Features</h4>
                     </div>
                     
-                    <div class="bg-gray-50 rounded-xl p-6">
-                      <label class="block text-sm font-medium text-gray-700 mb-4">Select Features by Category</label>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Select Features by Category</label>
                       
                       <!-- Feature Categories -->
                       <div class="space-y-6">
                         <div v-for="(categoryFeatures, category) in PLAN_FEATURES_BY_CATEGORY" :key="category" class="space-y-3">
-                          <h5 class="text-sm font-semibold text-gray-900 flex items-center space-x-2">
-                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <h5 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center space-x-2">
+                            <div class="w-2 h-2 rounded-full bg-primary-500"></div>
                             <span>{{ PLAN_FEATURE_CATEGORY_NAMES[category as PlanFeatureCategory] }}</span>
                           </h5>
                           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
@@ -330,17 +330,17 @@
                                   :id="`feature-${feature.key}`"
                                   v-model="selectedFeatures[feature.key]"
                                   type="checkbox"
-                                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                                 />
                               </div>
                               <div class="flex-1">
-                                <label :for="`feature-${feature.key}`" class="block text-sm font-medium text-gray-900 cursor-pointer flex items-center space-x-2">
+                                <label :for="`feature-${feature.key}`" class="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer flex items-center space-x-2">
                                   <span>{{ feature.name }}</span>
-                                  <span v-if="feature.premium" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                                  <span v-if="feature.premium" class="bg-primary-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
                                     PRO
                                   </span>
                                 </label>
-                                <p class="text-xs text-gray-500 mt-1">{{ feature.description }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ feature.description }}</p>
                               </div>
                             </div>
                           </div>
@@ -348,13 +348,13 @@
                       </div>
                       
                       <!-- Custom Features Section -->
-                      <div class="mt-6 pt-6 border-t border-gray-200">
+                      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
                         <div class="flex items-center justify-between mb-3">
-                          <label class="block text-sm font-medium text-gray-700">Custom Features</label>
+                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Custom Features</label>
                           <button
                             type="button"
                             @click="addCustomFeature"
-                            class="text-xs text-blue-600 hover:text-blue-700 transition-colors font-medium"
+                            class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors font-medium"
                           >
                             + Add Custom
                           </button>
@@ -365,49 +365,49 @@
                               <input
                                 v-model="customFeatures[index]"
                                 type="text"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                                 placeholder="Enter custom feature..."
                               />
                             </div>
                             <button
                               type="button"
                               @click="removeCustomFeature(index)"
-                              class="flex-shrink-0 p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
+                              class="flex-shrink-0 p-2 text-danger-600 dark:text-danger-400 hover:text-danger-700 dark:hover:text-danger-300 hover:bg-danger-50 dark:hover:bg-danger-900 rounded-lg transition-all duration-200"
                             >
                               <XMarkIcon class="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                        <p v-else class="text-xs text-gray-400 italic">No custom features added</p>
+                        <p v-else class="text-xs text-gray-500 dark:text-gray-300 italic">No custom features added</p>
                       </div>
                       
-                      <p class="mt-4 text-xs text-gray-500">Features are organized by category. Premium features are marked with a PRO badge. Custom features can be added for unique offerings.</p>
+                      <p class="mt-4 text-xs text-gray-600 dark:text-gray-300">Features are organized by category. Premium features are marked with a PRO badge. Custom features can be added for unique offerings.</p>
                     </div>
                   </div>
 
                   <!-- Plan Status -->
                   <div class="space-y-4">
                     <div class="flex items-center space-x-3 mb-4">
-                      <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                        <Cog6ToothIcon class="w-4 h-4 text-amber-600" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <Cog6ToothIcon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
-                      <h4 class="text-lg font-semibold text-gray-900">Plan Settings</h4>
+                      <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Plan Settings</h4>
                     </div>
                     
-                    <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                       <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
                           <div class="flex-shrink-0">
-                            <div :class="form.isActive ? 'bg-green-100' : 'bg-gray-100'" class="w-10 h-10 rounded-xl flex items-center justify-center">
-                              <CheckCircleIcon v-if="form.isActive" class="w-5 h-5 text-green-600" />
-                              <XMarkIcon v-else class="w-5 h-5 text-gray-400" />
+                            <div :class="form.isActive ? 'bg-success-100 dark:bg-success-900' : 'bg-gray-100 dark:bg-gray-600'" class="w-10 h-10 rounded-xl flex items-center justify-center">
+                              <CheckCircleIcon v-if="form.isActive" class="w-5 h-5 text-success-600 dark:text-success-400" />
+                              <XMarkIcon v-else class="w-5 h-5 text-gray-400 dark:text-gray-500" />
                             </div>
                           </div>
                           <div>
-                            <label for="planActive" class="block text-sm font-medium text-gray-900">
+                            <label for="planActive" class="block text-sm font-medium text-gray-900 dark:text-gray-100">
                               Plan Status
                             </label>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
                               {{ form.isActive ? 'Plan is active and available for subscription' : 'Plan is inactive and hidden from users' }}
                             </p>
                           </div>
@@ -417,7 +417,7 @@
                             v-model="form.isActive"
                             type="checkbox"
                             id="planActive"
-                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                           />
                         </div>
                       </div>
@@ -427,8 +427,8 @@
               </div>
 
               <!-- Modal Footer -->
-              <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50">
-                <div class="flex items-center space-x-2 text-sm text-gray-500">
+              <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                   <InformationCircleIcon class="w-4 h-4" />
                   <span>{{ editingPlan ? 'Changes will be applied immediately' : 'New plan will be available once created' }}</span>
                 </div>
@@ -436,14 +436,14 @@
                   <button
                     type="button"
                     @click="handleClose"
-                    class="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 font-medium"
+                    class="px-6 py-2.5 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-all duration-200 font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     @click="handleSubmit"
                     :disabled="submitting || !isFormValid"
-                    class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2"
+                    class="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2"
                   >
                     <div v-if="submitting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>{{ submitting ? 'Saving...' : (editingPlan ? 'Update Plan' : 'Create Plan') }}</span>

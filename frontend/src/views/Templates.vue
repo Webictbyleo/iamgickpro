@@ -30,11 +30,11 @@
       />
       
       <!-- Using Template Loading Overlay -->
-      <div v-if="isUsingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Creating Design</h3>
-          <p class="text-gray-600">Please wait while we set up your template...</p>
+      <div v-if="isUsingTemplate" class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm mx-4 text-center shadow-xl border border-gray-200 dark:border-gray-700">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Creating Design</h3>
+          <p class="text-gray-600 dark:text-gray-300">Please wait while we set up your template...</p>
         </div>
       </div>
     </div>

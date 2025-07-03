@@ -6,7 +6,7 @@
     <div class="max-w-4xl mx-auto space-y-8">
       <!-- Additional Info -->
       <div class="text-center">
-        <p class="text-sm text-gray-500">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
           Extract visual themes, colors, and key moments from YouTube videos to generate professional thumbnails
         </p>
       </div>
