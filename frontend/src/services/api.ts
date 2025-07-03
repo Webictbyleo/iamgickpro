@@ -70,7 +70,25 @@ import type {
   Integration,
   SaveIntegrationData,
   TestIntegrationData,
-  TestIntegrationResult
+  TestIntegrationResult,
+  AdminUsersApiResponse,
+  AdminUserDetailsApiResponse,
+  AdminUserStatusApiResponse,
+  AdminUserRolesApiResponse,
+  AdminUserPlanApiResponse,
+  AdminBulkPlanApiResponse,
+  AdminPlatformStatsApiResponse,
+  AdminPlansApiResponse,
+  AdminPlanApiResponse,
+  AdminAnalyticsApiResponse,
+  AdminUpdateUserStatusRequest,
+  AdminUpdateUserRolesRequest,
+  AdminAssignPlanRequest,
+  AdminBulkAssignPlanRequest,
+  AdminCreatePlanRequest,
+  AdminUpdatePlanRequest,
+  AdminAnalyticsParams,
+  AdminUsersParams
 } from '@/types'
 
 // Authentication API - aligned with AuthController
@@ -701,120 +719,47 @@ export const integrationsAPI = {
 // Admin API - for managing users, plans, and platform statistics
 export const adminAPI = {
   // GET /admin/users - Get all users with pagination and filters
-  getUsers: (params?: {
-    page?: number
-    limit?: number
-    search?: string
-    status?: string
-    role?: string
-  }) => api.get<ApiResponse<{
-    users: any[]
-    pagination: {
-      current_page: number
-      total_pages: number
-      total_items: number
-      items_per_page: number
-      has_next: boolean
-      has_prev: boolean
-    }
-  }>>('/admin/users', { params }),
+  getUsers: (params?: AdminUsersParams) => 
+    api.get<AdminUsersApiResponse>('/admin/users', { params }),
 
   // GET /admin/users/{id} - Get user details
   getUserDetails: (id: number) => 
-    api.get<ApiResponse<any>>(`/admin/users/${id}`),
+    api.get<AdminUserDetailsApiResponse>(`/admin/users/${id}`),
 
   // PUT /admin/users/{id}/status - Update user status
-  updateUserStatus: (id: number, data: { active: boolean }) =>
-    api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/status`, data),
+  updateUserStatus: (id: number, data: AdminUpdateUserStatusRequest) =>
+    api.put<AdminUserStatusApiResponse>(`/admin/users/${id}/status`, data),
 
   // PUT /admin/users/{id}/roles - Update user roles
-  updateUserRoles: (id: number, data: { roles: string[] }) =>
-    api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/roles`, data),
+  updateUserRoles: (id: number, data: AdminUpdateUserRolesRequest) =>
+    api.put<AdminUserRolesApiResponse>(`/admin/users/${id}/roles`, data),
 
   // PUT /admin/users/{id}/plan - Assign plan to user
-  assignPlanToUser: (id: number, data: { plan_code: string }) =>
-    api.put<ApiResponse<{ user: any }>>(`/admin/users/${id}/plan`, data),
+  assignPlanToUser: (id: number, data: AdminAssignPlanRequest) =>
+    api.put<AdminUserPlanApiResponse>(`/admin/users/${id}/plan`, data),
 
   // PUT /admin/users/bulk/plan - Bulk assign plan to users
-  bulkAssignPlanToUsers: (data: { user_ids: number[], plan_code: string }) =>
-    api.put<ApiResponse<{ users: any[] }>>('/admin/users/bulk/plan', data),
+  bulkAssignPlanToUsers: (data: AdminBulkAssignPlanRequest) =>
+    api.put<AdminBulkPlanApiResponse>('/admin/users/bulk/plan', data),
 
   // GET /admin/stats - Get platform statistics
-  getPlatformStats: () => api.get<ApiResponse<{
-    users: {
-      total: number
-      active: number
-      verified: number
-      admins: number
-    }
-    recent_registrations: number
-    designs: {
-      total: number
-      public: number
-      private: number
-      templates: number
-    }
-    storage: {
-      used: number
-      total: number
-      uploads_count: number
-    }
-    exports: {
-      total: number
-      successful: number
-      failed: number
-      in_progress: number
-    }
-  }>>('/admin/stats'),
+  getPlatformStats: () => 
+    api.get<AdminPlatformStatsApiResponse>('/admin/stats'),
 
   // Plans management - AdminController endpoints
-  getPlans: () => api.get<ApiResponse<{ plans: any[] }>>('/admin/plans'),
-  createPlan: (data: any) => api.post<ApiResponse<{ plan: any }>>('/admin/plans', data),
-  updatePlan: (id: number, data: any) => api.put<ApiResponse<{ plan: any }>>(`/admin/plans/${id}`, data),
-  deletePlan: (id: number) => api.delete<ApiResponse<{}>>(`/admin/plans/${id}`),
+  getPlans: () => 
+    api.get<AdminPlansApiResponse>('/admin/plans'),
+    
+  createPlan: (data: AdminCreatePlanRequest) => 
+    api.post<AdminPlanApiResponse>('/admin/plans', data),
+    
+  updatePlan: (id: number, data: AdminUpdatePlanRequest) => 
+    api.put<AdminPlanApiResponse>(`/admin/plans/${id}`, data),
+    
+  deletePlan: (id: number) => 
+    api.delete<ApiResponse<{}>>(`/admin/plans/${id}`),
 
   // Analytics - real implementation
-  getAnalytics: (params?: {
-    startDate?: string
-    endDate?: string
-    granularity?: 'day' | 'week' | 'month'
-  }) => api.get<ApiResponse<{
-    metrics: {
-      totalUsers: number
-      userGrowth: number
-      activeSubscriptions: number
-      subscriptionGrowth: number
-      monthlyRevenue: number
-      revenueGrowth: number
-      projectsCreated: number
-      projectGrowth: number
-    }
-    timeSeriesData: {
-      userGrowth: any[]
-      contentCreation: any[]
-      exportActivity: any[]
-      revenue: any[]
-    }
-    topPlans: Array<{
-      name: string
-      subscribers: number
-      revenue: number
-      percentage: number
-    }>
-    activityMetrics: {
-      dailyActiveUsers: number
-      weeklyActiveUsers: number
-      avgSessionDuration: number
-      projectsPerUser: number
-      exportsPerUser: number
-    }
-    systemMetrics: {
-      apiResponseTime: number
-      errorRate: number
-      storageUsage: number
-      uptime: number
-    }
-    exportAnalytics: any
-    contentTrends: any[]
-  }>>('/admin/analytics', { params }),
+  getAnalytics: (params?: AdminAnalyticsParams) => 
+    api.get<AdminAnalyticsApiResponse>('/admin/analytics', { params }),
 }

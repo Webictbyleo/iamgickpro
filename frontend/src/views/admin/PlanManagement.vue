@@ -209,6 +209,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables/useNotifications'
 import { adminAPI } from '@/services/api'
+import type { AdminSubscriptionPlan, AdminPlatformStats } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PlanModal from './components/PlanModal.vue'
 
@@ -235,12 +236,18 @@ const { showSuccess, showError } = useNotifications()
 const loading = ref(false)
 const submitting = ref(false)
 const showCreatePlanModal = ref(false)
-const editingPlan = ref<any>(null)
+const editingPlan = ref<AdminSubscriptionPlan | null>(null)
 
 // Data
-const plans = ref<any[]>([])
-const stats = ref<any>({})
-const recentActivity = ref<any[]>([])
+const plans = ref<AdminSubscriptionPlan[]>([])
+const stats = ref<{
+  plans: { total: number; active: number }
+  subscriptions: { active: number }
+}>({
+  plans: { total: 0, active: 0 },
+  subscriptions: { active: 0 }
+})
+const recentActivity = ref<any[]>([]) // TODO: Create proper type for activity
 
 // Methods
 const loadPlans = async () => {
@@ -281,7 +288,7 @@ const loadStats = async () => {
   }
 }
 
-const editPlan = (plan: any) => {
+const editPlan = (plan: AdminSubscriptionPlan) => {
   editingPlan.value = plan
 }
 
@@ -290,7 +297,7 @@ const closeModal = () => {
   editingPlan.value = null
 }
 
-const savePlan = async (planData: any) => {
+const savePlan = async (planData: any) => { // TODO: Create proper type for plan form data
   submitting.value = true
   try {
     if (editingPlan.value) {
@@ -311,7 +318,7 @@ const savePlan = async (planData: any) => {
   }
 }
 
-const togglePlanStatus = async (plan: any) => {
+const togglePlanStatus = async (plan: AdminSubscriptionPlan) => {
   try {
     await adminAPI.updatePlan(plan.id, { 
       is_active: !plan.is_active 
@@ -324,7 +331,7 @@ const togglePlanStatus = async (plan: any) => {
   }
 }
 
-const deletePlan = async (plan: any) => {
+const deletePlan = async (plan: AdminSubscriptionPlan) => {
   if (!confirm(`Are you sure you want to delete the "${plan.name}" plan?`)) {
     return
   }
@@ -404,9 +411,10 @@ const formatLimit = (value: number | null | undefined) => {
   return value.toString()
 }
 
-const formatPrice = (price: number) => {
+const formatPrice = (price: string | number) => {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price
   // Format price with proper decimal places
-  return price % 1 === 0 ? price.toString() : price.toFixed(2)
+  return numPrice % 1 === 0 ? numPrice.toString() : numPrice.toFixed(2)
 }
 
 const formatSubscriberCount = (count: number | undefined) => {

@@ -247,6 +247,7 @@
 import { ref, onMounted } from 'vue'
 import { useNotifications } from '@/composables/useNotifications'
 import { adminAPI } from '@/services/api'
+import type { AdminUser, AdminSubscriptionPlan } from '@/types'
 import {
   Dialog,
   DialogPanel,
@@ -264,41 +265,6 @@ import {
   CheckCircleIcon,
   SparklesIcon
 } from '@heroicons/vue/24/outline'
-
-interface AdminUser {
-  id: number
-  uuid: string
-  email: string
-  firstName: string
-  lastName: string
-  username?: string
-  roles: string[]
-  isActive: boolean
-  emailVerified: boolean
-  plan: string
-  createdAt: string
-  updatedAt?: string
-  lastLoginAt?: string
-  failedLoginAttempts: number
-  isLocked: boolean
-}
-
-interface SubscriptionPlan {
-  id: number
-  code: string
-  name: string
-  description: string
-  monthly_price: string
-  yearly_price: string
-  currency: string
-  is_active: boolean
-  is_default: boolean
-  sort_order: number
-  limits: Record<string, number>
-  features: Record<string, boolean>
-  created_at: string
-  updated_at?: string
-}
 
 // Props
 interface Props {
@@ -322,7 +288,7 @@ const { showSuccess, showError } = useNotifications()
 // State
 const loading = ref(true)
 const assigning = ref(false)
-const availablePlans = ref<SubscriptionPlan[]>([])
+const availablePlans = ref<AdminSubscriptionPlan[]>([])
 const selectedPlan = ref<string>('')
 
 // Load available plans
@@ -358,12 +324,12 @@ const assignPlan = async () => {
       emit('assigned', [props.user], selectedPlan.value)
       showSuccess('Plan assigned successfully')
     } else if (props.mode === 'bulk' && props.selectedUsers) {
-      // Bulk assignment
-      const promises = props.selectedUsers.map(user => 
-        adminAPI.assignPlanToUser(user.id, { plan_code: selectedPlan.value })
-      )
-      
-      await Promise.all(promises)
+      // Bulk assignment using bulk API
+      const userIds = props.selectedUsers.map(user => user.id)
+      await adminAPI.bulkAssignPlanToUsers({ 
+        user_ids: userIds, 
+        plan_code: selectedPlan.value 
+      })
       emit('assigned', props.selectedUsers, selectedPlan.value)
       showSuccess(`Plan assigned to ${props.selectedUsers.length} users successfully`)
     }
@@ -379,7 +345,7 @@ const assignPlan = async () => {
 
 // Utility functions
 const getUserInitials = (user: AdminUser): string => {
-  return `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() || 'U'
+  return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
 
 const formatPrice = (price: string | number): string => {

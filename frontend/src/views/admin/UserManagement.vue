@@ -102,6 +102,20 @@
                 <CreditCardIcon class="w-4 h-4" />
                 <span>Assign Plan</span>
               </button>
+              <button
+                @click="bulkActivateUsers"
+                class="px-3 py-1 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center space-x-1"
+              >
+                <UserPlusIcon class="w-4 h-4" />
+                <span>Activate</span>
+              </button>
+              <button
+                @click="bulkDeactivateUsers"
+                class="px-3 py-1 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors flex items-center space-x-1"
+              >
+                <UserMinusIcon class="w-4 h-4" />
+                <span>Deactivate</span>
+              </button>
             </div>
           </div>
         </div>
@@ -379,7 +393,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import UserDetailsModal from './components/UserDetailsModal.vue'
 import EditRolesModal from './components/EditRolesModal.vue'
 import PlanAssignmentModal from './components/PlanAssignmentModal.vue'
-import type { User } from '@/types'
+import type { AdminUser, AdminPlatformStats } from '@/types'
 
 // Heroicons
 import { 
@@ -412,34 +426,6 @@ onMounted(() => {
   }, 100)
 })
 
-interface AdminUser {
-  id: number
-  uuid: string
-  email: string
-  firstName: string
-  lastName: string
-  username?: string
-  roles: string[]
-  isActive: boolean
-  emailVerified: boolean
-  plan: string
-  createdAt: string
-  updatedAt?: string
-  lastLoginAt?: string
-  failedLoginAttempts: number
-  isLocked: boolean
-}
-
-interface PlatformStats {
-  users: {
-    total: number
-    active: number
-    verified: number
-    admins: number
-  }
-  recent_registrations: number
-}
-
 interface Pagination {
   current_page: number
   total_pages: number
@@ -454,7 +440,7 @@ const { showSuccess, showError } = useNotifications()
 // State
 const loading = ref(false)
 const users = ref<AdminUser[]>([])
-const stats = ref<PlatformStats>({
+const stats = ref<Pick<AdminPlatformStats, 'users' | 'recent_registrations'>>({
   users: { total: 0, active: 0, verified: 0, admins: 0 },
   recent_registrations: 0
 })
@@ -504,7 +490,7 @@ const loadUsers = async () => {
     }
 
     const response = await adminAPI.getUsers(params)
-    users.value = response.data.data.users as unknown as AdminUser[]
+    users.value = response.data.data.users
     pagination.value = response.data.data.pagination
   } catch (error) {
     console.error('Failed to load users:', error)
@@ -518,7 +504,7 @@ const loadUsers = async () => {
 const loadStats = async () => {
   try {
     const response = await adminAPI.getPlatformStats()
-    stats.value = response.data.data as PlatformStats
+    stats.value = response.data.data
   } catch (error) {
     console.error('Failed to load stats:', error)
   }
@@ -541,7 +527,7 @@ const toggleUserStatus = async (user: AdminUser) => {
     // Update user in list
     const index = users.value.findIndex((u: AdminUser) => u.id === user.id)
     if (index !== -1) {
-      users.value[index] = updatedUser as unknown as AdminUser
+      users.value[index] = updatedUser
     }
 
     showSuccess(`User ${updatedUser.isActive ? 'activated' : 'deactivated'} successfully`)
@@ -569,18 +555,103 @@ const bulkAssignPlan = () => {
   showPlanAssignmentModal.value = true
 }
 
+const bulkActivateUsers = async () => {
+  if (selectedUserIds.value.length === 0) {
+    showError('Please select users first')
+    return
+  }
+
+  const selectedCount = selectedUserIds.value.length
+  if (!confirm(`Are you sure you want to activate ${selectedCount} user${selectedCount === 1 ? '' : 's'}?`)) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const promises = selectedUserIds.value.map(userId => 
+      adminAPI.updateUserStatus(userId, { active: true })
+    )
+    
+    await Promise.all(promises)
+    
+    // Update users in the list
+    selectedUserIds.value.forEach(userId => {
+      const index = users.value.findIndex(u => u.id === userId)
+      if (index !== -1) {
+        users.value[index].isActive = true
+      }
+    })
+    
+    selectedUserIds.value = []
+    showSuccess(`${selectedCount} users activated successfully`)
+    
+    // Refresh stats
+    loadStats()
+  } catch (error) {
+    console.error('Failed to activate users:', error)
+    showError('Failed to activate users')
+  } finally {
+    loading.value = false
+  }
+}
+
+const bulkDeactivateUsers = async () => {
+  if (selectedUserIds.value.length === 0) {
+    showError('Please select users first')
+    return
+  }
+
+  const selectedCount = selectedUserIds.value.length
+  if (!confirm(`Are you sure you want to deactivate ${selectedCount} user${selectedCount === 1 ? '' : 's'}? Deactivated users will not be able to log in.`)) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const promises = selectedUserIds.value.map(userId => 
+      adminAPI.updateUserStatus(userId, { active: false })
+    )
+    
+    await Promise.all(promises)
+    
+    // Update users in the list
+    selectedUserIds.value.forEach(userId => {
+      const index = users.value.findIndex(u => u.id === userId)
+      if (index !== -1) {
+        users.value[index].isActive = false
+      }
+    })
+    
+    selectedUserIds.value = []
+    showSuccess(`${selectedCount} users deactivated successfully`)
+    
+    // Refresh stats
+    loadStats()
+  } catch (error) {
+    console.error('Failed to deactivate users:', error)
+    showError('Failed to deactivate users')
+  } finally {
+    loading.value = false
+  }
+}
+
 const handlePlanAssigned = (assignedUsers: AdminUser[], planCode: string) => {
-  // Update users in the list
+  // Update users in the list (API call is handled by the modal)
   assignedUsers.forEach(assignedUser => {
-    const index = users.value.findIndex((u: AdminUser) => u.id === assignedUser.id)
+    const index = users.value.findIndex(u => u.id === assignedUser.id)
     if (index !== -1) {
       users.value[index].plan = planCode
     }
   })
   
-  // Clear selections
+  // Clear selections and close modal
   selectedUserIds.value = []
+  selectedUsersForBulkPlan.value = []
+  userForPlanAssignment.value = null
   showPlanAssignmentModal.value = false
+  
+  // Refresh stats
+  loadStats()
 }
 
 const handleUserUpdated = (updatedUser?: AdminUser) => {
@@ -626,7 +697,7 @@ const toggleSelectAll = (event: Event) => {
 
 // Utility functions
 const getUserInitials = (user: AdminUser): string => {
-  return `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() || 'U'
+  return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
 
 const formatRole = (role: string): string => {

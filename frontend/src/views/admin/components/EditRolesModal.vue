@@ -261,6 +261,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useNotifications } from '@/composables/useNotifications'
 import { adminAPI } from '@/services/api'
+import type { AdminUser } from '@/types'
 import { 
   Dialog, 
   DialogPanel, 
@@ -282,24 +283,6 @@ import {
   PlusIcon,
   MinusIcon
 } from '@heroicons/vue/24/outline'
-
-interface AdminUser {
-  id: number
-  uuid: string
-  email: string
-  firstName: string
-  lastName: string
-  username?: string
-  roles: string[]
-  isActive: boolean
-  emailVerified: boolean
-  plan: string
-  createdAt: string
-  updatedAt?: string
-  lastLoginAt?: string
-  failedLoginAttempts: number
-  isLocked: boolean
-}
 
 interface Props {
   user: AdminUser
@@ -354,7 +337,7 @@ const rolesToRemove = computed(() => {
 
 // Methods
 const getUserInitials = (user: AdminUser): string => {
-  return `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() || 'U'
+  return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
 
 const formatRole = (role: string): string => {

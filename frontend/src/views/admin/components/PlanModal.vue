@@ -476,9 +476,9 @@ import {
   type PlanFeatures,
   type PlanLimits,
   type PlanFeatureKey,
-  type PlanFeatureCategory,
-  type Plan
+  type PlanFeatureCategory
 } from '@/types/plans'
+import type { AdminSubscriptionPlan } from '@/types'
 
 // Heroicons
 import { 
@@ -513,7 +513,7 @@ interface PlanForm {
 // Props
 interface Props {
   isOpen: boolean
-  editingPlan?: Plan | null
+  editingPlan?: AdminSubscriptionPlan | null
   submitting?: boolean
 }
 
@@ -596,7 +596,7 @@ watch(() => props.editingPlan, (plan) => {
     Object.assign(form, {
       name: plan.name,
       description: plan.description || '',
-      price: plan.pricing?.monthly || 0,
+      price: parseFloat(plan.monthly_price) || 0,
       billingInterval: 'month',
       trialPeriodDays: 0,
       features: [''], // Keep for compatibility, but we use selectedFeatures now

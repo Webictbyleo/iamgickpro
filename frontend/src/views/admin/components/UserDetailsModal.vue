@@ -464,6 +464,7 @@
 import { ref, watch, computed } from 'vue'
 import { useNotifications } from '@/composables/useNotifications'
 import { adminAPI } from '@/services/api'
+import type { AdminUserDetails } from '@/types'
 import { 
   Dialog, 
   DialogPanel, 
@@ -517,13 +518,13 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
   updated: []
-  editRoles: [user: any]
+  editRoles: [user: AdminUserDetails]
 }>()
 
 // State
 const loading = ref(false)
 const actionLoading = ref(false)
-const user = ref<any>(null)
+const user = ref<AdminUserDetails | null>(null)
 
 // Computed properties
 const getUserInitials = computed(() => {
@@ -608,7 +609,9 @@ const handleDeactivateUser = async () => {
 
 const handleEditRoles = () => {
   // Emit the user data to parent component to handle role editing
-  emit('editRoles', user.value)
+  if (user.value) {
+    emit('editRoles', user.value)
+  }
 }
 
 const formatRole = (role: string) => {

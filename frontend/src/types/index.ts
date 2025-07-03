@@ -1579,3 +1579,289 @@ export interface PluginServiceResponse {
     plugins: Record<string, any>
   }
 }
+
+// ============================================================================
+// ADMIN API TYPES
+// ============================================================================
+
+/**
+ * Admin User data structure for admin interface
+ */
+export interface AdminUser {
+  id: number
+  uuid: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  username: string | null
+  roles: string[]
+  isActive: boolean
+  emailVerified: boolean
+  plan: string | null
+  createdAt: string
+  updatedAt: string | null
+  lastLoginAt: string | null
+  failedLoginAttempts: number
+  isLocked: boolean
+}
+
+/**
+ * Detailed admin user data structure with additional information
+ */
+export interface AdminUserDetails extends AdminUser {
+  jobTitle: string | null
+  company: string | null
+  website: string | null
+  portfolio: string | null
+  bio: string | null
+  socialLinks: Record<string, string> | null
+  timezone: string | null
+  language: string | null
+  avatar: string | null
+  settings: Record<string, any> | null
+  counts: {
+    projects: number
+    mediaFiles: number
+    exportJobs: number
+    subscriptions: number
+  }
+}
+
+/**
+ * Admin users list response structure
+ */
+export interface AdminUsersListResponse {
+  users: AdminUser[]
+  pagination: {
+    current_page: number
+    total_pages: number
+    total_items: number
+    items_per_page: number
+    has_next: boolean
+    has_prev: boolean
+  }
+}
+
+/**
+ * Admin platform statistics structure
+ */
+export interface AdminPlatformStats {
+  users: {
+    total: number
+    active: number
+    verified: number
+    admins: number
+  }
+  recent_registrations: number
+  designs: {
+    total: number
+    public: number
+    private: number
+    templates: number
+  }
+  storage: {
+    used: number
+    total: number
+    uploads_count: number
+  }
+  exports: {
+    total: number
+    successful: number
+    failed: number
+    in_progress: number
+  }
+}
+
+/**
+ * Admin subscription plan structure
+ */
+export interface AdminSubscriptionPlan {
+  id: number
+  code: string
+  name: string
+  description: string | null
+  monthly_price: string
+  yearly_price: string
+  currency: string
+  is_active: boolean
+  is_default: boolean
+  sort_order: number
+  limits: Record<string, number>
+  features: Record<string, boolean>
+  created_at: string
+  updated_at: string | null
+  subscriber_count?: number // Optional since it might not always be included
+}
+
+/**
+ * Admin analytics metrics structure
+ */
+export interface AdminAnalyticsMetrics {
+  totalUsers: number
+  userGrowth: number
+  activeSubscriptions: number
+  subscriptionGrowth: number
+  monthlyRevenue: number
+  revenueGrowth: number
+  projectsCreated: number
+  projectGrowth: number
+}
+
+/**
+ * Admin analytics time series data point
+ */
+export interface AdminAnalyticsTimeSeriesDataPoint {
+  date: string
+  count: number
+}
+
+/**
+ * Admin analytics time series data structure
+ */
+export interface AdminAnalyticsTimeSeriesData {
+  userGrowth: AdminAnalyticsTimeSeriesDataPoint[]
+  contentCreation: AdminAnalyticsTimeSeriesDataPoint[]
+  exportActivity: AdminAnalyticsTimeSeriesDataPoint[]
+  revenue: AdminAnalyticsTimeSeriesDataPoint[]
+}
+
+/**
+ * Admin analytics top plan structure
+ */
+export interface AdminAnalyticsTopPlan {
+  name: string
+  subscribers: number
+  revenue: number
+  percentage: number
+}
+
+/**
+ * Admin analytics activity metrics structure
+ */
+export interface AdminAnalyticsActivityMetrics {
+  dailyActiveUsers: number
+  weeklyActiveUsers: number
+  avgSessionDuration: number
+  projectsPerUser: number
+  exportsPerUser: number
+}
+
+/**
+ * Admin analytics system metrics structure
+ */
+export interface AdminAnalyticsSystemMetrics {
+  apiResponseTime: number
+  errorRate: number
+  storageUsage: number
+  uptime: number
+}
+
+/**
+ * Admin analytics export data structure
+ */
+export interface AdminAnalyticsExportData {
+  total_exports: number
+  exports_per_user: number
+  popular_formats: Array<{
+    format: string
+    count: number
+  }>
+  success_rate: number
+}
+
+/**
+ * Admin analytics content trends structure
+ */
+export interface AdminAnalyticsContentTrend {
+  category: string
+  usage_count: number
+}
+
+/**
+ * Comprehensive admin analytics response structure
+ */
+export interface AdminAnalyticsData {
+  metrics: AdminAnalyticsMetrics
+  timeSeriesData: AdminAnalyticsTimeSeriesData
+  topPlans: AdminAnalyticsTopPlan[]
+  activityMetrics: AdminAnalyticsActivityMetrics
+  systemMetrics: AdminAnalyticsSystemMetrics
+  exportAnalytics: AdminAnalyticsExportData
+  contentTrends: AdminAnalyticsContentTrend[]
+}
+
+/**
+ * Admin API Response Types
+ */
+export interface AdminUsersApiResponse extends ApiResponse<AdminUsersListResponse> {}
+export interface AdminUserDetailsApiResponse extends ApiResponse<{ user: AdminUserDetails }> {}
+export interface AdminUserStatusApiResponse extends ApiResponse<{ user: AdminUser }> {}
+export interface AdminUserRolesApiResponse extends ApiResponse<{ user: AdminUser }> {}
+export interface AdminUserPlanApiResponse extends ApiResponse<{ user: AdminUser }> {}
+export interface AdminBulkPlanApiResponse extends ApiResponse<{ users: AdminUser[] }> {}
+export interface AdminPlatformStatsApiResponse extends ApiResponse<AdminPlatformStats> {}
+export interface AdminPlansApiResponse extends ApiResponse<{ plans: AdminSubscriptionPlan[] }> {}
+export interface AdminPlanApiResponse extends ApiResponse<{ plan: AdminSubscriptionPlan }> {}
+export interface AdminAnalyticsApiResponse extends ApiResponse<AdminAnalyticsData> {}
+
+/**
+ * Admin API Request Types
+ */
+export interface AdminUpdateUserStatusRequest {
+  active: boolean
+}
+
+export interface AdminUpdateUserRolesRequest {
+  roles: string[]
+}
+
+export interface AdminAssignPlanRequest {
+  plan_code: string
+}
+
+export interface AdminBulkAssignPlanRequest {
+  user_ids: number[]
+  plan_code: string
+}
+
+export interface AdminCreatePlanRequest {
+  code: string
+  name: string
+  description?: string
+  monthly_price: string
+  yearly_price: string
+  currency: string
+  is_active?: boolean
+  is_default?: boolean
+  sort_order?: number
+  limits?: Record<string, number>
+  features?: Record<string, boolean>
+}
+
+export interface AdminUpdatePlanRequest {
+  code?: string
+  name?: string
+  description?: string
+  monthly_price?: string
+  yearly_price?: string
+  currency?: string
+  is_active?: boolean
+  is_default?: boolean
+  sort_order?: number
+  limits?: Record<string, number>
+  features?: Record<string, boolean>
+}
+
+export interface AdminAnalyticsParams {
+  startDate?: string
+  endDate?: string
+  granularity?: 'day' | 'week' | 'month'
+}
+
+export interface AdminUsersParams {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+  role?: string
+}
