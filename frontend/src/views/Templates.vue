@@ -1,14 +1,9 @@
 <template>
-  <AppLayout>
+  <AppLayout
+    title="Templates"
+    subtitle="Choose from professional templates to get started quickly"
+  >
     <div class="space-y-6">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Templates</h1>
-          <p class="text-gray-600 mt-1">Choose from professional templates to get started quickly</p>
-        </div>
-      </div>
-
       <!-- Templates Grid -->
       <TemplateGrid
         title=""

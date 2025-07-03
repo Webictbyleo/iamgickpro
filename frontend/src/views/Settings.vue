@@ -1,27 +1,9 @@
 <template>
-  <AppLayout>
+  <AppLayout
+    title="Settings"
+    subtitle="Manage your account preferences and configuration"
+  >
     <div class="min-h-screen bg-gray-50">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="py-8">
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Cog6ToothIcon class="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-900 via-violet-800 to-indigo-900 bg-clip-text text-transparent">
-                  Settings
-                </h1>
-                <p class="text-gray-600 mt-1">
-                  Manage your account preferences and configuration
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Settings Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">

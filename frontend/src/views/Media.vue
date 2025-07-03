@@ -1,23 +1,12 @@
 <template>
-  <AppLayout>
+  <AppLayout
+    title="Image Library"
+    subtitle="Discover high-quality images for your designs"
+  >
     <div ref="contentContainer" class="space-y-6">
-      <!-- Simplified Header Section -->
+      <!-- Upload and Status Section -->
       <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-violet-600 rounded-lg flex items-center justify-center">
-              <PhotoIcon class="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 class="text-2xl font-bold text-gray-900">
-                Image Library
-              </h1>
-              <p class="text-gray-600 mt-1">
-                Discover high-quality images for your designs
-              </p>
-            </div>
-          </div>
-          
           <!-- Upload Button -->
           <div class="flex items-center space-x-3">
             <div class="hidden sm:flex items-center text-sm text-gray-500">

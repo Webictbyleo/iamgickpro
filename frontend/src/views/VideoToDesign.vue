@@ -1,13 +1,12 @@
 <template>
-  <AppLayout>
+  <AppLayout
+    title="YouTube Thumbnail Generator"
+    subtitle="Create eye-catching thumbnails inspired by any YouTube video using AI"
+  >
     <div class="max-w-4xl mx-auto space-y-8">
-      <!-- Header -->
+      <!-- Additional Info -->
       <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900">YouTube Thumbnail Generator</h1>
-        <p class="text-lg text-gray-600 mt-2">
-          Create eye-catching thumbnails inspired by any YouTube video using AI
-        </p>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-sm text-gray-500">
           Extract visual themes, colors, and key moments from YouTube videos to generate professional thumbnails
         </p>
       </div>

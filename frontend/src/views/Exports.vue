@@ -1,23 +1,17 @@
 <template>
-  <AppLayout>
+  <AppLayout
+    title="Export Jobs"
+    subtitle="Manage and download your exported designs"
+  >
     <div class="min-h-screen bg-gray-50">
-      <!-- Header Section -->
+      <!-- Stats Summary Section -->
       <div class="bg-white border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <h1 class="text-2xl font-bold text-gray-900">Export Jobs</h1>
-              <p class="mt-1 text-sm text-gray-500">
-                Manage and download your exported designs
-              </p>
+          <div class="flex items-center justify-center space-x-6">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600">{{ processingJobs.length }}</div>
+              <div class="text-xs text-gray-500">Processing</div>
             </div>
-            
-            <!-- Stats Summary -->
-            <div class="flex items-center space-x-6">
-              <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600">{{ processingJobs.length }}</div>
-                <div class="text-xs text-gray-500">Processing</div>
-              </div>
               <div class="text-center">
                 <div class="text-2xl font-bold text-green-600">{{ completedJobs.length }}</div>
                 <div class="text-xs text-gray-500">Completed</div>
