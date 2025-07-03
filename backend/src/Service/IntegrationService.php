@@ -168,7 +168,7 @@ readonly class IntegrationService
     /**
      * Test API credentials by making a simple API call
      */
-    public function testCredentials(User $user, string $serviceName, array $credentials = null): array
+    public function testCredentials(User $user, string $serviceName, ?array $credentials = null): array
     {
         try {
             // Use provided credentials or get from storage

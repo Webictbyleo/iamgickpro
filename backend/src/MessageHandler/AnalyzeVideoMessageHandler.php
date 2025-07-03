@@ -576,7 +576,7 @@ final readonly class AnalyzeVideoMessageHandler
     /**
      * Get category competition level
      */
-    private function getCategoryCompetition(string $categoryId = null): string
+    private function getCategoryCompetition(?string $categoryId = null): string
     {
         $competitionLevels = [
             '10' => 'high',    // Music
@@ -594,7 +594,7 @@ final readonly class AnalyzeVideoMessageHandler
     /**
      * Analyze publish timing
      */
-    private function analyzePublishTiming(string $publishedAt = null): array
+    private function analyzePublishTiming(?string $publishedAt = null): array
     {
         if (!$publishedAt) {
             return ['optimal' => false, 'reason' => 'No publish date available'];
@@ -650,7 +650,7 @@ final readonly class AnalyzeVideoMessageHandler
     /**
      * Calculate content freshness
      */
-    private function calculateContentFreshness(string $publishedAt = null): float
+    private function calculateContentFreshness(?string $publishedAt = null): float
     {
         if (!$publishedAt) return 0.5;
         

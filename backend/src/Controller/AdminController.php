@@ -446,75 +446,6 @@ class AdminController extends AbstractController
     }
 
     /**
-     * Assign plan to user
-     * 
-     * @param int $userId User ID
-     * @param Request $request Request containing plan assignment data
-     * @return JsonResponse Success or error response
-     */
-    #[Route('/users/{userId}/plan', name: 'user_assign_plan', methods: ['PUT'])]
-    public function assignPlanToUser(int $userId, Request $request): JsonResponse
-    {
-        try {
-            $user = $this->userRepository->find($userId);
-            
-            if (!$user) {
-                return new JsonResponse([
-                    'success' => false,
-                    'message' => 'User not found'
-                ], 404);
-            }
-
-            $data = json_decode($request->getContent(), true);
-            
-            if (!isset($data['plan_code'])) {
-                return new JsonResponse([
-                    'success' => false,
-                    'message' => 'Plan code is required'
-                ], 400);
-            }
-
-            $plan = $this->entityManager->getRepository(SubscriptionPlan::class)
-                ->findOneBy(['code' => $data['plan_code']]);
-
-            if (!$plan) {
-                return new JsonResponse([
-                    'success' => false,
-                    'message' => 'Plan not found'
-                ], 404);
-            }
-
-            $user->setPlan($plan->getCode());
-            $this->entityManager->flush();
-
-            $this->logger->info('Plan assigned to user by admin', [
-                'user_id' => $user->getId(),
-                'user_email' => $user->getEmail(),
-                'plan_code' => $plan->getCode(),
-                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
-            ]);
-
-            return new JsonResponse([
-                'success' => true,
-                'message' => 'Plan assigned successfully',
-                'data' => ['user' => $this->formatUserForAdmin($user)]
-            ]);
-
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to assign plan to user', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
-            ]);
-
-            return new JsonResponse([
-                'success' => false,
-                'message' => 'Failed to assign plan to user'
-            ], 500);
-        }
-    }
-
-    /**
      * Bulk assign plan to multiple users
      * 
      * @param Request $request Request containing user IDs and plan assignment data
@@ -595,6 +526,75 @@ class AdminController extends AbstractController
             return new JsonResponse([
                 'success' => false,
                 'message' => 'Failed to bulk assign plan to users'
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign plan to user
+     * 
+     * @param int $userId User ID
+     * @param Request $request Request containing plan assignment data
+     * @return JsonResponse Success or error response
+     */
+    #[Route('/users/{userId}/plan', name: 'user_assign_plan', methods: ['PUT'])]
+    public function assignPlanToUser(int $userId, Request $request): JsonResponse
+    {
+        try {
+            $user = $this->userRepository->find($userId);
+            
+            if (!$user) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            
+            if (!isset($data['plan_code'])) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan code is required'
+                ], 400);
+            }
+
+            $plan = $this->entityManager->getRepository(SubscriptionPlan::class)
+                ->findOneBy(['code' => $data['plan_code']]);
+
+            if (!$plan) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Plan not found'
+                ], 404);
+            }
+
+            $user->setPlan($plan->getCode());
+            $this->entityManager->flush();
+
+            $this->logger->info('Plan assigned to user by admin', [
+                'user_id' => $user->getId(),
+                'user_email' => $user->getEmail(),
+                'plan_code' => $plan->getCode(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Plan assigned successfully',
+                'data' => ['user' => $this->formatUserForAdmin($user)]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to assign plan to user', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'admin_user' => $this->getUser()?->getUserIdentifier() ?? 'unknown'
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to assign plan to user'
             ], 500);
         }
     }

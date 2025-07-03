@@ -19,6 +19,24 @@ final readonly class CreateTemplateRequestDTO
         public string $name,
 
         /**
+         * Canvas width in pixels (required, must be positive)
+         * Defines the template's design area width
+         */
+        #[Assert\NotBlank(message: 'Width is required')]
+        #[Assert\Type(type: 'integer', message: 'Width must be an integer')]
+        #[Assert\Positive(message: 'Width must be positive')]
+        public int $width,
+
+        /**
+         * Canvas height in pixels (required, must be positive)
+         * Defines the template's design area height
+         */
+        #[Assert\NotBlank(message: 'Height is required')]
+        #[Assert\Type(type: 'integer', message: 'Height must be an integer')]
+        #[Assert\Positive(message: 'Height must be positive')]
+        public int $height,
+
+        /**
          * Optional description of the template (max 1000 characters)
          * Provides context about the template's purpose and usage
          */
@@ -41,24 +59,6 @@ final readonly class CreateTemplateRequestDTO
         #[Assert\Type(type: 'array', message: 'Tags must be an array')]
         #[Assert\Valid]
         public array $tags = [],
-
-        /**
-         * Canvas width in pixels (required, must be positive)
-         * Defines the template's design area width
-         */
-        #[Assert\NotBlank(message: 'Width is required')]
-        #[Assert\Type(type: 'integer', message: 'Width must be an integer')]
-        #[Assert\Positive(message: 'Width must be positive')]
-        public int $width,
-
-        /**
-         * Canvas height in pixels (required, must be positive)
-         * Defines the template's design area height
-         */
-        #[Assert\NotBlank(message: 'Height is required')]
-        #[Assert\Type(type: 'integer', message: 'Height must be an integer')]
-        #[Assert\Positive(message: 'Height must be positive')]
-        public int $height,
 
         /**
          * Canvas configuration settings as key-value pairs
