@@ -5,185 +5,244 @@
     @search="handleSearch"
   >
     <div class="space-y-8">
-      <!-- Welcome Hero Section - Refined and Compact -->
-      <div class="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl shadow-xl">
-        <!-- Simplified background elements -->
+      <!-- Compact Professional Hero Section -->
+      <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 rounded-xl shadow-lg border border-gray-700/30">
+        <!-- Subtle background elements -->
         <div class="absolute inset-0">
-          <div class="absolute top-0 -left-4 w-48 h-48 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div class="absolute top-0 -right-4 w-48 h-48 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+          <div class="absolute inset-0 opacity-5">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0); background-size: 30px 30px;"></div>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-transparent to-purple-600/5"></div>
         </div>
         
-        <!-- Glass morphism overlay -->
-        <div class="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-        
-        <div class="relative px-6 py-8">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex-1 mb-8 lg:mb-0">
-              <!-- Compact Welcome Message -->
-              <div class="flex items-center space-x-4 mb-6">
-                <div class="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
-                  <component :is="icons.sparkle" class="w-7 h-7 text-white" />
-                </div>
-                <div class="flex-1">
-                  <div class="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-medium mb-2 border border-white/30">
-                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                    Online & Ready
+        <div class="relative px-6 py-6 lg:px-8 lg:py-8">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <!-- Left Content - Welcome Section -->
+            <div class="flex-1">
+              <div class="flex items-start gap-6">
+                <!-- Profile Avatar -->
+                <div class="flex-shrink-0">
+                  <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-xl">
+                      {{ user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U' }}
+                    </span>
                   </div>
-                  <h1 class="text-3xl lg:text-4xl font-bold text-white leading-tight">
-                    Welcome back,
-                    <span class="bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
-                      {{ user?.firstName || 'Designer' }}
-                    </span>!
+                </div>
+                
+                <!-- Welcome Text -->
+                <div class="flex-1 min-w-0">
+                  <div class="inline-flex items-center px-3 py-1 bg-emerald-500/20 rounded-full text-emerald-300 text-xs font-medium mb-3 border border-emerald-500/30">
+                    <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
+                    Online
+                  </div>
+                  <h1 class="text-2xl lg:text-3xl font-bold text-white leading-tight mb-2">
+                    Welcome back, 
+                    <span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      {{ user?.firstName || 'Creator' }}
+                    </span>
                   </h1>
-                  <p class="text-lg text-white/90 mt-2">
-                    Your creative studio awaits. Let's bring your vision to life.
+                  <p class="text-gray-300 text-base lg:text-lg max-w-2xl">
+                    Your creative workspace is ready. Let's bring your ideas to life.
                   </p>
                 </div>
               </div>
-              
-              <!-- Compact Quick Stats -->
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+            </div>
+
+            <!-- Center - Quick Stats -->
+            <div class="flex-shrink-0 lg:mx-8">
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                <div class="bg-white/8 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 hover:border-white/20 transition-all duration-200 group">
                   <div class="flex items-center justify-between mb-2">
-                    <component :is="icons.design" class="w-6 h-6 text-blue-300" />
+                    <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <component :is="icons.design" class="w-4 h-4 text-blue-300" />
+                    </div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.overview?.totalDesigns || 0 }}</div>
-                  <div class="text-sm text-white/80">Total Designs</div>
+                  <div class="text-xl font-bold text-white">{{ dashboardStats?.overview?.totalDesigns || 0 }}</div>
+                  <div class="text-xs text-gray-400">Projects</div>
                 </div>
                 
-                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                <div class="bg-white/8 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 hover:border-white/20 transition-all duration-200 group">
                   <div class="flex items-center justify-between mb-2">
-                    <component :is="icons.folder" class="w-6 h-6 text-green-300" />
+                    <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                      <component :is="icons.folder" class="w-4 h-4 text-emerald-300" />
+                    </div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.overview?.totalProjects || 0 }}</div>
-                  <div class="text-sm text-white/80">Active Projects</div>
+                  <div class="text-xl font-bold text-white">{{ dashboardStats?.overview?.totalProjects || 0 }}</div>
+                  <div class="text-xs text-gray-400">Folders</div>
                 </div>
                 
-                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                <div class="bg-white/8 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 hover:border-white/20 transition-all duration-200 group">
                   <div class="flex items-center justify-between mb-2">
-                    <component :is="icons.download" class="w-6 h-6 text-orange-300" />
+                    <div class="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                      <component :is="icons.download" class="w-4 h-4 text-orange-300" />
+                    </div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ dashboardStats?.overview?.totalExports || 0 }}</div>
-                  <div class="text-sm text-white/80">Total Exports</div>
+                  <div class="text-xl font-bold text-white">{{ dashboardStats?.overview?.totalExports || 0 }}</div>
+                  <div class="text-xs text-gray-400">Exports</div>
                 </div>
                 
-                <div class="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
+                <div class="bg-white/8 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 hover:border-white/20 transition-all duration-200 group">
                   <div class="flex items-center justify-between mb-2">
-                    <component :is="icons.template" class="w-6 h-6 text-purple-300" />
+                    <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <component :is="icons.template" class="w-4 h-4 text-purple-300" />
+                    </div>
                   </div>
-                  <div class="text-2xl font-bold text-white">{{ Math.round(dashboardStats?.overview?.successRate || 0) }}%</div>
-                  <div class="text-sm text-white/80">Success Rate</div>
+                  <div class="text-xl font-bold text-white">{{ Math.round(dashboardStats?.overview?.successRate || 0) }}%</div>
+                  <div class="text-xs text-gray-400">Success</div>
                 </div>
               </div>
             </div>
-            
 
+            <!-- Right - Action Buttons -->
+            <div class="flex-shrink-0">
+              <div class="flex flex-col sm:flex-row lg:flex-col gap-3">
+                <router-link
+                  to="/editor"
+                  class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
+                >
+                  <component :is="icons.plus" class="w-4 h-4 mr-2" />
+                  Create Design
+                </router-link>
+                <router-link
+                  to="/templates"
+                  class="inline-flex items-center px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg font-semibold transition-all duration-200 border border-white/20 hover:border-white/30 text-sm"
+                >
+                  <component :is="icons.template" class="w-4 h-4 mr-2" />
+                  Templates
+                </router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Quick Actions Grid -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <!-- Professional Quick Actions Grid -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Quick Actions</h2>
+            <p class="text-gray-600 mt-1">Start creating with these essential tools</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <router-link
             to="/templates"
-            class="group p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl hover:from-green-100 hover:to-emerald-100 transition-all transform hover:scale-105 border border-green-100"
+            class="group relative p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl hover:from-emerald-100 hover:to-teal-100 transition-all duration-300 transform hover:scale-105 border border-emerald-200/50 hover:border-emerald-300 shadow-sm hover:shadow-md"
           >
-            <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 transition-colors">
-              <component :is="icons.template" class="w-6 h-6 text-white" />
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 transition-colors shadow-lg">
+                <component :is="icons.template" class="w-6 h-6 text-white" />
+              </div>
+              <div class="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowRightIcon class="w-5 h-5" />
+              </div>
             </div>
-            <h3 class="font-semibold text-gray-900 text-sm">Templates</h3>
-            <p class="text-xs text-gray-500 mt-1">Browse library</p>
+            <h3 class="font-semibold text-gray-900 text-base mb-1">Templates</h3>
+            <p class="text-sm text-gray-600">Professional designs</p>
           </router-link>
 
           <router-link
             to="/media"
-            class="group p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl hover:from-purple-100 hover:to-violet-100 transition-all transform hover:scale-105 border border-purple-100"
+            class="group relative p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl hover:from-purple-100 hover:to-violet-100 transition-all duration-300 transform hover:scale-105 border border-purple-200/50 hover:border-purple-300 shadow-sm hover:shadow-md"
           >
-            <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-600 transition-colors">
-              <component :is="icons.media" class="w-6 h-6 text-white" />
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center group-hover:bg-purple-600 transition-colors shadow-lg">
+                <component :is="icons.media" class="w-6 h-6 text-white" />
+              </div>
+              <div class="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowRightIcon class="w-5 h-5" />
+              </div>
             </div>
-            <h3 class="font-semibold text-gray-900 text-sm">Stock Media</h3>
-            <p class="text-xs text-gray-500 mt-1">Photos & videos</p>
+            <h3 class="font-semibold text-gray-900 text-base mb-1">Stock Media</h3>
+            <p class="text-sm text-gray-600">High-quality assets</p>
           </router-link>
 
           <router-link
             to="/designs"
-            class="group p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl hover:from-orange-100 hover:to-amber-100 transition-all transform hover:scale-105 border border-orange-100"
+            class="group relative p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 transform hover:scale-105 border border-blue-200/50 hover:border-blue-300 shadow-sm hover:shadow-md"
           >
-            <div class="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-600 transition-colors">
-              <component :is="icons.folder" class="w-6 h-6 text-white" />
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors shadow-lg">
+                <component :is="icons.folder" class="w-6 h-6 text-white" />
+              </div>
+              <div class="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowRightIcon class="w-5 h-5" />
+              </div>
             </div>
-            <h3 class="font-semibold text-gray-900 text-sm">My Designs</h3>
-            <p class="text-xs text-gray-500 mt-1">View all projects</p>
+            <h3 class="font-semibold text-gray-900 text-base mb-1">My Projects</h3>
+            <p class="text-sm text-gray-600">Manage designs</p>
           </router-link>
 
           <router-link
             to="/video-to-design"
-            class="group p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl hover:from-red-100 hover:to-pink-100 transition-all transform hover:scale-105 border border-red-100"
+            class="group relative p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-xl hover:from-red-100 hover:to-pink-100 transition-all duration-300 transform hover:scale-105 border border-red-200/50 hover:border-red-300 shadow-sm hover:shadow-md"
           >
-            <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:from-red-600 group-hover:to-pink-600 transition-all">
-              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:from-red-600 group-hover:to-pink-600 transition-all shadow-lg">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </div>
+              <div class="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowRightIcon class="w-5 h-5" />
+              </div>
             </div>
-            <h3 class="font-semibold text-gray-900 text-sm">YouTube Thumbnail</h3>
-            <p class="text-xs text-gray-500 mt-1">AI Generator</p>
+            <h3 class="font-semibold text-gray-900 text-base mb-1">AI Generator</h3>
+            <p class="text-sm text-gray-600">YouTube thumbnails</p>
           </router-link>
         </div>
       </div>
 
       <!-- Recent Designs Section -->
-      <div class="bg-white rounded-lg border border-gray-100">
-        <div class="p-6 border-b border-gray-100">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-8 py-6 border-b border-gray-100">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-bold text-gray-900">Recent Designs</h2>
-              <p class="text-gray-500 mt-1 text-sm">Continue working on your latest projects</p>
+              <h2 class="text-2xl font-bold text-gray-900">Recent Projects</h2>
+              <p class="text-gray-600 mt-1">Continue working on your latest designs</p>
             </div>
             <router-link
               to="/designs" 
-              class="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
+              class="inline-flex items-center px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm shadow-sm"
             >
               View all
-              <ArrowRightIcon class="w-4 h-4 ml-1" />
+              <ArrowRightIcon class="w-4 h-4 ml-2" />
             </router-link>
           </div>
         </div>
         
-        <div class="p-6">
+        <div class="p-8">
           <div class="relative">
             <!-- Show loading cards first -->
-            <div v-if="loading" class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-4">
+            <div v-if="loading" class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-6">
               <div 
                 v-for="i in 3"
                 :key="`loading-${i}`"
-                class="flex-shrink-0 w-60 bg-white rounded-lg border border-gray-100 animate-pulse overflow-hidden flex flex-col"
+                class="flex-shrink-0 w-72 bg-white rounded-xl border border-gray-200 animate-pulse overflow-hidden"
               >
-                <div class="h-40 bg-gray-200"></div>
-                <div class="p-3 space-y-2">
-                  <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-48 bg-gray-200"></div>
+                <div class="p-4 space-y-3">
+                  <div class="h-5 bg-gray-200 rounded w-3/4"></div>
                   <div class="flex justify-between items-center">
-                    <div class="h-3 bg-gray-200 rounded w-1/3"></div>
-                    <div class="h-5 bg-gray-200 rounded w-16"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+                    <div class="h-6 bg-gray-200 rounded w-20"></div>
                   </div>
                 </div>
               </div>
             </div>
             
             <!-- Show designs when loaded -->
-            <div v-else-if="recentDesigns.length > 0" class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-4">
+            <div v-else-if="recentDesigns.length > 0" class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-6">
               <div
                 v-for="design in recentDesigns"
                 :key="design.id"
-                class="flex-shrink-0 w-60"
+                class="flex-shrink-0 w-72"
                 :data-design-id="design.id"
               >
-                <!-- Design Card with Compact Height -->
-                <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden flex flex-col group">
-                  <!-- Design Thumbnail Container - Responsive height -->
-                  <div class="relative h-40 bg-gray-50 flex items-center justify-center p-2">
+                <!-- Professional Design Card -->
+                <div class="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                  <!-- Design Thumbnail Container -->
+                  <div class="relative h-48 bg-gray-50 flex items-center justify-center p-3">
                     <div 
                       v-if="design.thumbnail"
                       class="relative max-w-full max-h-full"
@@ -196,24 +255,24 @@
                       <img
                         :src="design.thumbnail"
                         :alt="design.title"
-                        class="w-full h-full object-cover rounded shadow-sm cursor-pointer"
+                        class="w-full h-full object-cover rounded-lg shadow-sm cursor-pointer hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                         @click="editDesign(design)"
                       />
                     </div>
                     <div 
                       v-else 
-                      class="w-32 h-24 bg-gray-100 rounded flex items-center justify-center cursor-pointer"
+                      class="w-36 h-28 bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
                       @click="editDesign(design)"
                     >
-                      <component :is="icons.design" class="w-8 h-8 text-gray-400" />
+                      <component :is="icons.design" class="w-10 h-10 text-gray-400" />
                     </div>
                     
-                    <!-- Dropdown Menu -->
-                    <div class="absolute top-2 right-2">
+                    <!-- Professional Dropdown Menu -->
+                    <div class="absolute top-3 right-3">
                       <div class="relative">
                         <button
-                          class="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                          class="w-9 h-9 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-sm hover:bg-white transition-all opacity-0 group-hover:opacity-100 border border-gray-200"
                           @click.stop="toggleDropdown(design.id)"
                         >
                           <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
@@ -223,40 +282,40 @@
                           </svg>
                         </button>
                         
-                        <!-- Dropdown Menu -->
+                        <!-- Professional Dropdown Menu -->
                         <div 
                           :class="[
-                            'absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 transition-all duration-200 z-10',
+                            'absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200 py-2 transition-all duration-200 z-10',
                             dropdownOpen === design.id ? 'opacity-100 visible' : 'opacity-0 invisible'
                           ]"
                         >
                           <button
                             @click.stop="editDesign(design); closeDropdown()"
-                            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                            class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors"
                           >
-                            <component :is="icons.edit" class="w-4 h-4 mr-2" />
+                            <component :is="icons.edit" class="w-4 h-4 mr-3 text-gray-500" />
                             Edit Design
                           </button>
                           <button
                             @click.stop="duplicateDesign(design); closeDropdown()"
-                            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                            class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors"
                           >
-                            <component :is="icons.duplicate" class="w-4 h-4 mr-2" />
+                            <component :is="icons.duplicate" class="w-4 h-4 mr-3 text-gray-500" />
                             Duplicate
                           </button>
                           <button
                             @click.stop="downloadDesign(design); closeDropdown()"
-                            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                            class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center transition-colors"
                           >
-                            <component :is="icons.download" class="w-4 h-4 mr-2" />
+                            <component :is="icons.download" class="w-4 h-4 mr-3 text-gray-500" />
                             Export
                           </button>
                           <hr class="my-1 border-gray-100">
                           <button
                             @click.stop="deleteDesign(design); closeDropdown()"
-                            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                            class="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center transition-colors"
                           >
-                            <component :is="icons.delete" class="w-4 h-4 mr-2" />
+                            <component :is="icons.delete" class="w-4 h-4 mr-3" />
                             Delete
                           </button>
                         </div>
@@ -264,16 +323,16 @@
                     </div>
                   </div>
                   
-                  <!-- Design Info - Compact layout -->
-                  <div class="p-3">
-                    <h3 class="font-medium text-gray-900 truncate text-sm cursor-pointer hover:text-violet-600 transition-colors mb-1" @click="editDesign(design)">
+                  <!-- Professional Design Info -->
+                  <div class="p-4">
+                    <h3 class="font-semibold text-gray-900 truncate text-base cursor-pointer hover:text-blue-600 transition-colors mb-2" @click="editDesign(design)">
                       {{ design.title || design.name || 'Untitled Design' }}
                     </h3>
                     <div class="flex items-center justify-between">
-                      <p class="text-xs text-gray-500">
+                      <p class="text-sm text-gray-500">
                         {{ new Date(design.updatedAt || design.createdAt).toLocaleDateString() }}
                       </p>
-                      <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                      <span class="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md">
                         {{ design.width }}×{{ design.height }}
                       </span>
                     </div>
@@ -282,22 +341,22 @@
               </div>
             </div>
             
-            <!-- Empty State -->
+            <!-- Professional Empty State -->
             <div 
               v-else
-              class="text-center py-12 bg-gray-50 rounded-lg"
+              class="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl"
             >
-              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <component :is="icons.design" class="w-6 h-6 text-gray-500" />
+              <div class="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-6">
+                <component :is="icons.design" class="w-8 h-8 text-gray-500" />
               </div>
-              <h3 class="text-lg font-medium text-gray-900 mb-2">No designs yet</h3>
-              <p class="text-gray-500 mb-6 text-sm">Start creating your first design!</p>
+              <h3 class="text-xl font-semibold text-gray-900 mb-3">No projects yet</h3>
+              <p class="text-gray-600 mb-8 max-w-md mx-auto">Start your creative journey by creating your first design project.</p>
               <router-link
                 to="/editor"
-                class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors text-sm"
+                class="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg"
               >
-                <component :is="icons.plus" class="w-4 h-4 mr-2" />
-                Create Design
+                <component :is="icons.plus" class="w-5 h-5 mr-2" />
+                Create First Project
               </router-link>
             </div>
           </div>
@@ -305,34 +364,34 @@
       </div>
 
       <!-- Featured Templates Section -->
-      <div class="bg-white rounded-lg border border-gray-100">
-        <div class="p-6 border-b border-gray-100">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-8 py-6 border-b border-gray-100">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-bold text-gray-900">Featured Templates</h2>
-              <p class="text-gray-500 mt-1 text-sm">Professional designs to get you started quickly</p>
+              <h2 class="text-2xl font-bold text-gray-900">Featured Templates</h2>
+              <p class="text-gray-600 mt-1">Professional designs to accelerate your workflow</p>
             </div>
             <router-link
               to="/templates"
-              class="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
+              class="inline-flex items-center px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm shadow-sm"
             >
               Browse all
-              <ArrowRightIcon class="w-4 h-4 ml-1" />
+              <ArrowRightIcon class="w-4 h-4 ml-2" />
             </router-link>
           </div>
         </div>
         
-        <div class="p-6">
+        <div class="p-8">
           <div class="relative">
-            <div class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-4">
+            <div class="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-4 gap-6">
               <div
                 v-for="template in featuredTemplates"
                 :key="template.id"
-                class="flex-shrink-0 w-60 cursor-pointer group"
+                class="flex-shrink-0 w-72 cursor-pointer group"
                 @click="useTemplate(template)"
               >
-                <!-- Template Card with Dynamic Aspect Ratio -->
-                <div class="bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden">
+                <!-- Professional Template Card -->
+                <div class="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
                   <!-- Template Thumbnail -->
                   <div 
                     class="relative bg-gray-50 overflow-hidden"
@@ -346,34 +405,34 @@
                       loading="lazy"
                     />
                     <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                      <component :is="icons.template" class="w-8 h-8 text-gray-300" />
+                      <component :is="icons.template" class="w-10 h-10 text-gray-300" />
                     </div>
                     
-                    <!-- Hover Overlay -->
-                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-200 flex items-center justify-center">
-                      <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <div class="bg-white text-gray-900 px-3 py-2 rounded-lg font-medium text-sm shadow-lg">
+                    <!-- Professional Hover Overlay -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                      <div class="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                        <div class="bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold text-sm shadow-xl border border-gray-200">
                           Use Template
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  <!-- Template Info -->
-                  <div class="p-3">
-                    <h3 class="font-medium text-gray-900 text-sm leading-tight mb-1 truncate">
+                  <!-- Professional Template Info -->
+                  <div class="p-4">
+                    <h3 class="font-semibold text-gray-900 text-base leading-tight mb-2 truncate">
                       {{ template.title || template.name }}
                     </h3>
                     <div class="flex items-center justify-between">
-                      <span class="text-xs text-gray-500 capitalize">{{ template.category || 'General' }}</span>
+                      <span class="text-sm text-gray-500 capitalize bg-gray-100 px-2 py-1 rounded-md">{{ template.category || 'General' }}</span>
                       
                       <!-- Usage count or rating -->
-                      <div v-if="template.usageCount > 0" class="flex items-center text-xs text-gray-400">
-                        <component :is="icons.users" class="w-3 h-3 mr-1" />
+                      <div v-if="template.usageCount > 0" class="flex items-center text-sm text-gray-500">
+                        <component :is="icons.users" class="w-4 h-4 mr-1" />
                         {{ formatUsageCount(template.usageCount) }}
                       </div>
-                      <div v-else-if="template.rating >= 4.0" class="flex items-center text-xs text-gray-400">
-                        <component :is="icons.star" class="w-3 h-3 mr-1 text-yellow-400" />
+                      <div v-else-if="template.rating >= 4.0" class="flex items-center text-sm text-gray-500">
+                        <component :is="icons.star" class="w-4 h-4 mr-1 text-yellow-400" />
                         {{ template.rating.toFixed(1) }}
                       </div>
                     </div>
@@ -381,40 +440,43 @@
                 </div>
               </div>
               
-              <!-- Loading Cards -->
+              <!-- Professional Loading Cards -->
               <div 
                 v-if="templatesLoading"
                 v-for="i in 4"
                 :key="`template-loading-${i}`"
-                class="flex-shrink-0 w-60 animate-pulse"
+                class="flex-shrink-0 w-72 animate-pulse"
               >
-                <div class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div class="aspect-[3/4] bg-gray-200"></div>
-                  <div class="p-3 space-y-2">
-                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div class="p-4 space-y-3">
+                    <div class="h-5 bg-gray-200 rounded w-3/4"></div>
+                    <div class="flex justify-between items-center">
+                      <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                      <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           
-          <!-- Empty State -->
+          <!-- Professional Empty State -->
           <div 
             v-if="!templatesLoading && featuredTemplates.length === 0"
-            class="text-center py-12 bg-gray-50 rounded-lg"
+            class="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl"
           >
-            <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <component :is="icons.template" class="w-6 h-6 text-gray-500" />
+            <div class="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-6">
+              <component :is="icons.template" class="w-8 h-8 text-gray-500" />
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No templates available</h3>
-            <p class="text-gray-500 mb-6 text-sm">Check back later for new templates</p>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">No templates available</h3>
+            <p class="text-gray-600 mb-8 max-w-md mx-auto">Professional templates will appear here to help jumpstart your projects.</p>
             <router-link
               to="/templates"
-              class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm"
+              class="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg"
             >
               Browse Templates
-              <component :is="icons.arrowRight" class="w-4 h-4 ml-2" />
+              <component :is="icons.arrowRight" class="w-5 h-5 ml-2" />
             </router-link>
           </div>
         </div>
@@ -730,59 +792,174 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
+/* Professional background pattern */
+.professional-pattern {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Enhanced floating animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
   }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
+  50% {
+    transform: translateY(-20px);
   }
 }
 
-.animate-blob {
-  animation: blob 7s infinite;
+@keyframes float-delayed {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
 }
 
-.animation-delay-2000 {
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes gradient {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 8s ease-in-out infinite;
   animation-delay: 2s;
 }
 
-.animation-delay-4000 {
-  animation-delay: 4s;
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
 }
 
-/* Custom Scrollbar Styles */
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+/* Enhanced scrollbar styles for professional look */
 .scrollbar-thin {
   scrollbar-width: thin;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  height: 6px;
+  height: 8px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 3px;
+  background: #f8fafc;
+  border-radius: 4px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #94a3b8;
 }
 
-/* Hide scrollbar for Firefox */
+/* Firefox scrollbar styling */
 .scrollbar-thin {
-  scrollbar-color: #d1d5db #f3f4f6;
+  scrollbar-color: #cbd5e1 #f8fafc;
   scrollbar-width: thin;
+}
+
+/* Professional hover animations */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Professional focus states */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-radius: 0.375rem;
+}
+
+/* Subtle animations for professional feel */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Professional button hover effects */
+.btn-professional {
+  transition: all 0.2s ease;
+  transform: scale(1);
+}
+
+.btn-professional:hover {
+  transform: scale(1.05);
+}
+
+.btn-professional:active {
+  transform: scale(0.95);
+}
+
+/* Enhanced stats card animations */
+.stats-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stats-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Glowing effect for interactive elements */
+.glow-on-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-on-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.glow-on-hover:hover::before {
+  left: 100%;
 }
 </style>
