@@ -583,8 +583,8 @@ class LayerService
     public function duplicateLayerFromRequest(
         Layer $originalLayer,
         string $newName,
-        int|string|null $targetDesignId = null,
-        User $user
+        User $user,
+        int|string|null $targetDesignId = null
     ): Layer {
         $targetDesign = $targetDesignId ? 
             $this->resolveDesign($targetDesignId, $user) : 

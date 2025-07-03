@@ -10,6 +10,15 @@ final readonly class ConvertDesignToTemplateRequestDTO
 {
     public function __construct(
         /**
+         * Template category for organization and filtering
+         * Can be any string with allowed characters
+         */
+        #[Assert\NotBlank(message: 'Category is required')]
+        #[Assert\Length(max: 50, maxMessage: 'Category cannot be longer than 50 characters')]
+        #[Assert\Regex(pattern: '/^[a-zA-Z0-9\s\-_]+$/', message: 'Category can only contain letters, numbers, spaces, hyphens, and underscores')]
+        public string $category,
+
+        /**
          * The template name (optional, will use design name if not provided)
          * Used for identification and search purposes
          */
@@ -22,15 +31,6 @@ final readonly class ConvertDesignToTemplateRequestDTO
          */
         #[Assert\Length(max: 1000, maxMessage: 'Description cannot be longer than 1000 characters')]
         public ?string $description = null,
-
-        /**
-         * Template category for organization and filtering
-         * Can be any string with allowed characters
-         */
-        #[Assert\NotBlank(message: 'Category is required')]
-        #[Assert\Length(max: 50, maxMessage: 'Category cannot be longer than 50 characters')]
-        #[Assert\Regex(pattern: '/^[a-zA-Z0-9\s\-_]+$/', message: 'Category can only contain letters, numbers, spaces, hyphens, and underscores')]
-        public string $category,
 
         /**
          * Array of tags for categorization and search

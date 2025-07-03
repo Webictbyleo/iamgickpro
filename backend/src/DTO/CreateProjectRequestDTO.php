@@ -30,6 +30,19 @@ class CreateProjectRequestDTO
         public readonly string $name,
 
         /**
+         * Project configuration settings including canvas dimensions, DPI, etc.
+         * 
+         * Contains all technical settings that define how the project
+         * behaves and renders, including:
+         * - Canvas size and background
+         * - Export settings (DPI, quality)
+         * - Snap and grid configurations
+         * - Auto-save preferences
+         */
+        #[Assert\Valid]
+        public readonly ProjectSettings $settings,
+
+        /**
          * Optional description providing additional context about the project.
          * 
          * Used to document the project's purpose, goals, or any other
@@ -48,19 +61,6 @@ class CreateProjectRequestDTO
          */
         #[Assert\Type('bool', message: 'Is public must be a boolean')]
         public readonly bool $isPublic = false,
-
-        /**
-         * Project configuration settings including canvas dimensions, DPI, etc.
-         * 
-         * Contains all technical settings that define how the project
-         * behaves and renders, including:
-         * - Canvas size and background
-         * - Export settings (DPI, quality)
-         * - Snap and grid configurations
-         * - Auto-save preferences
-         */
-        #[Assert\Valid]
-        public readonly ProjectSettings $settings,
 
         /**
          * Organizational tags for categorizing and searching projects.
