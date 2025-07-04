@@ -117,7 +117,7 @@
         <!-- Create new design button -->
         <Menu as="div" class="relative">
           <MenuButton
-            class="inline-flex items-center px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            class="inline-flex items-center px-4 py-2.5 bg-primary-600 dark:bg-primary-700 hover:bg-primary-700 dark:hover:bg-primary-800 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20"
           >
             <component :is="icons.plus" class="w-4 h-4 mr-2" />
             <span class="hidden sm:inline">Create</span>
@@ -134,13 +134,13 @@
             <MenuItems class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[99999]">
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="showDesignSizeModal = true"
+                  @click="$emit('createDesign')"
                   :class="[
                     active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
                     'group flex w-full items-center px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                   ]"
                 >
-                  <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mr-3">
+                  <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center mr-3">
                     <component :is="icons.plus" class="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div class="text-left">
@@ -171,17 +171,11 @@
           </Transition>
         </Menu>
 
-        <!-- Design Size Selection Modal -->
-        <DesignSizeSelectionModal
-          :show="showDesignSizeModal"
-          @close="showDesignSizeModal = false"
-        />
-
         <!-- User menu -->
         <Menu as="div" class="relative">
           <MenuButton class="flex items-center p-1.5 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 group">
             <div class="relative">
-              <div class="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+              <div class="w-9 h-9 bg-primary-600 dark:bg-primary-700 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
                 <span class="text-white font-semibold text-sm">{{ userInitials }}</span>
               </div>
               <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
@@ -202,7 +196,7 @@
               <!-- User info -->
               <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                 <div class="flex items-center">
-                  <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
+                  <div class="w-10 h-10 bg-primary-600 dark:bg-primary-700 rounded-xl flex items-center justify-center">
                     <span class="text-white font-semibold">{{ userInitials }}</span>
                   </div>
                   <div class="ml-3 flex-1 min-w-0">
@@ -305,7 +299,6 @@ import { useRouter } from 'vue-router'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useIcons } from '@/composables/useIcons'
-import DesignSizeSelectionModal from '@/components/modals/DesignSizeSelectionModal.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 
 interface Props {
@@ -317,7 +310,7 @@ defineProps<Props>()
 
 defineEmits<{
   toggleSidebar: []
-  createDesign: [type?: string]
+  createDesign: []
   logout: []
 }>()
 
@@ -325,7 +318,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 const icons = useIcons()
 const isLoggingOut = ref(false)
-const showDesignSizeModal = ref(false)
 
 // Support links from environment variables
 const supportLinks = {

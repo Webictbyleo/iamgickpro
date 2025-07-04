@@ -13,8 +13,8 @@
         :key="notification.id"
         :class="[
           'min-w-80 max-w-md w-full pointer-events-auto transform transition-all duration-300 ease-out',
-          'bg-white/95 backdrop-blur-xl border border-gray-200/50 shadow-xl shadow-black/10',
-          'rounded-2xl overflow-hidden group hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/20',
+          'bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-black/10 dark:shadow-black/30',
+          'rounded-2xl overflow-hidden group hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/20 dark:hover:shadow-black/40',
           getTypeClasses(notification.type)
         ]"
       >
@@ -61,7 +61,7 @@
               <!-- Enhanced message -->
               <p
                 v-if="notification.message"
-                class="mt-1.5 text-sm text-gray-600 leading-relaxed font-medium"
+                class="mt-1.5 text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium"
               >
                 {{ notification.message }}
               </p>
@@ -84,7 +84,7 @@
             <div class="ml-4 flex-shrink-0 flex">
               <button
                 @click="removeNotification(notification.id)"
-                class="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 focus:outline-none focus:ring-2 focus:ring-gray-300/50 transition-all duration-200 transform hover:scale-110 group/close"
+                class="p-2 rounded-xl text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-gray-300/50 dark:focus:ring-gray-600/50 transition-all duration-200 transform hover:scale-110 group/close"
               >
                 <span class="sr-only">Close</span>
                 <component 
@@ -159,80 +159,80 @@ const unwatchNotifications = computed(() => {
 // Type-specific styling functions
 const getTypeClasses = (type: string) => {
   const classes = {
-    success: 'border-l-4 border-emerald-400',
-    error: 'border-l-4 border-red-400', 
-    warning: 'border-l-4 border-amber-400',
-    info: 'border-l-4 border-blue-400'
+    success: 'border-l-4 border-success-400 dark:border-success-500',
+    error: 'border-l-4 border-danger-400 dark:border-danger-500', 
+    warning: 'border-l-4 border-warning-400 dark:border-warning-500',
+    info: 'border-l-4 border-primary-400 dark:border-primary-500'
   }
   return classes[type as keyof typeof classes] || classes.info
 }
 
 const getProgressBarClasses = (type: string) => {
   const classes = {
-    success: 'from-emerald-400 to-emerald-500',
-    error: 'from-red-400 to-red-500',
-    warning: 'from-amber-400 to-amber-500', 
-    info: 'from-blue-400 to-blue-500'
+    success: 'from-success-400 to-success-500 dark:from-success-500 dark:to-success-600',
+    error: 'from-danger-400 to-danger-500 dark:from-danger-500 dark:to-danger-600',
+    warning: 'from-warning-400 to-warning-500 dark:from-warning-500 dark:to-warning-600', 
+    info: 'from-primary-400 to-primary-500 dark:from-primary-500 dark:to-primary-600'
   }
   return classes[type as keyof typeof classes] || classes.info
 }
 
 const getProgressGradient = (type: string) => {
   const gradients = {
-    success: 'linear-gradient(90deg, #10b981, #059669)',
-    error: 'linear-gradient(90deg, #f87171, #dc2626)',
-    warning: 'linear-gradient(90deg, #fbbf24, #d97706)',
-    info: 'linear-gradient(90deg, #60a5fa, #2563eb)'
+    success: 'linear-gradient(90deg, #22c55e, #16a34a)',
+    error: 'linear-gradient(90deg, #ef4444, #dc2626)',
+    warning: 'linear-gradient(90deg, #f59e0b, #d97706)',
+    info: 'linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600))'
   }
   return gradients[type as keyof typeof gradients] || gradients.info
 }
 
 const getIconBackgroundClasses = (type: string) => {
   const classes = {
-    success: 'bg-emerald-100 group-hover:bg-emerald-200',
-    error: 'bg-red-100 group-hover:bg-red-200',
-    warning: 'bg-amber-100 group-hover:bg-amber-200',
-    info: 'bg-blue-100 group-hover:bg-blue-200'
+    success: 'bg-success-100 dark:bg-success-900/30 group-hover:bg-success-200 dark:group-hover:bg-success-900/50',
+    error: 'bg-danger-100 dark:bg-danger-900/30 group-hover:bg-danger-200 dark:group-hover:bg-danger-900/50',
+    warning: 'bg-warning-100 dark:bg-warning-900/30 group-hover:bg-warning-200 dark:group-hover:bg-warning-900/50',
+    info: 'bg-primary-100 dark:bg-primary-900/30 group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50'
   }
   return classes[type as keyof typeof classes] || classes.info
 }
 
 const getIconClasses = (type: string): string => {
   const classes = {
-    success: 'text-emerald-600 group-hover:text-emerald-700',
-    error: 'text-red-600 group-hover:text-red-700',
-    warning: 'text-amber-600 group-hover:text-amber-700',
-    info: 'text-blue-600 group-hover:text-blue-700'
+    success: 'text-success-600 dark:text-success-400 group-hover:text-success-700 dark:group-hover:text-success-300',
+    error: 'text-danger-600 dark:text-danger-400 group-hover:text-danger-700 dark:group-hover:text-danger-300',
+    warning: 'text-warning-600 dark:text-warning-400 group-hover:text-warning-700 dark:group-hover:text-warning-300',
+    info: 'text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300'
   }
   return classes[type as keyof typeof classes] || classes.info
 }
 
 const getTitleClasses = (type: string) => {
   const classes = {
-    success: 'from-emerald-700 to-emerald-900',
-    error: 'from-red-700 to-red-900',
-    warning: 'from-amber-700 to-amber-900',
-    info: 'from-blue-700 to-blue-900'
+    success: 'from-success-700 to-success-900 dark:from-success-300 dark:to-success-100',
+    error: 'from-danger-700 to-danger-900 dark:from-danger-300 dark:to-danger-100',
+    warning: 'from-warning-700 to-warning-900 dark:from-warning-300 dark:to-warning-100',
+    info: 'from-primary-700 to-primary-900 dark:from-primary-300 dark:to-primary-100'
   }
   return classes[type as keyof typeof classes] || classes.info
 }
 
 const getActionButtonClasses = (type: string) => {
   const classes = {
-    success: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-emerald-500',
-    error: 'bg-red-50 text-red-700 hover:bg-red-100 focus:ring-red-500',
-    warning: 'bg-amber-50 text-amber-700 hover:bg-amber-100 focus:ring-amber-500',
-    info: 'bg-blue-50 text-blue-700 hover:bg-blue-100 focus:ring-blue-500'
+    success: 'bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-300 hover:bg-success-100 dark:hover:bg-success-900/30 focus:ring-success-500 dark:focus:ring-success-400',
+    error: 'bg-danger-50 dark:bg-danger-900/20 text-danger-700 dark:text-danger-300 hover:bg-danger-100 dark:hover:bg-danger-900/30 focus:ring-danger-500 dark:focus:ring-danger-400',
+    warning: 'bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-300 hover:bg-warning-100 dark:hover:bg-warning-900/30 focus:ring-warning-500 dark:focus:ring-warning-400',
+    info: 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/30 focus:ring-primary-500 dark:focus:ring-primary-400'
   }
   return classes[type as keyof typeof classes] || classes.info
 }
 
 const getGlowClasses = (type: string) => {
   const classes = {
-    success: 'bg-gradient-to-br from-emerald-400/5 to-emerald-600/10',
-    error: 'bg-gradient-to-br from-red-400/5 to-red-600/10',
-    warning: 'bg-gradient-to-br from-amber-400/5 to-amber-600/10',
-    info: 'bg-gradient-to-br from-blue-400/5 to-blue-600/10'
+    success: 'bg-gradient-to-br from-success-400/5 to-success-600/10 dark:from-success-400/10 dark:to-success-600/20',
+    error: 'bg-gradient-to-br from-danger-400/5 to-danger-600/10 dark:from-danger-400/10 dark:to-danger-600/20',
+    warning: 'bg-gradient-to-br from-warning-400/5 to-warning-600/10 dark:from-warning-400/10 dark:to-warning-600/20',
+    info: 'bg-gradient-to-br from-primary-400/5 to-primary-600/10 dark:from-primary-400/10 dark:to-primary-600/20'
   }
   return classes[type as keyof typeof classes] || classes.info
 }

@@ -28,8 +28,8 @@
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
       <AppHeader 
-        :title="title"
-        :subtitle="subtitle"
+        :title="props.title"
+        :subtitle="props.subtitle"
         @toggle-sidebar="sidebarOpen = !sidebarOpen"
         @create-design="handleCreateDesign"
         @logout="handleLogout"
@@ -45,6 +45,12 @@
         </div>
       </main>
     </div>
+
+    <!-- Design Size Selection Modal -->
+    <DesignSizeSelectionModal
+      :show="showDesignSizeModal"
+      @close="closeModal"
+    />
   </div>
 </template>
 
@@ -53,13 +59,15 @@ import { ref } from 'vue'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
+import DesignSizeSelectionModal from '@/components/modals/DesignSizeSelectionModal.vue'
+import { useCreateDesign } from '@/composables/useCreateDesign'
 
 interface Props {
   title?: string
   subtitle?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   title: 'Dashboard',
   subtitle: ''
 })
@@ -71,11 +79,14 @@ const emit = defineEmits<{
 
 const sidebarOpen = ref(false)
 
+// Use the create design composable
+const { showDesignSizeModal, openModal, closeModal } = useCreateDesign()
+
 const handleLogout = () => {
   emit('logout')
 }
 
 const handleCreateDesign = () => {
-  emit('createDesign')
+  openModal()
 }
 </script>
