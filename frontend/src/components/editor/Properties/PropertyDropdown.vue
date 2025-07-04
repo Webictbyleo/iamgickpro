@@ -4,7 +4,7 @@
       <span class="truncate">{{ selectedLabel }}</span>
       <ChevronDownIcon 
         v-if="showDropdownIcon" 
-        class="h-4 w-4 text-gray-400 ml-2" 
+        class="h-4 w-4 text-secondary-400 dark:text-secondary-500 ml-2" 
       />
     </ListboxButton>
 
@@ -16,7 +16,7 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg border border-gray-200 focus:outline-none">
+      <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-secondary-800 py-1 text-sm shadow-lg border border-secondary-200 dark:border-secondary-600 focus:outline-none">
         <ListboxOption
           v-for="option in options"
           :key="option.value"
@@ -25,7 +25,7 @@
         >
           <li :class="[
             'relative cursor-default select-none py-2 px-3',
-            active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100' : 'text-gray-900 dark:text-gray-100'
+            active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100' : 'text-secondary-900 dark:text-secondary-100'
           ]">
             <span :class="[
               'block truncate',
@@ -36,7 +36,7 @@
             
             <CheckIcon 
               v-if="selected"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 h-5 w-5 text-purple-600"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 h-5 w-5 text-primary-600 dark:text-primary-400"
             />
           </li>
         </ListboxOption>
@@ -84,7 +84,11 @@ const selectedLabel = computed(() => {
 })
 
 const buttonClasses = computed(() => [
-  'relative w-full cursor-default rounded-lg bg-white py-2 pl-3 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent',
+  'relative w-full cursor-default rounded-lg py-2 pl-3 text-left border transition-colors',
+  'bg-white dark:bg-secondary-800',
+  'border-secondary-300 dark:border-secondary-600',
+  'text-secondary-900 dark:text-secondary-100',
+  'focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400',
   props.showDropdownIcon ? 'pr-10' : 'pr-3',
   props.disabled ? 'opacity-50 cursor-not-allowed' : ''
 ])

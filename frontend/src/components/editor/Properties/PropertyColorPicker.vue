@@ -2,7 +2,7 @@
   <Popover v-slot="{ open }" class="relative">
     <PopoverButton
       :class="[
-        'w-8 h-8 rounded-lg border-2 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200',
+        'w-8 h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 transition-all duration-200',
         open ? 'ring-2 ring-primary-500' : ''
       ]"
       :style="{ backgroundColor: displayColor }"
@@ -18,7 +18,7 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <PopoverPanel class="absolute z-[9999] mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 popover-panel">
+      <PopoverPanel class="absolute z-[9999] mt-2 w-80 bg-white dark:bg-secondary-800 rounded-xl shadow-xl border border-secondary-200 dark:border-secondary-700 p-4 popover-panel">
         <!-- Color Picker Tabs -->
         <div class="flex space-x-1 mb-4">
           <button
@@ -29,7 +29,7 @@
               'flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
               activeTab === tab.id
                 ? 'bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-200'
-                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-secondary-600 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-700'
             ]"
           >
             {{ tab.label }}
@@ -41,21 +41,21 @@
           <!-- Color Preview and Controls -->
           <div class="flex items-center space-x-3">
             <div 
-              class="w-16 h-16 rounded-lg border-2 border-gray-300 dark:border-gray-600 flex-shrink-0"
+              class="w-16 h-16 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 flex-shrink-0"
               :style="{ backgroundColor: currentColor }"
             />
             <div class="flex-1 space-y-2">
               <!-- Hex Input with Color Picker -->
               <div>
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Hex Color</label>
+                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Hex Color</label>
                 <div class="flex">
-                  <span class="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm rounded-l-lg">#</span>
+                  <span class="inline-flex items-center px-3 py-2 border border-r-0 border-secondary-300 dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-700 text-secondary-500 dark:text-secondary-400 text-sm rounded-l-lg">#</span>
                   <input
                     ref="hexInput"
                     :value="hexValue"
                     @input="updateHex"
                     @click="triggerColorPicker"
-                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm cursor-pointer bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    class="flex-1 px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400 text-sm cursor-pointer bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100"
                     placeholder="000000"
                     maxlength="6"
                     title="Click to open system color picker"
@@ -73,7 +73,7 @@
               
               <!-- Opacity Slider -->
               <div v-if="allowAlpha">
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Opacity: {{ Math.round(opacity * 100) }}%</label>
+                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Opacity: {{ Math.round(opacity * 100) }}%</label>
                 <input
                   type="range"
                   min="0"
@@ -81,7 +81,7 @@
                   step="0.01"
                   :value="opacity"
                   @input="updateOpacity"
-                  class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                  class="w-full h-2 bg-secondary-200 dark:bg-secondary-600 rounded-lg appearance-none cursor-pointer slider"
                 />
               </div>
             </div>
@@ -89,7 +89,7 @@
 
           <!-- Color Harmony Generator -->
           <div v-if="colorHarmony.length > 0">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Color Harmony</label>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Color Harmony</label>
             <div class="flex space-x-2">
               <button
                 v-for="harmonyColor in colorHarmony"
@@ -97,7 +97,7 @@
                 @click="updateColor(harmonyColor)"
                 :class="[
                   'w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110',
-                  value === harmonyColor ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-gray-300 dark:border-gray-600'
+                  value === harmonyColor ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-secondary-300 dark:border-secondary-600'
                 ]"
                 :style="{ backgroundColor: harmonyColor }"
                 :title="getColorName(harmonyColor)"
@@ -107,7 +107,7 @@
 
           <!-- Preset Colors -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preset Colors</label>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Preset Colors</label>
             <div class="grid grid-cols-10 gap-2">
               <button
                 v-for="color in presetColors"

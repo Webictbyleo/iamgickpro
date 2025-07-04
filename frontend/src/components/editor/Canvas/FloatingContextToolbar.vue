@@ -2,7 +2,7 @@
   <Transition name="floating-toolbar">
     <div 
       v-if="shouldShow"
-      class="relative bg-white/95 dark:bg-gray-900/95 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-2.5 flex items-center space-x-3"
+      class="relative bg-secondary-50/95 dark:bg-secondary-800/95 rounded-xl shadow-xl border border-secondary-200 dark:border-secondary-600 px-4 py-2.5 flex items-center space-x-3 "
       :style="floatingStyle"
     >
       <!-- Context-specific toolbars based on selected layer or active tool -->
@@ -79,10 +79,10 @@
       <!-- Quick Actions for any selected layer -->
       <div 
         v-if="selectedLayer" 
-        class="flex items-center space-x-1 ml-3 pl-3 border-l border-gray-200/60 dark:border-gray-700/60"
+        class="flex items-center space-x-1 ml-3 pl-3 border-l border-secondary-200 dark:border-secondary-600"
       >
         <!-- Position Controls -->
-        <div class="flex items-center space-x-1 pr-2 mr-2 border-r border-gray-200/60 dark:border-gray-700/60">
+        <div class="flex items-center space-x-1 pr-2 mr-2 border-r border-secondary-200 dark:border-secondary-600">
           <IconDropdown
             :icon="PositionIcon"
             tooltip="Position presets"
@@ -90,40 +90,40 @@
             text="Position"
             width="w-48"
             :showChevron="false"
-            buttonClass="hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400"
+            buttonClass="hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-600 hover:text-primary-600 dark:text-secondary-300 dark:hover:text-primary-400"
             iconClass="w-3.5 h-3.5"
           >
             <template #default="{ close }">
               <div class="p-2">
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">Position Presets</div>
+                <div class="text-xs font-medium text-secondary-500 dark:text-secondary-400 mb-2 px-2">Position Presets</div>
                 <div class="grid grid-cols-3 gap-1 mb-3">
                   <!-- Top row -->
                   <button
                     @click="setPosition('top-left', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Top Left"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute top-0 left-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Left</span>
                   </button>
                   <button
                     @click="setPosition('top-center', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Top Center"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Center</span>
                   </button>
                   <button
                     @click="setPosition('top-right', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Top Right"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute top-0 right-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Right</span>
@@ -132,30 +132,30 @@
                   <!-- Middle row -->
                   <button
                     @click="setPosition('center-left', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Center Left"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute top-1/2 left-0 transform -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Left</span>
                   </button>
                   <button
                     @click="setPosition('center', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Center"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Center</span>
                   </button>
                   <button
                     @click="setPosition('center-right', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Center Right"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute top-1/2 right-0 transform -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Right</span>
@@ -164,30 +164,30 @@
                   <!-- Bottom row -->
                   <button
                     @click="setPosition('bottom-left', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Bottom Left"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute bottom-0 left-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Bottom Left</span>
                   </button>
                   <button
                     @click="setPosition('bottom-center', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Bottom Center"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Bottom Center</span>
                   </button>
                   <button
                     @click="setPosition('bottom-right', close)"
-                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col items-center space-y-1 text-xs text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Bottom Right"
                   >
-                    <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
                       <div class="absolute bottom-0 right-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Bottom Right</span>
@@ -195,8 +195,8 @@
                 </div>
                 
                 <!-- Current position display -->
-                <div class="border-t border-gray-200 dark:border-gray-600 pt-2 px-2">
-                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                <div class="border-t border-secondary-200 dark:border-secondary-600 pt-2 px-2">
+                  <div class="text-xs text-secondary-500 dark:text-secondary-400">
                     Current: X: {{ Math.round(selectedLayer.transform?.x || 0) }}, Y: {{ Math.round(selectedLayer.transform?.y || 0) }}
                   </div>
                 </div>
@@ -206,7 +206,7 @@
         </div>
 
         <!-- Transparency Control -->
-        <div class="flex items-center space-x-1 pr-2 mr-2 border-r border-gray-200/60 dark:border-gray-700/60">
+        <div class="flex items-center space-x-1 pr-2 mr-2 border-r border-secondary-200 dark:border-secondary-600">
           <IconDropdown
             :icon="TransparencyIcon"
             tooltip="Layer transparency"
@@ -214,14 +214,14 @@
             text="Opacity"
             width="w-48"
             :showChevron="false"
-            buttonClass="hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400"
+            buttonClass="hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-600 hover:text-primary-600 dark:text-secondary-300 dark:hover:text-primary-400"
             iconClass="w-3.5 h-3.5"
           >
             <template #default="{ close }">
               <div class="p-4">
                 <div class="flex items-center justify-between mb-3">
-                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Layer Opacity</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ Math.round((selectedLayer.transform.opacity || 1) * 100) }}%</span>
+                  <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Layer Opacity</span>
+                  <span class="text-xs text-secondary-500 dark:text-secondary-400">{{ Math.round((selectedLayer.transform.opacity || 1) * 100) }}%</span>
                 </div>
                 
                 <PropertySlider
@@ -246,14 +246,14 @@
                       'px-2 py-1 text-xs rounded border transition-colors',
                       Math.abs((selectedLayer.transform.opacity || 1) - preset.value) < 0.01
                         ? 'bg-primary-100 dark:bg-primary-900/30 border-primary-300 dark:border-primary-600 text-primary-700 dark:text-primary-300'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                        : 'bg-secondary-50 dark:bg-secondary-700 border-secondary-200 dark:border-secondary-600 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-600'
                     ]"
                   >
                     {{ preset.label }}
                   </button>
                 </div>
                 
-                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <div class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
                   Drag slider or click presets to adjust layer transparency
                 </div>
               </div>
@@ -266,7 +266,7 @@
           size="xs"
           @click="$emit('duplicate-layer')"
           tooltip="Duplicate (Ctrl+D)"
-          class="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-gray-600 hover:text-secondary-600 dark:text-gray-300 dark:hover:text-secondary-400"
+          class="hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-600 hover:text-primary-600 dark:text-secondary-300 dark:hover:text-primary-400"
         >
           <DocumentDuplicateIcon class="w-3.5 h-3.5" />
         </ModernButton>
@@ -276,7 +276,7 @@
           size="xs"
           @click="$emit('delete-layer')"
           tooltip="Delete (Del)"
-          class="hover:bg-danger-50 dark:hover:bg-danger-900/20 text-gray-600 hover:text-danger-600 dark:text-gray-300 dark:hover:text-danger-400"
+          class="hover:bg-danger-100 dark:hover:bg-danger-900/30 text-secondary-600 hover:text-danger-600 dark:text-secondary-300 dark:hover:text-danger-400"
         >
           <TrashIcon class="w-3.5 h-3.5" />
         </ModernButton>
@@ -287,8 +287,8 @@
           @click="$emit('lock-layer')"
           :tooltip="selectedLayer.locked ? 'Unlock Layer' : 'Lock Layer'"
           :class="selectedLayer.locked 
-            ? 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/20' 
-            : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200'"
+            ? 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-100 dark:bg-amber-900/30' 
+            : 'hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-600 hover:text-secondary-700 dark:text-secondary-300 dark:hover:text-secondary-200'"
         >
           <component 
             :is="selectedLayer.locked ? LockClosedIcon : LockOpenIcon" 
@@ -442,12 +442,12 @@ const setPosition = (preset: string, closeCallback: () => void) => {
 }
 
 /* Subtle border glow effect */
-.border-gray-200\/50 {
+.border-secondary-200\/50 {
   border-color: rgba(229, 231, 235, 0.5);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
-.dark .border-gray-700\/50 {
+.dark .border-secondary-700\/50 {
   border-color: rgba(55, 65, 81, 0.5);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }

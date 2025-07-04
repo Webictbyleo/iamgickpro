@@ -11,8 +11,11 @@
         @focus="handleFocus"
         @keydown="handleKeydown"
         :class="[
-          'w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
-          'appearance-none', // Remove browser styling
+          'w-full px-3 py-1.5 text-sm border rounded text-left transition-colors appearance-none',
+          'border-secondary-300 dark:border-secondary-600',
+          'bg-white dark:bg-secondary-800',
+          'text-secondary-900 dark:text-secondary-100',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400',
           { 'pr-8': unit }, // Add padding for unit suffix
           inputClass
         ]"
@@ -23,7 +26,7 @@
       <!-- Unit Suffix -->
       <span 
         v-if="unit" 
-        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 pointer-events-none select-none"
+        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-secondary-400 dark:text-secondary-500 pointer-events-none select-none"
       >
         {{ unit }}
       </span>
@@ -33,29 +36,29 @@
         v-if="presets && presets.length > 0"
         @click="toggleDropdown"
         @mousedown.prevent
-        class="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+        class="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
         :class="{ 'right-8': unit }"
         type="button"
       >
-        <ChevronDownIcon class="w-3 h-3 text-gray-400 dark:text-gray-500" />
+        <ChevronDownIcon class="w-3 h-3 text-secondary-400 dark:text-secondary-500" />
       </button>
     </div>
 
     <!-- Presets Dropdown -->
     <div 
       v-if="showDropdown && presets && presets.length > 0"
-      class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
+      class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-600 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
     >
       <div class="py-1">
         <button
           v-for="preset in presets"
           :key="preset.value"
           @click="selectPreset(preset.value)"
-          class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between text-gray-900 dark:text-gray-100"
+          class="w-full px-3 py-2 text-left text-sm hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors flex items-center justify-between text-secondary-900 dark:text-secondary-100"
           :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400': preset.value === internalValue }"
         >
           <span>{{ preset.label }}</span>
-          <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatDisplayValue(preset.value) }}{{ unit }}</span>
+          <span class="text-xs text-secondary-400 dark:text-secondary-500">{{ formatDisplayValue(preset.value) }}{{ unit }}</span>
         </button>
       </div>
     </div>

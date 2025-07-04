@@ -16,14 +16,17 @@
         :key="layer.id"
         :data-layer-id="layer.id"
         :draggable="true"
+        tabindex="0"
         @dragstart="handleDragStart($event, layer)"
         @dragover="handleDragOver"
         @drop="handleDrop($event, layer)"
+        @keydown.enter="handleLayerKeyboard(layer, $event)"
+        @keydown.space.prevent="handleLayerKeyboard(layer, $event)"
         :class="[
-          'group flex items-center p-2 rounded border transition-all duration-200 cursor-pointer',
+          'group flex items-center p-2 rounded border transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-900 relative',
           isSelected(layer.id)
-            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800'
-            : 'bg-white dark:bg-secondary-800 border-secondary-200 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-500',
+            ? 'bg-secondary-50 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-500 shadow-sm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary-500 dark:before:bg-primary-400 before:rounded-l'
+            : 'bg-primary-50/50 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-500',
           draggedLayer?.id === layer.id ? 'opacity-50' : ''
         ]"
         @click="handleLayerClick(layer, $event)"
@@ -32,7 +35,12 @@
         <div class="flex-shrink-0 mr-2">
           <component
             :is="getLayerIcon(layer.type)"
-            class="w-4 h-4 text-secondary-600 dark:text-secondary-400"
+            :class="[
+              'w-4 h-4',
+              isSelected(layer.id)
+                ? 'text-secondary-700 dark:text-secondary-300'
+                : 'text-secondary-600 dark:text-secondary-400'
+            ]"
           />
         </div>
         
@@ -44,18 +52,33 @@
             @blur="finishEditingLayerName"
             @keydown.enter="finishEditingLayerName"
             @keydown.escape="cancelEditingLayerName"
-            class="w-full text-sm bg-transparent border-none outline-none text-secondary-900 dark:text-secondary-100"
+            :class="[
+              'w-full text-sm bg-transparent border-none outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-1 dark:focus:ring-offset-secondary-800 rounded px-1',
+              isSelected(layer.id)
+                ? 'text-secondary-900 dark:text-secondary-100'
+                : 'text-secondary-900 dark:text-secondary-100'
+            ]"
             @click.stop
             ref="editInput"
           />
           <div
             v-else
-            class="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate"
+            :class="[
+              'text-sm font-medium truncate',
+              isSelected(layer.id)
+                ? 'text-secondary-900 dark:text-secondary-100'
+                : 'text-secondary-900 dark:text-secondary-100'
+            ]"
             @dblclick="startEditingLayerName(layer)"
           >
             {{ layer.name }}
           </div>
-          <div class="text-xs text-secondary-500 dark:text-secondary-400">
+          <div :class="[
+            'text-xs',
+            isSelected(layer.id)
+              ? 'text-secondary-600 dark:text-secondary-400'
+              : 'text-secondary-500 dark:text-secondary-400'
+          ]">
             {{ getLayerTypeLabel(layer.type) }}
           </div>
         </div>
@@ -105,11 +128,10 @@
             </template>
             
             <template #default="{ close }">
-              <div class="py-1">
-                <button
-                  @click="handleDuplicate(layer.id, close)"
-                  class="w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 flex items-center transition-colors"
-                >
+              <button
+                @click="handleDuplicate(layer.id, close)"
+                class="w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:bg-secondary-100 dark:focus:bg-secondary-700 flex items-center transition-colors focus:outline-none"
+              >
                   <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
@@ -118,7 +140,7 @@
                 
                 <button
                   @click="startEditingLayerName(layer, close)"
-                  class="w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 flex items-center transition-colors"
+                  class="w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:bg-secondary-100 dark:focus:bg-secondary-700 flex items-center transition-colors focus:outline-none"
                 >
                   <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -126,18 +148,17 @@
                   Rename
                 </button>
                 
-                <div class="border-t border-secondary-100 dark:border-secondary-600 my-1"></div>
+                <div class="border-t border-secondary-200 dark:border-secondary-600 my-1"></div>
                 
                 <button
                   @click="handleDelete(layer.id, close)"
-                  class="w-full text-left px-4 py-2 text-sm text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 flex items-center transition-colors"
+                  class="w-full text-left px-4 py-2 text-sm text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 focus:bg-danger-50 dark:focus:bg-danger-900/20 flex items-center transition-colors focus:outline-none"
                 >
                   <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Delete
                 </button>
-              </div>
             </template>
           </BaseDropdown>
         </div>
@@ -284,6 +305,18 @@ const handleLayerClick = (layer: Layer, event: MouseEvent) => {
   emit('select-layer', layer.id, event)
 }
 
+const handleLayerKeyboard = (layer: Layer, event: KeyboardEvent) => {
+  // Create a synthetic MouseEvent for consistency with the emit signature
+  const syntheticEvent = new MouseEvent('click', {
+    bubbles: true,
+    cancelable: true,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
+    shiftKey: event.shiftKey
+  })
+  emit('select-layer', layer.id, syntheticEvent)
+}
+
 const startEditingLayerName = async (layer: Layer, closeDropdown?: () => void) => {
   closeDropdown?.()
   editingLayerId.value = layer.id
@@ -381,19 +414,19 @@ onUnmounted(() => {
 <style scoped>
 /* Highlight effect for auto-scrolled layers */
 .layer-scroll-highlight {
-  box-shadow: 0 0 0 2px rgb(147 197 253 / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-primary-300) / 0.5);
   animation: pulse-highlight 1.5s ease-in-out;
 }
 
 @keyframes pulse-highlight {
   0% {
-    box-shadow: 0 0 0 2px rgb(147 197 253 / 0);
+    box-shadow: 0 0 0 2px rgb(var(--color-primary-300) / 0);
   }
   50% {
-    box-shadow: 0 0 0 2px rgb(147 197 253 / 0.75);
+    box-shadow: 0 0 0 2px rgb(var(--color-primary-300) / 0.75);
   }
   100% {
-    box-shadow: 0 0 0 2px rgb(147 197 253 / 0);
+    box-shadow: 0 0 0 2px rgb(var(--color-primary-300) / 0);
   }
 }
 

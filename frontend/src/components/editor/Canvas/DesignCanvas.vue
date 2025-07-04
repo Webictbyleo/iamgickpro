@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full bg-gray-100 relative flex flex-col">
+  <div class="h-full bg-secondary-100 dark:bg-secondary-900 relative flex flex-col">
     <!-- Fixed Floating Context Toolbar Area - No Layout Shift -->
-    <div class="border-b px-4 flex items-center justify-center flex-shrink-0 relative h-14">
+    <div class="border-b border-secondary-200 dark:border-secondary-700 px-4 flex items-center justify-center flex-shrink-0 relative h-14">
       <!-- Floating Context Toolbar -->
       <Transition
         enter-active-class="transition-all duration-200 ease-out"
@@ -50,24 +50,24 @@
           <!-- Rulers (optional) -->
           <div v-if="showRulers" class="absolute -top-6 -left-6 right-0 bottom-0 pointer-events-none">
             <!-- Horizontal ruler -->
-            <div class="absolute top-0 left-6 right-0 h-6 bg-gray-100 border-b">
+            <div class="absolute top-0 left-6 right-0 h-6 bg-secondary-50 dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-600">
               <div class="relative h-full">
                 <div
                   v-for="mark in horizontalMarks"
                   :key="mark.position"
-                  class="absolute top-0 border-l border-gray-400"
+                  class="absolute top-0 border-l border-secondary-400 dark:border-secondary-500"
                   :style="{ left: mark.position + 'px', height: mark.size + 'px' }"
                 />
               </div>
             </div>
             
             <!-- Vertical ruler -->
-            <div class="absolute top-6 left-0 bottom-0 w-6 bg-gray-100 border-r">
+            <div class="absolute top-6 left-0 bottom-0 w-6 bg-secondary-50 dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-600">
               <div class="relative w-full h-full">
                 <div
                   v-for="mark in verticalMarks"
                   :key="mark.position"
-                  class="absolute left-0 border-t border-gray-400"
+                  class="absolute left-0 border-t border-secondary-400 dark:border-secondary-500"
                   :style="{ top: mark.position + 'px', width: mark.size + 'px' }"
                 />
               </div>
@@ -137,12 +137,14 @@ const gridStyle = computed(() => {
   if (!props.showGrid) return {}
   
   const gridSize = 20 * props.zoomLevel
+  // Use CSS custom properties for theme-aware grid colors
   return {
     backgroundImage: `
-      linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)
+      linear-gradient(to right, var(--color-secondary-300) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-secondary-300) 1px, transparent 1px)
     `,
-    backgroundSize: `${gridSize}px ${gridSize}px`
+    backgroundSize: `${gridSize}px ${gridSize}px`,
+    opacity: '0.5'
   }
 })
 
