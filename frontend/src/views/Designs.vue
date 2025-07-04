@@ -122,79 +122,16 @@
                     </svg>
                   </div>
                   
-                  <!-- Dropdown Menu -->
+                  <!-- Context Dropdown Menu -->
                   <div class="absolute top-2 right-2">
-                    <div class="relative">
-                      <button
-                        class="w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-all opacity-0 group-hover:opacity-100"
-                        @click.stop="toggleDropdown(design.id)"
-                      >
-                        <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                          <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
-                          <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
-                        </svg>
-                      </button>
-                      
-                      <!-- Dropdown Menu -->
-                      <div 
-                        :class="[
-                          'absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 transition-all duration-200 z-10',
-                          dropdownOpen === design.id ? 'opacity-100 visible' : 'opacity-0 invisible'
-                        ]"
-                      >
-                        <button
-                          @click.stop="editDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
-                        >
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                          </svg>
-                          Edit Design
-                        </button>
-                        <button
-                          @click.stop="duplicateDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
-                        >
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                          </svg>
-                          Duplicate
-                        </button>
-                        <button
-                          @click.stop="downloadDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
-                        >
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                          </svg>
-                          Export
-                        </button>
-                        
-                        <!-- Admin Convert to Template -->
-                        <button
-                          v-if="authStore.isAdmin"
-                          @click.stop="openConvertModal(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center"
-                        >
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                          </svg>
-                          Convert to Template
-                        </button>
-                        
-                        <hr class="my-1 border-gray-100 dark:border-gray-600">
-                        <button
-                          @click.stop="deleteDesign(design); closeDropdown()"
-                          class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
-                        >
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                          </svg>
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                    <ContextDropdown
+                      :actions="getDesignActions(design)"
+                      :title="design.name"
+                      :subtitle="`${design.width}×${design.height} • ${getFileTypeLabel(design)}`"
+                      position="auto"
+                      trigger-class="opacity-0 group-hover:opacity-100"
+                      @action="handleDropdownAction($event, design)"
+                    />
                   </div>
                 </div>
                 
@@ -327,10 +264,21 @@ import { useDesignStore } from '@/stores/design'
 import { useAuthStore } from '@/stores/auth'
 import type { Design, DesignSearchParams, SearchResult } from '@/types'
 import { designAPI } from '@/services/api'
+import type { DropdownAction } from '@/components/common/ContextDropdown.vue'
+
+// Icons
+import { 
+  PencilIcon, 
+  DocumentDuplicateIcon, 
+  ArrowDownTrayIcon, 
+  RectangleStackIcon, 
+  TrashIcon 
+} from '@heroicons/vue/24/outline'
 
 // Components
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import ContextDropdown from '@/components/common/ContextDropdown.vue'
 import CompactDesignExportModal from '@/components/modals/CompactDesignExportModal.vue'
 import ConvertToTemplateModal from '@/components/modals/ConvertToTemplateModal.vue'
 
@@ -350,7 +298,7 @@ const totalResults = ref(0)
 const designs = ref<Design[]>([])
 
 // Dropdown state
-const dropdownOpen = ref<string | null>(null)
+
 
 // Export modal state
 const isExportModalOpen = ref(false)
@@ -449,13 +397,79 @@ const handleSearch = (query: string) => {
   searchQuery.value = query
 }
 
-// Dropdown methods
-const toggleDropdown = (designId: string) => {
-  dropdownOpen.value = dropdownOpen.value === designId ? null : designId
+// New Context Dropdown Methods
+const getDesignActions = (design: Design): DropdownAction[] => {
+  const actions: DropdownAction[] = [
+    {
+      key: 'edit',
+      label: 'Edit Design',
+      icon: PencilIcon,
+      variant: 'default'
+    },
+    {
+      key: 'duplicate',
+      label: 'Duplicate',
+      icon: DocumentDuplicateIcon,
+      variant: 'default'
+    },
+    {
+      key: 'export',
+      label: 'Export',
+      icon: ArrowDownTrayIcon,
+      variant: 'default'
+    }
+  ]
+
+  // Add admin-only actions
+  if (authStore.isAdmin) {
+    actions.push({
+      key: 'convert',
+      label: 'Convert to Template',
+      icon: RectangleStackIcon,
+      variant: 'primary'
+    })
+  }
+
+  // Add delete action with separator
+  actions.push({
+    key: 'delete',
+    label: 'Delete',
+    icon: TrashIcon,
+    variant: 'danger',
+    separator: true
+  })
+
+  return actions
 }
 
-const closeDropdown = () => {
-  dropdownOpen.value = null
+const getFileTypeLabel = (design: Design): string => {
+  // Create a label based on dimensions
+  const aspectRatio = design.width / design.height
+  if (aspectRatio > 1.5) return 'Landscape'
+  if (aspectRatio < 0.75) return 'Portrait'
+  return 'Square'
+}
+
+const handleDropdownAction = (action: DropdownAction, design: Design) => {
+  switch (action.key) {
+    case 'edit':
+      editDesign(design)
+      break
+    case 'duplicate':
+      duplicateDesign(design)
+      break
+    case 'export':
+      downloadDesign(design)
+      break
+    case 'convert':
+      openConvertModal(design)
+      break
+    case 'delete':
+      deleteDesign(design)
+      break
+    default:
+      console.warn('Unknown action:', action.key)
+  }
 }
 
 const openDesign = (design: Design) => {

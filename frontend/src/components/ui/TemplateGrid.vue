@@ -58,7 +58,7 @@
             <div v-if="showAdminControls" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 @click.stop="handleDeleteTemplate(template)"
-                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow-lg transition-colors"
+                class="bg-danger-600 hover:bg-danger-700 dark:bg-danger-600 dark:hover:bg-danger-700 text-white p-2 rounded-lg shadow-lg transition-colors"
                 title="Delete Template"
               >
                 <component :is="icons.trash" class="w-4 h-4" />
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowRightIcon } from '@heroicons/vue/24/outline'
+import { ArrowRightIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import type { Template } from '@/types'
 import { useIcons } from '@/composables/useIconsNew'
 

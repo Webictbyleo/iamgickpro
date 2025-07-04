@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white/95 dark:bg-gray-800/95 border-b border-gray-200/50 dark:border-gray-700/50 px-4 sm:px-6 lg:px-8 shadow-sm backdrop-blur-xl">
+  <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 lg:px-8 shadow-sm sticky top-0 z-40">
     <div class="flex items-center justify-between h-16">
       <!-- Left side -->
       <div class="flex items-center">
@@ -43,7 +43,7 @@
               leave-from-class="transform scale-100 opacity-100 translate-y-0"
               leave-to-class="transform scale-95 opacity-0 translate-y-1"
             >
-              <MenuItems class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl py-2 z-[9999]">
+              <MenuItems class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[99999]">
                 <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                   <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Help & Support</h3>
                 </div>
@@ -55,12 +55,12 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       :class="[
-                        active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
-                        'group flex w-full items-center px-4 py-3 text-sm font-medium'
+                        active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
+                        'group flex w-full items-center px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                       ]"
                     >
-                      <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mr-3">
-                        <component :is="icons.document" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-3">
+                        <component :is="icons.document" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <div class="text-left">
                         <div class="font-semibold">Documentation</div>
@@ -75,12 +75,12 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       :class="[
-                        active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
-                        'group flex w-full items-center px-4 py-3 text-sm font-medium'
+                        active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
+                        'group flex w-full items-center px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                       ]"
                     >
-                      <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mr-3">
-                        <component :is="icons.chat" class="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-3">
+                        <component :is="icons.chat" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <div class="text-left">
                         <div class="font-semibold">Live Chat</div>
@@ -95,12 +95,12 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       :class="[
-                        active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
-                        'group flex w-full items-center px-4 py-3 text-sm font-medium'
+                        active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
+                        'group flex w-full items-center px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                       ]"
                     >
-                      <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mr-3">
-                        <component :is="icons.video" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-3">
+                        <component :is="icons.video" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <div class="text-left">
                         <div class="font-semibold">Video Tutorials</div>
@@ -117,7 +117,7 @@
         <!-- Create new design button -->
         <Menu as="div" class="relative">
           <MenuButton
-            class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            class="inline-flex items-center px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
           >
             <component :is="icons.plus" class="w-4 h-4 mr-2" />
             <span class="hidden sm:inline">Create</span>
@@ -131,17 +131,17 @@
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl py-1 z-[9999]">
+            <MenuItems class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[99999]">
               <MenuItem v-slot="{ active }">
                 <button
                   @click="showDesignSizeModal = true"
                   :class="[
-                    active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
-                    'group flex w-full items-center px-4 py-3 text-sm font-medium'
+                    active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
+                    'group flex w-full items-center px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                   ]"
                 >
-                  <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-lg flex items-center justify-center mr-3">
-                    <component :is="icons.plus" class="w-4 h-4 text-white" />
+                  <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mr-3">
+                    <component :is="icons.plus" class="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div class="text-left">
                     <div class="font-semibold">New Design</div>
@@ -153,12 +153,12 @@
                 <button
                   @click="handleCreateDesign('template')"
                   :class="[
-                    active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200',
-                    'group flex w-full items-center px-4 py-3 text-sm font-medium'
+                    active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
+                    'group flex w-full items-center px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                   ]"
                 >
-                  <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-                    <component :is="icons.template" class="w-4 h-4 text-white" />
+                  <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-3">
+                    <component :is="icons.template" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                   </div>
                   <div class="text-left">
                     <div class="font-semibold">From Template</div>
@@ -181,7 +181,7 @@
         <Menu as="div" class="relative">
           <MenuButton class="flex items-center p-1.5 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 group">
             <div class="relative">
-              <div class="w-9 h-9 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+              <div class="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
                 <span class="text-white font-semibold text-sm">{{ userInitials }}</span>
               </div>
               <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
@@ -198,11 +198,11 @@
             leave-from-class="transform scale-100 opacity-100"
             leave-to-class="transform scale-95 opacity-0"
           >
-            <MenuItems class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl py-2 z-[9999]">
+            <MenuItems class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[99999]">
               <!-- User info -->
               <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                 <div class="flex items-center">
-                  <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center">
+                  <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
                     <span class="text-white font-semibold">{{ userInitials }}</span>
                   </div>
                   <div class="ml-3 flex-1 min-w-0">
@@ -222,7 +222,7 @@
                     to="/settings/profile"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                     ]"
                   >
                     <component :is="icons.user" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
@@ -234,7 +234,7 @@
                     to="/settings/subscription"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                     ]"
                   >
                     <component :is="icons.creditCard" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
@@ -246,7 +246,7 @@
                     to="/settings/general"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                     ]"
                   >
                     <component :is="icons.cog" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
@@ -258,7 +258,7 @@
                     to="/settings/integrations"
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                     ]"
                   >
                     <component :is="icons.puzzle" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
@@ -269,7 +269,7 @@
                   <button
                     :class="[
                       active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium'
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                     ]"
                   >
                     <component :is="icons.help" class="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
@@ -282,8 +282,8 @@
                     @click="handleLogout"
                     :disabled="isLoggingOut"
                     :class="[
-                      active ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' : 'text-red-600 dark:text-red-400',
-                      'group flex w-full items-center px-4 py-2 text-sm font-medium disabled:opacity-50'
+                      active ? 'bg-danger-50 dark:bg-danger-900/20 text-danger-700 dark:text-danger-400' : 'text-danger-600 dark:text-danger-400',
+                      'group flex w-full items-center px-4 py-2 text-sm font-medium disabled:opacity-50 hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-colors'
                     ]"
                   >
                     <component :is="isLoggingOut ? icons.refresh : icons.logout" class="w-4 h-4 mr-3" :class="{ 'animate-spin': isLoggingOut }" />

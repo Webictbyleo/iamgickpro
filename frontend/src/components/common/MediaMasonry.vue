@@ -5,7 +5,6 @@
       :key="file.id"
       class="masonry-item relative group border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 transform hover:scale-[1.02]"
       :class="{ 'ring-2 ring-primary-500 dark:ring-primary-400 border-primary-500 dark:border-primary-400': selectedItems.has(file.id) }"
-      :ref="(el: any) => setDropdownRef(file.id, el as HTMLElement)"
     >
       <!-- Selection Checkbox -->
       <div v-if="showSelection" class="absolute top-3 left-3 z-10 transition-opacity duration-200" 
@@ -38,20 +37,16 @@
         </label>
       </div>
 
-      <!-- Dropdown Menu -->
+      <!-- Context Dropdown Menu -->
       <div class="absolute top-2 right-2 z-20">
-        <button
-          :ref="(el: any) => setDropdownButtonRef(file.id, el as HTMLElement)"
-          class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
-          :class="dropdownOpen === file.id ? 'opacity-100 bg-white shadow-md' : 'opacity-0 group-hover:opacity-100'"
-          @click.stop="toggleDropdown(file.id)"
-        >
-          <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-            <path d="M10 4a2 2 0 100-4 2 2 0 000 4z"/>
-            <path d="M10 20a2 2 0 100-4 2 2 0 000 4z"/>
-          </svg>
-        </button>
+        <ContextDropdown
+          :actions="actions"
+          :title="file.name"
+          :subtitle="getFileSubtitle(file)"
+          position="auto"
+          trigger-class="opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800"
+          @action="handleDropdownAction($event, file)"
+        />
       </div>
 
       <!-- Media Preview -->
@@ -104,61 +99,18 @@
       </div>
     </div>
   </div>
-
-  <!-- Floating Dropdown Portal -->
-  <Teleport to="body">
-    <div 
-      v-if="dropdownOpen && getFileById(dropdownOpen)"
-      class="fixed w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-[9999] transition-all duration-200 ease-out"
-      :style="dropdownPosition"
-      @click.stop
-    >
-      <!-- File Info Section -->
-      <div class="px-4 py-3 border-b border-gray-100">
-        <p class="text-sm font-medium text-gray-900 truncate">{{ getFileById(dropdownOpen)?.name }}</p>
-        <div class="flex items-center justify-between mt-1 text-xs text-gray-500">
-          <span v-if="getFileById(dropdownOpen)?.size">{{ formatFileSize(getFileById(dropdownOpen)!.size) }}</span>
-          <span v-if="getFileById(dropdownOpen)?.width && getFileById(dropdownOpen)?.height">
-            {{ getFileById(dropdownOpen)?.width }}×{{ getFileById(dropdownOpen)?.height }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="py-1">
-        <button
-          v-for="action in actions"
-          :key="action.key"
-          @click="handleAction(action.key, getFileById(dropdownOpen)!)"
-          :class="[
-            'w-full px-4 py-2 text-left text-sm flex items-center transition-colors',
-            action.key === 'delete' 
-              ? 'text-red-600 hover:bg-red-50' 
-              : 'text-gray-700 hover:bg-gray-50'
-          ]"
-        >
-          <component :is="action.icon" class="w-4 h-4 mr-2" />
-          {{ action.label }}
-        </button>
-      </div>
-    </div>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import type { MediaItem } from '@/types'
-
-interface MediaAction {
-  key: string
-  label: string
-  icon: any
-}
+import ContextDropdown from '@/components/common/ContextDropdown.vue'
+import type { DropdownAction } from '@/components/common/ContextDropdown.vue'
 
 interface Props {
   mediaItems: MediaItem[]
   selectedItems?: Set<string>
-  actions?: MediaAction[]
+  actions?: DropdownAction[]
   columns?: number
   gap?: number
   showSelection?: boolean
@@ -181,138 +133,30 @@ const emit = defineEmits<{
 }>()
 
 // Local state
-const dropdownOpen = ref<string | null>(null)
-const dropdownRefs = ref<Record<string, HTMLElement | null>>({})
-const dropdownButtonRefs = ref<Record<string, HTMLElement | null>>({})
 const imageErrors = ref<Set<string>>(new Set())
-const dropdownPosition = ref({ top: '0px', left: '0px' })
 
 // Methods
 const toggleSelection = (itemId: string) => {
   emit('toggleSelection', itemId)
 }
 
-const toggleDropdown = (itemId: string) => {
-  if (dropdownOpen.value === itemId) {
-    dropdownOpen.value = null
-  } else {
-    dropdownOpen.value = itemId
-    nextTick(() => {
-      positionDropdown(itemId)
-    })
-  }
+const handleDropdownAction = (action: DropdownAction, file: MediaItem) => {
+  emit('action', action.key, file)
 }
 
-const closeDropdown = () => {
-  dropdownOpen.value = null
-}
-
-const handleAction = (action: string, file: MediaItem) => {
-  emit('action', action, file)
-  closeDropdown()
-}
-
-const setDropdownRef = (id: string, el: HTMLElement | null) => {
-  if (el) dropdownRefs.value[id] = el
-}
-
-const setDropdownButtonRef = (id: string, el: HTMLElement | null) => {
-  if (el) dropdownButtonRefs.value[id] = el
-}
-
-const positionDropdown = (itemId: string) => {
-  const buttonEl = dropdownButtonRefs.value[itemId]
-  if (!buttonEl) return
-
-  const calculatePosition = () => {
-    const buttonRect = buttonEl.getBoundingClientRect()
-    const windowWidth = window.innerWidth
-    const windowHeight = window.innerHeight
-    const dropdownWidth = 192 // w-48 = 192px
-    
-    // Calculate horizontal position
-    let left = buttonRect.right - dropdownWidth
-    if (left < 16) {
-      left = buttonRect.left
-    }
-    if (left + dropdownWidth > windowWidth - 16) {
-      left = windowWidth - dropdownWidth - 16
-    }
-    
-    // Calculate vertical position
-    let top = buttonRect.bottom + 4
-    
-    // Get actual dropdown element to check height
-    const dropdownEl = document.querySelector('.fixed.w-48.bg-white.rounded-lg.shadow-xl') as HTMLElement
-    if (dropdownEl) {
-      const actualHeight = dropdownEl.offsetHeight
-      
-      // Position above if dropdown would overflow below
-      if (top + actualHeight > windowHeight - 16) {
-        top = buttonRect.top - actualHeight - 4
-      }
-      
-      // Ensure dropdown doesn't go above viewport
-      if (top < 16) {
-        top = Math.min(buttonRect.bottom + 4, windowHeight - actualHeight - 16)
-      }
-    } else {
-      // Fallback estimation when dropdown element is not yet available
-      const estimatedHeight = 150
-      if (top + estimatedHeight > windowHeight - 16) {
-        top = buttonRect.top - estimatedHeight - 4
-      }
-    }
-    
-    return {
-      top: `${Math.round(top)}px`,
-      left: `${Math.round(left)}px`
-    }
-  }
-
-  // Set initial position
-  dropdownPosition.value = calculatePosition()
+const getFileSubtitle = (file: MediaItem): string => {
+  const parts = []
   
-  // Fine-tune position after dropdown is rendered
-  nextTick(() => {
-    dropdownPosition.value = calculatePosition()
-  })
-}
-
-const getFileById = (id: string | null): MediaItem | null => {
-  if (!id) return null
-  return props.mediaItems.find(file => file.id === id) || null
-}
-
-// Handle click outside to close dropdown
-const handleClickOutside = (event: Event) => {
-  if (!dropdownOpen.value) return
-  
-  const target = event.target as HTMLElement
-  const openId = dropdownOpen.value
-  const buttonEl = dropdownButtonRefs.value[openId]
-  
-  // Check if click is on the dropdown button
-  if (buttonEl && buttonEl.contains(target)) {
-    return
+  if (file.size) {
+    parts.push(formatFileSize(file.size))
   }
   
-  // Check if click is on the floating dropdown itself
-  const dropdownEl = document.querySelector('.fixed.w-48.bg-white.rounded-lg.shadow-xl')
-  if (dropdownEl && dropdownEl.contains(target)) {
-    return
+  if (file.width && file.height) {
+    parts.push(`${file.width}×${file.height}`)
   }
   
-  // Close dropdown if clicked outside
-  closeDropdown()
+  return parts.join(' • ')
 }
-
-onMounted(() => {
-  document.addEventListener('mousedown', handleClickOutside)
-})
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleClickOutside)
-})
 
 // Smart media item styling that maintains image proportions 
 const getMediaItemStyle = (file: MediaItem) => {

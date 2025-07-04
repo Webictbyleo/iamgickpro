@@ -1,19 +1,19 @@
 <template>
-  <!-- Modern Sidebar with Glass Morphism -->
-  <div class="h-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 shadow-xl">
+  <!-- Modern Sidebar with proper theme compliance -->
+  <div class="h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-lg">
     <div class="flex flex-col h-full">
       <!-- Logo Section -->
-      <div class="flex items-center flex-shrink-0 px-6 py-5 border-b border-gray-200/50 dark:border-gray-700/50">
+      <div class="flex items-center flex-shrink-0 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
         <router-link to="/" class="flex items-center group">
           <div class="relative">
-            <div class="w-10 h-10 bg-gradient-to-br from-primary-600 via-secondary-600 to-primary-600 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-200">
+            <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-200">
               <span class="text-white font-bold text-lg">{{ appInitials }}</span>
             </div>
-            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-800"></div>
+            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
           </div>
           <div class="ml-3">
-            <span class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">{{ appTitle }}</span>
-            <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ appSubtitle }}</div>
+            <span class="text-xl font-bold text-gray-900 dark:text-white">{{ appTitle }}</span>
+            <div class="text-xs text-gray-600 dark:text-gray-400 font-medium">{{ appSubtitle }}</div>
           </div>
         </router-link>
       </div>
@@ -24,7 +24,7 @@
         <div class="flex-1 overflow-y-auto px-4 py-6 space-y-4">
           <!-- Main Navigation -->
           <nav class="space-y-2">
-            <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">
+            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-3 mb-2">
               Main Menu
             </div>
           
@@ -79,7 +79,7 @@
             </div>
             <span>YouTube Thumbnails</span>
             <div class="ml-auto flex items-center space-x-2">
-              <span class="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+              <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                 NEW
               </span>
               <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -104,7 +104,7 @@
 
         <!-- Admin Section (only visible to admin users) -->
         <nav v-if="isAdmin" class="space-y-2">
-          <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-3 mb-2">
             Administration
           </div>
           
@@ -150,7 +150,7 @@
 
         <!-- Settings Section -->
         <nav class="space-y-2">
-          <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-3 mb-2">
             Settings
           </div>
           
@@ -171,20 +171,20 @@
       </div>
 
       <!-- User Profile Section -->
-        <div class="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-4">
+        <div class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4">
         <div class="flex items-center">
           <div class="relative">
-            <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-full flex items-center justify-center shadow-lg">
+            <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center shadow-lg">
               <span class="text-white font-semibold text-sm">{{ userInitials }}</span>
             </div>
-            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-400 border-2 border-white dark:border-gray-900 rounded-full"></div>
           </div>
           <div class="ml-3 flex-1 min-w-0">
             <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ userName }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ userEmail }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ userEmail }}</p>
           </div>
           <Menu as="div" class="relative">
-            <MenuButton class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <MenuButton class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               <component :is="icons.moreVertical" class="w-5 h-5" />
             </MenuButton>
             <Transition
@@ -200,8 +200,8 @@
                   <router-link
                     to="/settings/profile"
                     :class="[
-                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm'
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300',
+                      'group flex w-full items-center px-4 py-2 text-sm transition-colors'
                     ]"
                   >
                     <component :is="icons.user" class="w-4 h-4 mr-3" />
@@ -212,8 +212,8 @@
                   <router-link
                     to="/settings/subscription"
                     :class="[
-                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm'
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300',
+                      'group flex w-full items-center px-4 py-2 text-sm transition-colors'
                     ]"
                   >
                     <component :is="icons.creditCard" class="w-4 h-4 mr-3" />
@@ -224,8 +224,8 @@
                   <router-link
                     to="/settings/general"
                     :class="[
-                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm'
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300',
+                      'group flex w-full items-center px-4 py-2 text-sm transition-colors'
                     ]"
                   >
                     <component :is="icons.cog" class="w-4 h-4 mr-3" />
@@ -235,21 +235,21 @@
                 <MenuItem v-slot="{ active }">
                   <button
                     :class="[
-                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200',
-                      'group flex w-full items-center px-4 py-2 text-sm'
+                      active ? 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300',
+                      'group flex w-full items-center px-4 py-2 text-sm transition-colors'
                     ]"
                   >
                     <component :is="icons.help" class="w-4 h-4 mr-3" />
                     Help & Support
                   </button>
                 </MenuItem>
-                <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
                 <MenuItem v-slot="{ active }">
                   <button
                     @click="$emit('logout')"
                     :class="[
                       active ? 'bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-400' : 'text-red-700 dark:text-red-400',
-                      'group flex w-full items-center px-4 py-2 text-sm'
+                      'group flex w-full items-center px-4 py-2 text-sm transition-colors'
                     ]"
                   >
                     <component :is="icons.logout" class="w-4 h-4 mr-3" />
@@ -270,6 +270,7 @@ import { computed } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { useIcons } from '@/composables/useIcons'
 import {
   HomeIcon,
@@ -357,48 +358,48 @@ const isActive = (path: string): boolean => {
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.75rem;
-  color: rgb(75 85 99);
+  color: rgb(55 65 81); /* gray-700 */
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
 }
 
 .dark .sidebar-nav-item {
-  color: rgb(156 163 175);
+  color: rgb(209 213 219); /* gray-300 */
 }
 
 .sidebar-nav-item:hover {
-  color: rgb(17 24 39);
-  background-color: rgb(249 250 251 / 0.8);
+  color: rgb(17 24 39); /* gray-900 */
+  background-color: rgb(243 244 246); /* gray-100 */
 }
 
 .dark .sidebar-nav-item:hover {
-  color: rgb(255 255 255);
-  background-color: rgb(55 65 81 / 0.8);
+  color: rgb(255 255 255); /* white */
+  background-color: rgb(31 41 55); /* gray-800 */
 }
 
 .sidebar-nav-item-active {
-  background: linear-gradient(to right, rgb(var(--primary-500) / 0.1), rgb(var(--secondary-500) / 0.1));
-  color: rgb(var(--primary-600));
-  border-right: 2px solid rgb(var(--primary-500));
+  background-color: rgb(243 244 246); /* gray-100 */
+  color: rgb(var(--color-primary-600)); /* Use theme primary color */
+  border-right: 2px solid rgb(var(--color-primary-600));
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
 .dark .sidebar-nav-item-active {
-  background: linear-gradient(to right, rgb(var(--primary-500) / 0.2), rgb(var(--secondary-500) / 0.2));
-  color: rgb(var(--primary-400));
-  border-right: 2px solid rgb(var(--primary-400));
+  background-color: rgb(31 41 55); /* gray-800 */
+  color: rgb(var(--color-primary-400)); /* Lighter primary for dark mode */
+  border-right: 2px solid rgb(var(--color-primary-400));
 }
 
 .sidebar-nav-item-active::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, rgb(var(--primary-500) / 0.05), rgb(var(--secondary-500) / 0.05));
+  background-color: rgb(var(--color-primary-50)); /* Light theme primary tint */
   z-index: -10;
 }
 
 .dark .sidebar-nav-item-active::before {
-  background: linear-gradient(to right, rgb(var(--primary-500) / 0.1), rgb(var(--secondary-500) / 0.1));
+  background-color: rgb(var(--color-primary-900) / 0.3); /* Dark theme primary tint */
 }
 </style>
