@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-secondary-900 border-b border-secondary-200 dark:border-secondary-700 flex-shrink-0 shadow-sm">
+  <div class="bg-white dark:bg-secondary-950 border-b border-secondary-200 dark:border-secondary-700 flex-shrink-0 shadow-sm">
     <!-- Light Modern Toolbar to complement dark sidebar -->
     <div class="flex items-center h-16 px-6">
       <!-- Left Section - Logo & Design Name -->

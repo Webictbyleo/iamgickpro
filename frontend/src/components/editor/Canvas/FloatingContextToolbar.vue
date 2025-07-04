@@ -2,7 +2,7 @@
   <Transition name="floating-toolbar">
     <div 
       v-if="shouldShow"
-      class="relative bg-secondary-50/95 dark:bg-secondary-800/95 rounded-xl shadow-xl border border-secondary-200 dark:border-secondary-600 px-4 py-2.5 flex items-center space-x-3 "
+      class="relative bg-white dark:bg-secondary-800 rounded-xl shadow-2xl border border-secondary-200 dark:border-secondary-600 px-4 py-2.5 flex items-center space-x-3"
       :style="floatingStyle"
     >
       <!-- Context-specific toolbars based on selected layer or active tool -->
@@ -103,7 +103,7 @@
                     class="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 flex flex-col items-center space-y-1 text-xs text-secondary-600 dark:text-secondary-300"
                     title="Top Left"
                   >
-                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-600 rounded relative">
+                    <div class="w-6 h-6 border border-secondary-300 dark:border-secondary-500 rounded relative">
                       <div class="absolute top-0 left-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Left</span>

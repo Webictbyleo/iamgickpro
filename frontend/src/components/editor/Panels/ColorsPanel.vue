@@ -1,5 +1,7 @@
 <template>
-  <div class="p-4 space-y-6">
+  <div class="h-full flex flex-col bg-secondary-50 dark:bg-secondary-800">
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-6">
     <!-- Color Picker Section -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
@@ -88,7 +90,7 @@
             min="0"
             max="1"
             step="0.01"
-            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full h-2 bg-secondary-200 dark:bg-secondary-700 rounded-lg appearance-none cursor-pointer slider focus:outline-none focus:ring-2 focus:ring-primary-500"
             @input="handleOpacityChange"
           />
         </div>
@@ -98,10 +100,10 @@
     <!-- Color Palette -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Color Palette</h3>
+        <h3 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">Color Palette</h3>
         <button
           @click="showPaletteOptions = !showPaletteOptions"
-          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          class="px-3 py-1.5 text-xs font-medium text-secondary-600 dark:text-secondary-400 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -113,7 +115,7 @@
       <div v-if="showPaletteOptions" class="space-y-2">
         <select
           v-model="selectedPalette"
-          class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100"
           @change="loadPalette"
         >
           <option value="material">Material Design</option>
@@ -132,7 +134,7 @@
           :key="index"
           @click="selectPaletteColor(color)"
           :style="{ backgroundColor: color }"
-          class="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400 transition-colors shadow-sm hover:shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="w-8 h-8 rounded-lg border border-secondary-200 dark:border-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-400 transition-colors shadow-sm hover:shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
           :title="color"
         ></button>
       </div>
@@ -140,7 +142,7 @@
       <!-- Add to Palette Button -->
       <button
         @click="addToPalette(currentColor)"
-        class="w-full px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-md hover:border-gray-400 dark:hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        class="w-full px-3 py-2 text-sm font-medium text-secondary-600 dark:text-secondary-400 border border-dashed border-secondary-300 dark:border-secondary-600 rounded-md hover:border-secondary-400 dark:hover:border-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors"
       >
         <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -151,14 +153,14 @@
 
     <!-- Recent Colors -->
     <div v-if="recentColors.length > 0" class="space-y-4">
-      <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Recent Colors</h3>
+      <h3 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">Recent Colors</h3>
       <div class="grid grid-cols-8 gap-2">
         <button
           v-for="(color, index) in recentColors.slice(0, 16)"
           :key="index"
           @click="selectRecentColor(color)"
           :style="{ backgroundColor: color }"
-          class="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400 transition-colors shadow-sm hover:shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="w-8 h-8 rounded-lg border border-secondary-200 dark:border-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-400 transition-colors shadow-sm hover:shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
           :title="color"
         ></button>
       </div>
@@ -167,14 +169,14 @@
     <!-- Gradient Builder -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Gradients</h3>
+        <h3 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">Gradients</h3>
         <button
           @click="showGradientBuilder = !showGradientBuilder"
           :class="[
             'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
             showGradientBuilder
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-800/50'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              : 'bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-700'
           ]"
         >
           {{ showGradientBuilder ? 'Hide' : 'Show' }} Builder
@@ -186,14 +188,14 @@
         <!-- Gradient Type Selector -->
         <div>
           <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">Gradient Type</label>
-          <div class="flex space-x-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <div class="flex space-x-1 p-1 bg-secondary-100 dark:bg-secondary-800 rounded-lg">
             <button
               @click="gradientType = 'linear'"
               :class="[
                 'flex-1 py-1 px-2 text-xs font-medium rounded-md transition-colors',
                 gradientType === 'linear'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  ? 'bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 shadow-sm'
+                  : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-200'
               ]"
             >
               Linear
@@ -203,8 +205,8 @@
               :class="[
                 'flex-1 py-1 px-2 text-xs font-medium rounded-md transition-colors',
                 gradientType === 'radial'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-secondary-900 shadow-sm'
+                  : 'text-secondary-600 hover:text-secondary-900'
               ]"
             >
               Radial
@@ -225,7 +227,7 @@
                 :value="colorStop.color"
                 @input="updateGradientStop(index, 'color', ($event.target as HTMLInputElement).value)"
                 type="color"
-                class="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                class="w-8 h-8 rounded border border-secondary-300 cursor-pointer"
               />
               <input
                 :value="Math.round(colorStop.stop * 100)"
@@ -234,9 +236,9 @@
                 min="0"
                 max="100"
                 step="1"
-                class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                class="flex-1 h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer"
               />
-              <span class="text-xs text-gray-500 w-8">{{ Math.round(colorStop.stop * 100) }}%</span>
+              <span class="text-xs text-secondary-500 w-8">{{ Math.round(colorStop.stop * 100) }}%</span>
               <button
                 v-if="gradientStops.length > 2"
                 @click="removeGradientStop(index)"
@@ -248,7 +250,7 @@
             <button
               v-if="gradientStops.length < 5"
               @click="addGradientStop"
-              class="w-full py-1 text-xs text-blue-600 hover:text-blue-800 border border-dashed border-gray-300 rounded transition-colors"
+              class="w-full py-1 text-xs text-blue-600 hover:text-blue-800 border border-dashed border-secondary-300 rounded transition-colors"
             >
               + Add Color
             </button>
@@ -267,7 +269,7 @@
             min="0"
             max="360"
             step="1"
-            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            class="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer"
           />
         </div>
 
@@ -283,9 +285,9 @@
                 min="0"
                 max="100"
                 step="1"
-                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                class="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer"
               />
-              <div class="text-xs text-gray-500 text-center mt-1">{{ Math.round(radialCenterX * 100) }}%</div>
+              <div class="text-xs text-secondary-500 text-center mt-1">{{ Math.round(radialCenterX * 100) }}%</div>
             </div>
             <div>
               <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Center Y</label>
@@ -296,9 +298,9 @@
                 min="0"
                 max="100"
                 step="1"
-                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                class="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer"
               />
-              <div class="text-xs text-gray-500 text-center mt-1">{{ Math.round(radialCenterY * 100) }}%</div>
+              <div class="text-xs text-secondary-500 text-center mt-1">{{ Math.round(radialCenterY * 100) }}%</div>
             </div>
           </div>
           <div>
@@ -312,14 +314,14 @@
               min="10"
               max="150"
               step="1"
-              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              class="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer"
             />
           </div>
         </div>
 
         <!-- Gradient Preview -->
         <div
-          class="w-full h-12 border border-gray-200 rounded-lg"
+          class="w-full h-12 border border-secondary-200 rounded-lg"
           :style="{ background: currentGradient }"
         ></div>
 
@@ -338,11 +340,11 @@
           v-for="(gradient, index) in presetGradients"
           :key="index"
           @click="applyPresetGradient(gradient)"
-          class="w-full h-10 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors shadow-sm hover:shadow-md cursor-pointer"
+          class="w-full h-10 rounded-lg border border-secondary-200 hover:border-secondary-400 transition-colors shadow-sm hover:shadow-md cursor-pointer"
           :style="{ background: gradient.css }"
           :title="gradient.name"
         ></button>
-      </div>
+      </div>      </div>
     </div>
   </div>
 </template>

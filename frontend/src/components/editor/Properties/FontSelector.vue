@@ -4,14 +4,14 @@
       <div class="relative">
         <!-- Font Selection Button -->
         <ListboxButton 
-          class="group relative w-full cursor-pointer rounded-lg bg-white dark:bg-gray-800 py-2 pl-4 pr-10 text-left border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm"
+          class="group relative w-full cursor-pointer rounded-lg bg-white dark:bg-secondary-800 py-2 pl-4 pr-10 text-left border border-secondary-300 dark:border-secondary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-secondary-400 dark:hover:border-secondary-500 hover:shadow-sm"
         >
           <div class="flex items-center space-x-3">
             <!-- Loading Indicator -->
             <div class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
               <div v-if="isCurrentFontLoading" class="w-3 h-3 border border-primary-300 border-t-primary-600 rounded-full animate-spin"></div>
               <CheckIcon v-else-if="isCurrentFontLoaded" class="w-3 h-3 text-success-600" />
-              <div v-else class="w-3 h-3 border border-gray-300 dark:border-gray-600 rounded-full"></div>
+              <div v-else class="w-3 h-3 border border-secondary-300 dark:border-secondary-600 rounded-full"></div>
             </div>
             
             <!-- Font Preview -->

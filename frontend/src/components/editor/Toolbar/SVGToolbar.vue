@@ -2,8 +2,8 @@
   <div class="flex items-center space-x-4">
     <!-- SVG Source Display -->
     <div class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-max">SVG:</label>
-      <span class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 min-w-[120px] text-gray-800 dark:text-gray-200 font-medium truncate">
+      <label class="text-sm font-medium text-secondary-700 dark:text-secondary-300 min-w-max">SVG:</label>
+      <span class="px-3 py-1 text-sm bg-secondary-100 dark:bg-secondary-700 rounded-md border border-secondary-200 dark:border-secondary-600 min-w-[120px] text-secondary-800 dark:text-secondary-200 font-medium truncate">
         {{ getSvgLabel(src) }}
       </span>
     </div>
@@ -16,14 +16,14 @@
       text="SVG Styling"
       width="w-72"
       :showChevron="false"
-      buttonClass="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-gray-600 hover:text-secondary-600 dark:text-gray-300 dark:hover:text-secondary-400"
+      buttonClass="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-secondary-600 hover:text-secondary-600 dark:text-secondary-300 dark:hover:text-secondary-400"
       iconClass="w-3.5 h-3.5"
     >
       <template #default="{ close }">
         <div class="p-4 space-y-4">
-          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          <div class="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3">
             SVG Element Styling
-            <div class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">
+            <div class="text-xs text-secondary-500 dark:text-secondary-400 font-normal mt-1">
               Customize colors and strokes for all SVG elements
             </div>
           </div>
@@ -31,7 +31,7 @@
           <!-- Global Fill Color -->
           <div class="space-y-3">
             <div class="flex items-center justify-between space-x-3">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Fill Color:</span>
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">Fill Color:</span>
               <PropertyColorPicker
                 :value="globalFillColor"
                 @update="updateGlobalFill"
@@ -40,7 +40,7 @@
             
             <!-- Global Stroke -->
             <div class="flex items-center justify-between space-x-3">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Stroke Color:</span>
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">Stroke Color:</span>
               <PropertyColorPicker
                 :value="globalStrokeColor"
                 @update="updateGlobalStroke"
@@ -49,7 +49,7 @@
             
             <!-- Global Stroke Width -->
             <div class="flex items-center justify-between space-x-3">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Stroke Width:</span>
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">Stroke Width:</span>
               <PropertyNumberInput
                 :value="globalStrokeWidth"
                 @update:value="updateGlobalStrokeWidth"
@@ -65,12 +65,12 @@
           </div>
 
           <!-- Path Count Info -->
-          <div v-if="pathCount > 0" class="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+          <div v-if="pathCount > 0" class="text-xs text-secondary-500 dark:text-secondary-400 pt-2 border-t border-secondary-200 dark:border-secondary-600">
             Styling {{ pathCount }} element{{ pathCount === 1 ? '' : 's' }}
           </div>
 
           <!-- Reset Section -->
-          <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+          <div class="border-t border-secondary-200 dark:border-secondary-600 pt-4">
             <ModernButton
               variant="outline"
               size="sm"

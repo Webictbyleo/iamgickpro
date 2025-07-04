@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 space-y-6 bg-white dark:bg-gray-900">
+  <div class="p-6 space-y-6 bg-white dark:bg-secondary-900">
     <!-- Header with Enhanced Visual -->
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
@@ -12,19 +12,19 @@
           </div>
         </div>
         <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Background Remover</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400">AI-powered background removal</p>
+          <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Background Remover</h3>
+          <p class="text-sm text-secondary-500 dark:text-secondary-400">AI-powered background removal</p>
         </div>
       </div>
     </div>
 
     <!-- Current Layer Info -->
-    <div v-if="currentLayer" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div v-if="currentLayer" class="p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700">
       <div class="flex items-center space-x-3">
-        <PhotoIcon class="w-5 h-5 text-gray-400" />
+        <PhotoIcon class="w-5 h-5 text-secondary-400" />
         <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ currentLayer.name }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ layerType }} layer • ID: {{ layerId }}</p>
+          <p class="text-sm font-medium text-secondary-900 dark:text-white">{{ currentLayer.name }}</p>
+          <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ layerType }} layer • ID: {{ layerId }}</p>
         </div>
       </div>
     </div>
@@ -47,7 +47,7 @@
       <!-- Remove Background Section -->
       <div v-if="canRemove" class="space-y-4">
         <div class="flex items-center justify-between">
-          <h4 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+          <h4 class="text-lg font-semibold text-secondary-900 dark:text-white flex items-center space-x-2">
             <ScissorsIcon class="w-5 h-5 text-purple-600" />
             <span>Remove Background</span>
           </h4>
@@ -55,19 +55,19 @@
         
         <!-- Feature Highlights -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center space-x-2 text-sm text-secondary-600 dark:text-secondary-400">
             <CheckCircleIcon class="w-4 h-4 text-green-500" />
             <span>AI-powered precision</span>
           </div>
-          <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center space-x-2 text-sm text-secondary-600 dark:text-secondary-400">
             <CheckCircleIcon class="w-4 h-4 text-green-500" />
             <span>Original backup kept</span>
           </div>
-          <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center space-x-2 text-sm text-secondary-600 dark:text-secondary-400">
             <CheckCircleIcon class="w-4 h-4 text-green-500" />
             <span>Transparent background</span>
           </div>
-          <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center space-x-2 text-sm text-secondary-600 dark:text-secondary-400">
             <CheckCircleIcon class="w-4 h-4 text-green-500" />
             <span>Multiple formats</span>
           </div>
@@ -77,12 +77,12 @@
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                 Output Size
               </label>
               <select
                 v-model="removeOptions.size"
-                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
               >
                 <option value="auto">Auto (Recommended)</option>
                 <option value="preview">Preview (640×640)</option>
@@ -95,12 +95,12 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                 Output Format
               </label>
               <select
                 v-model="removeOptions.format"
-                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
               >
                 <option value="png">PNG (Transparent)</option>
                 <option value="jpg">JPG (White background)</option>
@@ -118,20 +118,20 @@
           </button>
 
           <!-- Advanced Settings -->
-          <div v-if="showAdvanced" class="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div v-if="showAdvanced" class="space-y-4 p-4 bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-800 dark:to-secondary-700 rounded-lg border border-secondary-200 dark:border-secondary-600">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-3">
                 <input
                   id="add-shadow"
                   v-model="removeOptions.add_shadow"
                   type="checkbox"
-                  class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  class="w-4 h-4 text-purple-600 bg-secondary-100 border-secondary-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-secondary-800 focus:ring-2 dark:bg-secondary-700 dark:border-secondary-600"
                 >
-                <label for="add-shadow" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label for="add-shadow" class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                   Add natural shadow
                 </label>
               </div>
-              <InformationCircleIcon class="w-4 h-4 text-gray-400" title="Adds a subtle shadow effect to the subject" />
+              <InformationCircleIcon class="w-4 h-4 text-secondary-400" title="Adds a subtle shadow effect to the subject" />
             </div>
             
             <div class="flex items-center justify-between">
@@ -140,13 +140,13 @@
                   id="semitransparency"
                   v-model="removeOptions.semitransparency"
                   type="checkbox"
-                  class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  class="w-4 h-4 text-purple-600 bg-secondary-100 border-secondary-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-secondary-800 focus:ring-2 dark:bg-secondary-700 dark:border-secondary-600"
                 >
-                <label for="semitransparency" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label for="semitransparency" class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                   Preserve semitransparency
                 </label>
               </div>
-              <InformationCircleIcon class="w-4 h-4 text-gray-400" title="Keeps semi-transparent areas like glass or hair" />
+              <InformationCircleIcon class="w-4 h-4 text-secondary-400" title="Keeps semi-transparent areas like glass or hair" />
             </div>
           </div>
         </div>
@@ -164,9 +164,9 @@
 
       <!-- Restore Background Section -->
       <div v-if="canRestore" class="space-y-4">
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="border-t border-secondary-200 dark:border-secondary-700 pt-6">
           <div class="flex items-center justify-between mb-4">
-            <h4 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+            <h4 class="text-lg font-semibold text-secondary-900 dark:text-white flex items-center space-x-2">
               <ArrowUturnLeftIcon class="w-5 h-5 text-blue-600" />
               <span>Restore Original</span>
             </h4>
@@ -198,15 +198,15 @@
 
       <!-- Preview Section -->
       <div v-if="hasPreview" class="space-y-4">
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="border-t border-secondary-200 dark:border-secondary-700 pt-6">
           <div class="flex items-center justify-between mb-4">
-            <h4 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+            <h4 class="text-lg font-semibold text-secondary-900 dark:text-white flex items-center space-x-2">
               <PhotoIcon class="w-5 h-5 text-green-600" />
               <span>Preview</span>
             </h4>
           </div>
           
-          <div class="relative bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 shadow-inner">
+          <div class="relative bg-gradient-to-br from-secondary-100 to-secondary-200 dark:from-secondary-800 dark:to-secondary-700 rounded-xl overflow-hidden border border-secondary-200 dark:border-secondary-600 shadow-inner">
             <!-- Checkerboard pattern for transparency -->
             <div class="absolute inset-0 opacity-20 checkerboard-pattern"></div>
             <img
@@ -217,7 +217,7 @@
           </div>
           
           <div class="mt-3 text-center">
-            <p class="text-xs text-gray-500 dark:text-gray-400">
+            <p class="text-xs text-secondary-500 dark:text-secondary-400">
               Preview shows transparency with checkerboard pattern
             </p>
           </div>
@@ -235,8 +235,8 @@
           </div>
         </div>
         <div class="space-y-1">
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ processingMessage }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">This may take a few seconds...</p>
+          <p class="text-sm font-medium text-secondary-900 dark:text-white">{{ processingMessage }}</p>
+          <p class="text-xs text-secondary-500 dark:text-secondary-400">This may take a few seconds...</p>
         </div>
       </div>
     </div>
@@ -271,8 +271,8 @@
     </div>
 
     <!-- Enhanced Credits Information -->
-    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-      <div class="flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+    <div class="border-t border-secondary-200 dark:border-secondary-700 pt-6">
+      <div class="flex items-center justify-center space-x-2 text-xs text-secondary-500 dark:text-secondary-400">
         <InformationCircleIcon class="w-4 h-4" />
         <span>Each background removal uses 1 API credit • Configure API key in settings</span>
       </div>
@@ -371,7 +371,7 @@ const statusClasses = computed(() => {
     case 'background_original':
       return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
     default:
-      return 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200'
+      return 'bg-secondary-50 dark:bg-secondary-800/50 border-secondary-200 dark:border-secondary-700 text-secondary-800 dark:text-secondary-200'
   }
 })
 
@@ -528,19 +528,19 @@ onMounted(async () => {
 <style scoped>
 .checkerboard-pattern {
   background-image: 
-    linear-gradient(45deg, #ccc 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #ccc 75%), 
-    linear-gradient(45deg, #ccc 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #ccc 75%);
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%);
   background-size: 20px 20px;
   background-position: 0 0, 0 0, 10px 10px, 10px 10px;
 }
 
 .dark .checkerboard-pattern {
   background-image: 
-    linear-gradient(45deg, #444 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #444 75%), 
-    linear-gradient(45deg, #444 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #444 75%);
+    linear-gradient(45deg, #4a5568 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #4a5568 75%), 
+    linear-gradient(45deg, #4a5568 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #4a5568 75%);
 }
 </style>
