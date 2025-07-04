@@ -4,19 +4,19 @@
       <div class="relative">
         <!-- Font Selection Button -->
         <ListboxButton 
-          class="group relative w-full cursor-pointer rounded-lg bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 hover:shadow-sm"
+          class="group relative w-full cursor-pointer rounded-lg bg-white dark:bg-gray-800 py-2 pl-4 pr-10 text-left border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm"
         >
           <div class="flex items-center space-x-3">
             <!-- Loading Indicator -->
             <div class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
-              <div v-if="isCurrentFontLoading" class="w-3 h-3 border border-purple-300 border-t-purple-600 rounded-full animate-spin"></div>
-              <CheckIcon v-else-if="isCurrentFontLoaded" class="w-3 h-3 text-green-600" />
-              <div v-else class="w-3 h-3 border border-gray-300 rounded-full"></div>
+              <div v-if="isCurrentFontLoading" class="w-3 h-3 border border-primary-300 border-t-primary-600 rounded-full animate-spin"></div>
+              <CheckIcon v-else-if="isCurrentFontLoaded" class="w-3 h-3 text-success-600" />
+              <div v-else class="w-3 h-3 border border-gray-300 dark:border-gray-600 rounded-full"></div>
             </div>
             
             <!-- Font Preview -->
             <span 
-              class="block truncate text-gray-900"
+              class="block truncate text-gray-900 dark:text-gray-100"
               :style="{ fontFamily: currentFontStack }"
             >
               {{ value || placeholder }}
@@ -24,7 +24,7 @@
           </div>
           
           <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-            <ChevronDownIcon class="h-5 w-5 text-gray-400" />
+            <ChevronDownIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
           </span>
         </ListboxButton>
 
@@ -37,16 +37,16 @@
           leave-from-class="translate-y-0 opacity-100"
           leave-to-class="translate-y-1 opacity-0"
         >
-          <ListboxOptions class="absolute z-20 mt-2 max-h-96 w-80 min-w-full rounded-xl bg-white shadow-2xl border border-gray-200 focus:outline-none overflow-hidden">
+          <ListboxOptions class="absolute z-20 mt-2 max-h-96 w-80 min-w-full rounded-xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 focus:outline-none overflow-hidden">
             <!-- Search -->
-            <div class="sticky top-0 z-10 bg-white border-b border-gray-100 p-3">
+            <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-600 p-3">
               <div class="relative">
-                <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Search fonts..."
-                  class="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  class="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -58,8 +58,8 @@
               @scroll="handleScroll"
             >
               <!-- Popular Fonts -->
-              <div v-if="!searchQuery && popularFonts.length > 0" class="bg-purple-50 border-b border-gray-100">
-                <div class="px-4 py-2 text-xs font-semibold text-purple-700 uppercase tracking-wide">
+              <div v-if="!searchQuery && popularFonts.length > 0" class="border-b border-gray-100 dark:border-gray-600">
+                <div class="px-4 py-3 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                   ⭐ Popular Fonts
                 </div>
                 <ListboxOption
@@ -71,8 +71,8 @@
                   <li 
                     :data-font-family="font.family"
                     :class="[
-                      'relative cursor-pointer select-none py-3 px-4 transition-colors',
-                      active ? 'bg-purple-100' : 'hover:bg-gray-50'
+                      'group relative cursor-pointer select-none py-3 px-4 border-b border-gray-50 dark:border-gray-600 last:border-b-0 transition-all duration-200',
+                      selected ? 'bg-primary-100 dark:bg-primary-800 ring-2 ring-primary-300 dark:ring-primary-600' : active ? 'bg-gray-100 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
                     ]"
                   >
                     <FontItem 
@@ -86,7 +86,7 @@
 
               <!-- All Fonts -->
               <div v-if="displayedFonts.length > 0">
-                <div v-if="!searchQuery && popularFonts.length > 0" class="px-4 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide bg-gray-50">
+                <div v-if="!searchQuery && popularFonts.length > 0" class="px-4 py-3 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                   All Fonts
                 </div>
                 <ListboxOption
@@ -98,8 +98,8 @@
                   <li 
                     :data-font-family="font.family"
                     :class="[
-                      'relative cursor-pointer select-none py-3 px-4 border-b border-gray-50 last:border-b-0 transition-colors',
-                      active ? 'bg-purple-50' : 'hover:bg-gray-50'
+                      'group relative cursor-pointer select-none py-3 px-4 border-b border-gray-50 dark:border-gray-600 last:border-b-0 transition-all duration-200',
+                      selected ? 'bg-primary-100 dark:bg-primary-800 ring-2 ring-primary-300 dark:ring-primary-600' : active ? 'bg-gray-100 dark:bg-gray-600' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
                     ]"
                   >
                     <FontItem 
@@ -113,13 +113,13 @@
 
               <!-- Loading More -->
               <div v-if="isLoadingMore && hasMoreFontsToLoad" class="p-4 text-center">
-                <div class="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
-                <div class="text-sm text-gray-500 mt-2">Loading more fonts...</div>
+                <div class="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto"></div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading more fonts...</div>
               </div>
 
               <!-- No Results -->
               <div v-if="searchQuery && displayedFonts.length === 0 && !isLoadingMore" class="p-8 text-center">
-                <div class="text-gray-500">No fonts found matching "{{ searchQuery }}"</div>
+                <div class="text-gray-500 dark:text-gray-400">No fonts found matching "{{ searchQuery }}"</div>
               </div>
             </div>
           </ListboxOptions>

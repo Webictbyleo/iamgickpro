@@ -10,7 +10,7 @@
       class="slider"
       @input="handleInput"
     />
-    <span class="text-xs text-gray-500 min-w-[2rem] text-center">
+    <span class="text-xs text-gray-500 dark:text-gray-400 min-w-[2rem] text-center">
       {{ displayValue }}
     </span>
   </div>
@@ -64,28 +64,55 @@ const displayValue = computed(() => {
 .slider {
   width: 100%;
   height: 0.5rem;
-  background-color: #e5e7eb;
   border-radius: 0.5rem;
   appearance: none;
   cursor: pointer;
+}
+
+/* Light mode styles */
+.slider {
+  background-color: #e5e7eb; /* gray-300 */
+}
+
+/* Dark mode styles */
+:global(.dark) .slider {
+  background-color: #4b5563; /* gray-600 */
 }
 
 .slider::-webkit-slider-thumb {
   appearance: none;
   width: 1rem;
   height: 1rem;
-  background-color: #9333ea;
   border-radius: 50%;
   cursor: pointer;
+}
+
+/* Light mode thumb */
+.slider::-webkit-slider-thumb {
+  background-color: #3b82f6; /* blue-500 as fallback for primary */
+}
+
+/* Dark mode thumb */
+:global(.dark) .slider::-webkit-slider-thumb {
+  background-color: #60a5fa; /* blue-400 as fallback for primary */
 }
 
 .slider::-moz-range-thumb {
   width: 1rem;
   height: 1rem;
-  background-color: #9333ea;
   border-radius: 50%;
   cursor: pointer;
   border: 0;
+}
+
+/* Light mode thumb - Firefox */
+.slider::-moz-range-thumb {
+  background-color: #3b82f6; /* blue-500 as fallback for primary */
+}
+
+/* Dark mode thumb - Firefox */
+:global(.dark) .slider::-moz-range-thumb {
+  background-color: #60a5fa; /* blue-400 as fallback for primary */
 }
 
 .slider:disabled {

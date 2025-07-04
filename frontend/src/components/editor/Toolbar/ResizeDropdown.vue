@@ -34,7 +34,7 @@
                     @click="handleResize(size.width, size.height)"
                     :class="[
                       'flex flex-col items-center p-3 rounded-xl text-sm w-full transition-all duration-200',
-                      active ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 shadow-lg ring-1 ring-violet-200 dark:ring-violet-700' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-lg ring-1 ring-primary-200 dark:ring-primary-700' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     ]"
                   >
                     <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 rounded border-2 border-gray-300 dark:border-gray-500 mb-2 flex items-center justify-center">

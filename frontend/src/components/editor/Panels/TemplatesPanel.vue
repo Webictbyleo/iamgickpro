@@ -1,13 +1,13 @@
 <template>
   <div class="h-full flex flex-col">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-200 bg-white">
-      <h3 class="text-lg font-semibold text-gray-900">Design Templates</h3>
-      <p class="text-sm text-gray-600 mt-1">Choose from professional templates to get started</p>
+    <div class="p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Design Templates</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Choose from professional templates to get started</p>
     </div>
 
     <!-- Enhanced Search and Filter Section -->
-    <div class="p-4 border-b border-gray-200 bg-white">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
       <div class="space-y-3">
         <!-- Enhanced Search Input -->
         <div class="relative">
@@ -15,15 +15,15 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search templates..."
-            class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+            class="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
             @keydown.enter="handleSearch"
           />
-          <MagnifyingGlassIcon class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+          <MagnifyingGlassIcon class="absolute left-3 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
           <!-- Clear search button -->
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
+            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -32,9 +32,9 @@
         </div>
 
         <!-- Search Stats -->
-        <div v-if="searchQuery && !isLoading" class="flex items-center justify-between text-xs text-gray-500">
+        <div v-if="searchQuery && !isLoading" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>{{ templates.length }} results for "{{ searchQuery }}"</span>
-          <span v-if="templates.length > 0" class="text-purple-600">{{ templates.length }} templates found</span>
+          <span v-if="templates.length > 0" class="text-primary-600 dark:text-primary-400">{{ templates.length }} templates found</span>
         </div>
 
         <!-- Enhanced Category Filter -->
@@ -42,7 +42,7 @@
           <select
             v-model="selectedCategory"
             :disabled="isLoadingCategories"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">{{ isLoadingCategories ? 'Loading categories...' : 'All Categories' }}</option>
             <option 
@@ -55,10 +55,10 @@
           </select>
           <!-- Custom dropdown arrow -->
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg v-if="!isLoadingCategories" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="!isLoadingCategories" class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
-            <div v-else class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+            <div v-else class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 dark:border-primary-400"></div>
           </div>
         </div>
       </div>
@@ -69,16 +69,16 @@
       <!-- Enhanced Loading State -->
       <div v-if="isLoading" class="space-y-4">
         <div class="text-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p class="mt-2 text-sm text-gray-600">Loading templates...</p>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto"></div>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Loading templates...</p>
         </div>
         <!-- Loading skeleton -->
         <div class="px-4">
           <div class="grid grid-cols-2 gap-3">
             <div v-for="i in 6" :key="i" class="space-y-2">
-              <div class="aspect-video bg-gray-200 rounded-lg animate-pulse"></div>
-              <div class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-              <div class="h-2 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+              <div class="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
+              <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
             </div>
           </div>
         </div>
@@ -86,13 +86,13 @@
 
       <!-- Enhanced Empty State -->
       <div v-else-if="templates.length === 0" class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
           {{ searchQuery || selectedCategory ? 'No templates found' : 'No templates available' }}
         </h3>
-        <p class="mt-1 text-sm text-gray-500">
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {{ searchQuery || selectedCategory 
             ? 'Try adjusting your search terms or category filter' 
             : 'Templates will appear here when available'
@@ -101,7 +101,7 @@
         <button
           v-if="searchQuery || selectedCategory"
           @click="clearAllFilters"
-          class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+          class="mt-4 px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors text-sm"
         >
           Clear Filters
         </button>
@@ -111,13 +111,13 @@
       <div v-else class="p-4 space-y-4">
         <!-- Results header -->
         <div v-if="searchQuery || selectedCategory" class="flex items-center justify-between">
-          <h4 class="text-sm font-medium text-gray-900">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">
             {{ templates.length }} Templates
-            <span v-if="selectedCategory" class="text-gray-500">in {{ selectedCategory.replace('-', ' ') }}</span>
+            <span v-if="selectedCategory" class="text-gray-500 dark:text-gray-400">in {{ selectedCategory.replace('-', ' ') }}</span>
           </h4>
           <button
             @click="clearAllFilters"
-            class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             Clear filters
           </button>
@@ -134,7 +134,7 @@
             ]"
             @click="!props.disabled && useTemplate(template)"
           >
-            <div class="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden mb-2 hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-purple-300 transform hover:scale-[1.02]">
+            <div class="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-2 hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-400 transform hover:scale-[1.02]">
               <img
                 v-if="template.thumbnailUrl"
                 :src="template.thumbnailUrl"
@@ -143,14 +143,14 @@
                 loading="lazy"
                 @error="handleImageError"
               />
-              <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100">
-                <DocumentDuplicateIcon class="w-8 h-8 text-purple-400" />
+              <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20">
+                <DocumentDuplicateIcon class="w-8 h-8 text-primary-400 dark:text-primary-500" />
               </div>
               
               <!-- Enhanced hover overlay -->
               <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                <div class="bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-white dark:bg-gray-800 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                  <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
@@ -159,8 +159,8 @@
             
             <!-- Enhanced template info -->
             <div class="space-y-1">
-              <h4 class="text-sm font-medium text-gray-900 truncate group-hover:text-purple-600 transition-colors">{{ template.name }}</h4>
-              <div class="flex items-center justify-between text-xs text-gray-500">
+              <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{{ template.name }}</h4>
+              <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span class="capitalize">{{ template.category?.replace('-', ' ') || 'General' }}</span>
                 <div class="flex items-center space-x-1">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +229,7 @@ const handleImageError = (event: Event) => {
     // Show a fallback icon
     parent.innerHTML = `
       <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100">
-        <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-8 h-8 text-primary-400 dark:text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       </div>

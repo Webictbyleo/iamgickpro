@@ -1,14 +1,14 @@
 <template>
-  <div class="h-full flex flex-col bg-white">
+  <div class="h-full flex flex-col bg-white dark:bg-secondary-900">
     <!-- Header -->
-    <div class="p-4 border-b bg-gray-50">
+    <div class="p-4 border-b border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800">
       <div class="flex items-center space-x-3">
-        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+        <div class="w-8 h-8 bg-primary-500 dark:bg-primary-600 rounded-lg flex items-center justify-center">
           <AdjustmentsHorizontalIcon class="w-4 h-4 text-white" />
         </div>
         <div>
-          <h3 class="text-sm font-semibold text-gray-900">Image Effects</h3>
-          <p class="text-xs text-gray-600">Transform your images with professional filters</p>
+          <h3 class="text-sm font-semibold text-secondary-900 dark:text-secondary-100">Image Effects</h3>
+          <p class="text-xs text-secondary-600 dark:text-secondary-400">Transform your images with professional filters</p>
         </div>
       </div>
     </div>
@@ -54,10 +54,10 @@
       />
 
       <!-- Reset All -->
-      <div class="pt-4 border-t border-gray-200">
+      <div class="pt-4 border-t border-secondary-200 dark:border-secondary-700">
         <button
           @click="resetToDefaults"
-          class="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors"
+          class="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg hover:bg-danger-100 dark:hover:bg-danger-900/30 hover:border-danger-300 dark:hover:border-danger-700 focus:outline-none focus:ring-2 focus:ring-danger-500 dark:focus:ring-danger-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 transition-colors"
         >
           <ArrowPathIcon class="w-3 h-3 mr-1" />
           Reset All to Defaults
@@ -66,15 +66,15 @@
     </div>
 
     <!-- Apply Button -->
-    <div class="p-4 border-t bg-gray-50">
+    <div class="p-4 border-t border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800">
       <button
         @click="resetToDefaults"
-        class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-secondary-600 dark:text-secondary-400 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-lg hover:bg-secondary-50 dark:hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-primary-400 dark:focus:ring-offset-secondary-800 transition-colors"
       >
         <ArrowPathIcon class="w-4 h-4 mr-2" />
         Reset All to Defaults
       </button>
-      <p class="text-xs text-gray-500 mt-2 text-center">All changes apply in real-time</p>
+      <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center">All changes apply in real-time</p>
     </div>
   </div>
 </template>

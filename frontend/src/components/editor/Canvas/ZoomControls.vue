@@ -9,7 +9,7 @@
           size="sm"
           @click="zoomOut"
           :disabled="zoom <= minZoom"
-          class="p-1.5"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <MinusIcon class="w-4 h-4" />
         </ModernButton>
@@ -27,7 +27,7 @@
           size="sm"
           @click="zoomIn"
           :disabled="zoom >= maxZoom"
-          class="p-1.5"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <PlusIcon class="w-4 h-4" />
         </ModernButton>
@@ -40,7 +40,7 @@
           variant="ghost"
           size="sm"
           @click="fitToScreen"
-          class="p-1.5"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
           title="Fit to screen"
         >
           <ArrowsPointingOutIcon class="w-4 h-4" />
@@ -51,7 +51,7 @@
           variant="ghost"
           size="sm"
           @click="actualSize"
-          class="p-1.5"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
           title="Actual size (100%)"
         >
           <ViewfinderCircleIcon class="w-4 h-4" />
@@ -69,8 +69,8 @@
           :max="maxZoom * 100"
           :value="zoom * 100"
           @input="onSliderChange"
-          class="w-32 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 
-                 slider:bg-blue-600 slider:rounded-lg slider:cursor-pointer"
+          class="w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer 
+                 slider:bg-primary-600 slider:rounded-lg slider:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
     </div>
@@ -87,8 +87,8 @@
           variant="ghost"
           size="sm"
           @click="setZoom(level.value)"
-          :class="{ 'bg-blue-50 text-blue-700': Math.abs(zoom - level.value) < 0.01 }"
-          class="justify-start text-xs"
+          :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300': Math.abs(zoom - level.value) < 0.01 }"
+          class="justify-start text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           {{ level.label }}
         </ModernButton>

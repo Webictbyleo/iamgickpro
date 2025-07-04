@@ -22,7 +22,7 @@
                 :class="[
                   'px-3 py-2 flex items-center !justify-start space-x-2 transition-colors rounded-md',
                   flipX 
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50' 
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50' 
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700'
                 ]"
                 @click="$emit('update', { flipX: !flipX })"
@@ -38,7 +38,7 @@
                 :class="[
                   'px-3 py-2 flex items-center !justify-start space-x-2 transition-colors rounded-md',
                   flipY 
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50' 
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50' 
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700'
                 ]"
                 @click="$emit('update', { flipY: !flipY })"
@@ -67,7 +67,7 @@
           options: {}
         })"
         tooltip="Remove Image Background (AI)"
-        class="hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 flex items-center space-x-1.5"
+        class="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-gray-600 hover:text-secondary-600 dark:text-gray-300 dark:hover:text-secondary-400 flex items-center space-x-1.5"
       >
         <ScissorsIcon class="w-4 h-4" />
         <span class="text-sm font-medium">Remove BG</span>
@@ -78,7 +78,7 @@
         size="sm"
         @click="$emit('edit-image')"
         tooltip="Advanced Image Settings"
-        class="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 flex items-center space-x-1.5"
+        class="hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 flex items-center space-x-1.5"
       >
         <PencilSquareIcon class="w-4 h-4" />
         <span class="text-sm font-medium">Edit</span>

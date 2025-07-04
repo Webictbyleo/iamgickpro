@@ -3,14 +3,14 @@
     <!-- Animation Controls -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-900">Animation</h3>
+        <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Animation</h3>
         <button
           @click="toggleAnimation"
           :class="[
             'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
             isAnimationEnabled
-              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300 hover:bg-success-200 dark:hover:bg-success-800/50'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
           ]"
         >
           {{ isAnimationEnabled ? 'Enabled' : 'Disabled' }}
@@ -19,10 +19,10 @@
 
       <!-- Animation Type Selection -->
       <div v-if="isAnimationEnabled" class="space-y-3">
-        <label class="block text-xs font-medium text-gray-700">Animation Type</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">Animation Type</label>
         <select
           v-model="selectedAnimationType"
-          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           @change="applyAnimationType"
         >
           <option value="">Select Animation</option>
@@ -59,11 +59,11 @@
 
     <!-- Animation Settings -->
     <div v-if="isAnimationEnabled && selectedAnimationType" class="space-y-4">
-      <h4 class="text-sm font-medium text-gray-900">Animation Settings</h4>
+      <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Animation Settings</h4>
       
       <!-- Duration -->
       <div class="space-y-2">
-        <label class="block text-xs font-medium text-gray-700">
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">
           Duration: {{ animationSettings.duration }}s
         </label>
         <input
@@ -72,14 +72,14 @@
           min="0.1"
           max="5"
           step="0.1"
-          class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+          class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
           @input="updateAnimationSettings"
         />
       </div>
 
       <!-- Delay -->
       <div class="space-y-2">
-        <label class="block text-xs font-medium text-gray-700">
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">
           Delay: {{ animationSettings.delay }}s
         </label>
         <input
@@ -88,17 +88,17 @@
           min="0"
           max="3"
           step="0.1"
-          class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+          class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
           @input="updateAnimationSettings"
         />
       </div>
 
       <!-- Easing -->
       <div class="space-y-2">
-        <label class="block text-xs font-medium text-gray-700">Easing</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">Easing</label>
         <select
           v-model="animationSettings.easing"
-          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           @change="updateAnimationSettings"
         >
           <option value="linear">Linear</option>
@@ -117,14 +117,14 @@
           <input
             v-model="animationSettings.repeat"
             type="checkbox"
-            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            class="rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500 focus:ring-primary-500 dark:focus:ring-primary-400 dark:bg-gray-700"
             @change="updateAnimationSettings"
           />
-          <span class="ml-2 text-sm text-gray-700">Repeat Animation</span>
+          <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Repeat Animation</span>
         </label>
         
         <div v-if="animationSettings.repeat" class="ml-6 space-y-2">
-          <label class="block text-xs font-medium text-gray-700">
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">
             Repeat Count (0 = infinite)
           </label>
           <input
@@ -132,7 +132,7 @@
             type="number"
             min="0"
             max="10"
-            class="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             @input="updateAnimationSettings"
           />
         </div>
@@ -142,17 +142,17 @@
     <!-- Timeline Preview -->
     <div v-if="isAnimationEnabled" class="space-y-4">
       <div class="flex items-center justify-between">
-        <h4 class="text-sm font-medium text-gray-900">Timeline</h4>
+        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Timeline</h4>
         <div class="flex space-x-2">
           <button
             @click="previewAnimation"
-            class="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+            class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 border border-primary-600 dark:border-primary-400 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
           >
             {{ isPreviewPlaying ? 'Stop' : 'Preview' }}
           </button>
           <button
             @click="resetAnimation"
-            class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Reset
           </button>
@@ -161,10 +161,10 @@
 
       <!-- Timeline Bar -->
       <div class="space-y-2">
-        <div class="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+        <div class="relative h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
           <!-- Animation duration visualization -->
           <div
-            class="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg transition-all duration-300"
+            class="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-700 rounded-lg transition-all duration-300"
             :style="{
               width: `${Math.min(100, (animationSettings.duration / 5) * 100)}%`,
               marginLeft: `${Math.min(80, (animationSettings.delay / 3) * 80)}%`
@@ -172,7 +172,7 @@
           ></div>
           
           <!-- Timeline markers -->
-          <div class="absolute inset-0 flex items-center justify-between px-2 text-xs text-gray-500">
+          <div class="absolute inset-0 flex items-center justify-between px-2 text-xs text-gray-500 dark:text-gray-400">
             <span>0s</span>
             <span>{{ totalAnimationTime }}s</span>
           </div>
@@ -180,7 +180,7 @@
           <!-- Progress indicator -->
           <div
             v-if="isPreviewPlaying"
-            class="absolute top-0 w-1 h-full bg-red-500 transition-all"
+            class="absolute top-0 w-1 h-full bg-danger-500 dark:bg-danger-400 transition-all"
             :style="{
               left: `${animationProgress}%`,
               transition: `left ${totalAnimationTime}s linear`
@@ -188,7 +188,7 @@
           ></div>
         </div>
         
-        <div class="flex justify-between text-xs text-gray-500">
+        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>Delay: {{ animationSettings.delay }}s</span>
           <span>Duration: {{ animationSettings.duration }}s</span>
         </div>
@@ -197,18 +197,18 @@
 
     <!-- Animation Presets -->
     <div class="space-y-4">
-      <h4 class="text-sm font-medium text-gray-900">Quick Presets</h4>
+      <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Quick Presets</h4>
       <div class="grid grid-cols-2 gap-2">
         <button
           v-for="preset in animationPresets"
           :key="preset.name"
           @click="applyPreset(preset)"
-          class="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+          class="p-3 text-left border border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors group"
         >
-          <div class="text-sm font-medium text-gray-900 group-hover:text-blue-900">
+          <div class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-900 dark:group-hover:text-primary-100">
             {{ preset.name }}
           </div>
-          <div class="text-xs text-gray-500 group-hover:text-blue-600 mt-1">
+          <div class="text-xs text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-300 mt-1">
             {{ preset.description }}
           </div>
         </button>
@@ -218,10 +218,10 @@
     <!-- Keyframe Editor (Advanced) -->
     <div v-if="showAdvanced" class="space-y-4">
       <div class="flex items-center justify-between">
-        <h4 class="text-sm font-medium text-gray-900">Keyframes</h4>
+        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Keyframes</h4>
         <button
           @click="addKeyframe"
-          class="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+          class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 border border-primary-600 dark:border-primary-400 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
         >
           Add Keyframe
         </button>
@@ -231,7 +231,7 @@
         <div
           v-for="(keyframe, index) in keyframes"
           :key="index"
-          class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg"
+          class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg"
         >
           <input
             v-model.number="keyframe.time"
@@ -239,14 +239,14 @@
             min="0"
             :max="animationSettings.duration"
             step="0.1"
-            class="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+            class="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="Time"
           />
-          <span class="text-xs text-gray-500">s</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">s</span>
           
           <select
             v-model="keyframe.property"
-            class="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+            class="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="opacity">Opacity</option>
             <option value="x">Position X</option>
@@ -259,13 +259,13 @@
           <input
             v-model="keyframe.value"
             type="text"
-            class="w-20 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+            class="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="Value"
           />
           
           <button
             @click="removeKeyframe(index)"
-            class="p-1 text-red-600 hover:text-red-800 transition-colors"
+            class="p-1 text-danger-600 dark:text-danger-400 hover:text-danger-800 dark:hover:text-danger-300 transition-colors"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -276,10 +276,10 @@
     </div>
 
     <!-- Advanced Toggle -->
-    <div class="pt-4 border-t border-gray-200">
+    <div class="pt-4 border-t border-gray-200 dark:border-gray-600">
       <button
         @click="showAdvanced = !showAdvanced"
-        class="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+        class="flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors"
       >
         <svg
           class="w-4 h-4 mr-2 transition-transform"

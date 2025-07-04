@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col h-full relative">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-200 bg-white">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-semibold text-gray-900">Your Uploads</h3>
-          <p class="text-sm text-gray-600 mt-1">Manage and use your uploaded image files</p>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Uploads</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Manage and use your uploaded image files</p>
         </div>
       </div>
     </div>
@@ -21,7 +21,7 @@
     />
 
     <!-- Enhanced Search and Upload Section -->
-    <div v-if="userMedia.length > 0" class="p-4 border-b border-gray-200 bg-white">
+    <div v-if="userMedia.length > 0" class="p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
       <div class="space-y-3">
         <!-- Enhanced Search Input -->
         <div class="relative">
@@ -29,17 +29,17 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search your uploads..."
-            class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+            class="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
             @keydown.enter="handleSearch"
           />
-          <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <!-- Clear search button -->
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
+            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -48,15 +48,15 @@
         </div>
 
         <!-- Search Stats -->
-        <div v-if="searchQuery && !isLoadingUserMedia" class="flex items-center justify-between text-xs text-gray-500">
+        <div v-if="searchQuery && !isLoadingUserMedia" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>{{ filteredUploads.length }} results for "{{ searchQuery }}"</span>
-          <span v-if="hasMoreUserMedia" class="text-blue-600">+ more available</span>
+          <span v-if="hasMoreUserMedia" class="text-primary-600 dark:text-primary-400">+ more available</span>
         </div>
 
         <!-- Enhanced Upload Button -->
         <button
           @click="fileInput?.click()"
-          class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+          class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 hover:border-primary-300 dark:hover:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -73,26 +73,26 @@
       <!-- Enhanced Loading State -->
       <div v-if="isLoadingUserMedia && userMedia.length === 0" class="space-y-4">
         <div class="text-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p class="mt-2 text-sm text-gray-600">Loading your uploads...</p>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto"></div>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Loading your uploads...</p>
         </div>
         <!-- Loading skeleton -->
         <div class="px-4">
           <div class="grid grid-cols-2 gap-3">
-            <div v-for="i in 6" :key="i" class="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+            <div v-for="i in 6" :key="i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
           </div>
         </div>
       </div>
       
       <!-- Enhanced Empty State -->
       <div v-else-if="filteredUploads.length === 0 && !isLoadingUserMedia" class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
           {{ searchQuery ? 'No uploads found' : 'No uploads yet' }}
         </h3>
-        <p class="mt-1 text-sm text-gray-500">
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {{ searchQuery 
             ? 'Try adjusting your search terms' 
             : 'Upload your first image files to start building your design library'
@@ -104,7 +104,7 @@
           <button
             v-if="!searchQuery && userMedia.length === 0"
             @click="fileInput?.click()"
-            class="mx-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+            class="mx-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-primary-600 dark:bg-primary-500 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -114,11 +114,11 @@
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            class="px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors text-sm"
           >
             Clear Search
           </button>
-          <p v-if="userMedia.length === 0" class="text-xs text-gray-400">
+          <p v-if="userMedia.length === 0" class="text-xs text-gray-400 dark:text-gray-500">
             Drag and drop works too!
           </p>
         </div>
@@ -128,10 +128,10 @@
       <div v-else class="p-4 space-y-4">
         <!-- Results header -->
         <div v-if="searchQuery" class="flex items-center justify-between">
-          <h4 class="text-sm font-medium text-gray-900">{{ filteredUploads.length }} images</h4>
+          <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ filteredUploads.length }} images</h4>
           <button
             @click="clearSearch"
-            class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             Clear search
           </button>
@@ -154,7 +154,7 @@
         <div v-if="hasMoreUserMedia && !isLoadingUserMedia" class="pt-2">
           <button
             @click="loadMoreUserMedia"
-            class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-center space-x-2"
+            class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 flex items-center justify-center space-x-2"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -166,8 +166,8 @@
         <!-- Loading more indicator -->
         <div v-if="isLoadingUserMedia && userMedia.length > 0" class="text-center py-4">
           <div class="inline-flex items-center space-x-2">
-            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span class="text-sm text-gray-600">Loading more images...</span>
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 dark:border-primary-400"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-300">Loading more images...</span>
           </div>
         </div>
       </div>
@@ -175,23 +175,23 @@
 
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Media</h3>
-        <p class="text-gray-600 mb-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete Media</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
           Are you sure you want to delete "{{ itemToDelete?.name }}"? This action cannot be undone.
         </p>
         <div class="flex justify-end gap-3">
           <button
             @click="cancelDelete"
             :disabled="isDeleting"
-            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+            class="px-4 py-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             @click="deleteSingleItem"
             :disabled="isDeleting"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors disabled:opacity-50"
           >
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </button>
@@ -201,23 +201,23 @@
 
     <!-- Bulk Delete Confirmation Modal -->
     <div v-if="showBulkDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Selected Media</h3>
-        <p class="text-gray-600 mb-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete Selected Media</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
           Are you sure you want to delete {{ selectedItems.size }} selected media items? This action cannot be undone.
         </p>
         <div class="flex justify-end gap-3">
           <button
             @click="cancelDelete"
             :disabled="isDeleting"
-            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+            class="px-4 py-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             @click="deleteSelectedItems"
             :disabled="isDeleting"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors disabled:opacity-50"
           >
             {{ isDeleting ? 'Deleting...' : 'Delete Selected' }}
           </button>
@@ -228,22 +228,22 @@
     <!-- Bottom Sheet for Selected Items -->
     <div 
       v-if="selectedItems.size > 0"
-      class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg transform transition-transform duration-300 ease-out"
+      class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 shadow-lg transform transition-transform duration-300 ease-out"
       :class="selectedItems.size > 0 ? 'translate-y-0' : 'translate-y-full'"
     >
       <div class="p-3">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-              <span class="text-xs font-semibold text-blue-600">{{ selectedItems.size }}</span>
+            <div class="w-6 h-6 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+              <span class="text-xs font-semibold text-primary-600 dark:text-primary-400">{{ selectedItems.size }}</span>
             </div>
-            <p class="text-sm font-medium text-gray-900">
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
               {{ selectedItems.size === 1 ? '1 selected' : `${selectedItems.size} selected` }}
             </p>
           </div>
           <button
             @click="clearSelection"
-            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title="Clear selection"
           >
             <XMarkIcon class="w-4 h-4" />
@@ -253,14 +253,14 @@
         <div class="flex gap-2">
           <button
             @click="confirmBulkDelete"
-            class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors text-sm font-medium"
           >
             <TrashIcon class="w-3.5 h-3.5" />
             Delete
           </button>
           <button
             @click="clearSelection"
-            class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
           >
             Cancel
           </button>

@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col h-full">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-200 bg-white">
-      <h3 class="text-lg font-semibold text-gray-900">Stock Media</h3>
-      <p class="text-sm text-gray-600 mt-1">Browse photos, icons, and shapes</p>
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Stock Media</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Browse photos, icons, and shapes</p>
     </div>
 
     <!-- Enhanced Search -->
-    <div class="p-4 border-b border-gray-200 bg-white">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div class="space-y-3">
         <!-- Search Input -->
         <div class="relative">
@@ -15,17 +15,17 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search stock media..."
-            class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+            class="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 text-gray-900 dark:text-gray-100"
             @keydown.enter="handleSearch"
           />
-          <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <!-- Clear search button -->
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
+            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -34,17 +34,17 @@
         </div>
         
         <!-- Search Stats -->
-        <div v-if="searchQuery && !isCurrentTabLoading" class="flex items-center justify-between text-xs text-gray-500">
+        <div v-if="searchQuery && !isCurrentTabLoading" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>{{ getCurrentResults().length }} results for "{{ searchQuery }}"</span>
-          <span v-if="hasMoreForCurrentTab" class="text-blue-600">{{ hasMoreForCurrentTab ? '+ more available' : '' }}</span>
+          <span v-if="hasMoreForCurrentTab" class="text-primary-600 dark:text-primary-400">{{ hasMoreForCurrentTab ? '+ more available' : '' }}</span>
         </div>
       </div>
     </div>
     
     <!-- Sticky Media Type Tabs -->
-    <div class="sticky top-0 z-10 bg-white border-b border-gray-200">
+    <div class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
       <div class="px-4 py-3">
-        <div class="flex space-x-1 bg-gray-100 rounded-lg p-1">
+        <div class="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
           <button
             v-for="tab in mediaTabs"
             :key="tab.id"
@@ -52,8 +52,8 @@
             :class="[
               'flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap text-center',
               activeTab === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             ]"
           >
             <component :is="tab.icon" class="w-4 h-4 mx-auto mb-1" />
@@ -70,12 +70,12 @@
         <!-- Enhanced Loading State -->
         <div v-if="isLoadingPhotos && filteredPhotos.length === 0" class="space-y-4">
           <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-2 text-sm text-gray-600">Loading photos...</p>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Loading photos...</p>
           </div>
           <!-- Loading skeleton -->
           <div class="grid grid-cols-2 gap-3">
-            <div v-for="i in 6" :key="i" class="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+            <div v-for="i in 6" :key="i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
           </div>
         </div>
         
@@ -84,14 +84,14 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No photos found</h3>
-          <p class="mt-1 text-sm text-gray-500">
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No photos found</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {{ searchQuery ? 'Try adjusting your search terms' : 'Search for photos to get started' }}
           </p>
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
           >
             Clear Search
           </button>
@@ -100,10 +100,10 @@
         <div v-else class="space-y-4">
           <!-- Results header -->
           <div v-if="searchQuery" class="flex items-center justify-between">
-            <h4 class="text-sm font-medium text-gray-900">{{ filteredPhotos.length }} Photos</h4>
+            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ filteredPhotos.length }} Photos</h4>
             <button
               @click="clearSearch"
-              class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             >
               Clear search
             </button>
@@ -125,7 +125,7 @@
           <div v-if="hasMorePhotos && !isLoadingPhotos" class="pt-2">
             <button
               @click="loadMorePhotos"
-              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-center space-x-2"
+              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 flex items-center justify-center space-x-2"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -137,8 +137,8 @@
           <!-- Loading more indicator -->
           <div v-if="isLoadingPhotos && filteredPhotos.length > 0" class="text-center py-4">
             <div class="inline-flex items-center space-x-2">
-              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span class="text-sm text-gray-600">Loading more photos...</span>
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 dark:border-primary-400"></div>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Loading more photos...</span>
             </div>
           </div>
         </div>
@@ -149,12 +149,12 @@
         <!-- Enhanced Loading State -->
         <div v-if="isLoadingIcons && filteredIcons.length === 0" class="space-y-4">
           <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-2 text-sm text-gray-600">Loading icons...</p>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Loading icons...</p>
           </div>
           <!-- Loading skeleton -->
           <div class="grid grid-cols-4 gap-3">
-            <div v-for="i in 8" :key="i" class="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+            <div v-for="i in 8" :key="i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
           </div>
         </div>
         
@@ -163,14 +163,14 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z" />
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No icons found</h3>
-          <p class="mt-1 text-sm text-gray-500">
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No icons found</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {{ searchQuery ? 'Try adjusting your search terms' : 'Search for icons to get started' }}
           </p>
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
           >
             Clear Search
           </button>
@@ -179,10 +179,10 @@
         <div v-else class="space-y-4">
           <!-- Results header -->
           <div v-if="searchQuery" class="flex items-center justify-between">
-            <h4 class="text-sm font-medium text-gray-900">{{ filteredIcons.length }} Icons</h4>
+            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ filteredIcons.length }} Icons</h4>
             <button
               @click="clearSearch"
-              class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             >
               Clear search
             </button>
@@ -196,7 +196,7 @@
               @click="addMedia(icon)"
               @mouseenter="showTooltip($event, icon.alt)"
               @mouseleave="hideTooltip"
-              class="relative group cursor-pointer border border-gray-200 rounded-lg p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-105"
+              class="relative group cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 transform hover:scale-105"
             >
               <div class="aspect-square flex items-center justify-center">
                 <img
@@ -206,7 +206,7 @@
                   @error="handleImageError"
                 />
               </div>
-              <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
+              <div class="absolute inset-0 bg-primary-50 dark:bg-primary-900/20 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
             </div>
           </div>
           
@@ -214,7 +214,7 @@
           <div v-if="hasMoreIcons && !isLoadingIcons" class="pt-2">
             <button
               @click="loadMoreIcons"
-              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-center space-x-2"
+              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 flex items-center justify-center space-x-2"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -226,8 +226,8 @@
           <!-- Loading more indicator -->
           <div v-if="isLoadingIcons && filteredIcons.length > 0" class="text-center py-4">
             <div class="inline-flex items-center space-x-2">
-              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span class="text-sm text-gray-600">Loading more icons...</span>
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 dark:border-primary-400"></div>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Loading more icons...</span>
             </div>
           </div>
         </div>
@@ -238,12 +238,12 @@
         <!-- Enhanced Loading State -->
         <div v-if="isLoadingShapes && filteredShapes.length === 0" class="space-y-4">
           <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-2 text-sm text-gray-600">Loading shapes...</p>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Loading shapes...</p>
           </div>
           <!-- Loading skeleton -->
           <div class="grid grid-cols-4 gap-3">
-            <div v-for="i in 8" :key="i" class="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+            <div v-for="i in 8" :key="i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
           </div>
         </div>
         
@@ -252,14 +252,14 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No shapes found</h3>
-          <p class="mt-1 text-sm text-gray-500">
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No shapes found</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {{ searchQuery ? 'Try adjusting your search terms' : 'Search for shapes to get started' }}
           </p>
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
           >
             Clear Search
           </button>
@@ -268,10 +268,10 @@
         <div v-else class="space-y-4">
           <!-- Results header -->
           <div v-if="searchQuery" class="flex items-center justify-between">
-            <h4 class="text-sm font-medium text-gray-900">{{ filteredShapes.length }} Shapes</h4>
+            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ filteredShapes.length }} Shapes</h4>
             <button
               @click="clearSearch"
-              class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             >
               Clear search
             </button>
@@ -283,7 +283,7 @@
               v-for="shape in filteredShapes"
               :key="shape.id"
               @click="addMedia(shape)"
-              class="relative group cursor-pointer border border-gray-200 rounded-lg p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white transform hover:scale-105"
+              class="relative group cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 transform hover:scale-105"
             >
               <div class="aspect-square flex items-center justify-center">
                 <img
@@ -293,9 +293,9 @@
                   @error="handleImageError"
                 />
               </div>
-              <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
+              <div class="absolute inset-0 bg-primary-50 dark:bg-primary-900/20 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
               <!-- Shape name -->
-              <p class="text-xs text-center text-gray-600 mt-1 truncate group-hover:text-gray-900 transition-colors">{{ shape.alt }}</p>
+              <p class="text-xs text-center text-gray-600 dark:text-gray-300 mt-1 truncate group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">{{ shape.alt }}</p>
             </div>
           </div>
           
@@ -303,7 +303,7 @@
           <div v-if="hasMoreShapes && !isLoadingShapes" class="pt-2">
             <button
               @click="loadMoreShapes"
-              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-center space-x-2"
+              class="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 flex items-center justify-center space-x-2"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -315,8 +315,8 @@
           <!-- Loading more indicator -->
           <div v-if="isLoadingShapes && filteredShapes.length > 0" class="text-center py-4">
             <div class="inline-flex items-center space-x-2">
-              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span class="text-sm text-gray-600">Loading more shapes...</span>
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 dark:border-primary-400"></div>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Loading more shapes...</span>
             </div>
           </div>
         </div>
@@ -328,7 +328,7 @@
     <!-- Global Tooltip -->
     <div
       v-if="tooltipVisible"
-      class="fixed bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-[9999] pointer-events-none shadow-lg"
+      class="fixed bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-100 text-xs px-2 py-1 rounded whitespace-nowrap z-[9999] pointer-events-none shadow-lg"
       :style="{
         left: tooltipPosition.x + 'px',
         top: tooltipPosition.y + 'px',

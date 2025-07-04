@@ -47,56 +47,54 @@
           trigger-class="opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800"
           @action="handleDropdownAction($event, file)"
         />
-      </div>
-
-      <!-- Media Preview -->
-      <div 
-        @click="$emit('mediaClick', file)"
-        class="media-preview bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden cursor-pointer rounded-lg"
-        :style="getMediaItemStyle(file)"
-      >
-        <img
-          v-if="file.type === 'image' && !imageErrors.has(file.id)"
-          :src="file.thumbnail || file.url"
-          :alt="file.name"
-          :data-file-id="file.id"
-          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          loading="lazy"
-          @error="handleImageError"
-        />
-        <div v-if="file.type !== 'image' || imageErrors.has(file.id)" class="text-gray-400 bg-gray-100 w-full h-full flex items-center justify-center">
-          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        
-        <!-- Info Overlay for Stock Media -->
+      </div>        <!-- Media Preview -->
         <div 
-          v-if="showInfoOverlay && file.source !== 'upload'"
-          class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          @click="$emit('mediaClick', file)"
+          class="media-preview bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center relative overflow-hidden cursor-pointer rounded-lg"
+          :style="getMediaItemStyle(file)"
         >
-          <div class="space-y-1">
-            <p class="text-sm font-medium truncate">{{ file.name || 'Untitled' }}</p>
-            <div class="flex items-center justify-between text-xs text-gray-200">
-              <span v-if="file.width && file.height">{{ file.width }}×{{ file.height }}</span>
-              <span v-if="file.size" class="ml-auto">{{ formatFileSize(file.size) }}</span>
-            </div>
-            <div v-if="file.attribution || isStockMedia(file)" class="text-xs text-gray-300 truncate">
-              <span v-if="file.attribution">{{ file.attribution }}</span>
-              <span v-if="file.attribution && isStockMedia(file)"> • </span>
-              <span v-if="isStockMedia(file)" class="capitalize">{{ getSourceDisplayName(file.source) }}</span>
+          <img
+            v-if="file.type === 'image' && !imageErrors.has(file.id)"
+            :src="file.thumbnail || file.url"
+            :alt="file.name"
+            :data-file-id="file.id"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            loading="lazy"
+            @error="handleImageError"
+          />
+          <div v-if="file.type !== 'image' || imageErrors.has(file.id)" class="text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 w-full h-full flex items-center justify-center">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          
+          <!-- Info Overlay for Stock Media -->
+          <div 
+            v-if="showInfoOverlay && file.source !== 'upload'"
+            class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          >
+            <div class="space-y-1">
+              <p class="text-sm font-medium truncate">{{ file.name || 'Untitled' }}</p>
+              <div class="flex items-center justify-between text-xs text-gray-200">
+                <span v-if="file.width && file.height">{{ file.width }}×{{ file.height }}</span>
+                <span v-if="file.size" class="ml-auto">{{ formatFileSize(file.size) }}</span>
+              </div>
+              <div v-if="file.attribution || isStockMedia(file)" class="text-xs text-gray-300 truncate">
+                <span v-if="file.attribution">{{ file.attribution }}</span>
+                <span v-if="file.attribution && isStockMedia(file)"> • </span>
+                <span v-if="isStockMedia(file)" class="capitalize">{{ getSourceDisplayName(file.source) }}</span>
+              </div>
             </div>
           </div>
+          
+          <!-- Premium Badge for Stock Media -->
+          <div 
+            v-if="file.isPremium && isStockMedia(file)"
+            class="absolute top-2 left-2 bg-gradient-to-r from-warning-400 to-warning-500 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg"
+          >
+            ⭐ PRO
+          </div>
         </div>
-        
-        <!-- Premium Badge for Stock Media -->
-        <div 
-          v-if="file.isPremium && isStockMedia(file)"
-          class="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2 py-1 rounded-md text-xs font-medium shadow-lg"
-        >
-          ⭐ PRO
-        </div>
-      </div>
     </div>
   </div>
 </template>

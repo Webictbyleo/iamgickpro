@@ -283,12 +283,12 @@ const submenuStyle = computed(() => {
 // Layer type colors
 const getLayerTypeColor = (type: string) => {
   const colors = {
-    text: 'bg-blue-500',
-    image: 'bg-green-500',
-    shape: 'bg-purple-500',
-    group: 'bg-orange-500',
-    video: 'bg-red-500',
-    audio: 'bg-yellow-500'
+    text: 'bg-primary-500',
+    image: 'bg-secondary-500', 
+    shape: 'bg-primary-500',
+    group: 'bg-secondary-500',
+    video: 'bg-danger-500',
+    audio: 'bg-warning-500'
   }
   return colors[type as keyof typeof colors] || 'bg-gray-500'
 }

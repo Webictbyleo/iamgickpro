@@ -25,7 +25,7 @@
         >
           <li :class="[
             'relative cursor-default select-none py-2 px-3',
-            active ? 'bg-purple-50 text-purple-900' : 'text-gray-900'
+            active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100' : 'text-gray-900 dark:text-gray-100'
           ]">
             <span :class="[
               'block truncate',

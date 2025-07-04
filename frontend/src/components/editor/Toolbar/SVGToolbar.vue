@@ -16,7 +16,7 @@
       text="SVG Styling"
       width="w-72"
       :showChevron="false"
-      buttonClass="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+      buttonClass="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-gray-600 hover:text-secondary-600 dark:text-gray-300 dark:hover:text-secondary-400"
       iconClass="w-3.5 h-3.5"
     >
       <template #default="{ close }">

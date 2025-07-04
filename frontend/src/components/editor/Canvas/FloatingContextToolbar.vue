@@ -90,7 +90,7 @@
             text="Position"
             width="w-48"
             :showChevron="false"
-            buttonClass="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+            buttonClass="hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400"
             iconClass="w-3.5 h-3.5"
           >
             <template #default="{ close }">
@@ -104,7 +104,7 @@
                     title="Top Left"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute top-0 left-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute top-0 left-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Left</span>
                   </button>
@@ -114,7 +114,7 @@
                     title="Top Center"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Center</span>
                   </button>
@@ -124,7 +124,7 @@
                     title="Top Right"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute top-0 right-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Top Right</span>
                   </button>
@@ -136,7 +136,7 @@
                     title="Center Left"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute top-1/2 left-0 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute top-1/2 left-0 transform -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Left</span>
                   </button>
@@ -146,7 +146,7 @@
                     title="Center"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Center</span>
                   </button>
@@ -156,7 +156,7 @@
                     title="Center Right"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute top-1/2 right-0 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute top-1/2 right-0 transform -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Right</span>
                   </button>
@@ -168,7 +168,7 @@
                     title="Bottom Left"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute bottom-0 left-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute bottom-0 left-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Bottom Left</span>
                   </button>
@@ -178,7 +178,7 @@
                     title="Bottom Center"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Bottom Center</span>
                   </button>
@@ -188,7 +188,7 @@
                     title="Bottom Right"
                   >
                     <div class="w-6 h-6 border border-gray-300 dark:border-gray-600 rounded relative">
-                      <div class="absolute bottom-0 right-0 w-2 h-2 bg-blue-500 rounded-sm"></div>
+                      <div class="absolute bottom-0 right-0 w-2 h-2 bg-primary-500 rounded-sm"></div>
                     </div>
                     <span>Bottom Right</span>
                   </button>
@@ -214,7 +214,7 @@
             text="Opacity"
             width="w-48"
             :showChevron="false"
-            buttonClass="hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400"
+            buttonClass="hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400"
             iconClass="w-3.5 h-3.5"
           >
             <template #default="{ close }">
@@ -245,7 +245,7 @@
                     :class="[
                       'px-2 py-1 text-xs rounded border transition-colors',
                       Math.abs((selectedLayer.transform.opacity || 1) - preset.value) < 0.01
-                        ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-600 dark:text-purple-300'
+                        ? 'bg-primary-100 dark:bg-primary-900/30 border-primary-300 dark:border-primary-600 text-primary-700 dark:text-primary-300'
                         : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
                     ]"
                   >
@@ -266,7 +266,7 @@
           size="xs"
           @click="$emit('duplicate-layer')"
           tooltip="Duplicate (Ctrl+D)"
-          class="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+          class="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-gray-600 hover:text-secondary-600 dark:text-gray-300 dark:hover:text-secondary-400"
         >
           <DocumentDuplicateIcon class="w-3.5 h-3.5" />
         </ModernButton>
@@ -276,7 +276,7 @@
           size="xs"
           @click="$emit('delete-layer')"
           tooltip="Delete (Del)"
-          class="hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
+          class="hover:bg-danger-50 dark:hover:bg-danger-900/20 text-gray-600 hover:text-danger-600 dark:text-gray-300 dark:hover:text-danger-400"
         >
           <TrashIcon class="w-3.5 h-3.5" />
         </ModernButton>

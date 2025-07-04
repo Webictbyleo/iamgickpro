@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h4 class="text-sm font-medium text-gray-900 mb-4 flex items-center">
-      <SparklesIcon class="w-4 h-4 mr-2 text-purple-500" />
+    <h4 class="text-sm font-medium text-secondary-900 dark:text-secondary-100 mb-4 flex items-center">
+      <SparklesIcon class="w-4 h-4 mr-2 text-accent-500 dark:text-accent-400" />
       Filter Presets
     </h4>
     
@@ -13,8 +13,8 @@
         :class="[
           'relative group cursor-pointer border-2 rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105',
           currentPreset === preset.name 
-            ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-lg' 
-            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+            ? 'border-primary-500 dark:border-primary-400 ring-2 ring-primary-500/20 dark:ring-primary-400/20 shadow-lg' 
+            : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 hover:shadow-md'
         ]"
       >
         <!-- Preview with sample image -->
@@ -42,7 +42,7 @@
             leave-to-class="scale-0 opacity-0"
           >
             <div v-if="currentPreset === preset.name" 
-                 class="absolute top-1.5 right-1.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
+                 class="absolute top-1.5 right-1.5 w-5 h-5 bg-primary-500 dark:bg-primary-400 rounded-full flex items-center justify-center shadow-md">
               <CheckIcon class="w-3 h-3 text-white" />
             </div>
           </Transition>
@@ -52,9 +52,9 @@
         </div>
         
         <!-- Label with enhanced styling -->
-        <div class="p-2 bg-white">
-          <p class="text-xs font-semibold text-gray-900 text-center truncate">{{ preset.name }}</p>
-          <p class="text-xs text-gray-500 text-center mt-0.5">{{ preset.description }}</p>
+        <div class="p-2 bg-white dark:bg-secondary-800">
+          <p class="text-xs font-semibold text-secondary-900 dark:text-secondary-100 text-center truncate">{{ preset.name }}</p>
+          <p class="text-xs text-secondary-500 dark:text-secondary-400 text-center mt-0.5">{{ preset.description }}</p>
         </div>
       </div>
     </div>
