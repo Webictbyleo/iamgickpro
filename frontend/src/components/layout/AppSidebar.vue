@@ -9,7 +9,7 @@
             <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-200">
               <span class="text-white font-bold text-lg">{{ appInitials }}</span>
             </div>
-            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
+            <div class="absolute -top-1 -right-1 w-3 h-3 bg-success-400 rounded-full border-2 border-white dark:border-gray-900"></div>
           </div>
           <div class="ml-3">
             <span class="text-xl font-bold text-gray-900 dark:text-white">{{ appTitle }}</span>
@@ -61,7 +61,7 @@
             <DocumentDuplicateIcon class="w-5 h-5 mr-3 transition-colors" />
             <span>Templates</span>
             <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-              <SparklesIcon class="w-4 h-4 text-yellow-500" />
+              <SparklesIcon class="w-4 h-4 text-warning-500" />
             </div>
           </router-link>
 
@@ -72,14 +72,14 @@
             :class="{ 'sidebar-nav-item-active': $route.name === 'VideoToDesign' || isActive('/video-to-design') }"
           >
             <div class="relative mr-3">
-              <svg class="w-5 h-5 text-red-600 dark:text-red-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-danger-600 dark:text-danger-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
               </svg>
-              <div class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 dark:bg-red-400 rounded-full animate-pulse"></div>
+              <div class="absolute -top-1 -right-1 w-2 h-2 bg-danger-500 dark:bg-danger-400 rounded-full animate-pulse"></div>
             </div>
             <span>YouTube Thumbnails</span>
             <div class="ml-auto flex items-center space-x-2">
-              <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+              <span class="bg-danger-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                 NEW
               </span>
               <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -177,7 +177,7 @@
             <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center shadow-lg">
               <span class="text-white font-semibold text-sm">{{ userInitials }}</span>
             </div>
-            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-400 border-2 border-white dark:border-gray-900 rounded-full"></div>
+            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-success-400 border-2 border-white dark:border-gray-900 rounded-full"></div>
           </div>
           <div class="ml-3 flex-1 min-w-0">
             <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ userName }}</p>
@@ -248,7 +248,7 @@
                   <button
                     @click="$emit('logout')"
                     :class="[
-                      active ? 'bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-400' : 'text-red-700 dark:text-red-400',
+                      active ? 'bg-danger-50 dark:bg-danger-900/20 text-danger-900 dark:text-danger-400' : 'text-danger-700 dark:text-danger-400',
                       'group flex w-full items-center px-4 py-2 text-sm transition-colors'
                     ]"
                   >

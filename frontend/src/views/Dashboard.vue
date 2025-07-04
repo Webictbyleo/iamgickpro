@@ -5,110 +5,143 @@
     @search="handleSearch"
   >
     <div class="space-y-8">
-      <!-- Compact Professional Hero Section -->
-      <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 dark:from-gray-800 dark:via-gray-900 dark:to-black rounded-xl shadow-lg border border-gray-700/30 dark:border-gray-600/50">
-        <!-- Subtle background elements -->
+      <!-- Enhanced Professional Hero Section -->
+      <div class="relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
+        <!-- Modern background pattern -->
         <div class="absolute inset-0">
-          <div class="absolute inset-0 opacity-5 dark:opacity-10">
-            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0); background-size: 30px 30px;"></div>
+          <div class="absolute inset-0 opacity-20 dark:opacity-30">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.06) 1px, transparent 0); background-size: 24px 24px;"></div>
           </div>
-          <div class="absolute inset-0 bg-gradient-to-r from-primary-600/5 via-transparent to-secondary-600/5"></div>
+          <!-- Theme-aware gradient overlay -->
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-indigo-500/10 dark:from-blue-600/8 dark:via-transparent dark:to-purple-600/8"></div>
         </div>
         
-        <div class="relative px-6 py-6 lg:px-8 lg:py-8">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <!-- Left Content - Welcome Section -->
-            <div class="flex-1">
+        <div class="relative px-6 py-8 lg:px-10 lg:py-12">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-8">
+            <!-- Enhanced Left Content - Welcome Section -->
+            <div class="flex-1 max-w-2xl">
               <div class="flex items-start gap-6">
-                <!-- Profile Avatar -->
+                <!-- Enhanced Profile Avatar with theme integration -->
                 <div class="flex-shrink-0">
-                  <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span class="text-white font-bold text-xl">
+                  <div class="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 rounded-2xl flex items-center justify-center shadow-xl ring-4 ring-blue-500/20 dark:ring-blue-600/20">
+                    <span class="text-white font-bold text-2xl">
                       {{ user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U' }}
                     </span>
+                    <!-- Online indicator -->
+                    <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-success-500 rounded-full border-3 border-white dark:border-gray-900 flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    </div>
                   </div>
                 </div>
                 
-                <!-- Welcome Text -->
+                <!-- Enhanced Welcome Text -->
                 <div class="flex-1 min-w-0">
-                  <div class="inline-flex items-center px-3 py-1 bg-emerald-500/20 rounded-full text-emerald-300 text-xs font-medium mb-3 border border-emerald-500/30">
-                    <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
-                    Online
+                  <!-- Status badge -->
+                  <div class="inline-flex items-center px-4 py-2 bg-success-500/20 rounded-full text-success-600 dark:text-success-300 text-sm font-medium mb-4 border border-success-500/30 backdrop-blur-sm">
+                    <div class="w-2 h-2 bg-success-500 dark:bg-success-400 rounded-full mr-2 animate-pulse"></div>
+                    Active Session
                   </div>
-                  <h1 class="text-2xl lg:text-3xl font-bold text-white dark:text-gray-100 leading-tight mb-2">
-                    Welcome back, 
-                    <span class="bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent">
+                  
+                  <!-- Main welcome heading -->
+                  <h1 class="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-3">
+                    Welcome back,
+                    <br class="sm:hidden" />
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                       {{ user?.firstName || 'Creator' }}
                     </span>
                   </h1>
-                  <p class="text-gray-300 dark:text-gray-400 text-base lg:text-lg max-w-2xl">
-                    Your creative workspace is ready. Let's bring your ideas to life.
+                  
+                  <!-- Enhanced description -->
+                  <p class="text-gray-600 dark:text-gray-300 text-lg lg:text-xl leading-relaxed mb-6">
+                    Your creative workspace is ready. Transform your ideas into stunning designs with our powerful tools.
                   </p>
+                  
+                  <!-- Quick access actions for mobile -->
+                  <div class="flex flex-wrap gap-3 xl:hidden">
+                    <router-link
+                      to="/editor"
+                      class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
+                    >
+                      <component :is="icons.plus" class="w-4 h-4 mr-2" />
+                      Create
+                    </router-link>
+                    <router-link
+                      to="/templates"
+                      class="inline-flex items-center px-5 py-2.5 bg-white/20 hover:bg-white/30 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold transition-all duration-200 border border-gray-300/50 hover:border-gray-400/50 dark:border-gray-700 dark:hover:border-gray-600 text-sm backdrop-blur-sm"
+                    >
+                      <component :is="icons.template" class="w-4 h-4 mr-2" />
+                      Browse
+                    </router-link>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Center - Quick Stats -->
-            <div class="flex-shrink-0 lg:mx-8">
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-                <div class="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10 transition-all duration-200 group">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center">
-                      <component :is="icons.design" class="w-4 h-4 text-primary-300" />
-                    </div>
-                  </div>
-                  <div class="text-xl font-bold text-white dark:text-gray-100">{{ dashboardStats?.overview?.totalDesigns || 0 }}</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500">Projects</div>
-                </div>
-                
-                <div class="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10 transition-all duration-200 group">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                      <component :is="icons.folder" class="w-4 h-4 text-emerald-300" />
-                    </div>
-                  </div>
-                  <div class="text-xl font-bold text-white dark:text-gray-100">{{ dashboardStats?.overview?.totalProjects || 0 }}</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500">Folders</div>
-                </div>
-                
-                <div class="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10 transition-all duration-200 group">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                      <component :is="icons.download" class="w-4 h-4 text-orange-300" />
-                    </div>
-                  </div>
-                  <div class="text-xl font-bold text-white dark:text-gray-100">{{ dashboardStats?.overview?.totalExports || 0 }}</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500">Exports</div>
-                </div>
-                
-                <div class="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10 transition-all duration-200 group">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="w-8 h-8 bg-secondary-500/20 rounded-lg flex items-center justify-center">
-                      <component :is="icons.template" class="w-4 h-4 text-secondary-300" />
-                    </div>
-                  </div>
-                  <div class="text-xl font-bold text-white dark:text-gray-100">{{ Math.round(dashboardStats?.overview?.successRate || 0) }}%</div>
-                  <div class="text-xs text-gray-400 dark:text-gray-500">Success</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right - Action Buttons -->
+            <!-- Enhanced Stats Grid -->
             <div class="flex-shrink-0">
-              <div class="flex flex-col sm:flex-row lg:flex-col gap-3">
+              <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4">
+                <div class="group bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl p-4 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl text-white">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                      <component :is="icons.design" class="w-5 h-5 text-white" />
+                    </div>
+                    <div class="w-2 h-2 bg-white/60 rounded-full group-hover:bg-white transition-colors"></div>
+                  </div>
+                  <div class="text-2xl font-bold text-white mb-1">{{ dashboardStats?.overview?.totalDesigns || 0 }}</div>
+                  <div class="text-sm text-blue-100 font-medium">Total Projects</div>
+                </div>
+                
+                <div class="group bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 rounded-xl p-4 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl text-white">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                      <component :is="icons.folder" class="w-5 h-5 text-white" />
+                    </div>
+                    <div class="w-2 h-2 bg-white/60 rounded-full group-hover:bg-white transition-colors"></div>
+                  </div>
+                  <div class="text-2xl font-bold text-white mb-1">{{ dashboardStats?.overview?.totalProjects || 0 }}</div>
+                  <div class="text-sm text-purple-100 font-medium">Collections</div>
+                </div>
+                
+                <div class="group bg-gradient-to-br from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 rounded-xl p-4 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl text-white">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                      <component :is="icons.download" class="w-5 h-5 text-white" />
+                    </div>
+                    <div class="w-2 h-2 bg-white/60 rounded-full group-hover:bg-white transition-colors"></div>
+                  </div>
+                  <div class="text-2xl font-bold text-white mb-1">{{ dashboardStats?.overview?.totalExports || 0 }}</div>
+                  <div class="text-sm text-orange-100 font-medium">Downloads</div>
+                </div>
+                
+                <div class="group bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 rounded-xl p-4 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl text-white">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                      <component :is="icons.template" class="w-5 h-5 text-white" />
+                    </div>
+                    <div class="w-2 h-2 bg-white/60 rounded-full group-hover:bg-white transition-colors"></div>
+                  </div>
+                  <div class="text-2xl font-bold text-white mb-1">{{ Math.round(dashboardStats?.overview?.successRate || 0) }}%</div>
+                  <div class="text-sm text-emerald-100 font-medium">Success Rate</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Enhanced Action Buttons (Desktop) -->
+            <div class="hidden xl:flex flex-shrink-0">
+              <div class="flex flex-col gap-4">
                 <router-link
                   to="/editor"
-                  class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
+                  class="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl text-base"
                 >
-                  <component :is="icons.plus" class="w-4 h-4 mr-2" />
-                  Create Design
+                  <component :is="icons.plus" class="w-5 h-5 mr-3 group-hover:rotate-90 transition-transform duration-200" />
+                  Create New Design
                 </router-link>
                 <router-link
                   to="/templates"
-                  class="inline-flex items-center px-6 py-3 bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 backdrop-blur-sm text-white rounded-lg font-semibold transition-all duration-200 border border-white/20 dark:border-white/10 hover:border-white/30 dark:hover:border-white/20 text-sm"
+                  class="group inline-flex items-center px-8 py-4 bg-white/20 hover:bg-white/30 dark:bg-gray-800 dark:hover:bg-gray-700 backdrop-blur-sm text-gray-900 dark:text-white rounded-xl font-semibold transition-all duration-200 border border-gray-300/50 hover:border-gray-400/50 dark:border-gray-700 dark:hover:border-gray-600 hover:shadow-lg text-base"
                 >
-                  <component :is="icons.template" class="w-4 h-4 mr-2" />
-                  Templates
+                  <component :is="icons.template" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
+                  Browse Templates
                 </router-link>
               </div>
             </div>
@@ -116,94 +149,97 @@
         </div>
       </div>
 
-      <!-- Professional Quick Actions Grid -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+      <!-- Enhanced Quick Actions Grid -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
         <div class="flex items-center justify-between mb-8">
           <div>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Quick Actions</h2>
-            <p class="text-gray-600 dark:text-gray-300 mt-1">Start creating with these essential tools</p>
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Quick Actions</h2>
+            <p class="text-gray-600 dark:text-gray-300 mt-2 text-lg">Start creating with these essential tools</p>
+          </div>
+          <div class="hidden sm:flex items-center space-x-2">
+            <div class="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse"></div>
+            <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">Ready to create</span>
           </div>
         </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <router-link
             to="/templates"
-            class="group relative p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl hover:from-emerald-100 hover:to-teal-100 dark:hover:from-emerald-900/30 dark:hover:to-teal-900/30 transition-all duration-300 transform hover:scale-105 border border-emerald-200/50 dark:border-emerald-700/50 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-sm hover:shadow-md"
+            class="group relative p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/30 dark:hover:to-blue-800/30 transition-all duration-300 transform hover:scale-105 border border-blue-200/50 dark:border-blue-700/50 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm hover:shadow-xl"
           >
             <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 transition-colors shadow-lg">
-                <component :is="icons.template" class="w-6 h-6 text-white" />
+              <div class="w-14 h-14 bg-blue-500 dark:bg-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 dark:group-hover:bg-blue-700 transition-colors shadow-lg ring-4 ring-blue-500/20 dark:ring-blue-600/20">
+                <component :is="icons.template" class="w-7 h-7 text-white" />
               </div>
-              <div class="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowRightIcon class="w-5 h-5" />
+              <div class="text-blue-500 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                <ArrowRightIcon class="w-6 h-6" />
               </div>
             </div>
-            <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">Templates</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300">Professional designs</p>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg mb-2">Templates</h3>
+            <p class="text-gray-600 dark:text-gray-300">Professional designs ready to customize</p>
           </router-link>
 
           <router-link
             to="/media"
-            class="group relative p-6 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl hover:from-purple-100 hover:to-violet-100 dark:hover:from-purple-900/30 dark:hover:to-violet-900/30 transition-all duration-300 transform hover:scale-105 border border-purple-200/50 dark:border-purple-700/50 hover:border-purple-300 dark:hover:border-purple-600 shadow-sm hover:shadow-md"
+            class="group relative p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-2xl hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900/30 dark:hover:to-purple-800/30 transition-all duration-300 transform hover:scale-105 border border-purple-200/50 dark:border-purple-700/50 hover:border-purple-300 dark:hover:border-purple-600 shadow-sm hover:shadow-xl"
           >
             <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center group-hover:bg-purple-600 transition-colors shadow-lg">
-                <component :is="icons.media" class="w-6 h-6 text-white" />
+              <div class="w-14 h-14 bg-purple-500 dark:bg-purple-600 rounded-2xl flex items-center justify-center group-hover:bg-purple-600 dark:group-hover:bg-purple-700 transition-colors shadow-lg ring-4 ring-purple-500/20 dark:ring-purple-600/20">
+                <component :is="icons.media" class="w-7 h-7 text-white" />
               </div>
-              <div class="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowRightIcon class="w-5 h-5" />
+              <div class="text-purple-500 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                <ArrowRightIcon class="w-6 h-6" />
               </div>
             </div>
-            <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">Stock Media</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300">High-quality assets</p>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg mb-2">Media Library</h3>
+            <p class="text-gray-600 dark:text-gray-300">Manage your images and assets</p>
           </router-link>
 
           <router-link
             to="/designs"
-            class="group relative p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-300 transform hover:scale-105 border border-blue-200/50 dark:border-blue-700/50 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm hover:shadow-md"
+            class="group relative p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-2xl hover:from-emerald-100 hover:to-emerald-200 dark:hover:from-emerald-900/30 dark:hover:to-emerald-800/30 transition-all duration-300 transform hover:scale-105 border border-emerald-200/50 dark:border-emerald-700/50 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-sm hover:shadow-xl"
           >
             <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors shadow-lg">
-                <component :is="icons.folder" class="w-6 h-6 text-white" />
+              <div class="w-14 h-14 bg-emerald-500 dark:bg-emerald-600 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600 dark:group-hover:bg-emerald-700 transition-colors shadow-lg ring-4 ring-emerald-500/20 dark:ring-emerald-600/20">
+                <component :is="icons.folder" class="w-7 h-7 text-white" />
               </div>
-              <div class="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowRightIcon class="w-5 h-5" />
+              <div class="text-emerald-500 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                <ArrowRightIcon class="w-6 h-6" />
               </div>
             </div>
-            <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">My Projects</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300">Manage designs</p>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg mb-2">My Projects</h3>
+            <p class="text-gray-600 dark:text-gray-300">Browse and manage your designs</p>
           </router-link>
 
           <router-link
-            to="/video-to-design"
-            class="group relative p-6 bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-xl hover:from-red-100 hover:to-pink-100 dark:hover:from-red-900/30 dark:hover:to-pink-900/30 transition-all duration-300 transform hover:scale-105 border border-red-200/50 dark:border-red-700/50 hover:border-red-300 dark:hover:border-red-600 shadow-sm hover:shadow-md"
+            to="/editor"
+            class="group relative p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-2xl hover:from-indigo-100 hover:to-indigo-200 dark:hover:from-indigo-900/30 dark:hover:to-indigo-800/30 transition-all duration-300 transform hover:scale-105 border border-indigo-200/50 dark:border-indigo-700/50 hover:border-indigo-300 dark:hover:border-indigo-600 shadow-sm hover:shadow-xl"
           >
             <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:from-red-600 group-hover:to-pink-600 transition-all shadow-lg">
-                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
+              <div class="w-14 h-14 bg-indigo-500 dark:bg-indigo-600 rounded-2xl flex items-center justify-center group-hover:bg-indigo-600 dark:group-hover:bg-indigo-700 transition-colors shadow-lg ring-4 ring-indigo-500/20 dark:ring-indigo-600/20">
+                <component :is="icons.plus" class="w-7 h-7 text-white" />
               </div>
-              <div class="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowRightIcon class="w-5 h-5" />
+              <div class="text-indigo-500 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                <ArrowRightIcon class="w-6 h-6" />
               </div>
             </div>
-            <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">AI Generator</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300">YouTube thumbnails</p>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg mb-2">Create Design</h3>
+            <p class="text-gray-600 dark:text-gray-300">Start from scratch with our editor</p>
           </router-link>
         </div>
       </div>
 
-      <!-- Recent Designs Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <!-- Enhanced Recent Designs Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
         <div class="px-8 py-6 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Recent Projects</h2>
-              <p class="text-gray-600 dark:text-gray-300 mt-1">Continue working on your latest designs</p>
+              <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Recent Projects</h2>
+              <p class="text-gray-600 dark:text-gray-300 mt-2 text-lg">Continue working on your latest designs</p>
             </div>
             <router-link
               to="/designs" 
-              class="inline-flex items-center px-4 py-2 bg-gray-900 dark:bg-primary-600 hover:bg-gray-800 dark:hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm shadow-sm"
+              class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
             >
               View all
               <ArrowRightIcon class="w-4 h-4 ml-2" />
@@ -363,17 +399,17 @@
         </div>
       </div>
 
-      <!-- Featured Templates Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <!-- Enhanced Featured Templates Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
         <div class="px-8 py-6 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Featured Templates</h2>
-              <p class="text-gray-600 dark:text-gray-300 mt-1">Professional designs to accelerate your workflow</p>
+              <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Featured Templates</h2>
+              <p class="text-gray-600 dark:text-gray-300 mt-2 text-lg">Professional designs to accelerate your workflow</p>
             </div>
             <router-link
               to="/templates"
-              class="inline-flex items-center px-4 py-2 bg-gray-900 dark:bg-primary-600 hover:bg-gray-800 dark:hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm shadow-sm"
+              class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
             >
               Browse all
               <ArrowRightIcon class="w-4 h-4 ml-2" />
@@ -804,7 +840,16 @@ onMounted(async () => {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-20px);
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
