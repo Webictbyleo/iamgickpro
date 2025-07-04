@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 shadow-sm">
+  <div class="bg-white dark:bg-secondary-900 border-b border-secondary-200 dark:border-secondary-700 flex-shrink-0 shadow-sm">
     <!-- Light Modern Toolbar to complement dark sidebar -->
     <div class="flex items-center h-16 px-6">
       <!-- Left Section - Logo & Design Name -->
@@ -12,7 +12,7 @@
         </div>
         
         <!-- Design Name -->
-        <div class="flex items-center bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md group">
+        <div class="flex items-center bg-secondary-50 dark:bg-secondary-800 rounded-xl px-4 py-2.5 border border-secondary-200 dark:border-secondary-600 hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md group">
           <input
             ref="designNameInput"
             :value="designName"
@@ -21,7 +21,7 @@
             @blur="handleDesignNameBlur"
             @keydown.enter="handleDesignNameEnter"
             @keydown.escape="handleDesignNameEscape"
-            class="text-sm font-medium bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 rounded-lg px-2 py-1 min-w-0 max-w-xs truncate transition-all duration-200 group-hover:bg-white dark:group-hover:bg-gray-700"
+            class="text-sm font-medium bg-transparent border-none outline-none text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400 focus:bg-white dark:focus:bg-secondary-700 rounded-lg px-2 py-1 min-w-0 max-w-xs truncate transition-all duration-200 group-hover:bg-white dark:group-hover:bg-secondary-700"
             :placeholder="designName || 'Untitled Design'"
           />
         </div>
@@ -31,15 +31,15 @@
       <div class="flex-1 flex items-center justify-center">
         <div class="flex items-center space-x-4">
           <!-- History Controls - Flat Design -->
-          <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center bg-secondary-100 dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-600">
             <button
               :disabled="!canUndo"
               @click="$emit('undo')"
               :class="[
-                'px-3 py-2 transition-all duration-200 flex items-center space-x-1.5 border-r border-gray-200 dark:border-gray-600',
+                'px-3 py-2 transition-all duration-200 flex items-center space-x-1.5 border-r border-secondary-200 dark:border-secondary-600',
                 canUndo 
-                  ? 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400' 
-                  : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  ? 'hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-200 hover:text-primary-600 dark:hover:text-primary-400' 
+                  : 'text-secondary-400 dark:text-secondary-500 cursor-not-allowed'
               ]"
               title="Undo (Ctrl+Z)"
             >
@@ -53,8 +53,8 @@
               :class="[
                 'px-3 py-2 transition-all duration-200 flex items-center space-x-1.5',
                 canRedo 
-                  ? 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400' 
-                  : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  ? 'hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-200 hover:text-primary-600 dark:hover:text-primary-400' 
+                  : 'text-secondary-400 dark:text-secondary-500 cursor-not-allowed'
               ]"
               title="Redo (Ctrl+Y)"
             >
@@ -71,7 +71,7 @@
                 saveStatus === 'saved' ? 'bg-success-50 dark:bg-success-900/20 text-success-600 dark:text-success-400' :
                 saveStatus === 'saving' ? 'bg-warning-50 dark:bg-warning-900/20 text-warning-600 dark:text-warning-400' :
                 saveStatus === 'error' ? 'bg-danger-50 dark:bg-danger-900/20 text-danger-600 dark:text-danger-400' : 
-                'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                'bg-secondary-50 dark:bg-secondary-800 text-secondary-500 dark:text-secondary-400'
               ]"
               :title="saveStatus === 'saved' ? 'All changes saved' :
                      saveStatus === 'saving' ? 'Saving changes...' :
@@ -102,13 +102,16 @@
         </div>
       </div>
 
-      <!-- Right Section - Save & Export Actions -->
+      <!-- Right Section - Theme Toggle, Save & Export Actions -->
       <div class="flex items-center space-x-3">
+        <!-- Theme Toggle -->
+        <ThemeToggle />
+        
         <!-- Save Button -->
         <button
           @click="$emit('save')"
           :disabled="saveStatus === 'saving'"
-          class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50"
           title="Save Design (Ctrl+S)"
         >
           <ArrowPathIcon 
@@ -137,6 +140,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import ExportDropdown from './ExportDropdown.vue'
+import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
 import RedoIcon from '@/components/icons/RedoIcon.vue'
 import { 

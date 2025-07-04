@@ -2,15 +2,15 @@
   <div class="flex items-center space-x-4">
     <!-- Shape Type Display -->
     <div class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700 min-w-max">Shape:</label>
-      <span class="px-3 py-1 text-sm bg-gray-100 rounded-md border min-w-[100px] text-gray-800 font-medium">
+      <label class="text-sm font-medium text-secondary-700 dark:text-secondary-300 min-w-max">Shape:</label>
+      <span class="px-3 py-1 text-sm bg-secondary-100 dark:bg-secondary-700 rounded-md border border-secondary-300 dark:border-secondary-600 min-w-[100px] text-secondary-900 dark:text-secondary-100 font-medium">
         {{ getShapeLabel(shapeType) }}
       </span>
     </div>
 
     <!-- Fill Color -->
     <div class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700">Fill:</label>
+      <label class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Fill:</label>
       <PropertyColorPicker
         :value="getFillColorString(props.fill)"
         @update="handleFillUpdate"
@@ -20,7 +20,7 @@
 
     <!-- Stroke Color -->
     <div class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700">Stroke:</label>
+      <label class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Stroke:</label>
       <PropertyColorPicker
         :value="getStrokeColorString(props.stroke)"
         @update="handleStrokeUpdate"
@@ -29,7 +29,7 @@
 
     <!-- Stroke Width -->
     <div class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700">Width:</label>
+      <label class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Width:</label>
       <PropertyNumberInput
         :value="strokeWidth"
         @update:value="(value) => $emit('update', { strokeWidth: value })"
@@ -45,7 +45,7 @@
 
     <!-- Corner Radius (for rectangles) -->
     <div v-if="shapeType === 'rectangle'" class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700">Radius:</label>
+      <label class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Radius:</label>
       <PropertyNumberInput
         :value="cornerRadius"
         @update:value="(value) => $emit('update', { cornerRadius: value })"

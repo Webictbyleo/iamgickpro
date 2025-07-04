@@ -4,7 +4,7 @@
       <span class="truncate">{{ selectedLabel }}</span>
       <ChevronDownIcon 
         v-if="showDropdownIcon" 
-        class="h-4 w-4 text-secondary-400 dark:text-secondary-500 ml-2" 
+        class="h-4 w-4 text-secondary-400 dark:text-secondary-500 ml-2 transition-colors group-hover:text-secondary-600 dark:group-hover:text-secondary-300" 
       />
     </ListboxButton>
 
@@ -24,8 +24,8 @@
           v-slot="{ active, selected }"
         >
           <li :class="[
-            'relative cursor-default select-none py-2 px-3',
-            active ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100' : 'text-secondary-900 dark:text-secondary-100'
+            'relative cursor-default select-none py-2 px-3 transition-colors',
+            active ? 'bg-primary-100 dark:bg-secondary-600 text-primary-700 dark:text-secondary-100' : 'text-secondary-900 dark:text-secondary-100 hover:bg-secondary-50 dark:hover:bg-secondary-700'
           ]">
             <span :class="[
               'block truncate',
@@ -84,12 +84,13 @@ const selectedLabel = computed(() => {
 })
 
 const buttonClasses = computed(() => [
-  'relative w-full cursor-default rounded-lg py-2 pl-3 text-left border transition-colors',
+  'group relative w-full cursor-default rounded-lg py-2 pl-3 text-left border transition-colors duration-200',
   'bg-white dark:bg-secondary-800',
   'border-secondary-300 dark:border-secondary-600',
   'text-secondary-900 dark:text-secondary-100',
+  'hover:border-secondary-400 dark:hover:border-secondary-500 hover:bg-secondary-50 dark:hover:bg-secondary-700',
   'focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400',
   props.showDropdownIcon ? 'pr-10' : 'pr-3',
-  props.disabled ? 'opacity-50 cursor-not-allowed' : ''
+  props.disabled ? 'opacity-50 cursor-not-allowed hover:border-secondary-300 dark:hover:border-secondary-600 hover:bg-white dark:hover:bg-secondary-800' : 'cursor-pointer'
 ])
 </script>

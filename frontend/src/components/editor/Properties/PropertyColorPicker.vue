@@ -115,7 +115,7 @@
                 @click="updateColor(color)"
                 :class="[
                   'w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110',
-                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-gray-300 dark:border-gray-600'
+                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-secondary-300 dark:border-secondary-600'
                 ]"
                 :style="{ backgroundColor: color }"
                 :title="color"
@@ -125,7 +125,7 @@
 
           <!-- Recently Used -->
           <div v-if="recentColors.length > 0">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recently Used</label>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Recently Used</label>
             <div class="flex space-x-2 flex-wrap gap-2">
               <button
                 v-for="color in recentColors"
@@ -133,7 +133,7 @@
                 @click="updateColor(color)"
                 :class="[
                   'w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110',
-                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-gray-300 dark:border-gray-600'
+                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-secondary-300 dark:border-secondary-600'
                 ]"
                 :style="{ backgroundColor: color }"
                 :title="color"
@@ -145,11 +145,11 @@
         <!-- Gradient Tab -->
         <div v-if="activeTab === 'gradient' && allowGradient" class="space-y-4">
           <!-- Gradient Preview -->
-          <div class="h-8 rounded-lg border-2 border-gray-300" :style="{ background: gradientPreview }" />
+          <div class="h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600" :style="{ background: gradientPreview }" />
           
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Type</label>
               <PropertyDropdown
                 :value="gradientType"
                 :options="gradientOptions"
@@ -158,7 +158,7 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Direction</label>
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Direction</label>
               <PropertyDropdown
                 :value="gradientDirection"
                 :options="gradientDirectionOptions"
@@ -170,7 +170,7 @@
           <!-- Gradient Colors with improved UX -->
           <div>
             <div class="flex items-center justify-between mb-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color Stops</label>
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Color Stops</label>
               <button
                 v-if="gradientColors.length < 5"
                 @click="addGradientColor"
@@ -184,11 +184,11 @@
               <div 
                 v-for="(colorStop, index) in gradientColors" 
                 :key="index" 
-                class="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg"
+                class="flex items-center space-x-3 p-3 bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg"
               >
                 <button
                   @click="openGradientColorPicker(index)"
-                  class="w-8 h-8 rounded-lg border-2 border-gray-300 flex-shrink-0"
+                  class="w-8 h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 transition-all"
                   :style="{ backgroundColor: colorStop.color }"
                 />
                 
@@ -196,27 +196,27 @@
                   <input
                     :value="colorStop.color"
                     @input="updateGradientColorValue(index, $event)"
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    class="w-full px-2 py-1 border border-secondary-300 dark:border-secondary-600 rounded text-xs bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400"
                     placeholder="#000000"
                   />
                   <div class="flex items-center space-x-2">
-                    <span class="text-xs text-gray-500">Position:</span>
+                    <span class="text-xs text-secondary-500 dark:text-secondary-400">Position:</span>
                     <input
                       type="range"
                       min="0"
                       max="100"
                       :value="colorStop.position"
                       @input="updateGradientColorPosition(index, $event)"
-                      class="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      class="flex-1 h-1 bg-secondary-200 dark:bg-secondary-600 rounded-lg appearance-none cursor-pointer position-slider"
                     />
-                    <span class="text-xs text-gray-500 w-8">{{ colorStop.position }}%</span>
+                    <span class="text-xs text-secondary-500 dark:text-secondary-400 w-8">{{ colorStop.position }}%</span>
                   </div>
                 </div>
                 
                 <button
                   v-if="gradientColors.length > 2"
                   @click="removeGradientColor(index)"
-                  class="text-red-500 hover:text-red-700 p-1"
+                  class="text-danger-500 dark:text-danger-400 hover:text-danger-700 dark:hover:text-danger-300 p-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-danger-500/50"
                   title="Remove color stop"
                 >
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -229,13 +229,13 @@
           
           <!-- Gradient Presets -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Gradient Presets</label>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Gradient Presets</label>
             <div class="grid grid-cols-4 gap-2">
               <button
                 v-for="preset in gradientPresets"
                 :key="preset.name"
                 @click="applyGradientPreset(preset)"
-                class="h-8 rounded-lg border-2 border-gray-300 hover:border-purple-500 transition-colors"
+                class="h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50"
                 :style="{ background: preset.value }"
                 :title="preset.name"
               />
@@ -625,12 +625,21 @@ watch(() => props.value, (newValue) => {
 </script>
 
 <style scoped>
-/* Custom slider styling */
+/* Opacity slider styling */
 .slider {
   background: linear-gradient(to right, transparent 0%, currentColor 100%);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
+  transition: all 0.2s ease;
+}
+
+.slider:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* primary-500/50 */
+}
+
+.dark .slider:focus {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5); /* primary-400/50 */
 }
 
 .slider::-webkit-slider-thumb {
@@ -639,31 +648,131 @@ watch(() => props.value, (newValue) => {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #d1d5db;
+  background: rgb(59 130 246); /* primary-500 */
+  border: 2px solid rgb(255 255 255); /* white */
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.dark .slider::-webkit-slider-thumb {
+  background: rgb(96 165 250); /* primary-400 */
+  border-color: rgb(30 41 59); /* secondary-800 */
 }
 
 .slider::-webkit-slider-thumb:hover {
-  border-color: #8b5cf6;
+  background: rgb(37 99 235); /* primary-600 */
+  transform: scale(1.1);
+}
+
+.dark .slider::-webkit-slider-thumb:hover {
+  background: rgb(147 197 253); /* primary-300 */
 }
 
 .slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #d1d5db;
+  background: rgb(59 130 246); /* primary-500 */
+  border: 2px solid rgb(255 255 255); /* white */
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.dark .slider::-moz-range-thumb {
+  background: rgb(96 165 250); /* primary-400 */
+  border-color: rgb(30 41 59); /* secondary-800 */
 }
 
 .slider::-moz-range-thumb:hover {
-  border-color: #8b5cf6;
+  background: rgb(37 99 235); /* primary-600 */
 }
 
-/* Gradient color stop range slider */
+.dark .slider::-moz-range-thumb:hover {
+  background: rgb(147 197 253); /* primary-300 */
+}
+
+/* Position slider styling for gradient color stops */
+.position-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.position-slider::-webkit-slider-track {
+  background: rgb(229 231 235); /* secondary-200 */
+  height: 4px;
+  border-radius: 2px;
+}
+
+.dark .position-slider::-webkit-slider-track {
+  background: rgb(71 85 105); /* secondary-600 */
+}
+
+.position-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: rgb(59 130 246); /* primary-500 */
+  border: 2px solid rgb(255 255 255); /* white */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.dark .position-slider::-webkit-slider-thumb {
+  background: rgb(96 165 250); /* primary-400 */
+  border-color: rgb(30 41 59); /* secondary-800 */
+}
+
+.position-slider::-webkit-slider-thumb:hover {
+  background: rgb(37 99 235); /* primary-600 */
+  transform: scale(1.1);
+}
+
+.dark .position-slider::-webkit-slider-thumb:hover {
+  background: rgb(147 197 253); /* primary-300 */
+}
+
+.position-slider::-moz-range-track {
+  background: rgb(229 231 235); /* secondary-200 */
+  height: 4px;
+  border-radius: 2px;
+  border: none;
+}
+
+.dark .position-slider::-moz-range-track {
+  background: rgb(71 85 105); /* secondary-600 */
+}
+
+.position-slider::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: rgb(59 130 246); /* primary-500 */
+  border: 2px solid rgb(255 255 255); /* white */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .position-slider::-moz-range-thumb {
+  background: rgb(96 165 250); /* primary-400 */
+  border-color: rgb(30 41 59); /* secondary-800 */
+}
+
+.position-slider::-moz-range-thumb:hover {
+  background: rgb(37 99 235); /* primary-600 */
+}
+
+.dark .position-slider::-moz-range-thumb:hover {
+  background: rgb(147 197 253); /* primary-300 */
+}
+
+/* General range slider styles */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -671,10 +780,23 @@ input[type="range"] {
   cursor: pointer;
 }
 
+input[type="range"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* primary-500/50 */
+}
+
+.dark input[type="range"]:focus {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5); /* primary-400/50 */
+}
+
 input[type="range"]::-webkit-slider-track {
-  background: #e5e7eb;
+  background: rgb(229 231 235); /* secondary-200 */
   height: 4px;
   border-radius: 2px;
+}
+
+.dark input[type="range"]::-webkit-slider-track {
+  background: rgb(71 85 105); /* secondary-600 */
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -683,25 +805,58 @@ input[type="range"]::-webkit-slider-thumb {
   height: 12px;
   width: 12px;
   border-radius: 50%;
-  background: #8b5cf6;
-  border: 2px solid #ffffff;
+  background: rgb(59 130 246); /* primary-500 */
+  border: 2px solid rgb(255 255 255); /* white */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+  background: rgb(96 165 250); /* primary-400 */
+  border-color: rgb(30 41 59); /* secondary-800 */
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: rgb(37 99 235); /* primary-600 */
+  transform: scale(1.1);
+}
+
+.dark input[type="range"]::-webkit-slider-thumb:hover {
+  background: rgb(147 197 253); /* primary-300 */
 }
 
 input[type="range"]::-moz-range-track {
-  background: #e5e7eb;
+  background: rgb(229 231 235); /* secondary-200 */
   height: 4px;
   border-radius: 2px;
   border: none;
+}
+
+.dark input[type="range"]::-moz-range-track {
+  background: rgb(71 85 105); /* secondary-600 */
 }
 
 input[type="range"]::-moz-range-thumb {
   height: 12px;
   width: 12px;
   border-radius: 50%;
-  background: #8b5cf6;
-  border: 2px solid #ffffff;
+  background: rgb(59 130 246); /* primary-500 */
+  border: 2px solid rgb(255 255 255); /* white */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark input[type="range"]::-moz-range-thumb {
+  background: rgb(96 165 250); /* primary-400 */
+  border-color: rgb(30 41 59); /* secondary-800 */
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  background: rgb(37 99 235); /* primary-600 */
+}
+
+.dark input[type="range"]::-moz-range-thumb:hover {
+  background: rgb(147 197 253); /* primary-300 */
 }
 </style>
