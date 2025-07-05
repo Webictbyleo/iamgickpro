@@ -2,7 +2,7 @@
   <Popover v-slot="{ open }" class="relative">
     <PopoverButton
       :class="[
-        'w-8 h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 transition-all duration-200',
+        'w-8 h-8 rounded-lg border-2 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 transition-all duration-200',
         open ? 'ring-2 ring-primary-500' : ''
       ]"
       :style="{ backgroundColor: displayColor }"
@@ -18,7 +18,7 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <PopoverPanel class="absolute z-[9999] mt-2 w-80 bg-white dark:bg-secondary-800 rounded-xl shadow-xl border border-secondary-200 dark:border-secondary-700 p-4 popover-panel">
+      <PopoverPanel class="absolute z-[9999] mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 popover-panel">
         <!-- Color Picker Tabs -->
         <div class="flex space-x-1 mb-4">
           <button
@@ -29,7 +29,7 @@
               'flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
               activeTab === tab.id
                 ? 'bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-200'
-                : 'text-secondary-600 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-700'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
             ]"
           >
             {{ tab.label }}
@@ -41,21 +41,21 @@
           <!-- Color Preview and Controls -->
           <div class="flex items-center space-x-3">
             <div 
-              class="w-16 h-16 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 flex-shrink-0"
+              class="w-16 h-16 rounded-lg border-2 border-gray-300 dark:border-gray-600 flex-shrink-0"
               :style="{ backgroundColor: currentColor }"
             />
             <div class="flex-1 space-y-2">
               <!-- Hex Input with Color Picker -->
               <div>
-                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Hex Color</label>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Hex Color</label>
                 <div class="flex">
-                  <span class="inline-flex items-center px-3 py-2 border border-r-0 border-secondary-300 dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-700 text-secondary-500 dark:text-secondary-400 text-sm rounded-l-lg">#</span>
+                  <span class="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm rounded-l-lg">#</span>
                   <input
                     ref="hexInput"
                     :value="hexValue"
                     @input="updateHex"
                     @click="triggerColorPicker"
-                    class="flex-1 px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400 text-sm cursor-pointer bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100"
+                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400 text-sm cursor-pointer bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="000000"
                     maxlength="6"
                     title="Click to open system color picker"
@@ -73,7 +73,7 @@
               
               <!-- Opacity Slider -->
               <div v-if="allowAlpha">
-                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Opacity: {{ Math.round(opacity * 100) }}%</label>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Opacity: {{ Math.round(opacity * 100) }}%</label>
                 <input
                   type="range"
                   min="0"
@@ -81,7 +81,7 @@
                   step="0.01"
                   :value="opacity"
                   @input="updateOpacity"
-                  class="w-full h-2 bg-secondary-200 dark:bg-secondary-600 rounded-lg appearance-none cursor-pointer slider"
+                  class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
                 />
               </div>
             </div>
@@ -89,7 +89,7 @@
 
           <!-- Color Harmony Generator -->
           <div v-if="colorHarmony.length > 0">
-            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Color Harmony</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color Harmony</label>
             <div class="flex space-x-2">
               <button
                 v-for="harmonyColor in colorHarmony"
@@ -97,7 +97,7 @@
                 @click="updateColor(harmonyColor)"
                 :class="[
                   'w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110',
-                  value === harmonyColor ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-secondary-300 dark:border-secondary-600'
+                  value === harmonyColor ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-gray-300 dark:border-gray-600'
                 ]"
                 :style="{ backgroundColor: harmonyColor }"
                 :title="getColorName(harmonyColor)"
@@ -107,7 +107,7 @@
 
           <!-- Preset Colors -->
           <div>
-            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Preset Colors</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preset Colors</label>
             <div class="grid grid-cols-10 gap-2">
               <button
                 v-for="color in presetColors"
@@ -115,7 +115,7 @@
                 @click="updateColor(color)"
                 :class="[
                   'w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110',
-                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-secondary-300 dark:border-secondary-600'
+                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-gray-300 dark:border-gray-600'
                 ]"
                 :style="{ backgroundColor: color }"
                 :title="color"
@@ -125,7 +125,7 @@
 
           <!-- Recently Used -->
           <div v-if="recentColors.length > 0">
-            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Recently Used</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recently Used</label>
             <div class="flex space-x-2 flex-wrap gap-2">
               <button
                 v-for="color in recentColors"
@@ -133,7 +133,7 @@
                 @click="updateColor(color)"
                 :class="[
                   'w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110',
-                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-secondary-300 dark:border-secondary-600'
+                  isCurrentColor(color) ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900/50' : 'border-gray-300 dark:border-gray-600'
                 ]"
                 :style="{ backgroundColor: color }"
                 :title="color"
@@ -145,11 +145,11 @@
         <!-- Gradient Tab -->
         <div v-if="activeTab === 'gradient' && allowGradient" class="space-y-4">
           <!-- Gradient Preview -->
-          <div class="h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600" :style="{ background: gradientPreview }" />
+          <div class="h-8 rounded-lg border-2 border-gray-300 dark:border-gray-600" :style="{ background: gradientPreview }" />
           
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Type</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
               <PropertyDropdown
                 :value="gradientType"
                 :options="gradientOptions"
@@ -158,7 +158,7 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Direction</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Direction</label>
               <PropertyDropdown
                 :value="gradientDirection"
                 :options="gradientDirectionOptions"
@@ -170,11 +170,11 @@
           <!-- Gradient Colors with improved UX -->
           <div>
             <div class="flex items-center justify-between mb-2">
-              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Color Stops</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color Stops</label>
               <button
                 v-if="gradientColors.length < 5"
                 @click="addGradientColor"
-                class="text-xs px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
+                class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 + Add Stop
               </button>
@@ -184,11 +184,11 @@
               <div 
                 v-for="(colorStop, index) in gradientColors" 
                 :key="index" 
-                class="flex items-center space-x-3 p-3 bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg"
+                class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
               >
                 <button
                   @click="openGradientColorPicker(index)"
-                  class="w-8 h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 transition-all"
+                  class="w-8 h-8 rounded-lg border-2 border-gray-300 dark:border-gray-600 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 transition-all"
                   :style="{ backgroundColor: colorStop.color }"
                 />
                 
@@ -196,20 +196,20 @@
                   <input
                     :value="colorStop.color"
                     @input="updateGradientColorValue(index, $event)"
-                    class="w-full px-2 py-1 border border-secondary-300 dark:border-secondary-600 rounded text-xs bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400"
+                    class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400"
                     placeholder="#000000"
                   />
                   <div class="flex items-center space-x-2">
-                    <span class="text-xs text-secondary-500 dark:text-secondary-400">Position:</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Position:</span>
                     <input
                       type="range"
                       min="0"
                       max="100"
                       :value="colorStop.position"
                       @input="updateGradientColorPosition(index, $event)"
-                      class="flex-1 h-1 bg-secondary-200 dark:bg-secondary-600 rounded-lg appearance-none cursor-pointer position-slider"
+                      class="flex-1 h-1 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer position-slider"
                     />
-                    <span class="text-xs text-secondary-500 dark:text-secondary-400 w-8">{{ colorStop.position }}%</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 w-8">{{ colorStop.position }}%</span>
                   </div>
                 </div>
                 
@@ -229,13 +229,13 @@
           
           <!-- Gradient Presets -->
           <div>
-            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Gradient Presets</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gradient Presets</label>
             <div class="grid grid-cols-4 gap-2">
               <button
                 v-for="preset in gradientPresets"
                 :key="preset.name"
                 @click="applyGradientPreset(preset)"
-                class="h-8 rounded-lg border-2 border-secondary-300 dark:border-secondary-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50"
+                class="h-8 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50"
                 :style="{ background: preset.value }"
                 :title="preset.name"
               />
@@ -657,7 +657,7 @@ watch(() => props.value, (newValue) => {
 
 .dark .slider::-webkit-slider-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 .slider::-webkit-slider-thumb:hover {
@@ -682,7 +682,7 @@ watch(() => props.value, (newValue) => {
 
 .dark .slider::-moz-range-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 .slider::-moz-range-thumb:hover {
@@ -702,13 +702,13 @@ watch(() => props.value, (newValue) => {
 }
 
 .position-slider::-webkit-slider-track {
-  background: rgb(229 231 235); /* secondary-200 */
+  background: rgb(229 231 235); /* gray-200 */
   height: 4px;
   border-radius: 2px;
 }
 
 .dark .position-slider::-webkit-slider-track {
-  background: rgb(71 85 105); /* secondary-600 */
+  background: rgb(75 85 99); /* gray-600 */
 }
 
 .position-slider::-webkit-slider-thumb {
@@ -725,7 +725,7 @@ watch(() => props.value, (newValue) => {
 
 .dark .position-slider::-webkit-slider-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 .position-slider::-webkit-slider-thumb:hover {
@@ -738,14 +738,14 @@ watch(() => props.value, (newValue) => {
 }
 
 .position-slider::-moz-range-track {
-  background: rgb(229 231 235); /* secondary-200 */
+  background: rgb(229 231 235); /* gray-200 */
   height: 4px;
   border-radius: 2px;
   border: none;
 }
 
 .dark .position-slider::-moz-range-track {
-  background: rgb(71 85 105); /* secondary-600 */
+  background: rgb(75 85 99); /* gray-600 */
 }
 
 .position-slider::-moz-range-thumb {
@@ -761,7 +761,7 @@ watch(() => props.value, (newValue) => {
 
 .dark .position-slider::-moz-range-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 .position-slider::-moz-range-thumb:hover {
@@ -790,13 +790,13 @@ input[type="range"]:focus {
 }
 
 input[type="range"]::-webkit-slider-track {
-  background: rgb(229 231 235); /* secondary-200 */
+  background: rgb(229 231 235); /* gray-200 */
   height: 4px;
   border-radius: 2px;
 }
 
 .dark input[type="range"]::-webkit-slider-track {
-  background: rgb(71 85 105); /* secondary-600 */
+  background: rgb(75 85 99); /* gray-600 */
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -813,7 +813,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .dark input[type="range"]::-webkit-slider-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
@@ -826,14 +826,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 input[type="range"]::-moz-range-track {
-  background: rgb(229 231 235); /* secondary-200 */
+  background: rgb(229 231 235); /* gray-200 */
   height: 4px;
   border-radius: 2px;
   border: none;
 }
 
 .dark input[type="range"]::-moz-range-track {
-  background: rgb(71 85 105); /* secondary-600 */
+  background: rgb(75 85 99); /* gray-600 */
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -849,7 +849,7 @@ input[type="range"]::-moz-range-thumb {
 
 .dark input[type="range"]::-moz-range-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 input[type="range"]::-moz-range-thumb:hover {

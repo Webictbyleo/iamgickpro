@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h4 class="text-sm font-medium text-secondary-900 dark:text-secondary-100 mb-4 flex items-center">
+    <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
       <SparklesIcon class="w-4 h-4 mr-2 text-accent-500 dark:text-accent-400" />
       Filter Presets
     </h4>
@@ -14,7 +14,7 @@
           'relative group cursor-pointer border-2 rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105',
           currentPreset === preset.name 
             ? 'border-primary-500 dark:border-primary-400 ring-2 ring-primary-500/20 dark:ring-primary-400/20 shadow-lg' 
-            : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 hover:shadow-md'
+            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
         ]"
       >
         <!-- Preview with sample image -->
@@ -52,9 +52,9 @@
         </div>
         
         <!-- Label with enhanced styling -->
-        <div class="p-2 bg-white dark:bg-secondary-800">
-          <p class="text-xs font-semibold text-secondary-900 dark:text-secondary-100 text-center truncate">{{ preset.name }}</p>
-          <p class="text-xs text-secondary-500 dark:text-secondary-400 text-center mt-0.5">{{ preset.description }}</p>
+        <div class="p-2 bg-white dark:bg-gray-800">
+          <p class="text-xs font-semibold text-gray-900 dark:text-gray-100 text-center truncate">{{ preset.name }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-0.5">{{ preset.description }}</p>
         </div>
       </div>
     </div>

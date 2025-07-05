@@ -22,8 +22,8 @@
                 :class="[
                   'px-3 py-2 flex items-center !justify-start space-x-2 transition-colors rounded-md',
                   flipX 
-                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50' 
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' 
+                    : 'text-gray-600 hover:text-primary-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-primary-400 dark:hover:bg-gray-700'
                 ]"
                 @click="$emit('update', { flipX: !flipX })"
                 tooltip="Flip Horizontally"
@@ -38,8 +38,8 @@
                 :class="[
                   'px-3 py-2 flex items-center !justify-start space-x-2 transition-colors rounded-md',
                   flipY 
-                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50' 
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' 
+                    : 'text-gray-600 hover:text-primary-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-primary-400 dark:hover:bg-gray-700'
                 ]"
                 @click="$emit('update', { flipY: !flipY })"
                 tooltip="Flip Vertically"
@@ -67,7 +67,7 @@
           options: {}
         })"
         tooltip="Remove Image Background (AI)"
-        class="hover:bg-secondary-50 dark:hover:bg-secondary-900/20 text-gray-600 hover:text-secondary-600 dark:text-gray-300 dark:hover:text-secondary-400 flex items-center space-x-1.5"
+        class="hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 flex items-center space-x-1.5"
       >
         <ScissorsIcon class="w-4 h-4" />
         <span class="text-sm font-medium">Remove BG</span>
@@ -78,7 +78,7 @@
         size="sm"
         @click="$emit('edit-image')"
         tooltip="Advanced Image Settings"
-        class="hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 flex items-center space-x-1.5"
+        class="hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 flex items-center space-x-1.5"
       >
         <PencilSquareIcon class="w-4 h-4" />
         <span class="text-sm font-medium">Edit</span>

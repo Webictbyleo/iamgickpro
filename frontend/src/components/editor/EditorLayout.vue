@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-secondary-50 dark:bg-secondary-900 flex overflow-hidden">
+  <div class="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
     <!-- Modern Left Sidebar -->
     <ModernSidebar 
       :active-tool="activeTool"
@@ -34,11 +34,11 @@
         <!-- Left Panel (Elements, Templates, Media, Contextual) -->
         <div 
           v-if="activePanel && availablePanels.includes(activePanel) || activePanelModal"
-          class="w-80 bg-white dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-700 flex flex-col h-full shadow-sm"
+          class="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full shadow-sm"
         >
           <!-- Panel Header -->
-          <div class="p-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center justify-between flex-shrink-0 bg-secondary-50 dark:bg-secondary-700">
-            <h2 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 bg-white dark:bg-gray-800">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ getPanelTitle(activePanel || activePanelModal || '') }}
             </h2>
             <ModernButton
@@ -123,7 +123,7 @@
         </div>
 
         <!-- Canvas Area -->
-        <div ref="canvasViewportElement" class="flex-1 bg-secondary-100 dark:bg-secondary-800 relative flex flex-col min-w-0 h-full">
+        <div ref="canvasViewportElement" class="flex-1 relative flex flex-col min-w-0 h-full">
 
           <!-- Canvas -->
           <div class="flex-1 relative min-h-0">
@@ -186,16 +186,16 @@
     
     <!-- Template Loading Overlay -->
     <div v-if="isLoadingTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white dark:bg-secondary-700 rounded-lg p-6 max-w-sm mx-4 text-center shadow-2xl border border-secondary-200 dark:border-secondary-600">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm mx-4 text-center shadow-2xl border border-gray-200 dark:border-gray-600">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-        <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">Loading Template</h3>
-        <p class="text-secondary-600 dark:text-secondary-400">Please wait while we load your template...</p>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Loading Template</h3>
+        <p class="text-gray-600 dark:text-gray-400">Please wait while we load your template...</p>
       </div>
     </div>
 
     <!-- Sync Status Indicator -->
     <div v-if="getUnsyncedLayers.length > 0 || failedSyncLayers.length > 0" 
-         class="fixed top-4 right-4 z-40 bg-white dark:bg-secondary-700 rounded-lg shadow-xl border border-secondary-200 dark:border-secondary-600 p-3 max-w-sm">
+         class="fixed top-4 right-4 z-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 max-w-sm">
       <div class="flex items-start space-x-3">
         <!-- Status Icon -->
         <div class="flex-shrink-0">
@@ -214,11 +214,11 @@
         
         <!-- Status Message -->
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
             <span v-if="failedSyncLayers.length > 0">Sync Failed</span>
             <span v-else>Syncing Changes</span>
           </p>
-          <p class="text-sm text-secondary-500 dark:text-secondary-400">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             <span v-if="failedSyncLayers.length > 0">
               {{ failedSyncLayers.length }} layer{{ failedSyncLayers.length !== 1 ? 's' : '' }} failed to sync
             </span>

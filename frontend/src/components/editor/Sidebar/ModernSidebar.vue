@@ -1,5 +1,5 @@
 <template>
-  <div class="w-16 bg-secondary-900 dark:bg-secondary-950 flex flex-col items-center py-4 border-r border-secondary-800 dark:border-secondary-800">
+  <div class="w-16 bg-gray-900 dark:bg-gray-950 flex flex-col items-center py-4 border-r border-gray-700 dark:border-gray-800">
     <!-- Logo/Home -->
     <button
       @click="$router.push('/')"
@@ -20,8 +20,8 @@
         :class="[
           'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 group relative',
           activeTool === tool.id
-            ? 'bg-primary-600 text-white shadow-lg scale-105 ring-2 ring-primary-400/50'
-            : 'text-secondary-400 hover:text-white hover:bg-secondary-800 dark:hover:bg-secondary-700'
+            ? 'bg-gray-900 text-white shadow-lg scale-105 ring-2 ring-gray-400/50 dark:bg-gray-100 dark:text-gray-900'
+            : 'text-gray-400 hover:text-white hover:bg-gray-800 dark:hover:bg-gray-700'
         ]"
         :title="tool.tooltip"
       >
@@ -30,9 +30,9 @@
         <!-- Keyboard shortcut indicator -->
         <div 
           v-if="tool.shortcut"
-          class="absolute -right-1 -top-1 w-4 h-4 bg-secondary-700 dark:bg-secondary-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          class="absolute -right-1 -top-1 w-4 h-4 bg-gray-700 dark:bg-gray-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         >
-          <span class="text-xs text-secondary-300 font-mono">{{ tool.shortcut }}</span>
+          <span class="text-xs text-gray-300 font-mono">{{ tool.shortcut }}</span>
         </div>
       </button>
     </div>
@@ -46,8 +46,8 @@
         :class="[
           'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 group relative',
           activePanel === panel.id
-            ? 'bg-secondary-600 text-white shadow-lg ring-2 ring-secondary-400/50'
-            : 'text-secondary-400 hover:text-white hover:bg-secondary-800 dark:hover:bg-secondary-700'
+            ? 'bg-gray-600 text-white shadow-lg ring-2 ring-gray-400/50'
+            : 'text-gray-400 hover:text-white hover:bg-gray-800 dark:hover:bg-gray-700'
         ]"
         :title="panel.label"
       >
@@ -60,7 +60,7 @@
         <!-- Notification badge for certain panels -->
         <div 
           v-if="panel.badge && (panel.badgeCount ?? 0) > 0"
-          class="absolute -right-1 -top-1 w-4 h-4 bg-danger-500 rounded-full flex items-center justify-center ring-2 ring-secondary-900"
+          class="absolute -right-1 -top-1 w-4 h-4 bg-danger-500 rounded-full flex items-center justify-center ring-2 ring-gray-900"
         >
           <span class="text-xs text-white font-semibold">{{ panel.badgeCount }}</span>
         </div>
@@ -71,7 +71,7 @@
     <div class="flex flex-col space-y-2 mt-auto">
       <button
         @click="$emit('action', 'export')"
-        class="w-10 h-10 rounded-lg flex items-center justify-center text-secondary-400 hover:text-secondary-400 hover:bg-secondary-800 dark:hover:bg-secondary-700 transition-all duration-200"
+        class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-400 hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-200"
         title="Export"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

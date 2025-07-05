@@ -4,7 +4,7 @@
       <span class="truncate">{{ selectedLabel }}</span>
       <ChevronDownIcon 
         v-if="showDropdownIcon" 
-        class="h-4 w-4 text-secondary-400 dark:text-secondary-500 ml-2 transition-colors group-hover:text-secondary-600 dark:group-hover:text-secondary-300" 
+        class="h-4 w-4 text-gray-400 dark:text-gray-500 ml-2 transition-colors group-hover:text-gray-600 dark:group-hover:text-gray-300" 
       />
     </ListboxButton>
 
@@ -16,7 +16,7 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-secondary-800 py-1 text-sm shadow-lg border border-secondary-200 dark:border-secondary-600 focus:outline-none">
+      <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-gray-800 py-1 text-sm shadow-lg border border-gray-200 dark:border-gray-600 focus:outline-none">
         <ListboxOption
           v-for="option in options"
           :key="option.value"
@@ -25,7 +25,7 @@
         >
           <li :class="[
             'relative cursor-default select-none py-2 px-3 transition-colors',
-            active ? 'bg-primary-100 dark:bg-secondary-600 text-primary-700 dark:text-secondary-100' : 'text-secondary-900 dark:text-secondary-100 hover:bg-secondary-50 dark:hover:bg-secondary-700'
+            active ? 'bg-primary-100 dark:bg-gray-600 text-primary-700 dark:text-gray-100' : 'text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]">
             <span :class="[
               'block truncate',
@@ -85,12 +85,12 @@ const selectedLabel = computed(() => {
 
 const buttonClasses = computed(() => [
   'group relative w-full cursor-default rounded-lg py-2 pl-3 text-left border transition-colors duration-200',
-  'bg-white dark:bg-secondary-800',
-  'border-secondary-300 dark:border-secondary-600',
-  'text-secondary-900 dark:text-secondary-100',
-  'hover:border-secondary-400 dark:hover:border-secondary-500 hover:bg-secondary-50 dark:hover:bg-secondary-700',
+  'bg-white dark:bg-gray-800',
+  'border-gray-300 dark:border-gray-600',
+  'text-gray-900 dark:text-gray-100',
+  'hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700',
   'focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400',
   props.showDropdownIcon ? 'pr-10' : 'pr-3',
-  props.disabled ? 'opacity-50 cursor-not-allowed hover:border-secondary-300 dark:hover:border-secondary-600 hover:bg-white dark:hover:bg-secondary-800' : 'cursor-pointer'
+  props.disabled ? 'opacity-50 cursor-not-allowed hover:border-gray-300 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-gray-800' : 'cursor-pointer'
 ])
 </script>

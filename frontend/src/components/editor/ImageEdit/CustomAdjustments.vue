@@ -4,27 +4,27 @@
     <button
       @click="isExpanded = !isExpanded"
       :class="[
-        'w-full flex items-center justify-between p-4 text-left border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800',
+        'w-full flex items-center justify-between p-4 text-left border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800',
         isExpanded 
-          ? 'border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-secondary-700' 
-          : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-800'
+          ? 'border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-gray-700' 
+          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
       ]"
     >
       <div class="flex items-center space-x-3">
         <div :class="[
           'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-          isExpanded ? 'bg-primary-500 dark:bg-primary-600' : 'bg-secondary-500 dark:bg-secondary-600'
+          isExpanded ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-500 dark:bg-gray-600'
         ]">
           <Cog6ToothIcon class="w-4 h-4 text-white" />
         </div>
         <div>
-          <h4 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">Custom Adjustments</h4>
-          <p class="text-xs text-secondary-600 dark:text-secondary-400">Fine-tune brightness, contrast, and more</p>
+          <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Custom Adjustments</h4>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Fine-tune brightness, contrast, and more</p>
         </div>
       </div>
       <ChevronDownIcon 
         :class="[
-          'w-4 h-4 text-secondary-500 dark:text-secondary-400 transition-transform duration-200',
+          'w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200',
           isExpanded ? 'rotate-180' : ''
         ]"
       />
@@ -43,7 +43,7 @@
         <!-- Quick Adjustments Grid -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Brightness
             </label>
             <PropertySlider
@@ -57,7 +57,7 @@
           </div>
           
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Contrast
             </label>
             <PropertySlider
@@ -71,7 +71,7 @@
           </div>
           
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Saturation
             </label>
             <PropertySlider
@@ -85,7 +85,7 @@
           </div>
           
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Warmth
             </label>
             <PropertySlider
@@ -100,10 +100,10 @@
         </div>
 
         <!-- Additional Filters -->
-        <div class="space-y-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
+        <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <!-- Blur -->
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Blur: {{ blur }}px
             </label>
             <PropertySlider
@@ -118,7 +118,7 @@
 
           <!-- Sepia -->
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Sepia: {{ Math.round(sepia * 100) }}%
             </label>
             <PropertySlider
@@ -133,7 +133,7 @@
 
           <!-- Grayscale -->
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Grayscale: {{ Math.round(grayscale * 100) }}%
             </label>
             <PropertySlider
@@ -148,7 +148,7 @@
 
           <!-- Invert -->
           <div>
-            <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
               Invert: {{ Math.round(invert * 100) }}%
             </label>
             <PropertySlider
@@ -163,7 +163,7 @@
         </div>
 
         <!-- Reset Button -->
-        <div class="pt-4 border-t border-secondary-200 dark:border-secondary-700">
+        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             @click="resetFilters"
             class="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg hover:bg-danger-100 dark:hover:bg-danger-900/30 hover:border-danger-300 dark:hover:border-danger-700 transition-colors"

@@ -19,27 +19,27 @@
           v-if="visible"
           ref="menuRef"
           :style="menuStyle"
-          class="absolute bg-white dark:bg-secondary-700 rounded-lg shadow-2xl border border-secondary-200 dark:border-secondary-600 py-1 min-w-[200px] max-w-[280px]"
+          class="absolute bg-white dark:bg-gray-700 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-600 py-1 min-w-[200px] max-w-[280px]"
           @click.stop
           @contextmenu.prevent.stop
           @mousedown.stop
         >
           <!-- Context-specific header -->
-          <div v-if="targetLayer" class="px-4 py-2 border-b border-secondary-100 dark:border-secondary-600">
+          <div v-if="targetLayer" class="px-4 py-2 border-b border-gray-100 dark:border-gray-600">
             <div class="flex items-center space-x-2">
               <div class="w-3 h-3 rounded-sm" :class="getLayerTypeColor(targetLayer.type)"></div>
-              <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300 truncate">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                 {{ targetLayer.name }}
               </span>
             </div>
-            <span class="text-xs text-secondary-500 dark:text-secondary-400 capitalize">
+            <span class="text-xs text-gray-500 dark:text-gray-400 capitalize">
               {{ targetLayer.type }} Layer
             </span>
           </div>
 
           <!-- Canvas context header (when no layer) -->
-          <div v-else class="px-4 py-2 border-b border-secondary-100 dark:border-secondary-600">
-            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <div v-else class="px-4 py-2 border-b border-gray-100 dark:border-gray-600">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
               Canvas
             </span>
           </div>
@@ -73,7 +73,7 @@
           
           <!-- Arrange Menu - Nested (only for layers) -->
           <template v-if="targetLayer">
-            <div class="border-t border-secondary-100 dark:border-secondary-600"></div>
+            <div class="border-t border-gray-100 dark:border-gray-600"></div>
             <div class="py-1 relative">
               <ContextMenuItem
                 icon="Square3Stack3DIcon"
@@ -95,7 +95,7 @@
                 <div
                   v-if="showArrangeSubmenu"
                   :style="submenuStyle"
-                  class="absolute bg-white dark:bg-secondary-800 rounded-lg shadow-xl border border-secondary-200 dark:border-secondary-700 py-1 min-w-[160px] z-10"
+                  class="absolute bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[160px] z-10"
                   @mouseenter="cancelHideArrangeSubmenu"
                   @mouseleave="scheduleHideArrangeSubmenu"
                   @click.stop
@@ -130,7 +130,7 @@
 
           <!-- Layer Properties (only for layers) -->
           <template v-if="targetLayer">
-            <div class="border-t border-secondary-100 dark:border-secondary-600"></div>
+            <div class="border-t border-gray-100 dark:border-gray-600"></div>
             <div class="py-1">
               <ContextMenuItem
                 :icon="targetLayer?.locked ? 'LockOpenIcon' : 'LockClosedIcon'"
@@ -148,7 +148,7 @@
 
           <!-- Context-specific actions -->
           <template v-if="targetLayer && getContextActions(targetLayer.type).length > 0">
-            <div class="border-t border-secondary-100 dark:border-secondary-600"></div>
+            <div class="border-t border-gray-100 dark:border-gray-600"></div>
             <div class="py-1">
               <ContextMenuItem
                 v-for="action in getContextActions(targetLayer.type)"
@@ -162,7 +162,7 @@
 
           <!-- Canvas-specific actions (when no layer) -->
           <template v-if="!targetLayer">
-            <div class="border-t border-secondary-100 dark:border-secondary-600"></div>
+            <div class="border-t border-gray-100 dark:border-gray-600"></div>
             <div class="py-1">
               <ContextMenuItem
                 icon="MagnifyingGlassIcon"
@@ -180,7 +180,7 @@
           
           <!-- Destructive Actions (only for layers) -->
           <template v-if="targetLayer">
-            <div class="border-t border-secondary-100 dark:border-secondary-600"></div>
+            <div class="border-t border-gray-100 dark:border-gray-600"></div>
             <div class="py-1">
               <ContextMenuItem
                 icon="TrashIcon"
@@ -284,13 +284,13 @@ const submenuStyle = computed(() => {
 const getLayerTypeColor = (type: string) => {
   const colors = {
     text: 'bg-primary-500',
-    image: 'bg-secondary-500', 
+    image: 'bg-gray-500', 
     shape: 'bg-primary-500',
-    group: 'bg-secondary-500',
+    group: 'bg-gray-500',
     video: 'bg-danger-500',
     audio: 'bg-warning-500'
   }
-  return colors[type as keyof typeof colors] || 'bg-secondary-500'
+  return colors[type as keyof typeof colors] || 'bg-gray-500'
 }
 
 // Context-specific actions based on layer type

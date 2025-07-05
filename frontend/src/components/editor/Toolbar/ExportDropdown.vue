@@ -17,20 +17,20 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <MenuItems class="absolute right-0 mt-3 w-80 bg-white dark:bg-secondary-900 rounded-2xl shadow-xl border border-secondary-100 dark:border-secondary-800 py-3 z-50 backdrop-blur-sm">
+      <MenuItems class="absolute right-0 mt-3 w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 py-3 z-50 backdrop-blur-sm">
         <NestedDropdownView>
           <!-- Main View - Quick Export Options -->
           <template #main="{ goToNested }">
             <!-- Quick Export Options -->
-            <div class="px-4 py-2 border-b border-secondary-100 dark:border-secondary-800">
-              <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wider mb-3">Quick Export</p>
+            <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Quick Export</p>
               <div class="grid grid-cols-2 gap-2">
                 <MenuItem v-slot="{ active }">
                   <button
                     @click="handleExport('png')"
                     :class="[
                       'flex items-center p-3 rounded-xl text-sm w-full transition-all duration-200',
-                      active ? 'bg-primary-100 dark:bg-secondary-600 text-primary-700 dark:text-secondary-100 shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'
+                      active ? 'bg-primary-100 dark:bg-gray-600 text-primary-700 dark:text-gray-100 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     ]"
                   >
                     <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl flex items-center justify-center mr-3">
@@ -38,7 +38,7 @@
                     </div>
                     <div class="text-left">
                       <p class="font-semibold">PNG</p>
-                      <p class="text-xs text-secondary-500 dark:text-secondary-400">High quality</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">High quality</p>
                     </div>
                   </button>
                 </MenuItem>
@@ -48,7 +48,7 @@
                     @click="handleExport('jpg')"
                     :class="[
                       'flex items-center p-3 rounded-xl text-sm w-full transition-all duration-200',
-                      active ? 'bg-primary-100 dark:bg-secondary-600 text-primary-700 dark:text-secondary-100 shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'
+                      active ? 'bg-primary-100 dark:bg-gray-600 text-primary-700 dark:text-gray-100 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     ]"
                   >
                     <div class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-xl flex items-center justify-center mr-3">
@@ -56,7 +56,7 @@
                     </div>
                     <div class="text-left">
                       <p class="font-semibold">JPG</p>
-                      <p class="text-xs text-secondary-500 dark:text-secondary-400">Smaller size</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Smaller size</p>
                     </div>
                   </button>
                 </MenuItem>
@@ -64,8 +64,8 @@
             </div>
 
             <!-- More Formats -->
-            <div class="px-4 py-2 border-b border-secondary-100 dark:border-secondary-800">
-              <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wider mb-2">More Formats</p>
+            <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">More Formats</p>
               <div class="space-y-1">
                 <MenuItem 
                   v-for="format in moreFormats"
@@ -76,14 +76,14 @@
                     @click="handleExport(format.value)"
                     :class="[
                       'flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg transition-all duration-200',
-                      active ? 'bg-primary-100 dark:bg-secondary-600 text-primary-700 dark:text-secondary-100' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'
+                      active ? 'bg-primary-100 dark:bg-gray-600 text-primary-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     ]"
                   >
                     <div class="flex items-center">
-                      <component :is="format.icon" class="w-4 h-4 mr-3 text-secondary-500 dark:text-secondary-400" />
+                      <component :is="format.icon" class="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" />
                       <span class="font-medium">{{ format.label }}</span>
                     </div>
-                    <span class="text-xs text-secondary-500 dark:text-secondary-400">{{ format.extension }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ format.extension }}</span>
                   </button>
                 </MenuItem>
               </div>
@@ -93,9 +93,9 @@
             <div class="px-4 py-2">
               <button
                 @click.stop="goToNested"
-                class="flex items-center w-full px-3 py-2 text-sm rounded-lg transition-all duration-200 text-secondary-700 dark:text-secondary-300 hover:bg-primary-100 dark:hover:bg-secondary-600 hover:text-primary-700 dark:hover:text-secondary-100"
+                class="flex items-center w-full px-3 py-2 text-sm rounded-lg transition-all duration-200 text-gray-700 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-gray-600 hover:text-primary-700 dark:hover:text-gray-100"
               >
-                <Cog6ToothIcon class="w-4 h-4 mr-3 text-secondary-500 dark:text-secondary-400" />
+                <Cog6ToothIcon class="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" />
                 <span class="font-medium">Advanced Options</span>
               </button>
             </div>
@@ -105,18 +105,18 @@
           <template #nested="{ goBack }">
             <div class="space-y-4">
               <div>
-                <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-4">Advanced Export</h3>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400 mb-6">Customize your export settings</p>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Advanced Export</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Customize your export settings</p>
               </div>
 
               <!-- Format Selection -->
               <div>
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Format
                 </label>
                 <select
                   v-model="selectedFormat"
-                  class="w-full px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 rounded-lg text-secondary-900 dark:text-secondary-100 focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400 transition-all duration-200"
+                  class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500/50 dark:focus:ring-primary-400/50 focus:border-primary-500 dark:focus:border-primary-400 transition-all duration-200"
                 >
                   <option 
                     v-for="format in advancedFormats" 
@@ -130,7 +130,7 @@
 
               <!-- Quality Settings -->
               <div v-if="selectedFormat === 'jpg' || selectedFormat === 'webp'">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Quality ({{ exportQuality }}%)
                 </label>
                 <input
@@ -139,9 +139,9 @@
                   min="10"
                   max="100"
                   step="10"
-                  class="w-full h-2 bg-secondary-200 dark:bg-secondary-700 rounded-lg appearance-none cursor-pointer quality-slider"
+                  class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer quality-slider"
                 />
-                <div class="flex justify-between text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span>Lower size</span>
                   <span>Higher quality</span>
                 </div>
@@ -149,7 +149,7 @@
 
               <!-- Background Options -->
               <div>
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Background
                 </label>
                 <div class="grid grid-cols-2 gap-2">
@@ -158,8 +158,8 @@
                     :class="[
                       'p-3 rounded-lg border text-sm transition-all duration-200',
                       exportBackground === 'transparent' 
-                        ? 'bg-primary-100 dark:bg-secondary-600 border-primary-200 dark:border-secondary-500 text-primary-700 dark:text-secondary-100' 
-                        : 'bg-secondary-50 dark:bg-secondary-700 border-secondary-200 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-600'
+                        ? 'bg-primary-100 dark:bg-gray-600 border-primary-200 dark:border-gray-500 text-primary-700 dark:text-gray-100' 
+                        : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                     ]"
                   >
                     Transparent
@@ -169,8 +169,8 @@
                     :class="[
                       'p-3 rounded-lg border text-sm transition-all duration-200',
                       exportBackground === 'white' 
-                        ? 'bg-primary-100 dark:bg-secondary-600 border-primary-200 dark:border-secondary-500 text-primary-700 dark:text-secondary-100' 
-                        : 'bg-secondary-50 dark:bg-secondary-700 border-secondary-200 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-600'
+                        ? 'bg-primary-100 dark:bg-gray-600 border-primary-200 dark:border-gray-500 text-primary-700 dark:text-gray-100' 
+                        : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                     ]"
                   >
                     White
@@ -188,7 +188,7 @@
                 </button>
                 <button
                   @click="goBack"
-                  class="px-4 py-2 bg-secondary-100 dark:bg-secondary-700 hover:bg-secondary-200 dark:hover:bg-secondary-600 text-secondary-700 dark:text-secondary-300 rounded-lg font-medium text-sm transition-all duration-200"
+                  class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm transition-all duration-200"
                 >
                   Cancel
                 </button>
@@ -339,13 +339,13 @@ const handleAdvancedExport = () => {
 }
 
 .quality-slider::-webkit-slider-track {
-  background: rgb(229 231 235); /* secondary-200 */
+  background: rgb(229 231 235); /* gray-200 */
   height: 8px;
   border-radius: 4px;
 }
 
 .dark .quality-slider::-webkit-slider-track {
-  background: rgb(71 85 105); /* secondary-700 */
+  background: rgb(55 65 81); /* gray-700 */
 }
 
 .quality-slider::-webkit-slider-thumb {
@@ -363,7 +363,7 @@ const handleAdvancedExport = () => {
 
 .dark .quality-slider::-webkit-slider-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 .quality-slider::-webkit-slider-thumb:hover {
@@ -376,14 +376,14 @@ const handleAdvancedExport = () => {
 }
 
 .quality-slider::-moz-range-track {
-  background: rgb(229 231 235); /* secondary-200 */
+  background: rgb(229 231 235); /* gray-200 */
   height: 8px;
   border-radius: 4px;
   border: none;
 }
 
 .dark .quality-slider::-moz-range-track {
-  background: rgb(71 85 105); /* secondary-700 */
+  background: rgb(55 65 81); /* gray-700 */
 }
 
 .quality-slider::-moz-range-thumb {
@@ -399,7 +399,7 @@ const handleAdvancedExport = () => {
 
 .dark .quality-slider::-moz-range-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(31 41 55); /* gray-800 */
 }
 
 .quality-slider::-moz-range-thumb:hover {

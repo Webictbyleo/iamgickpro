@@ -1,11 +1,11 @@
 <template>
   <div class="p-4">
     <div class="flex items-center justify-between mb-3">
-      <h3 class="text-sm font-semibold text-secondary-900 dark:text-secondary-100">Layers</h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Layers</h3>
     </div>
     
-    <div v-if="layers.length === 0" class="text-center py-8 text-secondary-500 dark:text-secondary-400">
-      <Square3Stack3DIcon class="w-12 h-12 mx-auto mb-3 text-secondary-300 dark:text-secondary-600" />
+    <div v-if="layers.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <Square3Stack3DIcon class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
       <p class="text-sm">No layers yet</p>
       <p class="text-xs mt-1">Add elements to get started</p>
     </div>
@@ -25,8 +25,8 @@
         :class="[
           'group flex items-center p-2 rounded border transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-900 relative',
           isSelected(layer.id)
-            ? 'bg-secondary-50 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-500 shadow-sm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary-500 dark:before:bg-primary-400 before:rounded-l'
-            : 'bg-primary-50/50 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-500',
+            ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-500 shadow-sm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary-500 dark:before:bg-primary-400 before:rounded-l'
+            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500',
           draggedLayer?.id === layer.id ? 'opacity-50' : ''
         ]"
         @click="handleLayerClick(layer, $event)"
@@ -38,8 +38,8 @@
             :class="[
               'w-4 h-4',
               isSelected(layer.id)
-                ? 'text-secondary-700 dark:text-secondary-300'
-                : 'text-secondary-600 dark:text-secondary-400'
+                ? 'text-gray-700 dark:text-gray-300'
+                : 'text-gray-600 dark:text-gray-400'
             ]"
           />
         </div>
@@ -55,8 +55,8 @@
             :class="[
               'w-full text-sm bg-transparent border-none outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-1 dark:focus:ring-offset-secondary-800 rounded px-1',
               isSelected(layer.id)
-                ? 'text-secondary-900 dark:text-secondary-100'
-                : 'text-secondary-900 dark:text-secondary-100'
+                ? 'text-gray-900 dark:text-gray-100'
+                : 'text-gray-900 dark:text-gray-100'
             ]"
             @click.stop
             ref="editInput"
@@ -66,8 +66,8 @@
             :class="[
               'text-sm font-medium truncate',
               isSelected(layer.id)
-                ? 'text-secondary-900 dark:text-secondary-100'
-                : 'text-secondary-900 dark:text-secondary-100'
+                ? 'text-gray-900 dark:text-gray-100'
+                : 'text-gray-900 dark:text-gray-100'
             ]"
             @dblclick="startEditingLayerName(layer)"
           >
@@ -76,8 +76,8 @@
           <div :class="[
             'text-xs',
             isSelected(layer.id)
-              ? 'text-secondary-600 dark:text-secondary-400'
-              : 'text-secondary-500 dark:text-secondary-400'
+              ? 'text-gray-600 dark:text-gray-400'
+              : 'text-gray-500 dark:text-gray-400'
           ]">
             {{ getLayerTypeLabel(layer.type) }}
           </div>
@@ -91,8 +91,8 @@
             :class="[
               'p-1 rounded transition-colors',
               layer.visible
-                ? 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200'
-                : 'text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300'
+                ? 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
             ]"
             :title="layer.visible ? 'Hide Layer' : 'Show Layer'"
           >
@@ -107,7 +107,7 @@
               'p-1 rounded transition-colors',
               layer.locked
                 ? 'text-danger-600 dark:text-danger-400 hover:text-danger-800 dark:hover:text-danger-300'
-                : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
             ]"
             :title="layer.locked ? 'Unlock Layer' : 'Lock Layer'"
           >
@@ -119,7 +119,7 @@
           <BaseDropdown 
             placement="bottom-end" 
             width="w-48"
-            triggerClasses="p-1 rounded text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200 transition-colors"
+            triggerClasses="p-1 rounded text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <template #trigger>
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -130,7 +130,7 @@
             <template #default="{ close }">
               <button
                 @click="handleDuplicate(layer.id, close)"
-                class="w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:bg-secondary-100 dark:focus:bg-secondary-700 flex items-center transition-colors focus:outline-none"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 flex items-center transition-colors focus:outline-none"
               >
                   <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -140,7 +140,7 @@
                 
                 <button
                   @click="startEditingLayerName(layer, close)"
-                  class="w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:bg-secondary-100 dark:focus:bg-secondary-700 flex items-center transition-colors focus:outline-none"
+                  class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 flex items-center transition-colors focus:outline-none"
                 >
                   <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -148,7 +148,7 @@
                   Rename
                 </button>
                 
-                <div class="border-t border-secondary-200 dark:border-secondary-600 my-1"></div>
+                <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
                 
                 <button
                   @click="handleDelete(layer.id, close)"

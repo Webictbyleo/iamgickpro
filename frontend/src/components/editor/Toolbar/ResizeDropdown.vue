@@ -2,7 +2,7 @@
   <Menu as="div" class="relative">
     <MenuButton as="template">
       <button
-        class="px-6 py-2.5 bg-secondary-50 dark:bg-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-600 text-secondary-700 dark:text-secondary-200 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 border border-secondary-200 dark:border-secondary-600 w-32 flex items-center justify-center"
+        class="px-6 py-2.5 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 border border-gray-200 dark:border-gray-600 w-32 flex items-center justify-center"
       >
         <span>Resize</span>
         <ChevronDownIcon class="w-4 h-4 ml-2" />
@@ -17,13 +17,13 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <MenuItems class="absolute left-0 mt-3 w-96 bg-white dark:bg-secondary-800 rounded-2xl shadow-xl border border-secondary-200 dark:border-secondary-700 py-4 z-50">
+      <MenuItems class="absolute left-0 mt-3 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 py-4 z-50">
         <NestedDropdownView>
           <!-- Main View - Size Presets -->
           <template #main="{ goToNested }">
             <!-- Quick Resize Options -->
-            <div class="px-5 py-3 border-b border-secondary-100 dark:border-secondary-700">
-              <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wider mb-4">Quick Resize</p>
+            <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Quick Resize</p>
               <div class="grid grid-cols-2 gap-3">
                 <MenuItem 
                   v-for="size in quickSizes"
@@ -34,10 +34,10 @@
                     @click="handleResize(size.width, size.height)"
                     :class="[
                       'flex flex-col items-center p-3 rounded-xl text-sm w-full transition-all duration-200',
-                      active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-lg ring-1 ring-primary-200 dark:ring-primary-700' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700'
+                      active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-lg ring-1 ring-primary-200 dark:ring-primary-700' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     ]"
                   >
-                    <div class="w-10 h-6 bg-secondary-200 dark:bg-secondary-600 rounded border-2 border-secondary-300 dark:border-secondary-500 mb-2 flex items-center justify-center">
+                    <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 rounded border-2 border-gray-300 dark:border-gray-500 mb-2 flex items-center justify-center">
                       <div :class="[
                         'rounded-sm',
                         size.aspect === 'square' ? 'w-6 h-6 bg-violet-400' : 
@@ -46,8 +46,8 @@
                       ]"></div>
                     </div>
                     <div class="text-center">
-                      <p class="font-semibold text-xs text-secondary-900 dark:text-secondary-100">{{ size.name }}</p>
-                      <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ size.width }}×{{ size.height }}</p>
+                      <p class="font-semibold text-xs text-gray-900 dark:text-gray-100">{{ size.name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ size.width }}×{{ size.height }}</p>
                     </div>
                   </button>
                 </MenuItem>
@@ -55,8 +55,8 @@
             </div>
 
             <!-- More Sizes -->
-            <div class="px-5 py-3 border-b border-secondary-100 dark:border-secondary-700">
-              <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wider mb-3">More Sizes</p>
+            <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">More Sizes</p>
               <div class="space-y-1">
                 <MenuItem 
                   v-for="size in moreSizes"
@@ -67,11 +67,11 @@
                     @click="handleResize(size.width, size.height)"
                     :class="[
                       'flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg transition-all duration-200',
-                      active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700'
+                      active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     ]"
                   >
-                    <span class="font-medium text-secondary-900 dark:text-secondary-100">{{ size.name }}</span>
-                    <span class="text-xs text-secondary-500 dark:text-secondary-400 font-mono">{{ size.width }}×{{ size.height }}</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ size.name }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ size.width }}×{{ size.height }}</span>
                   </button>
                 </MenuItem>
               </div>
@@ -81,10 +81,10 @@
             <div class="px-5 py-3">
               <button
                 @click.stop="goToNested"
-                class="flex items-center w-full px-3 py-2 text-sm rounded-lg transition-all duration-200 text-secondary-700 dark:text-secondary-300 hover:bg-primary-50 hover:dark:bg-primary-900/30 hover:text-primary-700 hover:dark:text-primary-300"
+                class="flex items-center w-full px-3 py-2 text-sm rounded-lg transition-all duration-200 text-gray-700 dark:text-gray-300 hover:bg-primary-50 hover:dark:bg-primary-900/30 hover:text-primary-700 hover:dark:text-primary-300"
               >
-                <Cog6ToothIcon class="w-4 h-4 mr-3 text-secondary-500 dark:text-secondary-400" />
-                <span class="font-medium text-secondary-900 dark:text-secondary-100">Custom Size</span>
+                <Cog6ToothIcon class="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" />
+                <span class="font-medium text-gray-900 dark:text-gray-100">Custom Size</span>
               </button>
             </div>
           </template>
@@ -93,13 +93,13 @@
           <template #nested="{ goBack }">
             <div class="space-y-4">
               <div>
-                <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-4">Custom Size</h3>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400 mb-6">Enter your desired canvas dimensions</p>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Custom Size</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Enter your desired canvas dimensions</p>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Width
                   </label>
                   <div class="relative">

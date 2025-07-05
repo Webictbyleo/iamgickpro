@@ -4,27 +4,27 @@
     <button
       @click="isExpanded = !isExpanded"
       :class="[
-        'w-full flex items-center justify-between p-4 text-left border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800',
+        'w-full flex items-center justify-between p-4 text-left border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800',
         isExpanded 
-          ? 'border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-secondary-700' 
-          : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-800'
+          ? 'border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-gray-700' 
+          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
       ]"
     >
       <div class="flex items-center space-x-3">
         <div :class="[
           'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-          isExpanded ? 'bg-primary-500 dark:bg-primary-600' : 'bg-secondary-500 dark:bg-secondary-600'
+          isExpanded ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-500 dark:bg-gray-600'
         ]">
           <Square3Stack3DIcon class="w-4 h-4 text-white" />
         </div>
         <div>
-          <h4 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">Shadow Effects</h4>
-          <p class="text-xs text-secondary-600 dark:text-secondary-400">Add depth with customizable shadows</p>
+          <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Shadow Effects</h4>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Add depth with customizable shadows</p>
         </div>
       </div>
       <ChevronDownIcon 
         :class="[
-          'w-4 h-4 text-secondary-500 dark:text-secondary-400 transition-transform duration-200',
+          'w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200',
           isExpanded ? 'rotate-180' : ''
         ]"
       />
@@ -42,7 +42,7 @@
       <div v-if="isExpanded" class="mt-4 space-y-4 overflow-hidden">
         <!-- Shadow Presets -->
         <div class="mb-6">
-          <h5 class="text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-3">Shadow Presets</h5>
+          <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-3">Shadow Presets</h5>
           <div class="grid grid-cols-2 gap-2">
             <button 
               v-for="preset in shadowPresets" 
@@ -51,19 +51,19 @@
               :class="[
                 'p-3 text-left border rounded-lg transition-all duration-200 hover:shadow-md',
                 currentPreset === preset.name 
-                  ? 'border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-secondary-700' 
-                  : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600'
+                  ? 'border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-gray-700' 
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
               ]"
             >
               <!-- Preview -->
               <div class="mb-2 flex justify-center">
                 <div 
-                  class="w-8 h-6 bg-secondary-300 dark:bg-secondary-600 rounded"
+                  class="w-8 h-6 bg-gray-300 dark:bg-gray-600 rounded"
                   :style="{ boxShadow: preset.enabled ? preset.cssValue : 'none' }"
                 ></div>
               </div>
-              <p class="text-xs font-medium text-secondary-900 dark:text-secondary-100">{{ preset.name }}</p>
-              <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ preset.description }}</p>
+              <p class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ preset.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ preset.description }}</p>
             </button>
           </div>
         </div>
@@ -74,17 +74,17 @@
             type="checkbox"
             :checked="shadowEnabled"
             @change="updateProperty('shadowEnabled', ($event.target as HTMLInputElement)?.checked)"
-            class="w-4 h-4 text-primary-600 dark:text-primary-400 border-secondary-300 dark:border-secondary-600 rounded focus:ring-primary-500 dark:focus:ring-primary-400"
+            class="w-4 h-4 text-primary-600 dark:text-primary-400 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:focus:ring-primary-400"
           />
-          <label class="text-xs font-medium text-secondary-700 dark:text-secondary-300">Enable Shadow</label>
+          <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Enable Shadow</label>
         </div>
 
         <!-- Custom Shadow Controls -->
         <template v-if="shadowEnabled">
-          <div class="space-y-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
+          <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <!-- Shadow Offset X -->
             <div>
-              <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Offset X: {{ shadowOffsetX }}px
               </label>
               <PropertySlider
@@ -99,7 +99,7 @@
 
             <!-- Shadow Offset Y -->
             <div>
-              <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Offset Y: {{ shadowOffsetY }}px
               </label>
               <PropertySlider
@@ -114,7 +114,7 @@
 
             <!-- Shadow Blur -->
             <div>
-              <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Shadow Blur: {{ shadowBlur }}px
               </label>
               <PropertySlider
@@ -129,20 +129,20 @@
 
             <!-- Shadow Color -->
             <div>
-              <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Shadow Color
               </label>
               <input
                 type="color"
                 :value="shadowColor"
                 @input="updateProperty('shadowColor', ($event.target as HTMLInputElement)?.value)"
-                class="w-full h-10 rounded-lg border border-secondary-300 dark:border-secondary-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800"
+                class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               />
             </div>
 
             <!-- Shadow Opacity -->
             <div>
-              <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Shadow Opacity: {{ Math.round(shadowOpacity * 100) }}%
               </label>
               <PropertySlider
@@ -158,7 +158,7 @@
         </template>
 
         <!-- Reset Button -->
-        <div class="pt-4 border-t border-secondary-200 dark:border-secondary-700">
+        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             @click="resetShadow"
             class="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg hover:bg-danger-100 dark:hover:bg-danger-900/30 hover:border-danger-300 dark:hover:border-danger-700 focus:outline-none focus:ring-2 focus:ring-danger-500 dark:focus:ring-danger-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 transition-colors"

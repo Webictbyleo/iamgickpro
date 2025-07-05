@@ -10,7 +10,7 @@
     
     <div v-else class="space-y-6">
       <!-- Multi-selection info -->
-      <div v-if="selectedLayers.length > 1" class="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+      <div v-if="selectedLayers.length > 1" class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div class="text-sm font-medium text-primary-900 dark:text-primary-100">{{ selectedLayers.length }} layers selected</div>
         <div class="text-xs text-primary-700 dark:text-primary-300 mt-1">Common properties shown below</div>
       </div>

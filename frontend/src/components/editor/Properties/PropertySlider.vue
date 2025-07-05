@@ -10,7 +10,7 @@
       class="property-slider"
       @input="handleInput"
     />
-    <span class="text-xs text-secondary-500 dark:text-secondary-400 min-w-[2rem] text-center">
+    <span class="text-xs text-gray-500 dark:text-gray-400 min-w-[2rem] text-center">
       {{ displayValue }}
     </span>
   </div>
@@ -67,12 +67,12 @@ const displayValue = computed(() => {
   border-radius: 0.5rem;
   appearance: none;
   cursor: pointer;
-  background: rgb(203 213 225); /* secondary-300 */
+  background: rgb(203 213 225); /* gray-300 */
   transition: background-color 0.2s ease;
 }
 
 .dark .property-slider {
-  background: rgb(71 85 105); /* secondary-600 */
+  background: rgb(71 85 105); /* gray-600 */
 }
 
 .property-slider:disabled {
@@ -104,7 +104,7 @@ const displayValue = computed(() => {
 
 .dark .property-slider::-webkit-slider-thumb {
   background: rgb(96 165 250); /* primary-400 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  border-color: rgb(30 41 59); /* gray-800 */
 }
 
 .property-slider::-webkit-slider-thumb:hover {
@@ -136,22 +136,22 @@ const displayValue = computed(() => {
 
 .property-slider:disabled::-webkit-slider-thumb {
   cursor: not-allowed;
-  background: rgb(148 163 184); /* secondary-400 */
+  background: rgb(148 163 184); /* gray-400 */
   border-color: rgb(255 255 255);
 }
 
 .dark .property-slider:disabled::-webkit-slider-thumb {
-  background: rgb(100 116 139); /* secondary-500 */
-  border-color: rgb(30 41 59); /* secondary-800 */
+  background: rgb(100 116 139); /* gray-500 */
+  border-color: rgb(30 41 59); /* gray-800 */
 }
 
 .property-slider:disabled::-webkit-slider-thumb:hover {
-  background: rgb(148 163 184); /* secondary-400 */
+  background: rgb(148 163 184); /* gray-400 */
   transform: scale(1);
 }
 
 .dark .property-slider:disabled::-webkit-slider-thumb:hover {
-  background: rgb(100 116 139); /* secondary-500 */
+  background: rgb(100 116 139); /* gray-500 */
 }
 
 /* Firefox */
@@ -197,21 +197,21 @@ const displayValue = computed(() => {
 
 .property-slider:disabled::-moz-range-thumb {
   cursor: not-allowed;
-  background: rgb(148 163 184); /* secondary-400 */
+  background: rgb(148 163 184); /* gray-400 */
 }
 
 .dark .property-slider:disabled::-moz-range-thumb {
-  background: rgb(100 116 139); /* secondary-500 */
+  background: rgb(100 116 139); /* gray-500 */
 }
 
 /* Firefox track */
 .property-slider::-moz-range-track {
-  background: rgb(203 213 225); /* secondary-300 */
+  background: rgb(203 213 225); /* gray-300 */
   height: 0.5rem;
   border-radius: 0.5rem;
 }
 
 .dark .property-slider::-moz-range-track {
-  background: rgb(71 85 105); /* secondary-600 */
+  background: rgb(71 85 105); /* gray-600 */
 }
 </style>

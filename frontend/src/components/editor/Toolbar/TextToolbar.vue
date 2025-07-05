@@ -92,7 +92,7 @@
     <div class="relative">
       <button
         @click="showAdvancedControls = !showAdvancedControls"
-        class="px-2 py-1 text-xs bg-secondary-100 dark:bg-secondary-700 hover:bg-secondary-200 dark:hover:bg-secondary-600 rounded border border-secondary-300 dark:border-secondary-600 flex items-center transition-colors text-secondary-700 dark:text-secondary-300"
+        class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded border border-gray-300 dark:border-gray-600 flex items-center transition-colors text-gray-700 dark:text-gray-300"
         title="Spacing"
       >
         <SpacingIcon class="w-5 h-5" />

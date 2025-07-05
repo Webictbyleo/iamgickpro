@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col h-full relative bg-secondary-50 dark:bg-secondary-800">
+  <div class="flex flex-col h-full relative">
     <!-- Header -->
-    <div class="p-4 border-b border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">Your Uploads</h3>
-          <p class="text-sm text-secondary-600 dark:text-secondary-400 mt-1">Manage and use your uploaded image files</p>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Uploads</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage and use your uploaded image files</p>
         </div>
       </div>
     </div>
@@ -21,7 +21,7 @@
     />
 
     <!-- Enhanced Search and Upload Section -->
-    <div v-if="userMedia.length > 0" class="p-4 border-b border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900">
+    <div v-if="userMedia.length > 0" class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div class="space-y-3">
         <!-- Enhanced Search Input -->
         <div class="relative">
@@ -29,17 +29,17 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search your uploads..."
-            class="w-full pl-10 pr-10 py-3 border border-secondary-200 dark:border-secondary-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 placeholder-secondary-500 dark:placeholder-secondary-400"
+            class="w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
             @keydown.enter="handleSearch"
           />
-          <svg class="absolute left-3 top-3.5 h-5 w-5 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <!-- Clear search button -->
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="absolute right-3 top-3.5 h-5 w-5 text-secondary-400 hover:text-secondary-600 dark:text-secondary-500 dark:hover:text-secondary-300 transition-colors"
+            class="absolute right-3 top-3.5 h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -48,7 +48,7 @@
         </div>
 
         <!-- Search Stats -->
-        <div v-if="searchQuery && !isLoadingUserMedia" class="flex items-center justify-between text-xs text-secondary-500 dark:text-secondary-400">
+        <div v-if="searchQuery && !isLoadingUserMedia" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>{{ filteredUploads.length }} results for "{{ searchQuery }}"</span>
           <span v-if="hasMoreUserMedia" class="text-primary-600 dark:text-primary-400">+ more available</span>
         </div>
@@ -56,9 +56,9 @@
         <!-- Enhanced Upload Button -->
         <button
           @click="fileInput?.click()"
-          class="group w-full flex items-center justify-center gap-3 px-4 py-4 border-2 border-dashed border-primary-200 dark:border-primary-700 rounded-xl hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 active:scale-95 transition-all duration-200 text-sm font-medium text-secondary-700 dark:text-secondary-300 group-hover:text-primary-700 dark:group-hover:text-primary-300"
+          class="group w-full flex items-center justify-center gap-3 px-4 py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 active:scale-95 transition-all duration-200 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100"
         >
-          <div class="w-8 h-8 bg-primary-100 dark:bg-secondary-700 rounded-lg flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-secondary-600 group-hover:scale-110 transition-all duration-200">
+          <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-gray-600 group-hover:scale-110 transition-all duration-200">
             <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
@@ -76,25 +76,25 @@
       <div v-if="isLoadingUserMedia && userMedia.length === 0" class="space-y-4">
         <div class="text-center py-8">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto"></div>
-          <p class="mt-2 text-sm text-secondary-600 dark:text-secondary-300">Loading your uploads...</p>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Loading your uploads...</p>
         </div>
         <!-- Loading skeleton -->
         <div class="px-4">
           <div class="grid grid-cols-2 gap-3">
-            <div v-for="i in 6" :key="i" class="aspect-square bg-secondary-200 dark:bg-secondary-700 rounded-lg animate-pulse"></div>
+            <div v-for="i in 6" :key="i" class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
           </div>
         </div>
       </div>
       
       <!-- Enhanced Empty State -->
       <div v-else-if="filteredUploads.length === 0 && !isLoadingUserMedia" class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-secondary-900 dark:text-secondary-100">
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
           {{ searchQuery ? 'No uploads found' : 'No uploads yet' }}
         </h3>
-        <p class="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {{ searchQuery 
             ? 'Try adjusting your search terms' 
             : 'Upload your first image files to start building your design library'
@@ -106,26 +106,26 @@
           <button
             v-if="!searchQuery && userMedia.length === 0"
             @click="fileInput?.click()"
-            class="group mx-auto flex flex-col items-center gap-3 px-8 py-6 border-2 border-dashed border-primary-300 dark:border-primary-600 rounded-2xl hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 active:scale-95 transition-all duration-200"
+            class="group mx-auto flex flex-col items-center gap-3 px-8 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl hover:border-gray-500 dark:hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 active:scale-95 transition-all duration-200"
           >
-            <div class="w-12 h-12 bg-primary-100 dark:bg-secondary-700 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-secondary-600 group-hover:scale-110 transition-all duration-200">
+            <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-gray-600 group-hover:scale-110 transition-all duration-200">
               <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
             <div class="text-center">
-              <span class="block text-base font-semibold text-secondary-900 dark:text-secondary-100 group-hover:text-primary-700 dark:group-hover:text-primary-300">Upload Your First Image</span>
-              <span class="block text-sm text-secondary-500 dark:text-secondary-400 mt-1">Choose files or drag and drop</span>
+              <span class="block text-base font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300">Upload Your First Image</span>
+              <span class="block text-sm text-gray-500 dark:text-gray-400 mt-1">Choose files or drag and drop</span>
             </div>
           </button>
           <button
             v-if="searchQuery"
             @click="clearSearch"
-            class="px-4 py-2 bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300 rounded-lg hover:bg-secondary-200 dark:hover:bg-secondary-600 hover:text-secondary-900 dark:hover:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-secondary-500 dark:focus:ring-secondary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 transition-all duration-200 text-sm font-medium"
+            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 text-sm font-medium"
           >
             Clear Search
           </button>
-          <p v-if="userMedia.length === 0" class="text-xs text-secondary-400 dark:text-secondary-500">
+          <p v-if="userMedia.length === 0" class="text-xs text-gray-400 dark:text-gray-500">
             Drag and drop works too!
           </p>
         </div>
@@ -135,10 +135,10 @@
       <div v-else class="p-4 space-y-4">
         <!-- Results header -->
         <div v-if="searchQuery" class="flex items-center justify-between">
-          <h4 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">{{ filteredUploads.length }} images</h4>
+          <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ filteredUploads.length }} images</h4>
           <button
             @click="clearSearch"
-            class="text-xs text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 transition-colors"
+            class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             Clear search
           </button>
@@ -241,7 +241,7 @@
       <div class="p-3">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+            <div class="w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
               <span class="text-xs font-semibold text-primary-600 dark:text-primary-400">{{ selectedItems.size }}</span>
             </div>
             <p class="text-sm font-medium text-gray-900 dark:text-gray-100">

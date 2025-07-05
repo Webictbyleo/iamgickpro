@@ -1,6 +1,6 @@
 <template>
   <div class="absolute bottom-4 right-4 z-10">
-    <div class="bg-white dark:bg-secondary-700 rounded-lg border border-secondary-200 dark:border-secondary-600 shadow-xl p-2">
+    <div class="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xl p-2">
       <!-- Zoom Controls -->
       <div class="flex items-center space-x-2">
         <!-- Zoom Out -->
@@ -9,14 +9,14 @@
           size="sm"
           @click="zoomOut"
           :disabled="zoom <= minZoom"
-          class="p-1.5 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <MinusIcon class="w-4 h-4" />
         </ModernButton>
 
         <!-- Zoom Display -->
         <div class="flex items-center space-x-1 px-2">
-          <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300 min-w-[3rem] text-center">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[3rem] text-center">
             {{ Math.round(zoom * 100) }}%
           </span>
         </div>
@@ -27,20 +27,20 @@
           size="sm"
           @click="zoomIn"
           :disabled="zoom >= maxZoom"
-          class="p-1.5 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <PlusIcon class="w-4 h-4" />
         </ModernButton>
 
         <!-- Separator -->
-        <div class="w-px h-6 bg-secondary-200 dark:bg-secondary-700"></div>
+        <div class="w-px h-6 bg-gray-200 dark:bg-gray-700"></div>
 
         <!-- Fit to Screen -->
         <ModernButton
           variant="ghost"
           size="sm"
           @click="fitToScreen"
-          class="p-1.5 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
           title="Fit to screen"
         >
           <ArrowsPointingOutIcon class="w-4 h-4" />
@@ -51,7 +51,7 @@
           variant="ghost"
           size="sm"
           @click="actualSize"
-          class="p-1.5 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+          class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
           title="Actual size (100%)"
         >
           <ViewfinderCircleIcon class="w-4 h-4" />
@@ -61,7 +61,7 @@
       <!-- Zoom Slider (Optional - shown on hover/focus) -->
       <div 
         v-if="showSlider" 
-        class="mt-2 pt-2 border-t border-secondary-200 dark:border-secondary-700"
+        class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700"
       >
         <input
           type="range"
@@ -69,7 +69,7 @@
           :max="maxZoom * 100"
           :value="zoom * 100"
           @input="onSliderChange"
-          class="w-32 h-1 bg-secondary-200 dark:bg-secondary-700 rounded-lg appearance-none cursor-pointer 
+          class="w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer 
                  slider:bg-primary-600 slider:rounded-lg slider:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
@@ -78,7 +78,7 @@
     <!-- Quick Zoom Levels -->
     <div 
       v-if="showQuickZoom" 
-      class="mt-2 bg-white dark:bg-secondary-900 rounded-lg border border-secondary-200 dark:border-secondary-700 shadow-lg p-2"
+      class="mt-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-2"
     >
       <div class="flex flex-col space-y-1">
         <ModernButton
@@ -88,7 +88,7 @@
           size="sm"
           @click="setZoom(level.value)"
           :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300': Math.abs(zoom - level.value) < 0.01 }"
-          class="justify-start text-xs hover:bg-secondary-100 dark:hover:bg-secondary-800"
+          class="justify-start text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           {{ level.label }}
         </ModernButton>

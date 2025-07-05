@@ -10,7 +10,7 @@
         <slot name="trigger">
           <span>{{ triggerText }}</span>
           <svg
-            class="ml-2 h-4 w-4 transition-transform duration-200 text-secondary-500 dark:text-secondary-400"
+            class="ml-2 h-4 w-4 transition-transform duration-200 text-gray-500 dark:text-gray-400"
             :class="{ 'rotate-180': isOpen }"
             fill="none"
             stroke="currentColor"
@@ -57,7 +57,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   triggerText: 'Options',
   placement: 'bottom-start',
-  triggerClasses: 'inline-flex justify-center w-full rounded-md border border-secondary-300 dark:border-secondary-600 shadow-sm px-4 py-2 bg-secondary-50 dark:bg-secondary-800 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 hover:border-secondary-400 dark:hover:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-secondary-900 transition-all duration-200',
+  triggerClasses: 'inline-flex justify-center w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-gray-50 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-all duration-200',
   width: 'w-56'
 })
 
@@ -78,7 +78,7 @@ const dropdownClasses = computed(() => {
   }
 
   return [
-    'absolute z-50 rounded-lg shadow-xl bg-secondary-50 dark:bg-secondary-800 ring-1 ring-secondary-300 dark:ring-secondary-600 ring-opacity-100 border border-secondary-200 dark:border-secondary-700',
+    'absolute z-50 rounded-lg shadow-xl bg-gray-50 dark:bg-gray-800 ring-1 ring-gray-300 dark:ring-gray-600 ring-opacity-100 border border-gray-200 dark:border-gray-700',
     'focus:outline-none backdrop-blur-sm',
     placementClasses[props.placement],
     props.width

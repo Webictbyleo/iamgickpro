@@ -1,18 +1,18 @@
 <template>
-  <div class="h-full flex flex-col bg-secondary-50 dark:bg-secondary-800">
+  <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
     <!-- Content Area -->
     <div class="flex-1 overflow-y-auto p-4 space-y-6">
     <!-- Animation Controls -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-secondary-900 dark:text-secondary-100">Animation</h3>
+        <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Animation</h3>
         <button
           @click="toggleAnimation"
           :class="[
             'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
             isAnimationEnabled
               ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300 hover:bg-success-200 dark:hover:bg-success-800/50'
-              : 'bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-700'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
           ]"
         >
           {{ isAnimationEnabled ? 'Enabled' : 'Disabled' }}
@@ -21,7 +21,7 @@
 
       <!-- Animation Type Selection -->
       <div v-if="isAnimationEnabled" class="space-y-3">
-        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300">Animation Type</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">Animation Type</label>
         <select
           v-model="selectedAnimationType"
           class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
