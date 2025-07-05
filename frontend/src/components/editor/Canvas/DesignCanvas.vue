@@ -17,6 +17,7 @@
           :active-tool="activeTool"
           :position="floatingToolbarPosition"
           :show="showFloatingToolbar"
+          :container-width="props.containerWidth"
           @tool-update="(tool, data) => $emit('tool-update', tool, data)"
           @duplicate-layer="$emit('duplicate-layer')"
           @delete-layer="$emit('delete-layer')"
@@ -87,6 +88,7 @@ import FloatingContextToolbar from './FloatingContextToolbar.vue'
 
 interface Props {
   width: number
+  containerWidth?: number
   height: number
   zoomLevel?: number
   showGrid?: boolean

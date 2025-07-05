@@ -130,6 +130,7 @@
             <DesignCanvas 
               ref="designCanvasRef"
               :width="canvasWidth"
+              :container-width="canvasContainerWidth"
               :height="canvasHeight"
               :zoom-level="zoomLevel"
               :selected-layer="selectedLayer"

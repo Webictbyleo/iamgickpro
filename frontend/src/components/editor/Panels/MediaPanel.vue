@@ -196,17 +196,16 @@
               @click="addMedia(icon)"
               @mouseenter="showTooltip($event, icon.alt)"
               @mouseleave="hideTooltip"
-              class="relative group cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 transform hover:scale-105"
+              class="relative group cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 hover:bg-primary-25 dark:hover:bg-gray-700 transform hover:scale-105"
             >
-              <div class="aspect-square flex items-center justify-center">
+              <div class="aspect-square flex items-center justify-center bg-white dark:bg-gray-100 rounded-md group-hover:bg-primary-50 dark:group-hover:bg-gray-200 transition-colors">
                 <img
                   :src="icon.thumbnail || icon.src"
                   :alt="icon.alt"
-                  class="w-8 h-8 object-contain filter group-hover:brightness-110 transition-all"
+                  class="w-8 h-8 object-contain filter group-hover:brightness-110 transition-all dark:brightness-90"
                   @error="handleImageError"
                 />
               </div>
-              <div class="absolute inset-0 bg-primary-50 dark:bg-primary-900/20 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
             </div>
           </div>
           
@@ -283,17 +282,16 @@
               v-for="shape in filteredShapes"
               :key="shape.id"
               @click="addMedia(shape)"
-              class="relative group cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 transform hover:scale-105"
+              class="relative group cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-800 hover:bg-primary-25 dark:hover:bg-gray-700 transform hover:scale-105"
             >
-              <div class="aspect-square flex items-center justify-center">
+              <div class="aspect-square flex items-center justify-center bg-white dark:bg-gray-100 rounded-md group-hover:bg-primary-50 dark:group-hover:bg-gray-200 transition-colors">
                 <img
                   :src="shape.thumbnail || shape.src"
                   :alt="shape.alt"
-                  class="w-8 h-8 object-contain filter group-hover:brightness-110 transition-all"
+                  class="w-8 h-8 object-contain filter group-hover:brightness-110 transition-all dark:brightness-90"
                   @error="handleImageError"
                 />
               </div>
-              <div class="absolute inset-0 bg-primary-50 dark:bg-primary-900/20 opacity-0 group-hover:opacity-50 transition-all rounded-lg"></div>
               <!-- Shape name -->
               <p class="text-xs text-center text-gray-600 dark:text-gray-300 mt-1 truncate group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">{{ shape.alt }}</p>
             </div>
