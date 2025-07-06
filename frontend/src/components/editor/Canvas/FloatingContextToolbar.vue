@@ -362,47 +362,61 @@ const emit = defineEmits<{
 
 const toolbarRef = ref<HTMLElement>()
 
-// Helper function to detech is toolbar has wrapped content and organize elements by rows
-const WrappedRows = () => {
-  if (!toolbarRef.value) return []
-  const container = toolbarRef.value
-  const children = container.querySelectorAll('.toolbar-section > *')
-  if (children.length === 0) return []
-  
-  // Create an array to hold rows
-  const rows: HTMLElement[][] = []
-  let currentRow: HTMLElement[] = []
+let resizeObserver: ResizeObserver | null = null
 
-  // Iterate through each child element
-  children.forEach((child) => {
-    const element = child as HTMLElement
-    // If the element is on a new row, push the current row and start a new one
-    if (currentRow.length > 0 && element.offsetTop > currentRow[0].offsetTop) {
-      rows.push(currentRow)
-      currentRow = []
-    }
-    currentRow.push(element)
+const checkWrap = () => {
+  const container = toolbarRef.value
+  if (!container) return
+
+  const children = Array.from(container.children) as HTMLElement[]
+  let lastOffsetTop: number | null = null
+  let hasWrapped = false
+
+  // Reset classes
+  children.forEach(child => {
+    child.classList.remove('row-start')
   })
 
+  children.forEach((child, index) => {
+    if (child.offsetParent === null) return // Skip hidden elements
 
-  // Push the last row if it has elements
-  if (currentRow.length > 0) {
-    rows.push(currentRow)
+    const currentOffsetTop = child.offsetTop
+    if (lastOffsetTop !== null && currentOffsetTop > lastOffsetTop) {
+      hasWrapped = true
+    }
+    lastOffsetTop = currentOffsetTop
+  })
+
+  if (hasWrapped) {
+    container.classList.add('has-wrapped-content')
+  } else {
+    container.classList.remove('has-wrapped-content')
   }
-
-  return rows
 }
 
-// Helper function to detect if the toolbar has wrapped content
-const hasWrappedContent = () => {
-  if (!toolbarRef.value) return false
-  const container = toolbarRef.value
-  const children = container.querySelectorAll('.toolbar-section > *')
-  if (children.length === 0) return false
-  const rowStart = children[0] as HTMLElement
-  // Check if the first child's top offset is greater than 0, indicating a new row
-  return Array.from(children).some((child) => (child as HTMLElement).offsetTop > 0)
-}
+onMounted(() => {
+  if (toolbarRef.value) {
+    resizeObserver = new ResizeObserver(checkWrap)
+    resizeObserver.observe(toolbarRef.value)
+  }
+  checkWrap()
+})
+
+onUnmounted(() => {
+  if (resizeObserver && toolbarRef.value) {
+    resizeObserver.unobserve(toolbarRef.value)
+  }
+  resizeObserver = null
+})
+
+watch(
+  () => [props.selectedLayer, props.activeTool, props.show],
+  () => {
+    nextTick(checkWrap)
+  },
+  { deep: true }
+)
+
 
 // Opacity presets for quick selection
 const opacityPresets = [
@@ -454,44 +468,6 @@ const setPosition = (preset: string, closeCallback: () => void) => {
   // Don't automatically close the dropdown when clicking presets
   // closeCallback()
 }
-
-watch(()=>props.containerWidth, async (newWidth) => {
-  if (toolbarRef.value) {
-    // Force re-evaluation of wrapped content on width change
-    await nextTick()
-    const rows = WrappedRows()
-    if (hasWrappedContent()) {
-      toolbarRef.value.classList.add('has-wrapped-content')
-      rows.forEach((row, index) => {
-        row.forEach((item, itemIndex) => {
-          if (itemIndex === 0) {
-            item.classList.add('row-start')
-          } else {
-            item.classList.remove('row-start')
-          }
-        })
-      })
-    } else {
-      toolbarRef.value.classList.remove('has-wrapped-content')
-      rows.forEach((row) => {
-        row.forEach((item) => {
-          item.classList.remove('row-start')
-        })
-      })
-    }
-  }
-})
-
-onMounted(() => {
-  // Initial check for wrapped content
-  if (toolbarRef.value) {
-    if (hasWrappedContent()) {
-      toolbarRef.value.classList.add('has-wrapped-content')
-    } else {
-      toolbarRef.value.classList.remove('has-wrapped-content')
-    }
-  }
-})
 </script>
 
 <style scoped>
@@ -522,171 +498,45 @@ onMounted(() => {
 
 /* Toolbar container with row separation */
 .toolbar-container {
-  /* Use flexbox with row wrapping and visual row separation */
   display: flex;
   flex-wrap: wrap;
-  align-content: flex-start;
   align-items: flex-start;
-  position: relative;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(229, 231, 235, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
-/* Toolbar section styling for wrapped appearance */
+
+
 .toolbar-section {
-  display: contents;
+  display: contents; /* Flatten structure for flexbox wrapping */
 }
 
-/* Individual toolbar items get the visual styling */
-.toolbar-section > * {
+.toolbar-container > :deep(*) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  margin: 0.25rem;
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(243, 244, 246, 0.9));
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  backdrop-filter: blur(8px);
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  flex: 0 0 auto;
-  min-width: fit-content;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(243, 244, 246, 0.5));
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
 }
 
-/* Row separation using dynamic wrapping detection */
-.toolbar-container.has-wrapped-content {
-  /* Add padding and background when wrapped */
-  padding: 0.75rem;
-  background: linear-gradient(135deg, 
-    rgba(249, 250, 251, 0.03), 
-    rgba(243, 244, 246, 0.08)
-  );
-  border-radius: 1rem;
-  transition: all 0.3s ease;
+.dark .toolbar-container > :deep(*) {
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.6), rgba(75, 85, 99, 0.5));
 }
 
-.dark .toolbar-container.has-wrapped-content {
-  background: linear-gradient(135deg, 
-    rgba(31, 41, 55, 0.03), 
-    rgba(55, 65, 81, 0.08)
-  );
-}
 
-/* Detect rows using JavaScript and apply classes dynamically */
-.toolbar-container.has-wrapped-content .toolbar-section {
-  /* All sections get slight spacing adjustment when wrapped */
-  margin: 0.375rem 0.25rem;
-}
 
-/* Add separators between visual rows */
-.toolbar-container.has-wrapped-content .toolbar-section .row-start {
-  /* Class applied via JavaScript to items starting new rows */
-  margin-top: 1.5rem;
-  position: relative;
-  background: red !important;
-}
 
-.toolbar-container.has-wrapped-content .toolbar-section .row-start::before {
-  content: '';
-  position: absolute;
-  top: -0.875rem;
-  left: -4rem;
-  right: -4rem;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(229, 231, 235, 0.1) 3%, 
-    rgba(229, 231, 235, 0.3) 10%, 
-    rgba(229, 231, 235, 0.5) 20%, 
-    rgba(229, 231, 235, 0.7) 35%, 
-    rgba(229, 231, 235, 0.8) 50%, 
-    rgba(229, 231, 235, 0.7) 65%, 
-    rgba(229, 231, 235, 0.5) 80%, 
-    rgba(229, 231, 235, 0.3) 90%, 
-    rgba(229, 231, 235, 0.1) 97%, 
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 1;
-  border-radius: 1px;
-  opacity: 0.9;
-  animation: fadeInSeparator 0.3s ease-out;
-}
-
-.dark .toolbar-container.has-wrapped-content .toolbar-section .row-start::before {
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(75, 85, 99, 0.1) 3%, 
-    rgba(75, 85, 99, 0.3) 10%, 
-    rgba(75, 85, 99, 0.5) 20%, 
-    rgba(75, 85, 99, 0.7) 35%, 
-    rgba(75, 85, 99, 0.8) 50%, 
-    rgba(75, 85, 99, 0.7) 65%, 
-    rgba(75, 85, 99, 0.5) 80%, 
-    rgba(75, 85, 99, 0.3) 90%, 
-    rgba(75, 85, 99, 0.1) 97%, 
-    transparent 100%
-  );
-}
-
-@keyframes fadeInSeparator {
-  from {
-    opacity: 0;
-    transform: scaleX(0.3);
-  }
-  to {
-    opacity: 0.9;
-    transform: scaleX(1);
-  }
-}
-
-/* Alternative: Use flex-basis for more predictable wrapping behavior */
-.toolbar-container .toolbar-section {
-  flex: 0 0 auto;
-  min-width: fit-content;
-}
-
-/* Add subtle inner glow */
-.toolbar-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: xor;
-  padding: 1px;
-  pointer-events: none;
-}
-
-.dark .toolbar-section {
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(55, 65, 81, 0.9));
-  border-color: rgba(75, 85, 99, 0.8);
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.15),
-    0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.dark .toolbar-section::before {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-}
-
-.toolbar-section:hover {
-  background: linear-gradient(135deg, rgba(243, 244, 246, 0.98), rgba(229, 231, 235, 0.95));
-  border-color: rgba(209, 213, 219, 0.9);
-  transform: translateY(-1px);
-  box-shadow: 
-    0 4px 8px rgba(0, 0, 0, 0.1),
-    0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
-.dark .toolbar-section:hover {
-  background: linear-gradient(135deg, rgba(55, 65, 81, 0.98), rgba(75, 85, 99, 0.95));
-  border-color: rgba(107, 114, 128, 0.9);
-}
 
 /* Reset any default styles for child components */
 .toolbar-section > * {
@@ -698,30 +548,8 @@ onMounted(() => {
   box-shadow: none;
 }
 
-/* Special styling for action toolbar */
-.toolbar-actions {
-  gap: 0.75rem;
-  padding: 0.625rem 1rem;
-  background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(229, 237, 255, 0.9));
-  border-color: rgba(191, 219, 254, 0.8);
-}
 
-.dark .toolbar-actions {
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.15), rgba(29, 78, 216, 0.1));
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.toolbar-actions:hover {
-  background: linear-gradient(135deg, rgba(229, 237, 255, 0.98), rgba(219, 234, 254, 0.95));
-  border-color: rgba(147, 197, 253, 0.9);
-}
-
-.dark .toolbar-actions:hover {
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.2), rgba(29, 78, 216, 0.15));
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.toolbar-actions > div {
+:deep(.toolbar-actions > div) {
   display: flex;
   align-items: center;
   gap: 0.25rem;

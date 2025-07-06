@@ -37,9 +37,9 @@
           leave-from-class="translate-y-0 opacity-100"
           leave-to-class="translate-y-1 opacity-0"
         >
-          <ListboxOptions class="absolute z-20 mt-2 max-h-96 w-80 min-w-full rounded-xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 focus:outline-none overflow-hidden">
+          <ListboxOptions class="absolute  mt-2 max-h-96 w-80 min-w-full rounded-xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 focus:outline-none overflow-hidden z-50">
             <!-- Search -->
-            <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-600 p-3">
+            <div class="sticky top-0  bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-600 p-3">
               <div class="relative">
                 <MagnifyingGlassIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <input

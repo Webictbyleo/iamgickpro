@@ -6,6 +6,15 @@
       <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Add text, images, and shapes to your design</p>
     </div>
 
+    <!-- Hidden file input for image uploads -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      @change="handleFileUpload"
+      class="hidden"
+    />
+
     <!-- Content Area -->
     <div class="flex-1 overflow-y-auto">
       <!-- Quick Add Section -->
@@ -26,40 +35,22 @@
           
           <button
             @click="addImagePlaceholder"
-            class="group flex flex-col items-center p-6 border-2 border-dashed border-primary-200 dark:border-primary-700 rounded-xl hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 active:scale-95 active:bg-primary-100 dark:active:bg-gray-600 transition-all duration-200"
+            :disabled="isUploading"
+            class="group flex flex-col items-center p-6 border-2 border-dashed border-primary-200 dark:border-primary-700 rounded-xl hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 active:scale-95 active:bg-primary-100 dark:active:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div class="w-12 h-12 bg-primary-100 dark:bg-gray-700 rounded-xl flex items-center justify-center mb-3 group-hover:bg-primary-200 dark:group-hover:bg-gray-600 group-hover:scale-110 transition-all duration-200">
-              <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-if="isUploading" class="w-6 h-6 border-2 border-primary-600 dark:border-primary-400 border-t-transparent rounded-full animate-spin"></div>
+              <svg v-else class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16L8.586 11.414C9.367 10.633 10.633 10.633 11.414 11.414L16 16M14 14L15.586 12.414C16.367 11.633 17.633 11.633 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" />
               </svg>
             </div>
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-300">Add Image</span>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-300">
+              {{ isUploading ? 'Uploading...' : 'Add Image' }}
+            </span>
           </button>
         </div>
       </div>
 
-      <!-- Basic Elements -->
-      <div class="p-3">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-          <svg class="w-4 h-4 mr-2 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          Elements
-        </h3>
-        <div class="grid grid-cols-3 gap-2">
-          <button
-            v-for="element in filteredBasicElements"
-            :key="element.type"
-            @click="addElement(element.type, element.defaultProps)"
-            class="group flex flex-col items-center p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 active:scale-95 active:bg-primary-100 dark:active:bg-gray-600 transition-all duration-200 hover:shadow-sm"
-          >
-            <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary-100 dark:group-hover:bg-gray-600">
-              <component :is="element.icon" class="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400" />
-            </div>
-            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-300 text-center leading-tight">{{ element.label }}</span>
-          </button>
-        </div>
-      </div>
 
       <!-- Shapes -->
       <div class="p-4 border-t border-gray-200 dark:border-gray-700">
@@ -89,6 +80,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { LayerType } from '@/types'
+import { mediaAPI } from '@/services/api'
+import { useNotifications } from '@/composables/useNotifications'
 import {
   DocumentTextIcon,
   PhotoIcon,
@@ -113,44 +106,22 @@ const emit = defineEmits<{
   'add-element': [type: LayerType, properties: any]
 }>()
 
-const searchQuery = ref('')
+const { uploadFailed } = useNotifications()
 
-// Basic elements configuration
-const basicElements: ElementConfig[] = [
-  {
-    type: 'text',
-    label: 'Text',
-    icon: DocumentTextIcon,
-    defaultProps: {
-      text: 'Add your text here',
-      fontSize: 24,
-      fontFamily: 'Inter',
-      color: '#000000',
-      fontWeight: 'normal',
-      textAlign: 'left'
-    }
-  },
-  {
-    type: 'image',
-    label: 'Image',
-    icon: PhotoIcon,
-    defaultProps: {
-      src: 'https://picsum.photos/400/300',
-      alt: 'Sample Image'
-    }
-  },
-  {
-    type: 'shape',
-    label: 'Shape',
-    icon: Square3Stack3DIcon,
-    defaultProps: {
-      shapeType: 'rectangle',
-      fill: { type: 'solid', color: '#8B5CF6', opacity: 1 },
-      stroke: '#7C3AED',
-      strokeWidth: 2
-    }
-  }
+const fileInput = ref<HTMLInputElement>()
+const isUploading = ref(false)
+
+// File validation constants
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg', 
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml'
 ]
+
 
 // Shapes configuration
 const shapes: ShapeConfig[] = [
@@ -162,24 +133,48 @@ const shapes: ShapeConfig[] = [
   { type: 'polygon', label: 'Polygon', icon: '🔶' }
 ]
 
-// Computed filtered arrays
-const filteredBasicElements = computed(() => {
-  if (!searchQuery.value.trim()) return basicElements
-  return basicElements.filter(element => 
-    element.label.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
 
-const filteredShapes = computed(() => {
-  if (!searchQuery.value.trim()) return shapes
-  return shapes.filter(shape => 
-    shape.label.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
 
 // Methods
 const addElement = (type: LayerType, properties: any = {}) => {
   emit('add-element', type, properties)
+}
+
+// Calculate appropriate dimensions for the design stage
+const calculateDimensions = (originalWidth: number, originalHeight: number) => {
+  const maxWidth = 600
+  const maxHeight = 400
+  
+  const aspectRatio = originalWidth / originalHeight
+  let width = originalWidth
+  let height = originalHeight
+  
+  if (width > maxWidth) {
+    width = maxWidth
+    height = width / aspectRatio
+  }
+  
+  if (height > maxHeight) {
+    height = maxHeight
+    width = height * aspectRatio
+  }
+  
+  return { width: Math.round(width), height: Math.round(height) }
+}
+
+// Validate uploaded file
+const validateFile = (file: File): string | null => {
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    return `File size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`
+  }
+  
+  // Check file type
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return `File type "${file.type}" is not supported. Please upload a JPEG, PNG, GIF, WebP, or SVG image.`
+  }
+  
+  return null // No validation errors
 }
 
 const addShape = (shapeType: string) => {
@@ -210,9 +205,54 @@ const addTextElement = () => {
 }
 
 const addImagePlaceholder = () => {
-  addElement('image', {
-    src: 'https://picsum.photos/400/300',
-    alt: 'Image Placeholder'
-  })
+  // Trigger file input instead of using placeholder image
+  fileInput.value?.click()
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  
+  if (!files || files.length === 0) return
+  
+  try {
+    const file = files[0] // Only handle the first file
+    
+    // Validate file before upload
+    const validationError = validateFile(file)
+    if (validationError) {
+      uploadFailed(validationError)
+      target.value = '' // Reset input
+      return
+    }
+    
+    isUploading.value = true
+    
+    const response = await mediaAPI.uploadMedia(file, {
+      name: file.name
+    })
+    
+    if (response.data?.data?.media) {
+      const uploadedMedia = response.data.data.media
+      const dimensions = calculateDimensions(uploadedMedia.width || 400, uploadedMedia.height || 400)
+      
+      // Add the uploaded image to the design
+      emit('add-element', 'image', {
+        src: uploadedMedia.url || uploadedMedia.thumbnailUrl,
+        alt: uploadedMedia.name || 'Uploaded image',
+        ...dimensions
+      })
+    }
+    
+    // Reset input
+    target.value = ''
+  } catch (error) {
+    console.error('Failed to upload image:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.'
+    uploadFailed(errorMessage)
+    target.value = ''
+  } finally {
+    isUploading.value = false
+  }
 }
 </script>
