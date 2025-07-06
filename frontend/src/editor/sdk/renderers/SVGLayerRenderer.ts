@@ -128,13 +128,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     const groupId = group.id()
 
     try {
-      console.log('📥 SVGLayerRenderer: Loading SVG and parsing to paths', {
-        layerId: layer.id,
-        src: properties.src,
-        primaryCacheKey,
-        groupId,
-        cacheExists: this.svgCache.has(primaryCacheKey)
-      })
       
       // Show loading state
       this.showLoadingState(group, layer)

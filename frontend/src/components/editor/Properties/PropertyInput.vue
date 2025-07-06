@@ -16,6 +16,7 @@
       :class="inputClasses"
       @input="handleInput"
       @blur="handleBlur"
+      @focus="handleFocus"
       @keydown.enter="multiline ? undefined : handleBlur"
     />
     <div v-if="suffix && type !== 'range'" class="text-xs text-gray-500 dark:text-gray-400">
@@ -36,12 +37,13 @@
     :class="inputClasses"
     @input="handleInput"
     @blur="handleBlur"
+    @focus="handleFocus"
     @keydown.enter="multiline ? undefined : handleBlur"
   />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 
 interface Props {
   value: string | number
@@ -68,7 +70,24 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   update: [value: string | number]
+  change: [value: string | number]
 }>()
+
+// Track original value to detect actual changes
+const originalValue = ref<string | number>(props.value)
+const isEditing = ref(false)
+
+// Watch for external value changes
+watch(() => props.value, (newValue) => {
+  if (newValue !== originalValue.value && !isEditing.value) {
+    originalValue.value = newValue
+  }
+})
+
+// Initialize original value
+onMounted(() => {
+  originalValue.value = props.value
+})
 
 const inputClasses = computed(() => [
   'block w-full rounded-lg border px-3 py-2 text-sm transition-colors duration-200',
@@ -86,6 +105,11 @@ const formattedValue = computed(() => {
   }
   return props.value
 })
+
+const handleFocus = () => {
+  isEditing.value = true
+  originalValue.value = props.value // Store the original value when editing starts
+}
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -105,11 +129,16 @@ const handleInput = (event: Event) => {
     }
   }
   
-  emit('update', value)
+  // Only emit if value actually changed
+  const hasChanged = value !== originalValue.value
+  if (hasChanged) {
+    emit('update', value)
+  }
 }
 
 const handleBlur = (event: Event) => {
   const target = event.target as HTMLInputElement
+  isEditing.value = false
   
   if (props.type === 'number') {
     let value = parseFloat(target.value) || 0
@@ -123,7 +152,23 @@ const handleBlur = (event: Event) => {
     }
     
     target.value = value.toString()
-    emit('update', value)
+    
+    // Only emit events if value actually changed from original
+    const hasChanged = value !== originalValue.value
+    if (hasChanged) {
+      originalValue.value = value
+      emit('update', value)
+      emit('change', value)
+    }
+  } else {
+    // For text inputs
+    const value = target.value
+    const hasChanged = value !== originalValue.value
+    if (hasChanged) {
+      originalValue.value = value
+      emit('update', value)
+      emit('change', value)
+    }
   }
 }
 </script>

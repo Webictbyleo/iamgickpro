@@ -65,6 +65,37 @@ export class TransformManager {
     return [...this.selectedLayers]
   }
 
+  /**
+   * Hide the transformer (useful for clean exports)
+   */
+  hideTransformer(): void {
+    if (this.transformer && this.transformer.visible()) {
+      this.transformer.visible(false)
+      if (this.currentTransformerLayer) {
+        this.currentTransformerLayer.batchDraw()
+      }
+    }
+  }
+
+  /**
+   * Show the transformer (restore after hiding)
+   */
+  showTransformer(): void {
+    if (this.transformer && this.selectedLayers.length > 0) {
+      this.transformer.visible(true)
+      if (this.currentTransformerLayer) {
+        this.currentTransformerLayer.batchDraw()
+      }
+    }
+  }
+
+  /**
+   * Check if transformer is currently visible
+   */
+  isTransformerVisible(): boolean {
+    return this.transformer ? this.transformer.visible() : false
+  }
+
   // ============================================================================
   // POSITION PRESETS
   // ============================================================================

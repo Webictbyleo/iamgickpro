@@ -3,7 +3,11 @@
     <div 
       v-if="shouldShow"
       ref="toolbarRef"
-      class="fixed flex flex-wrap items-start gap-x-3 gap-y-4 px-2 py-2 z-[9999] pointer-events-auto translate-y-10 toolbar-container"
+      class="fixed items-center  gap-x-3 gap-y-4 px-2 py-2 z-[9999] pointer-events-auto toolbar-container"
+      :style="{
+        maxWidth: `${containerWidth}px`,
+        top: '54px',
+      }"
     >
       <!-- Context-specific toolbars based on selected layer or active tool -->
       
@@ -498,9 +502,9 @@ const setPosition = (preset: string, closeCallback: () => void) => {
 
 /* Toolbar container with row separation */
 .toolbar-container {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
   border-radius: 1rem;
@@ -518,16 +522,13 @@ const setPosition = (preset: string, closeCallback: () => void) => {
 }
 
 .toolbar-container > :deep(*) {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+/*   gap: 0.5rem;
+  padding: 0.5rem 0.75rem; */
   border-radius: 0.75rem;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(243, 244, 246, 0.5));
   border: 1px solid transparent;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
-  flex-shrink: 0;
 }
 
 .dark .toolbar-container > :deep(*) {

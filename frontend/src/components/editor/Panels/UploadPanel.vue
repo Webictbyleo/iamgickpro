@@ -4,7 +4,6 @@
     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Uploads</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage and use your uploaded image files</p>
         </div>
       </div>

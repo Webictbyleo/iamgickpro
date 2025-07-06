@@ -28,7 +28,7 @@
     </div>
 
     <!-- Stroke Width -->
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center space-x-2 w-36">
       <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Width:</label>
       <PropertyNumberInput
         :value="strokeWidth"
@@ -44,7 +44,7 @@
     </div>
 
     <!-- Corner Radius (for rectangles) -->
-    <div v-if="shapeType === 'rectangle'" class="flex items-center space-x-2">
+    <div v-if="shapeType === 'rectangle'" class="flex items-center space-x-2 w-36">
       <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Radius:</label>
       <PropertyNumberInput
         :value="cornerRadius"
@@ -54,7 +54,7 @@
         :max="100"
         :step="1"
         unit="px"
-        input-class="w-16"
+        input-class="w-20"
         placeholder="0"
       />
     </div>

@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center space-x-4">
     <!-- Font Family with enhanced width and styling -->
-    <div class="w-56">
+    <div class="w-36">
       <FontSelector
         :value="fontFamily"
         @update="handleFontChange"
@@ -36,21 +36,21 @@
         @update="$emit('update', { fontWeight: $event ? 'bold' : 'normal' })"
         tooltip="Bold (Ctrl+B)"
       >
-        <BoldIcon class="w-5 h-5" />
+        <BoldIcon class="w-4 h-4" />
       </PropertyToggle>
       <PropertyToggle
         :active="fontStyle === 'italic'"
         @update="$emit('update', { fontStyle: $event ? 'italic' : 'normal' })"
         tooltip="Italic (Ctrl+I)"
       >
-        <ItalicIcon class="w-5 h-5" />
+        <ItalicIcon class="w-4 h-4" />
       </PropertyToggle>
       <PropertyToggle
         :active="textDecoration === 'underline'"
         @update="$emit('update', { textDecoration: $event ? 'underline' : 'none' })"
         tooltip="Underline (Ctrl+U)"
       >
-        <UnderlineIcon class="w-5 h-5" />
+        <UnderlineIcon class="w-4 h-4" />
       </PropertyToggle>
     </div>
 

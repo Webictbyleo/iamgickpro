@@ -189,7 +189,10 @@ export class EditorSDK extends EventEmitter {
         const canvasSize = this.canvasManager.getSize()
         this.transformManager.applyPositionPreset(preset, canvasSize.width, canvasSize.height)
       },
-      getSelectedLayers: () => this.transformManager.getSelectedLayers()
+      getSelectedLayers: () => this.transformManager.getSelectedLayers(),
+      hideTransformer: () => this.transformManager.hideTransformer(),
+      showTransformer: () => this.transformManager.showTransformer(),
+      isTransformerVisible: () => this.transformManager.isTransformerVisible()
     }
   }
 
@@ -337,14 +340,20 @@ export class EditorSDK extends EventEmitter {
       throw new Error('Stage not initialized')
     }
 
+    // Store states to restore later
+    let currentScale = this.stage.scaleX()
+    let currentX = this.stage.x()
+    let currentY = this.stage.y()
+    let wasTransformerVisible = this.transformManager.isTransformerVisible()
+
     try {
       // Get the original canvas dimensions for consistent export
       const canvasSize = this.canvasManager.getSize()
       
-      // Store current stage transform state
-      const currentScale = this.stage.scaleX()
-      const currentX = this.stage.x()
-      const currentY = this.stage.y()
+      // Hide transformer for clean export
+      if (wasTransformerVisible) {
+        this.transformManager.hideTransformer()
+      }
       
       // Temporarily reset stage transform for export
       this.stage.scale({ x: 1, y: 1 })
@@ -362,15 +371,21 @@ export class EditorSDK extends EventEmitter {
         height: canvasSize.height
       })
       
-      // Restore original stage transform
-      this.stage.scale({ x: currentScale, y: currentScale })
-      this.stage.position({ x: currentX, y: currentY })
-      this.stage.batchDraw()
-      
       return dataURL
     } catch (error) {
       console.error('🎨 EditorSDK: Failed to export design as image:', error)
       throw new Error(`Failed to export as ${format.toUpperCase()}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      // Always restore the original state, even if export fails
+      this.stage.scale({ x: currentScale, y: currentScale })
+      this.stage.position({ x: currentX, y: currentY })
+      
+      // Restore transformer visibility if it was visible before
+      if (wasTransformerVisible) {
+        this.transformManager.showTransformer()
+      }
+      
+      this.stage.batchDraw()
     }
   }
 

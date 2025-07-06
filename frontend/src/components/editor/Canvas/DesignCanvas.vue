@@ -1,7 +1,7 @@
 <template>
   <div class="h-full bg-gray-100 dark:bg-gray-900 relative flex flex-col">
     <!-- Fixed Floating Context Toolbar Area - No Layout Shift -->
-    <div class="border-b border-gray-200 dark:border-gray-700 px-4 flex items-center justify-center flex-shrink-0 relative h-14">
+    <div class="px-4 flex items-center justify-center flex-shrink-0 relative ">
       <!-- Floating Context Toolbar -->
       <Transition
         enter-active-class="transition-all duration-200 ease-out"

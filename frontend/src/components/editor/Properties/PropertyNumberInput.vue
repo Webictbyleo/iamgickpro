@@ -103,17 +103,20 @@ const inputRef = ref<HTMLInputElement>()
 const showDropdown = ref(false)
 const internalValue = ref(props.value)
 const isEditing = ref(false)
+const originalValue = ref(props.value) // Track original value to detect actual changes
 
 // Watch for external value changes
 watch(() => props.value, (newValue) => {
   if (newValue !== internalValue.value && !isEditing.value) {
     internalValue.value = newValue
+    originalValue.value = newValue
   }
 })
 
 // Initialize internal value
 onMounted(() => {
   internalValue.value = props.value
+  originalValue.value = props.value
 })
 
 const formattedValue = computed(() => {
@@ -161,9 +164,13 @@ const handleInput = (event: Event) => {
   const parsed = parseInputValue(inputValue)
   const clamped = clampValue(parsed)
   
-  // Update internal value but don't format during editing
+  // Update internal value but only emit if changed
+  const hasChanged = clamped !== internalValue.value
   internalValue.value = clamped
-  emit('update:value', clamped)
+  
+  if (hasChanged) {
+    emit('update:value', clamped)
+  }
 }
 
 const handleBlur = (event: Event) => {
@@ -182,13 +189,20 @@ const handleBlur = (event: Event) => {
     }
   })
   
-  emit('update:value', clamped)
-  emit('change', clamped)
+  // Only emit events if value actually changed from original
+  const hasChanged = clamped !== originalValue.value
+  if (hasChanged) {
+    originalValue.value = clamped
+    emit('update:value', clamped)
+    emit('change', clamped)
+  }
+  
   showDropdown.value = false
 }
 
 const handleFocus = () => {
   isEditing.value = true
+  originalValue.value = internalValue.value // Store the original value when editing starts
   // Select all text when focused
   nextTick(() => {
     inputRef.value?.select()
@@ -201,9 +215,9 @@ const handleKeydown = (event: KeyboardEvent) => {
   } else if (event.key === 'Escape') {
     // Reset to original value and blur
     if (inputRef.value) {
-      inputRef.value.value = formatDisplayValue(props.value)
+      inputRef.value.value = formatDisplayValue(originalValue.value)
     }
-    internalValue.value = props.value
+    internalValue.value = originalValue.value
     isEditing.value = false
     inputRef.value?.blur()
   } else if (event.key === 'ArrowUp') {
@@ -217,8 +231,14 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 const incrementValue = () => {
   const newValue = clampValue(internalValue.value + props.step)
+  const hasChanged = newValue !== internalValue.value
+  
   internalValue.value = newValue
-  emit('update:value', newValue)
+  originalValue.value = newValue // Update original value since this is an intentional change
+  
+  if (hasChanged) {
+    emit('update:value', newValue)
+  }
   
   // Update the input display value immediately
   if (inputRef.value) {
@@ -231,8 +251,14 @@ const incrementValue = () => {
 
 const decrementValue = () => {
   const newValue = clampValue(internalValue.value - props.step)
+  const hasChanged = newValue !== internalValue.value
+  
   internalValue.value = newValue
-  emit('update:value', newValue)
+  originalValue.value = newValue // Update original value since this is an intentional change
+  
+  if (hasChanged) {
+    emit('update:value', newValue)
+  }
   
   // Update the input display value immediately
   if (inputRef.value) {
@@ -250,10 +276,16 @@ const toggleDropdown = () => {
 }
 
 const selectPreset = (value: number) => {
+  const hasChanged = value !== internalValue.value
+  
   internalValue.value = value
+  originalValue.value = value // Update original value since this is an intentional change
   showDropdown.value = false
-  emit('update:value', value)
-  emit('change', value)
+  
+  if (hasChanged) {
+    emit('update:value', value)
+    emit('change', value)
+  }
   
   // Update input display
   if (inputRef.value) {
