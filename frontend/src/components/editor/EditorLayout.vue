@@ -412,10 +412,11 @@ const updateCanvasViewportDimensions = () => {
   }
 }
 
+
 // Watch for window resize and panel changes
 onMounted(() => {
   updateCanvasViewportDimensions()
-  window.addEventListener('resize', updateCanvasViewportDimensions)
+  window.addEventListener('resize', ()=>updateCanvasViewportDimensions())
 })
 
 onUnmounted(() => {
@@ -1656,6 +1657,8 @@ const handleAutoFitRequest = (event: CustomEvent) => {
   autoFitToScreen()
   console.log('📐 Auto-fit executed for reason:', reason)
 }
+
+
 
 // Cleanup on unmount
 onUnmounted(() => {

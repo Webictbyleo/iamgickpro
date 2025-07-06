@@ -1,13 +1,5 @@
 <template>
-  <div class="flex items-center space-x-4">
-    <!-- SVG Source Display -->
-    <div class="flex items-center space-x-2">
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-max">SVG:</label>
-      <span class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 min-w-[120px] text-gray-800 dark:text-gray-200 font-medium truncate">
-        {{ getSvgLabel(src) }}
-      </span>
-    </div>
-
+  <div class="flex items-center space-x-4 ">
     <!-- Simple Path Styling -->
     <IconDropdown
       :icon="PaintBrushIcon"
