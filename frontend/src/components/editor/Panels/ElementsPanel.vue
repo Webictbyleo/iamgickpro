@@ -6,6 +6,15 @@
       <p class="text-sm text-gray-600 mt-1">Add text, images, and shapes to your design</p>
     </div>
 
+    <!-- Hidden file input for image uploads -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      @change="handleFileUpload"
+      class="hidden"
+    />
+
     <!-- Content Area -->
     <div class="flex-1 overflow-y-auto">
       <!-- Quick Add Section -->
@@ -38,29 +47,6 @@
         </div>
       </div>
 
-      <!-- Basic Elements -->
-      <div class="p-3">
-        <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-          <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          Elements
-        </h3>
-        <div class="grid grid-cols-3 gap-2">
-          <button
-            v-for="element in filteredBasicElements"
-            :key="element.type"
-            @click="addElement(element.type, element.defaultProps)"
-            class="group flex flex-col items-center p-3 rounded-lg border border-gray-100 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 hover:shadow-sm"
-          >
-            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-purple-100">
-              <component :is="element.icon" class="w-4 h-4 text-gray-600 group-hover:text-purple-600" />
-            </div>
-            <span class="text-xs font-medium text-gray-700 group-hover:text-purple-700 text-center leading-tight">{{ element.label }}</span>
-          </button>
-        </div>
-      </div>
-
       <!-- Shapes -->
       <div class="p-4 border-t">
         <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center">
@@ -89,6 +75,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { LayerType } from '@/types'
+import { mediaAPI } from '@/services/api'
 import {
   DocumentTextIcon,
   PhotoIcon,
@@ -114,6 +101,7 @@ const emit = defineEmits<{
 }>()
 
 const searchQuery = ref('')
+const fileInput = ref<HTMLInputElement>()
 
 // Basic elements configuration
 const basicElements: ElementConfig[] = [
@@ -210,9 +198,63 @@ const addTextElement = () => {
 }
 
 const addImagePlaceholder = () => {
-  addElement('image', {
-    src: 'https://picsum.photos/400/300',
-    alt: 'Image Placeholder'
-  })
+  // Trigger file input instead of using placeholder image
+  fileInput.value?.click()
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  
+  if (!files || files.length === 0) return
+  
+  try {
+    const file = files[0] // Only handle the first file
+    
+    const response = await mediaAPI.uploadMedia(file, {
+      name: file.name
+    })
+    
+    if (response.data?.data?.media) {
+      const uploadedMedia = response.data.data.media
+      
+      // Calculate appropriate dimensions for the design
+      const calculateDimensions = (originalWidth: number, originalHeight: number) => {
+        const maxWidth = 600
+        const maxHeight = 400
+        
+        const aspectRatio = originalWidth / originalHeight
+        let width = originalWidth
+        let height = originalHeight
+        
+        if (width > maxWidth) {
+          width = maxWidth
+          height = width / aspectRatio
+        }
+        
+        if (height > maxHeight) {
+          height = maxHeight
+          width = height * aspectRatio
+        }
+        
+        return { width: Math.round(width), height: Math.round(height) }
+      }
+      
+      const dimensions = calculateDimensions(uploadedMedia.width || 400, uploadedMedia.height || 400)
+      
+      // Add the uploaded image to the design
+      emit('add-element', 'image', {
+        src: uploadedMedia.url || uploadedMedia.thumbnailUrl,
+        alt: uploadedMedia.name || 'Uploaded image',
+        ...dimensions
+      })
+    }
+    
+    // Reset input
+    target.value = ''
+  } catch (error) {
+    console.error('Failed to upload image:', error)
+    target.value = ''
+  }
 }
 </script>
