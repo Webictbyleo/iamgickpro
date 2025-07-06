@@ -15,6 +15,7 @@
       v-show="showScrollbar"
       class="scrollbar-track"
       :class="trackClass"
+      :style="trackStyle"
       ref="trackRef"
       @mousedown="handleTrackClick"
     >
@@ -74,6 +75,12 @@ const thumbStyle = computed(() => ({
   height: `${thumbHeight.value}px`,
   top: `${thumbTop.value}px`,
   transform: isDragging.value ? 'scaleX(1.2)' : 'scaleX(1)',
+}))
+
+// Computed track style to use the trackWidth prop
+const trackStyle = computed(() => ({
+  width: `${props.trackWidth}px`,
+  right: '2px',
 }))
 
 // Update scrollbar visibility and thumb position
@@ -224,10 +231,8 @@ defineExpose({
 
 .scrollbar-track {
   position: absolute;
-  right: 2px;
   top: 2px;
   bottom: 2px;
-  width: 8px;
   background: transparent;
   border-radius: 4px;
   z-index: 100;

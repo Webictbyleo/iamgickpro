@@ -61,7 +61,7 @@
         ref="customScrollbar"
         scroll-area-class="flex flex-col space-y-3 px-2 py-2"
         @scroll="handleScroll"
-        :track-width="12"
+        :track-width="6"
       >
         <button
           v-for="panel in panels"
