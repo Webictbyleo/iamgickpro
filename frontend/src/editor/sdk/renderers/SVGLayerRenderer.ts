@@ -61,12 +61,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
 
     const properties = layer.properties as SVGLayerProperties
 
-    console.log('🔄 SVGLayerRenderer: update called', {
-      layerId: layer.id,
-      dimensions: { width: layer.width, height: layer.height, x: layer.x, y: layer.y },
-      hasStyleChanges: !!(properties.fillColors || properties.strokeColors || properties.strokeWidths)
-    })
-
     // Update group position and dimensions exactly as specified
     // Do NOT apply any offsets to the group - this ensures the group appears
     // exactly where the layer coordinates specify (consistent with other layers)
@@ -80,14 +74,8 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       offsetY: 0
     })
 
-    console.log('🔄 SVGLayerRenderer: Updated group position exactly as specified', {
-      layerPosition: { x: layer.x, y: layer.y },
-      explanation: 'Group positioned exactly at layer coordinates, viewBox compensation in paths'
-    })
-
     // Check if we need to reload SVG or just update properties
     if (this.needsSvgReload(node, properties)) {
-      console.log('🔄 SVGLayerRenderer: SVG source changed, reloading paths from scratch')
       // Clear existing paths and reload
       this.clearPaths(node)
       if (properties.src) {
@@ -96,7 +84,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
         this.showNoSvgState(node, layer)
       }
     } else {
-      console.log('⚡ SVGLayerRenderer: Fast path update - only updating existing Konva.Path properties')
       // Just update path properties directly - no re-parsing needed!
       this.updatePathProperties(node, layer, properties)
     }
@@ -135,11 +122,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       // Check cache with primary key (layer ID)
       let cache = this.svgCache.get(primaryCacheKey)
       if (!cache || cache.lastSrc !== properties.src) {
-        console.log('🔄 SVGLayerRenderer: Cache miss or source changed, fetching and parsing SVG', {
-          cacheExists: !!cache,
-          cachedSrc: cache?.lastSrc,
-          newSrc: properties.src
-        })
         
         // Fetch and parse SVG
         const response = await fetch(properties.src!)
@@ -166,12 +148,7 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
           this.svgCache.set(groupId, cache)
         }
         
-        console.log('💾 SVGLayerRenderer: Updated cache for layer', primaryCacheKey)
       } else {
-        console.log('⚡ SVGLayerRenderer: Using cached SVG data', {
-          primaryCacheKey,
-          pathCount: cache.pathElements.length
-        })
       }
 
       // Create Konva paths from parsed elements
@@ -238,7 +215,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       }
     })
 
-    console.log(`📋 SVGLayerRenderer: Parsed ${pathElements.length} path elements`)
     return pathElements
   }
 
@@ -248,13 +224,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     group: Konva.Group,
     properties: SVGLayerProperties
   ): void {
-    console.log('🎯 SVGLayerRenderer: Creating Konva paths from cache', {
-      layerId: layer.id,
-      pathCount: cache.pathElements.length,
-      groupId: group.id(),
-      existingChildren: group.getChildren().length,
-      viewBox: cache.viewBox
-    })
     
     // Clear any existing content
     this.clearPaths(group)
@@ -264,12 +233,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
 
     // SVG layers should behave exactly like other layers - no viewBox compensation
     // Just scale the content to fit the layer dimensions, like how images work
-    console.log('🔧 SVGLayerRenderer: Scaling SVG content to fit layer dimensions', {
-      viewBox: cache.viewBox,
-      layerDimensions: { width: layer.width, height: layer.height },
-      scale: { scaleX, scaleY },
-      explanation: 'No viewBox compensation - SVG behaves like other layer types'
-    })
 
     // No offsets on the group - position exactly at layer coordinates
     group.setAttrs({
@@ -302,8 +265,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
       
       group.add(konvaPath)
     })
-
-    console.log(`✅ SVGLayerRenderer: Created ${cache.pathElements.length} Konva paths for layer ${layer.id}`)
   }
 
   private updatePathProperties(
@@ -357,9 +318,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     if (changesApplied > 0) {
       group.getLayer()?.batchDraw()
       const endTime = performance.now()
-      console.log(`⚡ SVGLayerRenderer: Fast property update completed - ${changesApplied}/${paths.length} paths updated in ${(endTime - startTime).toFixed(2)}ms`)
-    } else {
-      console.log(`⚡ SVGLayerRenderer: No property changes needed for ${paths.length} paths`)
     }
   }
 
@@ -602,7 +560,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     const layerId = groupId // Assuming group ID is set to layer ID
     
     if (!layerId) {
-      console.log('🔍 SVGLayerRenderer: needsSvgReload = true (no layer ID found)')
       return true
     }
     
@@ -610,20 +567,10 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     const cache = this.svgCache.get(layerId)
     
     if (!cache) {
-      console.log('🔍 SVGLayerRenderer: needsSvgReload = true (no cache found)', {
-        layerId,
-        cacheKeys: Array.from(this.svgCache.keys())
-      })
       return true
     }
     
     const needsReload = cache.lastSrc !== properties.src
-    console.log('🔍 SVGLayerRenderer: needsSvgReload =', needsReload, {
-      cachedSrc: cache.lastSrc,
-      currentSrc: properties.src,
-      layerId,
-      groupId
-    })
     
     return needsReload
   }
@@ -751,7 +698,6 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     const key = layerId.toString()
     const existed = this.svgCache.has(key)
     this.svgCache.delete(key)
-    console.log(`🗑️ SVGLayerRenderer: Cache cleared for layer ${layerId}, existed: ${existed}`)
     return existed
   }
 }

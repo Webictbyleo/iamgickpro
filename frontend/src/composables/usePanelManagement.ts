@@ -27,7 +27,7 @@ export function usePanelManagement() {
   const pluginPanels = ref<string[]>([])
   
   // State
-  const activePanel = ref<string | null>('elements')
+  const activePanel = ref<string | null>(null)
   const activePanelModal = ref<string | null>(null)
   const panelCache = ref<Map<string, PanelCache>>(new Map())
   const autoCloseContextual = ref(true)

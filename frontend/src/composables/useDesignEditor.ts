@@ -7,7 +7,7 @@ import { EditorSDK } from '@/editor/sdk/EditorSDK'
 import { layerAPI } from '@/services/api'
 import { GeometryUtils } from '@/utils/GeometryUtils'
 import type { EditorConfig } from '@/editor/sdk/types'
-import type { Layer, Design } from '@/types'
+import type { Layer, Design, LayerType } from '@/types'
 
 export function useDesignEditor() {
   const route = useRoute()
@@ -311,7 +311,7 @@ export function useDesignEditor() {
             // Instead, directly call the layer API to create in backend
             const response = await layerAPI.createLayer({
               designId: designStore.currentDesign!.id,
-              type: layerData.type as 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio',
+              type: layerData.type as LayerType,
               name: layerData.name,
               properties: layerData.properties,
               transform: layerData.transform,

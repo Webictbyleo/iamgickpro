@@ -438,14 +438,30 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
+   * Convert hex color with opacity to RGBA format
+   */
+  private hexToRgba(hexColor: string, opacity: number): string {
+    // Remove # if present
+    const hex = hexColor.replace('#', '')
+    
+    // Parse hex values
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`
+  }
+
+  /**
    * Apply fill configuration to shape
    */
   private applyFill(shape: Konva.Shape, fill: ShapeFillConfig): void {
     switch (fill.type) {
       case 'solid':
+        // Use RGBA format instead of separate fillOpacity
+        const rgbaColor = this.hexToRgba(fill.color || '#000000', fill.opacity || 1)
         shape.setAttrs({
-          fill: fill.color,
-          fillOpacity: fill.opacity
+          fill: rgbaColor
         })
         break
         
@@ -507,17 +523,20 @@ export class ShapeLayerRenderer implements KonvaLayerRenderer {
         
       case 'pattern':
         // Pattern fill would require creating a pattern image
-        // For now, fall back to solid color
+        // For now, fall back to solid color with RGBA
+        const patternColor = fill.backgroundColor || fill.color || '#000000'
+        const patternRgba = this.hexToRgba(patternColor, fill.opacity || 1)
         shape.setAttrs({
-          fill: fill.backgroundColor || fill.color,
-          fillOpacity: fill.opacity
+          fill: patternRgba
         })
         break
         
       default:
+        // Default case - use RGBA for opacity
+        const defaultColor = fill.color || '#000000'
+        const defaultRgba = this.hexToRgba(defaultColor, fill.opacity || 1)
         shape.setAttrs({
-          fill: fill.color,
-          fillOpacity: fill.opacity
+          fill: defaultRgba
         })
     }
   }

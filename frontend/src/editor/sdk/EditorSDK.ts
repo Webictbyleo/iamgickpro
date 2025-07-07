@@ -101,6 +101,9 @@ export class EditorSDK extends EventEmitter {
     // Connect LayerManager with TransformManager for transformation handling
     this.layerManager.setTransformManager(this.transformManager)
     
+    // Connect TransformManager with LayerManager for layer updates
+    this.transformManager.setLayerManager(this.layerManager)
+    
     // History is now handled by useDesignHistory composable - disable SDK history
     this.historyManager = new HistoryManager(null, this) // Kept for compatibility but not connected
     this.layerManager.setHistoryManager(null) // Disabled

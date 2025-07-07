@@ -1,12 +1,12 @@
 <template>
-  <div class="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 shadow-sm">
-    <!-- Light Modern Toolbar to complement dark sidebar -->
-    <div class="flex items-center h-16 px-6">
+  <div class="border-b border-primary-400 dark:border-primary-700 flex-shrink-0 shadow-lg shadow-primary-200/50 dark:shadow-gray-900/50">
+    <!-- Primary Gradient Toolbar Background -->
+    <div class="bg-gradient-to-r from-primary-300 via-primary-400 to-primary-300 dark:from-primary-900 dark:via-primary-800 dark:to-primary-900 flex items-center h-16 px-6">
       <!-- Left Section - Logo & Design Name -->
       <div class="flex items-center space-x-4 min-w-0 mr-8">
         <!-- Logo/Brand Space -->
         <div class="flex items-center">
-          <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <div class="w-8 h-8 bg-gradient-to-br from-secondary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
             <span class="text-white font-bold text-sm">{{ appInitials }}</span>
           </div>
         </div>
@@ -21,7 +21,7 @@
             @blur="handleDesignNameBlur"
             @keydown.enter="handleDesignNameEnter"
             @keydown.escape="handleDesignNameEscape"
-            class="text-sm font-medium bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 rounded-lg px-2 py-1 min-w-0 max-w-xs truncate transition-all duration-200 group-hover:bg-white dark:group-hover:bg-gray-700"
+            class="text-sm font-medium bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400  rounded-lg px-2 py-1 min-w-0 max-w-xs truncate transition-all duration-200"
             :placeholder="designName || 'Untitled Design'"
           />
         </div>
@@ -31,7 +31,7 @@
       <div class="flex-1 flex items-center justify-center">
         <div class="flex items-center space-x-4">
           <!-- History Controls - Flat Design -->
-          <div class="flex items-center rounded-lg border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center rounded-lg">
             <button
               :disabled="!canUndo"
               @click="$emit('undo')"
@@ -105,7 +105,7 @@
       <!-- Right Section - Theme Toggle, Save & Export Actions -->
       <div class="flex items-center space-x-3">
         <!-- Theme Toggle -->
-        <ThemeToggle />
+        <ThemeToggle :class="'bg-gray-50 rounded-sm dark:bg-transparent'" />
         
         <!-- Save Button -->
         <button

@@ -15,7 +15,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
 
   render(layer: LayerNode): Konva.Node {
     const properties = layer.properties as ImageLayerProperties
-    
     const group = new Konva.Group({
       id: layer.id.toString(),  // Convert number ID to string for Konva
       x: layer.x,
@@ -63,7 +62,6 @@ export class ImageLayerRenderer implements KonvaLayerRenderer {
 
   update(node: Konva.Node, layer: LayerNode): void {
     if (!(node instanceof Konva.Group)) return
-
     const properties = layer.properties as ImageLayerProperties
     const imageNode = node.findOne('Image') as Konva.Image
 

@@ -22,6 +22,7 @@ export class TransformManager {
   private historyManager: any = null
   private transformStartStates: Map<number, Partial<LayerNode>> = new Map()
   private currentTransformerLayer: Konva.Layer | null = null
+  private layerManager: any = null // Reference to LayerManager for calling updateLayer
 
   constructor(
     private stage: Konva.Stage,
@@ -33,12 +34,18 @@ export class TransformManager {
   }
 
   /**
+   * Set the layer manager for layer updates
+   */
+  setLayerManager(layerManager: any): void {
+    this.layerManager = layerManager
+  }
+
+  /**
    * Set the history manager for transform capture - DISABLED
    */
   setHistoryManager(historyManager: any): void {
     // History is now handled by useDesignHistory composable - disable SDK history
     this.historyManager = null
-    console.log('TransformManager: History management disabled - now handled by useDesignHistory composable')
   }
 
   // ============================================================================
@@ -103,26 +110,10 @@ export class TransformManager {
   applyPositionPreset(preset: string, canvasWidth: number, canvasHeight: number): void {
     if (this.selectedLayers.length === 0) return
 
-    console.log(`🎯 TransformManager: Applying position preset "${preset}" to ${this.selectedLayers.length} layer(s)`)
-
     this.selectedLayers.forEach(layer => {
-      // Log layer information for debugging
-      console.log(`🔍 Layer ${layer.id} (${layer.type}):`, {
-        position: { x: layer.x, y: layer.y },
-        dimensions: { width: layer.width, height: layer.height },
-        hasKonvaNode: !!layer.konvaNode,
-        konvaOffsets: layer.konvaNode ? { 
-          offsetX: layer.konvaNode.offsetX(), 
-          offsetY: layer.konvaNode.offsetY() 
-        } : null
-      })
-
       // Get the effective dimensions and visual bounds
       const effectiveDimensions = this.getEffectiveLayerDimensions(layer)
       const visualBounds = this.getVisualBounds(layer)
-      
-      console.log(`📏 Effective dimensions for layer ${layer.id}:`, effectiveDimensions)
-      console.log(`👁️ Visual bounds for layer ${layer.id}:`, visualBounds)
       
       // Calculate preset position based on layer dimensions (same for all layer types)
       const position = this.calculatePresetPosition(
@@ -132,12 +123,6 @@ export class TransformManager {
         canvasWidth, 
         canvasHeight
       )
-      
-      console.log(`📍 Calculated position for "${preset}":`, position)
-      
-      // All layers should be positioned at the exact coordinates requested
-      // Internal rendering offsets should be handled in the renderer, not here
-      console.log(`🔧 Setting layer ${layer.id} to position:`, position)
       
       // Store old position for history
       const oldPosition = { x: layer.x, y: layer.y }
@@ -264,6 +249,7 @@ export class TransformManager {
     const allImages = layerTypes.every(type => type === 'image')
     const allShapes = layerTypes.every(type => type === 'shape')
     const allSvg = layerTypes.every(type => type === 'svg')
+    const allCharts = layerTypes.every(type => type === 'chart')
     const mixed = layerTypes.length > 1 && new Set(layerTypes).size > 1
 
     if (allText) {
@@ -274,6 +260,8 @@ export class TransformManager {
       this.configureShapeTransformer()
     } else if (allSvg) {
       this.configureSvgTransformer()
+    } else if (allCharts) {
+      this.configureChartTransformer()
     } else if (mixed) {
       this.configureMixedTransformer()
     } else {
@@ -465,6 +453,49 @@ export class TransformManager {
     })
   }
 
+  private configureChartTransformer(): void {
+    if (!this.transformer) return
+
+    // Configure transformer for chart layers - charts should maintain readability
+    // and proportional scaling to preserve chart data visualization integrity
+    this.transformer.setAttrs({
+      enabledAnchors: [
+        'top-left', 'top-center', 'top-right',
+        'middle-left', 'middle-right',
+        'bottom-left', 'bottom-center', 'bottom-right'
+      ],
+      keepRatio: false, // Allow non-proportional scaling for charts to fit different layouts
+      rotateEnabled: true,
+      borderEnabled: true,
+      anchorSize: this.getResponsiveAnchorSize(),
+      boundBoxFunc: (oldBox: Box, newBox: Box) => {
+        const minWidth = 100 // Charts need minimum width for readability
+        const minHeight = 80  // Charts need minimum height for data visibility
+        
+        // Ensure minimum size for chart readability
+        if (newBox.width < minWidth || newBox.height < minHeight) {
+          newBox.width = Math.max(minWidth, newBox.width)
+          newBox.height = Math.max(minHeight, newBox.height)
+        }
+        
+        // For certain chart types like pie/doughnut, we might want to maintain aspect ratio
+        // This could be enhanced based on the specific chart type in the future
+        const chartType = this.selectedLayers[0]?.properties?.chartType
+        if (chartType === 'pie' || chartType === 'doughnut') {
+          // For circular charts, prefer square aspect ratio when using corner handles
+          const activeAnchor = this.transformer?.getActiveAnchor()
+          if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+            const size = Math.min(newBox.width, newBox.height)
+            newBox.width = Math.max(minWidth, size)
+            newBox.height = Math.max(minHeight, size)
+          }
+        }
+        
+        return newBox
+      }
+    })
+  }
+
   private getResponsiveAnchorSize(): number {
     const baseSize = 6
     const scale = this.stage.scaleX() || 1
@@ -476,9 +507,6 @@ export class TransformManager {
     
     // Ensure minimum size for usability and maximum size to prevent huge anchors
     const finalSize = Math.max(10, Math.min(responsiveSize, 18))
-    
-    // Log anchor size changes for debugging
-    console.log(`🎯 TransformManager: Anchor size calculated - scale: ${scale.toFixed(2)}, size: ${finalSize.toFixed(1)}px`)
     
     return finalSize
   }
@@ -543,7 +571,7 @@ export class TransformManager {
   }
 
   private handleTransform(): void {
-    // Handle real-time transformations for images and text
+    // Handle real-time transformations for images, text, and charts
     this.selectedLayers.forEach(layer => {
       if (!layer.konvaNode) return
 
@@ -551,6 +579,8 @@ export class TransformManager {
         this.handleImageTransformRealtime(layer)
       } else if (layer.type === 'text') {
         this.handleTextTransformRealtime(layer)
+      } else if (layer.type === 'chart') {
+        this.handleChartTransformRealtime(layer)
       }
       // Shapes and SVG don't need special real-time handling
     })
@@ -628,6 +658,29 @@ export class TransformManager {
       // For corner handles, we let the scale happen normally for uniform scaling
       // The final scale will be applied in handleTextTransform during transformend
     }
+  }
+
+  private handleChartTransformRealtime(layer: LayerNode): void {
+    // Handle real-time chart transformation during transform event
+    if (!layer.konvaNode || layer.type !== 'chart') return
+
+    const chartNode = layer.konvaNode as Konva.Group
+    const activeAnchor = this.transformer?.getActiveAnchor()
+
+    if (!activeAnchor || !chartNode) return
+
+    // For pie/doughnut charts using corner handles, maintain aspect ratio
+    const chartType = layer.properties?.chartType
+    if ((chartType === 'pie' || chartType === 'doughnut') && 
+        ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
+      // Maintain square aspect ratio for circular charts during corner scaling
+      const scale = Math.min(Math.abs(chartNode.scaleX()), Math.abs(chartNode.scaleY()))
+      chartNode.scaleX(chartNode.scaleX() < 0 ? -scale : scale)
+      chartNode.scaleY(chartNode.scaleY() < 0 ? -scale : scale)
+    }
+    
+    // Don't do real-time dimension updates for charts - let Konva handle the transform
+    // and only apply the final dimensions in handleChartTransform
   }
 
   private handleShapeTransformRealtime(layer: LayerNode): void {
@@ -737,11 +790,13 @@ export class TransformManager {
         this.handleImageTransform(layer)
       } else if (layer.type === 'svg') {
         this.handleSvgTransform(layer)
+      } else if (layer.type === 'chart') {
+        this.handleChartTransform(layer)
       }
 
-      // For non-text, non-image, non-svg layers (shapes), reset scale to 1 and apply to width/height
-      // Text, image, and SVG layers are handled in their specific transform methods above
-      if (layer.type !== 'image' && layer.type !== 'text' && layer.type !== 'svg' && (node.scaleX() !== 1 || node.scaleY() !== 1)) {
+      // For non-text, non-image, non-svg, non-chart layers (shapes), reset scale to 1 and apply to width/height
+      // Text, image, SVG, and chart layers are handled in their specific transform methods above
+      if (layer.type !== 'image' && layer.type !== 'text' && layer.type !== 'svg' && layer.type !== 'chart' && (node.scaleX() !== 1 || node.scaleY() !== 1)) {
         layer.width = layer.width * Math.abs(node.scaleX())
         layer.height = layer.height * Math.abs(node.scaleY())
         layer.scaleX = 1
@@ -940,8 +995,6 @@ export class TransformManager {
         const svgPaths = layer.konvaNode.find('.svg-path') as Konva.Path[]
         
         if (svgPaths.length > 0) {
-          console.log(`🔄 SVGTransform: Updating ${svgPaths.length} path elements with new scale`)
-          
           // Update each path's scale to maintain the overall size
           svgPaths.forEach(path => {
             const currentScaleX = path.scaleX() || 1
@@ -953,16 +1006,42 @@ export class TransformManager {
               scaleY: currentScaleY * scaleY
             })
           })
-          
-          console.log(`✅ SVGTransform: Updated SVG paths for layer ${layer.id}`, {
-            oldDimensions: { width: oldWidth, height: oldHeight },
-            newDimensions: { width: layer.width, height: layer.height },
-            scaleFactors: { scaleX, scaleY }
-          })
-        } else {
-          console.log('⚠️ SVGTransform: No SVG paths found in group - may be loading or error state')
         }
       }
+    }
+  }
+
+  private handleChartTransform(layer: LayerNode): void {
+    // Handle chart-specific transformations - same as shapes/SVG, no special handling needed
+    if (!layer.konvaNode || layer.type !== 'chart') {
+      return
+    }
+
+    const node = layer.konvaNode
+    
+    // Update layer dimensions and reset scale - same as shapes/SVG layers
+    layer.width = node.width() * Math.abs(node.scaleX())
+    layer.height = node.height() * Math.abs(node.scaleY())
+    layer.scaleX = 1
+    layer.scaleY = 1
+
+    // Update node dimensions and reset scale - same as shapes
+    node.setAttrs({
+      width: layer.width,
+      height: layer.height,
+      scaleX: 1,
+      scaleY: 1
+    })
+
+    // Charts need their renderer's update method called to re-render content with new dimensions
+    // This ensures text scaling and element positioning are updated properly
+    if (this.layerManager) {
+      this.layerManager.updateLayer(layer.id, {
+        width: layer.width,
+        height: layer.height,
+        scaleX: layer.scaleX,
+        scaleY: layer.scaleY
+      }, true) // silent = true to avoid duplicate events
     }
   }
 

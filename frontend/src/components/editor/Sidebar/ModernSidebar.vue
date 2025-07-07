@@ -96,9 +96,9 @@
           <!-- Notification badge for certain panels -->
           <div 
             v-if="panel.badge && (panel.badgeCount ?? 0) > 0"
-            class="absolute -right-1 -top-1 w-4 h-4 bg-danger-500 rounded-full flex items-center justify-center ring-2 ring-gray-900"
+            class="absolute -right-1 -top-1 min-w-4 h-4 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center ring-2 ring-gray-900 dark:ring-gray-950 px-1"
           >
-            <span class="text-xs text-white font-semibold">{{ panel.badgeCount }}</span>
+            <span class="text-xs text-white font-semibold leading-none">{{ (panel.badgeCount && panel.badgeCount > 99) ? '99+' : (panel.badgeCount || 0) }}</span>
           </div>
         </button>
       </CustomScrollbar>
@@ -107,8 +107,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import CustomScrollbar from '@/components/ui/CustomScrollbar.vue'
+import { useDesignStore } from '@/stores/design'
 import {
   CursorArrowRaysIcon,
   HandRaisedIcon,
@@ -137,13 +138,41 @@ interface Panel {
   badgeCount?: number
 }
 
+interface Props {
+  activeTool?: string
+  activePanel?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  activeTool: 'select',
+  activePanel: ''
+})
+
 const emit = defineEmits<{
   'tool-change': [toolId: string]
   'panel-change': [panelId: string]
+  action: [action: string]
 }>()
 
-const activeTool = ref('select')
-const activePanel = ref('elements')
+// Initialize design store
+const designStore = useDesignStore()
+
+const activeTool = ref(props.activeTool)
+const activePanel = ref(props.activePanel)
+
+// Computed layer count from design store
+const layerCount = computed(() => {
+  return designStore.currentDesign?.layers?.length || 0
+})
+
+// Watch for prop changes to sync with local reactive values
+watch(() => props.activeTool, (newTool) => {
+  activeTool.value = newTool
+})
+
+watch(() => props.activePanel, (newPanel) => {
+  activePanel.value = newPanel
+})
 
 // Scroll state management for fade indicators
 const customScrollbar = ref<InstanceType<typeof CustomScrollbar>>()
@@ -185,16 +214,21 @@ const tools: Tool[] = [
 ]
 
 // Panel configuration
-const panels: Panel[] = [
+const panels = computed((): Panel[] => [
   { id: 'elements', icon: Squares2X2Icon, label: 'Elements' },
   { id: 'colors', icon: SwatchIcon, label: 'Colors' },
   { id: 'templates', icon: 'TemplateIcon', label: 'Templates' },
   { id: 'uploads', icon: CloudArrowUpIcon, label: 'Uploads' },
   { id: 'media', icon: FilmIcon, label: 'Media' },
-  { id: 'layers', icon: LayersIcon, label: 'Layers' },
-  { id: 'animation', icon: PlayIcon, label: 'Animation' },
-  { id: 'settings', icon: CogIcon, label: 'Settings', badge: true, badgeCount: 3 }
-]
+  { 
+    id: 'layers', 
+    icon: LayersIcon, 
+    label: 'Layers',
+    badge: layerCount.value > 0,
+    badgeCount: layerCount.value
+  },
+  { id: 'animation', icon: PlayIcon, label: 'Animation' }
+])
 
 const setActiveTool = (toolId: string) => {
   activeTool.value = toolId

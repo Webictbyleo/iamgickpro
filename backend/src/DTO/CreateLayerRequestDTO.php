@@ -9,6 +9,7 @@ use App\DTO\ValueObject\TextLayerProperties;
 use App\DTO\ValueObject\ImageLayerProperties;
 use App\DTO\ValueObject\ShapeLayerProperties;
 use App\DTO\ValueObject\SvgLayerProperties;
+use App\DTO\ValueObject\ChartLayerProperties;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -33,12 +34,12 @@ final readonly class CreateLayerRequestDTO
         /**
          * Type of layer being created
          * Determines which properties and behaviors the layer will have
-         * Valid values: text, image, shape, group, video, audio, svg
+         * Valid values: text, image, shape, group, video, audio, svg, chart
          */
         #[Assert\NotBlank(message: 'Layer type is required')]
         #[Assert\Choice(
-            choices: ['text', 'image', 'shape', 'group', 'video', 'audio', 'svg'],
-            message: 'Invalid layer type. Must be one of: text, image, shape, group, video, audio, svg'
+            choices: ['text', 'image', 'shape', 'group', 'video', 'audio', 'svg', 'chart'],
+            message: 'Invalid layer type. Must be one of: text, image, shape, group, video, audio, svg, chart'
         )]
         public string $type,
 
@@ -56,12 +57,12 @@ final readonly class CreateLayerRequestDTO
 
         /**
          * Layer-specific visual and behavior properties
-         * Contains type-specific attributes like text styling, image src, or shape appearance
+         * Contains type-specific attributes like text styling, image src, shape appearance, or chart configuration
          * Structure depends on layer type and is validated accordingly
          * 
-         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties
+         * @var TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties|ChartLayerProperties
          */
-        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties $properties,
+        public TextLayerProperties|ImageLayerProperties|ShapeLayerProperties|SvgLayerProperties|ChartLayerProperties $properties,
 
         /**
          * 2D transformation matrix for initial layer positioning

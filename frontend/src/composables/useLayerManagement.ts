@@ -1,7 +1,7 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
 import { useDesignStore } from '@/stores/design'
 import type { EditorSDK } from '@/editor/sdk/EditorSDK'
-import type { Layer, LayerType, TextLayerProperties, ShapeLayerProperties, ImageLayerProperties, SVGLayerProperties, Transform } from '@/types'
+import type { Layer, LayerType, TextLayerProperties, ShapeLayerProperties, ImageLayerProperties, SVGLayerProperties, ChartLayerProperties, Transform } from '@/types'
 
 export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRef<EditorSDK | null>) {
   const designStore = useDesignStore()
@@ -124,6 +124,84 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
         }
         
         await editorSDK.value.layers.createLayer('svg', svgLayer)
+      } else if (type === 'chart') {
+        const chartProperties: ChartLayerProperties = {
+          chartType: properties.chartType || 'bar',
+          data: properties.data || {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+            datasets: [{
+              label: properties.datasetLabel || 'Sample Data',
+              data: properties.datasetValues || [10, 20, 15, 25, 30],
+              backgroundColor: properties.backgroundColor || '#3B82F6',
+              borderColor: properties.borderColor || '#1E40AF',
+              borderWidth: properties.borderWidth || 2
+            }]
+          },
+          options: properties.options || {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              },
+              title: {
+                display: properties.showTitle || false,
+                text: properties.title || 'Chart'
+              },
+              tooltip: {
+                enabled: true
+              }
+            },
+            scales: {
+              x: {
+                display: true,
+                grid: {
+                  display: true,
+                  color: '#E5E7EB'
+                }
+              },
+              y: {
+                display: true,
+                grid: {
+                  display: true,
+                  color: '#E5E7EB'
+                }
+              }
+            },
+            animation: {
+              duration: 1000,
+              easing: 'easeInOutQuad'
+            }
+          },
+          theme: properties.theme || {
+            primary: '#3B82F6',
+            secondary: '#8B5CF6',
+            background: '#FFFFFF',
+            text: '#1F2937',
+            grid: '#E5E7EB',
+            accent: ['#EF4444', '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899']
+          }
+        }
+
+        const chartLayer: Layer = {
+          ...baseLayer,
+          id: -Date.now() - 4, // Use negative timestamp as temporary ID, offset to avoid conflicts
+          type: 'chart',
+          properties: chartProperties,
+          transform: transform || {
+            x: 100,
+            y: 100,
+            width: 400,
+            height: 300,
+            rotation: 0,
+            opacity: 1,
+            scaleX: 1,
+            scaleY: 1
+          }
+        }
+        
+        await editorSDK.value.layers.createLayer('chart', chartLayer)
       }
 
     } catch (error) {

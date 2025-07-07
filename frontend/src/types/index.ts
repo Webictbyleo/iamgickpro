@@ -186,7 +186,7 @@ export interface Layer {
   syncError?: string // Error message from last failed sync
 }
 
-export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg'
+export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg' | 'chart'
 
 // Base interface for all layer properties
 export interface BaseLayerProperties {
@@ -383,6 +383,91 @@ export interface SVGLayerProperties extends BaseLayerProperties {
   }>
 }
 
+// Chart layer properties
+export interface ChartLayerProperties extends BaseLayerProperties {
+  chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'area' | 'scatter' | 'bubble'
+  data: ChartData
+  options: ChartOptions
+  theme: ChartTheme
+}
+
+export interface ChartData {
+  labels: string[]
+  datasets: ChartDataset[]
+}
+
+export interface ChartDataset {
+  label: string
+  data: number[]
+  backgroundColor?: string | string[]
+  borderColor?: string | string[]
+  borderWidth?: number
+  fill?: boolean
+  tension?: number // For line charts
+  pointRadius?: number // For line/scatter charts
+  pointBackgroundColor?: string | string[]
+  pointBorderColor?: string | string[]
+}
+
+export interface ChartOptions {
+  responsive?: boolean
+  maintainAspectRatio?: boolean
+  plugins?: {
+    legend?: {
+      display: boolean
+      position: 'top' | 'bottom' | 'left' | 'right'
+      align?: 'start' | 'center' | 'end'
+    }
+    title?: {
+      display: boolean
+      text: string
+      font?: {
+        size: number
+        weight: 'normal' | 'bold'
+      }
+    }
+    tooltip?: {
+      enabled: boolean
+    }
+  }
+  scales?: {
+    x?: ChartScale
+    y?: ChartScale
+  }
+  animation?: {
+    duration: number
+    easing: 'linear' | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad'
+  }
+}
+
+export interface ChartScale {
+  display: boolean
+  title?: {
+    display: boolean
+    text: string
+  }
+  grid?: {
+    display: boolean
+    color?: string
+  }
+  ticks?: {
+    display: boolean
+    color?: string
+    font?: {
+      size: number
+    }
+  }
+}
+
+export interface ChartTheme {
+  primary: string
+  secondary: string
+  background: string
+  text: string
+  grid: string
+  accent: string[]
+}
+
 // Union type for all layer properties
 export type LayerProperties = 
   | TextLayerProperties
@@ -392,6 +477,7 @@ export type LayerProperties =
   | VideoLayerProperties
   | AudioLayerProperties
   | SVGLayerProperties
+  | ChartLayerProperties
   | BaseLayerProperties
 
 export interface ImageFilter {
@@ -1127,7 +1213,7 @@ export interface Transform {
 // Enhanced Layer properties based on backend DTOs
 export interface CreateLayerData {
   designId: string
-  type: 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg'
+  type: LayerType
   name: string
   properties?: Record<string, any>
   transform: Transform

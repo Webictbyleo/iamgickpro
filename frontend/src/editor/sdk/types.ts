@@ -51,7 +51,7 @@ export interface LayerNode {
 // LAYER TYPES AND RENDERERS
 // ============================================================================
 
-export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'svg'
+export type LayerType = 'text' | 'image' | 'shape' | 'group' | 'video' | 'audio' | 'svg' | 'chart'
 
 export interface Transform {
   x?: number

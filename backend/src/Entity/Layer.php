@@ -26,7 +26,7 @@ class Layer
 
     #[ORM\Column(type: 'string', length: 50)]
     #[Assert\NotBlank]
-    #[Assert\Choice(choices: ['text', 'image', 'video', 'svg', 'shape'])]
+    #[Assert\Choice(choices: ['text', 'image', 'video', 'svg', 'shape', 'chart'])]
     #[Groups(['layer:read', 'layer:write'])]
     private string $type;
 

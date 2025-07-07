@@ -55,7 +55,7 @@
         >
           <img
             v-if="file.type === 'image' && !imageErrors.has(file.id)"
-            :src="file.thumbnail || file.url"
+            :src="file.thumbnailUrl || file.url"
             :alt="file.name"
             :data-file-id="file.id"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
@@ -123,6 +123,8 @@ const props = withDefaults(defineProps<Props>(), {
   showSelection: true,
   showInfoOverlay: true
 })
+
+
 
 const emit = defineEmits<{
   'mediaClick': [file: MediaItem]

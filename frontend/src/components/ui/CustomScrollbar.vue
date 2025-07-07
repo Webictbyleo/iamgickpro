@@ -6,6 +6,8 @@
       class="scroll-area"
       :class="scrollAreaClass"
       @scroll="handleScroll"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
     >
       <slot />
     </div>
@@ -14,10 +16,12 @@
     <div 
       v-show="showScrollbar"
       class="scrollbar-track"
-      :class="trackClass"
+      :class="[trackClass, { 'scrollbar-visible': isHovered || isDragging }]"
       :style="trackStyle"
       ref="trackRef"
       @mousedown="handleTrackClick"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
     >
       <!-- Scrollbar thumb -->
       <div 
@@ -69,19 +73,40 @@ const thumbTop = ref(0)
 const isDragging = ref(false)
 const dragStartY = ref(0)
 const dragStartScrollTop = ref(0)
+const isHovered = ref(false)
 
-// Computed styles
+// Performance optimization: throttle scroll updates
+let scrollUpdateTimeoutId: number | null = null
+let resizeObserver: ResizeObserver | null = null
+
+// Computed styles with performance optimizations
 const thumbStyle = computed(() => ({
   height: `${thumbHeight.value}px`,
   top: `${thumbTop.value}px`,
   transform: isDragging.value ? 'scaleX(1.2)' : 'scaleX(1)',
+  // Use transform instead of opacity for better performance
+  willChange: isDragging.value ? 'transform' : 'auto'
 }))
 
 // Computed track style to use the trackWidth prop
 const trackStyle = computed(() => ({
   width: `${props.trackWidth}px`,
   right: '2px',
+  // Use transform for GPU acceleration
+  transform: 'translateZ(0)'
 }))
+
+// Throttled update function for better performance
+const throttledUpdateScrollbar = () => {
+  if (scrollUpdateTimeoutId) {
+    return
+  }
+  
+  scrollUpdateTimeoutId = window.requestAnimationFrame(() => {
+    updateScrollbar()
+    scrollUpdateTimeoutId = null
+  })
+}
 
 // Update scrollbar visibility and thumb position
 const updateScrollbar = () => {
@@ -107,16 +132,27 @@ const updateScrollbar = () => {
   }
 }
 
-// Handle scroll events
+// Handle scroll events with throttling
 const handleScroll = () => {
   if (!scrollAreaRef.value) return
   
   const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.value
   
-  updateScrollbar()
+  throttledUpdateScrollbar()
   
-  // Emit scroll event
+  // Emit scroll event (also throttled)
   emit('scroll', { scrollTop, scrollHeight, clientHeight })
+}
+
+// Handle mouse enter/leave for better visibility control
+const handleMouseEnter = () => {
+  isHovered.value = true
+}
+
+const handleMouseLeave = () => {
+  if (!isDragging.value) {
+    isHovered.value = false
+  }
 }
 
 // Handle track click (jump to position)
@@ -172,16 +208,29 @@ const handleThumbMouseMove = (event: MouseEvent) => {
 // Handle thumb drag end
 const handleThumbMouseUp = () => {
   isDragging.value = false
+  isHovered.value = false
   
   // Remove global listeners
   document.removeEventListener('mousemove', handleThumbMouseMove)
   document.removeEventListener('mouseup', handleThumbMouseUp)
 }
 
+// Setup ResizeObserver for automatic updates when content changes
+const setupResizeObserver = () => {
+  if (!scrollAreaRef.value) return
+  
+  resizeObserver = new ResizeObserver(() => {
+    throttledUpdateScrollbar()
+  })
+  
+  resizeObserver.observe(scrollAreaRef.value)
+}
+
 // Initialize scrollbar on mount
 onMounted(() => {
   nextTick(() => {
     updateScrollbar()
+    setupResizeObserver()
   })
 })
 
@@ -189,6 +238,14 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleThumbMouseMove)
   document.removeEventListener('mouseup', handleThumbMouseUp)
+  
+  if (scrollUpdateTimeoutId) {
+    cancelAnimationFrame(scrollUpdateTimeoutId)
+  }
+  
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
 })
 
 // Expose methods for parent component
@@ -223,6 +280,10 @@ defineExpose({
   /* Hide native scrollbar */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
+  
+  /* GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .scroll-area::-webkit-scrollbar {
@@ -237,11 +298,15 @@ defineExpose({
   border-radius: 4px;
   z-index: 100;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
   cursor: pointer;
+  
+  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: opacity;
 }
 
-.custom-scrollbar-container:hover .scrollbar-track {
+.scrollbar-track.scrollbar-visible {
   opacity: 1;
 }
 
@@ -249,36 +314,66 @@ defineExpose({
   position: absolute;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   min-height: 20px;
+  
+  /* Better visibility in light mode */
+  background: rgb(156 163 175 / 0.7); /* gray-400 with opacity */
+  
+  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform, background-color;
 }
 
 .scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(107 114 128 / 0.8); /* gray-500 with opacity */
+  transform: scaleX(1.1);
 }
 
 .scrollbar-thumb:active {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgb(75 85 99 / 0.9); /* gray-600 with opacity */
+  transform: scaleX(1.2);
 }
 
-/* Dark mode */
+/* Dark mode - improved visibility */
 .dark .scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(229 231 235 / 0.4); /* gray-200 with opacity */
 }
 
 .dark .scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgb(229 231 235 / 0.6); /* gray-200 with opacity */
 }
 
 .dark .scrollbar-thumb:active {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgb(229 231 235 / 0.8); /* gray-200 with opacity */
 }
 
-/* Smooth scrolling */
+/* Smooth scrolling with better performance */
 .scroll-area {
   scroll-behavior: smooth;
+}
+
+/* Reduce repaints by containing layout changes */
+.custom-scrollbar-container {
+  contain: layout style paint;
+}
+
+.scrollbar-track {
+  contain: layout style paint;
+}
+
+.scrollbar-thumb {
+  contain: layout style paint;
+}
+
+/* Better visual feedback for active states */
+.scrollbar-track:active .scrollbar-thumb {
+  background: rgb(107 114 128 / 0.9); /* gray-500 with higher opacity */
+}
+
+.dark .scrollbar-track:active .scrollbar-thumb {
+  background: rgb(229 231 235 / 0.9); /* gray-200 with higher opacity */
 }
 </style>

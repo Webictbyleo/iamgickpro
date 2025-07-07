@@ -14,6 +14,7 @@ import { ImageLayerRenderer } from './renderers/ImageLayerRenderer'
 import { ShapeLayerRenderer } from './renderers/ShapeLayerRenderer'
 import { GroupLayerRenderer } from './renderers/GroupLayerRenderer'
 import { SVGLayerRenderer } from './renderers/SVGLayerRenderer'
+import { ChartLayerRenderer } from './renderers/ChartLayerRenderer'
 
 export class LayerManager implements LayerAPI {
   private layers: Map<number, LayerNode> = new Map()
@@ -680,6 +681,7 @@ export class LayerManager implements LayerAPI {
     this.renderers.set('shape', new ShapeLayerRenderer())
     this.renderers.set('group', new GroupLayerRenderer())
     this.renderers.set('svg', new SVGLayerRenderer())
+    this.renderers.set('chart', new ChartLayerRenderer())
 
     // Set up text editing event handlers
     this.emitter.on('layer:update-properties', this.handleLayerPropertyUpdate.bind(this))

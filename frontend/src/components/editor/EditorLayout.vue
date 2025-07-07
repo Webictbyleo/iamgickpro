@@ -2,8 +2,8 @@
   <div class="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
     <!-- Modern Left Sidebar -->
     <ModernSidebar 
-      :active-tool="activeTool"
-      :active-panel="activePanel"
+      :active-tool="activeTool || undefined"
+      :active-panel="activePanel || undefined"
       @tool-change="handleToolChange"
       @panel-change="handleSidebarPanelChange"
       @action="handleSidebarAction"
@@ -245,7 +245,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDesignStore } from '@/stores/design'
-import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template, DetailedTemplate, PluginEvent, PluginLayerUpdate } from '@/types'
+import type { Layer, LayerType, ImageLayerProperties, Design, DesignBackground, Template, DetailedTemplate, PluginEvent, PluginLayerUpdate, ChartLayerProperties } from '@/types'
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import DesignExportModal from '@/components/modals/DesignExportModal.vue'
 
@@ -390,7 +390,7 @@ useKeyboardShortcuts({
 
 
 // Modern UI State
-const activeTool = ref<'select' | 'text' | 'shape' | 'image' | 'pan' | null>('select')
+const activeTool = ref<'select' | 'pan' | null>('select')
 const zoomLevel = ref(1)
 const canvasContainerWidth = ref(1000)
 const canvasContainerHeight = ref(700)
@@ -475,9 +475,6 @@ const exportModal = ref({
 // Clipboard state for copy/paste functionality
 const clipboard = ref<Layer | null>(null)
 const hasClipboard = computed(() => clipboard.value !== null)
-
-// Panel configuration - include all panels that should show in left sidebar
-const leftPanels = ['elements', 'templates', 'media', 'layers', 'animation', 'colors']
 
 // Computed properties
 const designName = computed({
@@ -1290,7 +1287,7 @@ const handleApplyColor = (colorString: string) => {
       color = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
     }
   }
-
+  
   if (selectedLayer.value) {
     // Apply color to selected layer based on layer type
     if (selectedLayer.value.type === 'shape') {
@@ -1327,16 +1324,26 @@ const handleApplyColor = (colorString: string) => {
         }
       }
       updateLayerProperties(selectedLayer.value.id, updates)
-      console.log('Applied color to SVG layer:', selectedLayer.value.id, color)
+    } else if (selectedLayer.value.type === 'chart') {
+      // For chart layers, apply color to the theme background
+      const chartProperties = selectedLayer.value.properties as ChartLayerProperties
+      const updates: Partial<Layer> = {
+        properties: {
+          ...chartProperties,
+          theme: {
+            ...chartProperties.theme,
+            background: colorString
+          }
+        }
+      }
+      updateLayerProperties(selectedLayer.value.id, updates)
     }
-    console.log('Applied color to layer:', selectedLayer.value.id, color)
   } else {
     // Apply to canvas background if no layer selected using new DesignBackground format
     backgroundColor.value = {
       type: 'solid',
       color: color
     }
-    console.log('Applied color to canvas background:', color)
   }
 }
 
@@ -1366,7 +1373,6 @@ const handleApplyGradient = (gradientString: string) => {
         }
       }
       updateLayerProperties(selectedLayer.value.id, updates)
-      console.log('Applied gradient to shape layer:', selectedLayer.value.id, gradientString)
     }
   } else if (selectedLayer.value && selectedLayer.value.type === 'text') {
     // For text layers, gradients might not be supported, apply the first color instead
@@ -1389,7 +1395,6 @@ const handleApplyGradient = (gradientString: string) => {
         }
       }
       updateLayerProperties(selectedLayer.value.id, updates)
-      console.log('Applied gradient primary color to SVG layer:', selectedLayer.value.id, colorMatch[0])
     }
   } else {
     // Apply gradient to canvas background using new DesignBackground format
@@ -1448,9 +1453,6 @@ const handleApplyGradient = (gradientString: string) => {
       }
       
       backgroundColor.value = gradientBackground
-      console.log('🔍 EditorLayout: handleApplyGradient - Applied gradient to canvas background:', gradientBackground)
-      console.log('🔍 EditorLayout: handleApplyGradient - Original gradient string:', gradientString)
-      console.log('🔍 EditorLayout: handleApplyGradient - Parsed gradient config:', JSON.stringify(gradientBackground, null, 2))
     } else {
       // Fallback to single color if gradient parsing fails
       const colorMatch = gradientString.match(/#[0-9a-fA-F]{6}/)
@@ -1459,7 +1461,6 @@ const handleApplyGradient = (gradientString: string) => {
           type: 'solid',
           color: colorMatch[0]
         }
-        console.log('Applied gradient color to canvas background:', colorMatch[0])
       }
     }
   }
@@ -1478,7 +1479,6 @@ const handleToolUpdate = (toolType: string, properties: any) => {
     // Use updateLayerProperties instead of direct store updates
     // This ensures proper visual updates through the LayerManager
     updateLayerProperties(selectedLayer.value.id, updates)
-    console.log('Updated layer properties from tool:', selectedLayer.value.id, properties)
   }
 }
 

@@ -661,6 +661,17 @@ class RequestDTOResolver implements ValueResolverInterface
                 if (isset($value['viewBox'])) $score += 30;
                 break;
 
+            case 'App\DTO\ValueObject\ChartLayerProperties':
+                $chartFields = ['chartType', 'data', 'options', 'theme'];
+                foreach ($chartFields as $field) {
+                    if (isset($value[$field])) $score += 10;
+                }
+                // Bonus for chart-specific fields
+                if (isset($value['chartType'])) $score += 50;
+                if (isset($value['data'])) $score += 40;
+                if (isset($value['options'])) $score += 30;
+                break;
+
             case 'App\DTO\ValueObject\Transform':
                 $transformFields = ['x', 'y', 'width', 'height', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY', 'opacity'];
                 foreach ($transformFields as $field) {
