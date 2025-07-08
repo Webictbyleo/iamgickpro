@@ -321,6 +321,7 @@ const accentColors = reactive({
   700: '#7c3aed',
   800: '#6b21a8',
   900: '#581c87',
+  950: '#3b0764',
 })
 
 // Helper function to generate color shades from a base color
@@ -442,6 +443,7 @@ const resetAccentColors = () => {
     700: '#7c3aed',
     800: '#6b21a8',
     900: '#581c87',
+    950: '#3b0764',
   })
 }
 

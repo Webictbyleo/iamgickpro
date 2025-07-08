@@ -485,7 +485,7 @@
 </template>
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import type { LayerType } from '@/types'
+import type { LayerType, ChartData, ChartDataset, ScatterDataPoint, BubbleDataPoint } from '@/types'
 import { mediaAPI } from '@/services/api'
 import { useNotifications } from '@/composables/useNotifications'
 import { useStockMedia } from '@/composables/useStockMedia'
@@ -1255,19 +1255,21 @@ const chartElements: ChartElement[] = [
     properties: {
       chartType: 'scatter',
       data: [
-        { label: 'Point 1', value: 45 },
-        { label: 'Point 2', value: 35 },
-        { label: 'Point 3', value: 55 },
-        { label: 'Point 4', value: 25 },
-        { label: 'Point 5', value: 40 },
-        { label: 'Point 6', value: 30 },
-        { label: 'Point 7', value: 50 },
-        { label: 'Point 8', value: 35 }
-      ],
-      width: 300,
-      height: 200,
+        { x: 10, y: 20 },
+        { x: 15, y: 35 },
+        { x: 20, y: 25 },
+        { x: 25, y: 45 },
+        { x: 30, y: 30 },
+        { x: 35, y: 40 },
+        { x: 40, y: 50 },
+        { x: 45, y: 35 },
+        { x: 50, y: 55 },
+        { x: 55, y: 42 }
+      ] as ScatterDataPoint[],
+      width: 400,
+      height: 300,
       pointColor: '#3b82f6',
-      pointRadius: 4
+      pointRadius: 5
     }
   },
   {
@@ -1278,16 +1280,19 @@ const chartElements: ChartElement[] = [
     properties: {
       chartType: 'bubble',
       data: [
-        { label: 'Bubble 1', value: 40, size: 6 },
-        { label: 'Bubble 2', value: 25, size: 4 },
-        { label: 'Bubble 3', value: 50, size: 8 },
-        { label: 'Bubble 4', value: 35, size: 5 },
-        { label: 'Bubble 5', value: 45, size: 7 }
-      ],
-      width: 300,
-      height: 200,
+        { x: 10, y: 20, r: 5 },
+        { x: 15, y: 35, r: 8 },
+        { x: 25, y: 25, r: 6 },
+        { x: 30, y: 45, r: 10 },
+        { x: 40, y: 30, r: 4 },
+        { x: 45, y: 40, r: 7 },
+        { x: 50, y: 55, r: 9 },
+        { x: 55, y: 35, r: 5 }
+      ] as BubbleDataPoint[],
+      width: 400,
+      height: 300,
       pointColor: '#3b82f6',
-      pointRadius: 4
+      pointRadius: 5
     }
   }
 ]
@@ -1526,24 +1531,35 @@ const addChart = (chart: ChartElement) => {
         borderWidth: 2
       }]
     }
-  } else if (chart.properties.chartType === 'bubble') {
-    // For bubble charts, include size data
+  } else if (chart.properties.chartType === 'scatter') {
+    // For scatter charts, use (x, y) data format
     chartData = {
-      labels: chart.properties.data.map((item: any) => item.label),
+      labels: [], // Scatter charts don't use labels
       datasets: [{
         label: 'Dataset 1',
-        data: chart.properties.data.map((item: any) => ({
-          x: item.value,
-          y: item.value,
-          r: item.size || 5
-        })),
+        data: chart.properties.data, // Use the (x, y) data directly
+        backgroundColor: chart.properties.pointColor || '#3B82F6',
+        borderColor: chart.properties.strokeColor || '#1E40AF',
+        borderWidth: 1,
+        pointRadius: chart.properties.pointRadius || 5,
+        pointBackgroundColor: chart.properties.pointColor || '#3B82F6',
+        pointBorderColor: chart.properties.strokeColor || '#1E40AF'
+      }]
+    }
+  } else if (chart.properties.chartType === 'bubble') {
+    // For bubble charts, use (x, y, r) data format
+    chartData = {
+      labels: [], // Bubble charts don't use labels
+      datasets: [{
+        label: 'Dataset 1',
+        data: chart.properties.data, // Use the (x, y, r) data directly
         backgroundColor: chart.properties.pointColor || '#3B82F6',
         borderColor: chart.properties.strokeColor || '#1E40AF',
         borderWidth: 1
       }]
     }
   } else {
-    // For other chart types (bar, line, area, scatter)
+    // For other chart types (bar, line, area)
     chartData = {
       labels: chart.properties.data.map((item: any) => item.label),
       datasets: [{

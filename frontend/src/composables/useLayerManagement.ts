@@ -180,7 +180,11 @@ export function useLayerManagement(editorSDK: Ref<EditorSDK | null> | ComputedRe
             background: '#FFFFFF',
             text: '#1F2937',
             grid: '#E5E7EB',
-            accent: ['#EF4444', '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899']
+            accent: ['#EF4444', '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899'],
+            tooltip: {
+              background: '#1F2937',
+              text: '#FFFFFF'
+            }
           }
         }
 

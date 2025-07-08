@@ -396,9 +396,25 @@ export interface ChartData {
   datasets: ChartDataset[]
 }
 
+// Data point types for scatter and bubble charts
+export interface ScatterDataPoint {
+  x: number
+  y: number
+}
+
+export interface BubbleDataPoint {
+  x: number
+  y: number
+  r: number // Bubble radius
+}
+
 export interface ChartDataset {
   label: string
-  data: number[]
+  // Support multiple data formats:
+  // - number[] for bar, line, pie, doughnut, area charts
+  // - ScatterDataPoint[] for scatter charts
+  // - BubbleDataPoint[] for bubble charts
+  data: number[] | ScatterDataPoint[] | BubbleDataPoint[]
   backgroundColor?: string | string[]
   borderColor?: string | string[]
   borderWidth?: number
@@ -466,6 +482,10 @@ export interface ChartTheme {
   text: string
   grid: string
   accent: string[]
+  tooltip: {
+    background: string
+    text: string
+  }
 }
 
 // Union type for all layer properties

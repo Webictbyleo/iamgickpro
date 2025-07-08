@@ -1,6 +1,6 @@
 import Konva from 'konva'
 import type { KonvaLayerRenderer, LayerNode } from '../types'
-import type { Layer, ChartLayerProperties, ChartData, ChartDataset, ChartOptions, ChartTheme } from '../../../types'
+import type { Layer, ChartLayerProperties, ChartData, ChartDataset, ChartOptions, ChartTheme, ScatterDataPoint, BubbleDataPoint } from '../../../types'
 
 /**
  * Chart Layer Renderer - renders chart layers using Konva shapes and text
@@ -63,6 +63,19 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   /**
    * Get default chart data
    */
+  // Type guards for different data formats
+  private isScatterData(data: ChartDataset['data']): data is ScatterDataPoint[] {
+    return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'x' in data[0] && 'y' in data[0] && !('r' in data[0])
+  }
+
+  private isBubbleData(data: ChartDataset['data']): data is BubbleDataPoint[] {
+    return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'x' in data[0] && 'y' in data[0] && 'r' in data[0]
+  }
+
+  private isNumericData(data: ChartDataset['data']): data is number[] {
+    return Array.isArray(data) && (data.length === 0 || typeof data[0] === 'number')
+  }
+
   private getDefaultData(data?: ChartData): ChartData {
     return data || {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
@@ -131,6 +144,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       text: '#1F2937',
       grid: '#E5E7EB',
       accent: ['#EF4444', '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899'],
+      tooltip: {
+        background: '#1F2937',
+        text: '#FFFFFF'
+      },
       ...theme
     }
   }
@@ -187,8 +204,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         this.renderLineChart(group, data, chartArea, theme, options)
         break
       case 'pie':
+        this.renderPieChart(group, data, chartArea, theme, options)
+        break
       case 'doughnut':
-        this.renderPieChart(group, data, chartArea, theme, options, chartType === 'doughnut')
+        this.renderDoughnutChart(group, data, chartArea, theme, options)
         break
       case 'area':
         this.renderAreaChart(group, data, chartArea, theme, options)
@@ -208,7 +227,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
 
     // Render axes for charts that need them
     if (['bar', 'line', 'area', 'scatter', 'bubble'].includes(chartType)) {
-      this.renderAxes(group, data, chartArea, theme, options)
+      this.renderAxes(group, data, chartArea, theme, options, chartType)
     }
   }
 
@@ -217,9 +236,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
    */
   private calculateMargins(options: ChartOptions, width: number, height: number) {
     let top = 20
-    let bottom = 40
-    let left = 60
-    let right = 20
+    let bottom = 50 // Increased for better X-axis label spacing
+    let left = 70 // Increased for better Y-axis label spacing
+    let right = 30 // Increased for potential overflow
 
     if (options.plugins?.title?.display) {
       top += 40
@@ -269,12 +288,15 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
    */
   private renderBarChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
     const { labels, datasets } = data
-    const maxValue = Math.max(...datasets.flatMap(d => d.data))
+    
+    // Only use numeric data for bar charts
+    const numericDatasets = datasets.filter(d => this.isNumericData(d.data))
+    const maxValue = Math.max(...numericDatasets.flatMap(d => d.data as number[]))
     const scale = chartArea.height / maxValue
 
     // Calculate proper spacing within chartArea bounds
     const categoryCount = labels.length
-    const datasetCount = datasets.length
+    const datasetCount = numericDatasets.length
     
     // Available width for all bars (with some padding)
     const availableWidth = chartArea.width * 0.9 // Leave 10% padding
@@ -285,8 +307,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     // Calculate starting position to center all bars within chartArea
     const startOffset = (chartArea.width - availableWidth) / 2
 
-    datasets.forEach((dataset, datasetIndex) => {
-      dataset.data.forEach((value, index) => {
+    numericDatasets.forEach((dataset, datasetIndex) => {
+      const numericData = dataset.data as number[]
+      numericData.forEach((value, index) => {
         // Calculate the center position for this category
         const categoryCenter = startOffset + (index + 0.5) * categoryWidth
         
@@ -320,13 +343,17 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   private renderLineChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
     const { labels, datasets } = data
     const pointSpacing = chartArea.width / (labels.length - 1)
-    const maxValue = Math.max(...datasets.flatMap(d => d.data))
+    
+    // Only use numeric data for line charts
+    const numericDatasets = datasets.filter(d => this.isNumericData(d.data))
+    const maxValue = Math.max(...numericDatasets.flatMap(d => d.data as number[]))
     const scale = chartArea.height / maxValue
 
-    datasets.forEach((dataset, datasetIndex) => {
+    numericDatasets.forEach((dataset, datasetIndex) => {
       const points: number[] = []
+      const numericData = dataset.data as number[]
       
-      dataset.data.forEach((value, index) => {
+      numericData.forEach((value, index) => {
         const x = chartArea.x + index * pointSpacing
         const y = chartArea.y + chartArea.height - (value * scale)
         points.push(x, y)
@@ -359,13 +386,13 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Render pie/doughnut chart
+   * Render pie chart (solid circle without hole)
    */
-  private renderPieChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions, isDoughnut: boolean = false): void {
+  private renderPieChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
     const centerX = chartArea.x + chartArea.width / 2
     const centerY = chartArea.y + chartArea.height / 2
     const radius = Math.min(chartArea.width, chartArea.height) / 2 - 10
-    const innerRadius = isDoughnut ? radius * 0.5 : 0 // Increased from 0.4 to 0.5 for more visible hole
+    const innerRadius =  0 // Increased from 0.4 to 0.5 for more visible hole
 
     // Store slice data for better label positioning
     const sliceData: Array<{
@@ -380,39 +407,22 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
 
     // Assuming single dataset for pie charts
     const dataset = data.datasets[0]
-    const total = dataset.data.reduce((sum, value) => sum + value, 0)
+    
+    // Only use numeric data for pie charts
+    if (!this.isNumericData(dataset.data)) {
+      return
+    }
+    
+    const numericData = dataset.data as number[]
+    const total = numericData.reduce((sum, value) => sum + value, 0)
     let currentAngle = -Math.PI / 2 // Start at top
 
-    dataset.data.forEach((value, index) => {
+    numericData.forEach((value, index) => {
       const sliceAngle = (value / total) * 2 * Math.PI
       const endAngle = currentAngle + sliceAngle
 
       let slice: Konva.Shape
 
-      if (isDoughnut) {
-        // Capture the angles in local scope for the closure
-        const startAngle = currentAngle
-        const endAngleLocal = endAngle
-        
-        // Use custom shape for doughnut charts to create proper transparent hole
-        slice = new Konva.Shape({
-          sceneFunc: function (context, shape) {
-            context.beginPath()
-            // Draw outer arc
-            context.arc(0, 0, radius, startAngle, endAngleLocal, false)
-            // Draw line to inner radius
-            context.lineTo(Math.cos(endAngleLocal) * innerRadius, Math.sin(endAngleLocal) * innerRadius)
-            // Draw inner arc (reverse direction)
-            context.arc(0, 0, innerRadius, endAngleLocal, startAngle, true)
-            // Close the path
-            context.closePath()
-            context.fillStrokeShape(shape)
-          },
-          x: centerX,
-          y: centerY,
-          fill: this.getColor(dataset.backgroundColor, index, theme)
-        })
-      } else {
         // Use Wedge for pie charts
         slice = new Konva.Wedge({
           x: centerX,
@@ -425,7 +435,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           stroke: theme.background,
           strokeWidth: 2
         })
-      }
+      
 
       group.add(slice)
 
@@ -442,42 +452,101 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       currentAngle = endAngle
     })
 
-    // Add center text for doughnut charts (but no filled circle - keep the hole transparent)
-    if (isDoughnut) {
-      // Add center text showing total or chart type
-      const fontScale = (group as any)._fontScale || 1
-      const centerText = new Konva.Text({
-        x: centerX,
-        y: centerY - 8 * fontScale,
-        text: 'Total',
-        fontSize: Math.max(10, 14 * fontScale),
-        fill: theme.text,
-        align: 'center',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
-        opacity: 0.7
-      })
-      centerText.offsetX(centerText.width() / 2)
-      group.add(centerText)
-
-      // Add total value below
-      const totalText = new Konva.Text({
-        x: centerX,
-        y: centerY + 4 * fontScale,
-        text: total.toString(),
-        fontSize: Math.max(8, 12 * fontScale),
-        fill: theme.text,
-        align: 'center',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: '600',
-        opacity: 0.6
-      })
-      totalText.offsetX(totalText.width() / 2)
-      group.add(totalText)
-    }
-
+  
     // Render labels with better positioning
-    this.renderPieLabels(group, sliceData, centerX, centerY, radius, innerRadius, theme, isDoughnut)
+    this.renderPieLabels(group, sliceData, centerX, centerY, radius, innerRadius, theme)
+  }
+
+  /**
+   * Render doughnut chart (pie chart with hollow center)
+   */
+  private renderDoughnutChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
+    const centerX = chartArea.x + chartArea.width / 2
+    const centerY = chartArea.y + chartArea.height / 2
+    const radius = Math.min(chartArea.width, chartArea.height) / 2 - 10
+    const innerRadius = radius * 0.5 // 50% of outer radius for the hole
+
+    // Store slice data for better label positioning
+    const sliceData: Array<{
+      index: number
+      label: string
+      value: number
+      percentage: string
+      midAngle: number
+      sliceAngle: number
+      color: string
+    }> = []
+
+    // Assuming single dataset for doughnut charts
+    const dataset = data.datasets[0]
+    
+    // Only use numeric data for doughnut charts
+    if (!this.isNumericData(dataset.data)) {
+      return
+    }
+    
+    const numericData = dataset.data as number[]
+    const total = numericData.reduce((sum, value) => sum + value, 0)
+    let currentAngle = -Math.PI / 2 // Start at top
+
+    // First, create the full outer circle
+    const outerCircle = new Konva.Circle({
+      x: centerX,
+      y: centerY,
+      radius: radius,
+      fill: 'transparent',
+      stroke: theme.grid,
+      strokeWidth: 0
+    })
+    group.add(outerCircle)
+
+    // Create a clipping group for the doughnut effect
+    const clipGroup = new Konva.Group({
+      clipFunc: (ctx) => {
+        // Create a circular clipping path that excludes the center
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false)
+        ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2, true) // Inner circle (clockwise = true creates hole)
+      }
+    })
+
+    // Create each slice as a solid wedge and add to clipping group
+    numericData.forEach((value, index) => {
+      const sliceAngle = (value / total) * 2 * Math.PI
+      const endAngle = currentAngle + sliceAngle
+
+      // Create the slice using Wedge WITHOUT innerRadius - this creates a solid slice like pie chart
+      const slice = new Konva.Wedge({
+        x: centerX,
+        y: centerY,
+        innerRadius: 0, // No inner radius - create solid wedge
+        radius: radius,
+        angle: sliceAngle * (180 / Math.PI),
+        rotation: currentAngle * (180 / Math.PI),
+        fill: this.getColor(dataset.backgroundColor, index, theme),
+        stroke: theme.background,
+        strokeWidth: 2
+      })
+
+      clipGroup.add(slice)
+
+      // Store slice data for label positioning
+      sliceData.push({
+        index,
+        label: data.labels[index] || `Slice ${index + 1}`,
+        value,
+        percentage: ((value / total) * 100).toFixed(1),
+        midAngle: currentAngle + sliceAngle / 2,
+        sliceAngle,
+        color: this.getColor(dataset.backgroundColor, index, theme)
+      })
+      currentAngle = endAngle
+    })
+
+    // Add the clipped group to the main group
+    group.add(clipGroup)
+
+    // Render labels using pie chart labeling logic
+    this.renderPieLabels(group, sliceData, centerX, centerY, radius, innerRadius, theme)
   }
 
   /**
@@ -486,16 +555,20 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   private renderAreaChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
     const { labels, datasets } = data
     const pointSpacing = chartArea.width / (labels.length - 1)
-    const maxValue = Math.max(...datasets.flatMap(d => d.data))
+    
+    // Only use numeric data for area charts
+    const numericDatasets = datasets.filter(d => this.isNumericData(d.data))
+    const maxValue = Math.max(...numericDatasets.flatMap(d => d.data as number[]))
     const scale = chartArea.height / maxValue
 
-    datasets.forEach((dataset, datasetIndex) => {
+    numericDatasets.forEach((dataset, datasetIndex) => {
       const points: number[] = []
+      const numericData = dataset.data as number[]
       
       // Start from bottom left
       points.push(chartArea.x, chartArea.y + chartArea.height)
       
-      dataset.data.forEach((value, index) => {
+      numericData.forEach((value, index) => {
         const x = chartArea.x + index * pointSpacing
         const y = chartArea.y + chartArea.height - (value * scale)
         points.push(x, y)
@@ -518,27 +591,419 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Render scatter chart
+   * Render scatter chart - Industry standard implementation with proper clipping
    */
   private renderScatterChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
-    // For scatter chart, data should be array of {x, y} objects
-    // This is simplified implementation assuming data is array of numbers
-    this.renderLineChart(group, data, chartArea, theme, options)
+    const { labels, datasets } = data
+    
+    // For scatter charts, we need to handle different data formats:
+    // 1. Array of objects: [{x: 1, y: 2}, {x: 3, y: 4}]
+    // 2. Separate X/Y arrays (if xData is provided)
+    // 3. Fallback: use labels as X values and data as Y values
+    
+    let allXValues: number[] = []
+    let allYValues: number[] = []
+    
+    // Collect all X and Y values for proper scaling
+    datasets.forEach((dataset, datasetIndex) => {
+      if (Array.isArray(dataset.data) && dataset.data.length > 0) {
+        // Check if data contains objects with x/y properties
+        if (typeof dataset.data[0] === 'object' && dataset.data[0] !== null && 'x' in dataset.data[0] && 'y' in dataset.data[0]) {
+          // Format: [{x: 1, y: 2}, {x: 3, y: 4}]
+          dataset.data.forEach((point: any) => {
+            allXValues.push(point.x)
+            allYValues.push(point.y)
+          })
+        } else {
+          // Fallback: use labels as X values, data as Y values
+          // This handles the case where we have category-style data
+          const numericData = dataset.data as number[]
+          numericData.forEach((yValue: number, index: number) => {
+            // Try to parse label as number, otherwise use index
+            const xValue = labels[index] ? (isNaN(Number(labels[index])) ? index : Number(labels[index])) : index
+            allXValues.push(xValue)
+            allYValues.push(yValue)
+          })
+        }
+      }
+    })
+    
+    if (allXValues.length === 0 || allYValues.length === 0) {
+      console.warn('Scatter chart: No valid data points found')
+      return
+    }
+    
+    // Calculate raw data range
+    const dataMinX = Math.min(...allXValues)
+    const dataMaxX = Math.max(...allXValues)
+    const dataMinY = Math.min(...allYValues)
+    const dataMaxY = Math.max(...allYValues)
+    
+    // Generate nice axis values starting from 0 (industry standard for scatter charts)
+    const niceXValues = this.generateNiceAxisValues(dataMinX, dataMaxX, 5, true) // Include 0 for X-axis
+    const niceYValues = this.generateNiceAxisValues(dataMinY, dataMaxY, 5, true) // Include 0 for Y-axis
+    
+    // Use the nice axis bounds as the actual chart bounds
+    const xMin = niceXValues[0]
+    const xMax = niceXValues[niceXValues.length - 1]
+    const yMin = niceYValues[0]
+    const yMax = niceYValues[niceYValues.length - 1]
+    
+    // Calculate scales based on nice bounds
+    const xScale = chartArea.width / (xMax - xMin)
+    const yScale = chartArea.height / (yMax - yMin)
+    
+    // Calculate responsive point radius based on chart size
+    const fontScale = (group as any)._fontScale || 1
+    const basePointRadius = 5
+    const responsivePointRadius = Math.max(2, basePointRadius * fontScale)
+
+    // Create a clipping group to ensure points don't render outside chart area
+    const pointsGroup = new Konva.Group({
+      clipFunc: (ctx) => {
+        ctx.rect(chartArea.x, chartArea.y, chartArea.width, chartArea.height)
+      }
+    })
+    
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+    
+    // Render data points for each dataset
+    datasets.forEach((dataset, datasetIndex) => {
+      if (!Array.isArray(dataset.data)) return
+      
+      dataset.data.forEach((dataPoint: any, index: number) => {
+        let xValue: number, yValue: number, pointLabel: string
+        
+        // Extract X and Y coordinates based on data format
+        if (typeof dataPoint === 'object' && dataPoint !== null && 'x' in dataPoint && 'y' in dataPoint) {
+          xValue = dataPoint.x
+          yValue = dataPoint.y
+          // Generate a meaningful label for scatter points
+          pointLabel = `Point ${index + 1}: (${xValue}, ${yValue})`
+        } else {
+          // Fallback format
+          const labelValue = labels[index]
+          xValue = labelValue ? (isNaN(Number(labelValue)) ? index : Number(labelValue)) : index
+          yValue = dataPoint
+          pointLabel = labelValue || `Point ${index + 1}: (${xValue}, ${yValue})`
+        }
+        
+        // Calculate screen coordinates - ensure they're within chart bounds
+        const x = chartArea.x + (xValue - xMin) * xScale
+        const y = chartArea.y + chartArea.height - (yValue - yMin) * yScale
+        
+        // Skip points that are outside the visible data range
+        if (x < chartArea.x || x > chartArea.x + chartArea.width || 
+            y < chartArea.y || y > chartArea.y + chartArea.height) {
+          return
+        }
+        
+        // Get point styling with proper responsive defaults
+        const pointRadius = dataset.pointRadius ? dataset.pointRadius * fontScale : responsivePointRadius
+        const pointColor = this.getColor(dataset.pointBackgroundColor || dataset.backgroundColor, datasetIndex, theme)
+        const borderColor = this.getColor(dataset.pointBorderColor || dataset.borderColor, datasetIndex, theme)
+        const borderWidth = (dataset.borderWidth || 1) * fontScale
+        
+        // Create scatter point
+        const point = new Konva.Circle({
+          x: x,
+          y: y,
+          radius: pointRadius,
+          fill: pointColor,
+          stroke: borderColor,
+          strokeWidth: borderWidth,
+          opacity: 0.8 // Slight transparency for overlapping points
+        })
+        
+        pointsGroup.add(point)
+        
+        // Create responsive tooltip for hover effect
+        const tooltip = this.createTooltip(tooltipGroup, x, y, -40, `(${this.formatAxisValue(xValue, 1)}, ${this.formatAxisValue(yValue, 1)})`, theme, fontScale)
+        tooltipGroup.add(tooltip)
+        
+        // Add professional hover effect with tooltip
+        point.on('mouseenter', () => {
+          point.radius(pointRadius * 1.3) // More noticeable hover
+          point.opacity(1)
+          point.strokeWidth(borderWidth + 1)
+          point.moveToTop() // Bring to front
+          tooltip.visible(true)
+          tooltip.moveToTop()
+        })
+        
+        point.on('mouseleave', () => {
+          point.radius(pointRadius)
+          point.opacity(0.8)
+          point.strokeWidth(borderWidth)
+          tooltip.visible(false)
+        })
+        
+        // Store data for potential tooltip/interaction
+        point.setAttr('dataPoint', { 
+          x: xValue, 
+          y: yValue, 
+          label: pointLabel,
+          dataset: dataset.label 
+        })
+      })
+    })
+    
+    // Add the clipped points group to the main group
+    group.add(pointsGroup)
+    
+    // Add the unclipped tooltip group on top so tooltips can render outside chart area
+    group.add(tooltipGroup)
+    
+    // Store scale information for axis rendering with nice values
+    ;(group as any)._scatterScales = {
+      xMin, xMax, yMin, yMax,
+      niceXValues, niceYValues
+    }
   }
 
   /**
-   * Render bubble chart
+   * Create a responsive tooltip for scatter and bubble charts
+   */
+  private createTooltip(
+    group: Konva.Group,
+    x: number,
+    y: number,
+    offsetY: number,
+    tooltipText: string,
+    theme: ChartTheme,
+    fontScale: number = 1
+  ): Konva.Group {
+    const tooltip = new Konva.Group({
+      x: x,
+      y: y + offsetY,
+      visible: false
+    })
+    
+    // Calculate tooltip dimensions based on content
+    const tooltipWidth = Math.max(100, tooltipText.length * 6 * fontScale)
+    const tooltipHeight = 30 * fontScale
+    
+    const tooltipBg = new Konva.Rect({
+      x: -tooltipWidth / 2,
+      y: -tooltipHeight / 2,
+      width: tooltipWidth,
+      height: tooltipHeight,
+      fill: theme.tooltip.background,
+      cornerRadius: 4,
+      opacity: 0.9
+    })
+    
+    const tooltipTextNode = new Konva.Text({
+      x: -tooltipWidth / 2,
+      y: -tooltipHeight / 2,
+      width: tooltipWidth,
+      height: tooltipHeight,
+      text: tooltipText,
+      fontSize: 10 * fontScale,
+      fill: theme.tooltip.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      fontFamily: 'Arial, sans-serif'
+    })
+    
+    tooltip.add(tooltipBg)
+    tooltip.add(tooltipTextNode)
+    
+    return tooltip
+  }
+
+  /**
+   * Render bubble chart - Industry standard implementation with variable bubble sizes
    */
   private renderBubbleChart(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
-    // For bubble chart, data should be array of {x, y, r} objects
-    // This is simplified implementation
-    this.renderLineChart(group, data, chartArea, theme, options)
+    const { labels, datasets } = data
+    
+    let allXValues: number[] = []
+    let allYValues: number[] = []
+    let allRValues: number[] = []
+    
+    // Collect all X, Y, and R values for proper scaling
+    datasets.forEach((dataset, datasetIndex) => {
+      if (Array.isArray(dataset.data) && dataset.data.length > 0) {
+        // Check if data contains bubble data objects with x, y, r properties
+        if (this.isBubbleData(dataset.data)) {
+          dataset.data.forEach((point: BubbleDataPoint) => {
+            allXValues.push(point.x)
+            allYValues.push(point.y)
+            allRValues.push(point.r)
+          })
+        } else if (this.isScatterData(dataset.data)) {
+          // Fallback: treat as scatter with default radius
+          dataset.data.forEach((point: ScatterDataPoint) => {
+            allXValues.push(point.x)
+            allYValues.push(point.y)
+            allRValues.push(5) // Default radius
+          })
+        }
+      }
+    })
+    
+    if (allXValues.length === 0 || allYValues.length === 0) {
+      console.warn('Bubble chart: No valid data points found')
+      return
+    }
+    
+    // Calculate raw data range
+    const dataMinX = Math.min(...allXValues)
+    const dataMaxX = Math.max(...allXValues)
+    const dataMinY = Math.min(...allYValues)
+    const dataMaxY = Math.max(...allYValues)
+    const dataMinR = Math.min(...allRValues)
+    const dataMaxR = Math.max(...allRValues)
+    
+    // Generate nice axis values starting from 0 (industry standard for bubble charts)
+    const niceXValues = this.generateNiceAxisValues(dataMinX, dataMaxX, 5, true) // Include 0 for X-axis
+    const niceYValues = this.generateNiceAxisValues(dataMinY, dataMaxY, 5, true) // Include 0 for Y-axis
+    
+    // Use the nice axis bounds as the actual chart bounds
+    const xMin = niceXValues[0]
+    const xMax = niceXValues[niceXValues.length - 1]
+    const yMin = niceYValues[0]
+    const yMax = niceYValues[niceYValues.length - 1]
+    
+    // Calculate scales based on nice bounds
+    const xScale = chartArea.width / (xMax - xMin)
+    const yScale = chartArea.height / (yMax - yMin)
+    
+    // Calculate responsive bubble radius scaling
+    const fontScale = (group as any)._fontScale || 1
+    const minBubbleRadius = 3 * fontScale
+    const maxBubbleRadius = 25 * fontScale
+    
+    // Handle case where all bubbles have the same radius
+    const radiusRange = dataMaxR - dataMinR
+    const radiusScale = radiusRange > 0 ? (maxBubbleRadius - minBubbleRadius) / radiusRange : 0
+
+    // Create a clipping group with padding for bubble radius to prevent edge clipping
+    const bubblePadding = maxBubbleRadius
+    const bubblesGroup = new Konva.Group({
+      clipFunc: (ctx) => {
+        ctx.rect(
+          chartArea.x - bubblePadding, 
+          chartArea.y - bubblePadding, 
+          chartArea.width + bubblePadding * 2, 
+          chartArea.height + bubblePadding * 2
+        )
+      }
+    })
+    
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+    
+    // Render data points for each dataset
+    datasets.forEach((dataset, datasetIndex) => {
+      if (!Array.isArray(dataset.data)) return
+      
+      dataset.data.forEach((dataPoint: any, index: number) => {
+        let xValue: number, yValue: number, rValue: number, pointLabel: string
+        
+        // Extract X, Y, and R coordinates based on data format
+        if (typeof dataPoint === 'object' && dataPoint !== null && 'x' in dataPoint && 'y' in dataPoint && 'r' in dataPoint) {
+          const bubblePoint = dataPoint as BubbleDataPoint
+          xValue = bubblePoint.x
+          yValue = bubblePoint.y
+          rValue = bubblePoint.r
+          pointLabel = `Bubble ${index + 1}: (${xValue}, ${yValue}, r=${rValue})`
+        } else if (typeof dataPoint === 'object' && dataPoint !== null && 'x' in dataPoint && 'y' in dataPoint) {
+          const scatterPoint = dataPoint as ScatterDataPoint
+          xValue = scatterPoint.x
+          yValue = scatterPoint.y
+          rValue = 5 // Default radius for scatter points treated as bubbles
+          pointLabel = `Point ${index + 1}: (${xValue}, ${yValue})`
+        } else {
+          return // Skip invalid data points
+        }
+        
+        // Calculate screen coordinates
+        const x = chartArea.x + (xValue - xMin) * xScale
+        const y = chartArea.y + chartArea.height - (yValue - yMin) * yScale
+        
+        // Skip points that are outside the visible data range
+        if (x < chartArea.x || x > chartArea.x + chartArea.width || 
+            y < chartArea.y || y > chartArea.y + chartArea.height) {
+          return
+        }
+        
+        // Calculate bubble radius based on r value
+        const bubbleRadius = radiusRange > 0 
+          ? minBubbleRadius + (rValue - dataMinR) * radiusScale
+          : (minBubbleRadius + maxBubbleRadius) / 2 // Use average radius when all bubbles are same size
+        
+        // Get bubble styling
+        const bubbleColor = this.getColor(dataset.backgroundColor, datasetIndex, theme)
+        const borderColor = this.getColor(dataset.borderColor, datasetIndex, theme)
+        const borderWidth = (dataset.borderWidth || 1) * fontScale
+        
+        // Create bubble
+        const bubble = new Konva.Circle({
+          x: x,
+          y: y,
+          radius: bubbleRadius,
+          fill: bubbleColor,
+          stroke: borderColor,
+          strokeWidth: borderWidth,
+          opacity: 0.7 // More transparency for overlapping bubbles
+        })
+        
+        bubblesGroup.add(bubble)
+        
+        // Create responsive tooltip for hover effect
+        const tooltip = this.createTooltip(tooltipGroup, x, y, -bubbleRadius - 30, `(${this.formatAxisValue(xValue, 1)}, ${this.formatAxisValue(yValue, 1)}, r=${this.formatAxisValue(rValue, 1)})`, theme, fontScale)
+        tooltipGroup.add(tooltip)
+        
+        // Add professional hover effect with tooltip
+        bubble.on('mouseenter', () => {
+          bubble.opacity(0.9)
+          bubble.strokeWidth(borderWidth + 1)
+          bubble.moveToTop()
+          tooltip.visible(true)
+          tooltip.moveToTop()
+          // Reposition tooltip to avoid overlapping with larger bubbles
+          tooltip.y(y - bubbleRadius - 35)
+        })
+        
+        bubble.on('mouseleave', () => {
+          bubble.opacity(0.7)
+          bubble.strokeWidth(borderWidth)
+          tooltip.visible(false)
+        })
+        
+        // Store data for potential interaction
+        bubble.setAttr('dataPoint', { 
+          x: xValue, 
+          y: yValue, 
+          r: rValue,
+          label: pointLabel,
+          dataset: dataset.label 
+        })
+      })
+    })
+    
+    // Add the clipped bubbles group to the main group
+    group.add(bubblesGroup)
+    
+    // Add the unclipped tooltip group on top so tooltips can render outside chart area
+    group.add(tooltipGroup)
+    
+    // Store scale information for axis rendering with nice values
+    ;(group as any)._scatterScales = {
+      xMin, xMax, yMin, yMax,
+      niceXValues, niceYValues
+    }
   }
 
   /**
    * Render axes
    */
-  private renderAxes(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions): void {
+  private renderAxes(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions, chartType: string): void {
+    const fontScale = (group as any)._fontScale || 1
+    
     // X-axis
     if (options.scales?.x?.display) {
       const xAxis = new Konva.Line({
@@ -548,29 +1013,56 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       })
       group.add(xAxis)
 
-      // X-axis labels
-      const fontScale = (group as any)._fontScale || 1
-      const categoryCount = data.labels.length
-      const availableWidth = chartArea.width * 0.9 // Same as bars
-      const categoryWidth = availableWidth / categoryCount
-      const startOffset = (chartArea.width - availableWidth) / 2
-      
-      data.labels.forEach((label, index) => {
-        // Center label for each category group (matching bar positioning)
-        const categoryCenter = startOffset + (index + 0.5) * categoryWidth
-        const x = chartArea.x + categoryCenter
+      // X-axis labels - different logic for scatter/bubble vs other charts
+      if (chartType === 'scatter' || chartType === 'bubble') {
+        // For scatter and bubble charts, use the nice axis values from the rendered data
+        const scatterScales = (group as any)._scatterScales
+        if (scatterScales) {
+          const { xMin, xMax, niceXValues } = scatterScales
+          
+          // Use pre-calculated nice values for consistent, professional appearance
+          niceXValues.forEach((value: number) => {
+            // Calculate position based on the actual scale used in renderScatterChart
+            const x = chartArea.x + ((value - xMin) / (xMax - xMin)) * chartArea.width
+            
+            // Ensure label is within chart area with proper padding
+            if (x >= chartArea.x && x <= chartArea.x + chartArea.width) {
+              const labelText = new Konva.Text({
+                x: x - 30, // Wider label area for better centering
+                y: chartArea.y + chartArea.height + 10,
+                width: 60,
+                text: this.formatAxisValue(value, 1), // Use 1 decimal max for axis labels
+                fontSize: 12 * fontScale,
+                fill: theme.text,
+                align: 'center'
+              })
+              group.add(labelText)
+            }
+          })
+        }
+      } else {
+        // For other charts, use category labels
+        const categoryCount = data.labels.length
+        const availableWidth = chartArea.width * 0.9
+        const categoryWidth = availableWidth / categoryCount
+        const startOffset = (chartArea.width - availableWidth) / 2
         
-        const labelText = new Konva.Text({
-          x: x - 30, // Wider centering area for longer labels
-          y: chartArea.y + chartArea.height + 10,
-          width: 60,
-          text: label,
-          fontSize: 12 * fontScale,
-          fill: theme.text,
-          align: 'center'
+        data.labels.forEach((label, index) => {
+          const categoryCenter = startOffset + (index + 0.5) * categoryWidth
+          const x = chartArea.x + categoryCenter
+          
+          const labelText = new Konva.Text({
+            x: x - 30,
+            y: chartArea.y + chartArea.height + 10,
+            width: 60,
+            text: label,
+            fontSize: 12 * fontScale,
+            fill: theme.text,
+            align: 'center'
+          })
+          group.add(labelText)
         })
-        group.add(labelText)
-      })
+      }
     }
 
     // Y-axis
@@ -583,35 +1075,82 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       group.add(yAxis)
 
       // Y-axis grid lines and labels
-      const maxValue = Math.max(...data.datasets.flatMap(d => d.data))
-      const steps = 5
-      for (let i = 0; i <= steps; i++) {
-        const value = (maxValue / steps) * i
-        const y = chartArea.y + chartArea.height - (value / maxValue) * chartArea.height
+      let maxValue: number, minValue: number
+      
+      if (chartType === 'scatter' || chartType === 'bubble') {
+        // For scatter and bubble charts, use the scatter scales for consistent labeling
+        const scatterScales = (group as any)._scatterScales
+        if (scatterScales) {
+          const { yMin, yMax, niceYValues } = scatterScales
+          
+          // Use pre-calculated nice values for consistent, professional appearance
+          niceYValues.forEach((value: number) => {
+            // Calculate position based on the actual scale used in renderScatterChart
+            const y = chartArea.y + chartArea.height - ((value - yMin) / (yMax - yMin)) * chartArea.height
 
-        // Grid line
-        if (options.scales.y.grid?.display) {
-          const gridLine = new Konva.Line({
-            points: [chartArea.x, y, chartArea.x + chartArea.width, y],
-            stroke: theme.grid,
-            strokeWidth: 0.5,
-            opacity: 0.3
+            // Ensure label is within chart area
+            if (y >= chartArea.y && y <= chartArea.y + chartArea.height) {
+              // Grid line
+              if (options.scales?.y?.grid?.display) {
+                const gridLine = new Konva.Line({
+                  points: [chartArea.x, y, chartArea.x + chartArea.width, y],
+                  stroke: theme.grid,
+                  strokeWidth: 0.5,
+                  opacity: 0.3
+                })
+                group.add(gridLine)
+              }
+
+              // Label with better positioning to avoid cutoff
+              const labelText = new Konva.Text({
+                x: chartArea.x - 60, // More space to prevent cutoff
+                y: y - 8, // Better vertical centering
+                width: 50,
+                text: this.formatAxisValue(value, 1), // Use 1 decimal max for axis labels
+                fontSize: 12 * fontScale,
+                fill: theme.text,
+                align: 'right'
+              })
+              group.add(labelText)
+            }
           })
-          group.add(gridLine)
         }
+      } else {
+        // For other charts, only use numeric datasets
+        const numericDatasets = data.datasets.filter(d => this.isNumericData(d.data))
+        const allValues = numericDatasets.flatMap(d => d.data as number[])
+        const maxValue = Math.max(...allValues)
+        const minValue = 0
+        
+        const steps = 5
+        
+        for (let i = 0; i <= steps; i++) {
+          const value = minValue + (maxValue - minValue) * (i / steps)
+          const y = chartArea.y + chartArea.height - (chartArea.height * i) / steps
 
-        // Label
-        const fontScale = (group as any)._fontScale || 1
-        const labelText = new Konva.Text({
-          x: chartArea.x - 50,
-          y: y - 6,
-          width: 40,
-          text: Math.round(value).toString(),
-          fontSize: 12 * fontScale,
-          fill: theme.text,
-          align: 'right'
-        })
-        group.add(labelText)
+          // Grid line
+          if (options.scales?.y?.grid?.display) {
+            const gridLine = new Konva.Line({
+              points: [chartArea.x, y, chartArea.x + chartArea.width, y],
+              stroke: theme.grid,
+              strokeWidth: 0.5,
+              opacity: 0.3
+            })
+            group.add(gridLine)
+          }
+
+          // Label
+          const labelText = new Konva.Text({
+            x: chartArea.x - 50,
+            y: y - 6,
+            width: 40,
+            text: this.formatAxisValue(value, 1),
+            fontSize: 12 * fontScale,
+            fill: theme.text,
+            align: 'right'
+          })
+          group.add(labelText)
+        }
       }
     }
   }
@@ -685,8 +1224,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     centerY: number, 
     radius: number, 
     innerRadius: number, 
-    theme: ChartTheme, 
-    isDoughnut: boolean
+    theme: ChartTheme
   ): void {
     // Get responsive font size
     const fontScale = (group as any)._fontScale || 1
@@ -705,7 +1243,6 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       
       // Always place labels outside the chart
       const labelRadius = radius + 40
-      const useExternalLabel = true
       
       // Calculate label position
       const labelX = centerX + Math.cos(midAngle) * labelRadius
@@ -868,6 +1405,82 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
+   * Format axis value for display
+   */
+  private formatAxisValue(value: number, maxDecimals: number = 2): string {
+    // Format numbers appropriately for axis display
+    if (Math.abs(value) >= 1000000) {
+      return (value / 1000000).toFixed(1) + 'M'
+    } else if (Math.abs(value) >= 1000) {
+      return (value / 1000).toFixed(1) + 'K'
+    } else if (value % 1 === 0) {
+      // Always show integers without decimals
+      return value.toString()
+    } else {
+      // For decimal values, limit to maxDecimals and remove trailing zeros
+      const formatted = value.toFixed(maxDecimals)
+      return parseFloat(formatted).toString()
+    }
+  }
+
+  /**
+   * Generate nice axis values for better readability
+   * For scatter charts, always include 0 in the range like professional libraries
+   */
+  private generateNiceAxisValues(min: number, max: number, targetSteps: number = 5, includeZero: boolean = false): number[] {
+    if (min === max) {
+      return includeZero && min !== 0 ? [0, min] : [min]
+    }
+    
+    // For scatter charts, always include 0 to match industry standards
+    let adjustedMin = min
+    let adjustedMax = max
+    
+    if (includeZero) {
+      adjustedMin = Math.min(0, min)
+      adjustedMax = Math.max(0, max)
+    }
+    
+    const range = adjustedMax - adjustedMin
+    const rawStep = range / targetSteps
+    
+    // Find a "nice" step size
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
+    const normalizedStep = rawStep / magnitude
+    
+    let niceStep: number
+    if (normalizedStep <= 1) {
+      niceStep = 1
+    } else if (normalizedStep <= 2) {
+      niceStep = 2
+    } else if (normalizedStep <= 5) {
+      niceStep = 5
+    } else {
+      niceStep = 10
+    }
+    
+    niceStep *= magnitude
+    
+    // Find nice start and end values
+    let niceMin = Math.floor(adjustedMin / niceStep) * niceStep
+    let niceMax = Math.ceil(adjustedMax / niceStep) * niceStep
+    
+    // For scatter charts, ensure we start from 0 if includeZero is true
+    if (includeZero && niceMin > 0) {
+      niceMin = 0
+    }
+    
+    // Generate the values
+    const values: number[] = []
+    for (let value = niceMin; value <= niceMax; value += niceStep) {
+      // Fix floating point precision issues
+      values.push(Math.round(value / niceStep) * niceStep)
+    }
+    
+    return values
+  }
+
+  /**
    * Calculate contrast color (black or white) based on background color
    */
   private getContrastColor(backgroundColor: string, theme: ChartTheme): string {
@@ -880,7 +1493,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
    */
   private isLightColor(color: string): boolean {
     // Convert color to RGB values
-    let r: number, g: number, b: number
+    let r: number = 0, g: number = 0, b: number = 0
 
     if (color.startsWith('#')) {
       // Hex color
@@ -901,22 +1514,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         r = parseInt(matches[0])
         g = parseInt(matches[1])
         b = parseInt(matches[2])
-      } else {
-        return false // Default to dark if we can't parse
       }
     } else {
-      // Named colors or other formats - use a simple heuristic
-      const namedColors: { [key: string]: boolean } = {
-        'white': true,
-        'lightgray': true,
-        'lightgrey': true,
-        'yellow': true,
-        'cyan': true,
-        'magenta': true,
-        'lime': true,
-        'silver': true
-      }
-      return namedColors[color.toLowerCase()] || false
+      // For named colors, assume dark (this is a fallback)
+      return false
     }
 
     // Calculate luminance using the relative luminance formula
