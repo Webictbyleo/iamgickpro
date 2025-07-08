@@ -1196,11 +1196,11 @@ const chartElements: ChartElement[] = [
     id: 'pie-chart',
     label: 'Pie Chart',
     type: 'pie',
-    preview: '<svg viewBox="0 0 100 80" style="width: 100%; height: 100%;"><circle cx="50" cy="40" r="25" fill="none" stroke="#e5e7eb" stroke-width="8"/><circle cx="50" cy="40" r="25" fill="none" stroke="currentColor" stroke-width="8" stroke-dasharray="39.27 157.08" stroke-dashoffset="0" transform="rotate(-90 50 40)"/><circle cx="50" cy="40" r="25" fill="none" stroke="#06d6a0" stroke-width="8" stroke-dasharray="31.42 157.08" stroke-dashoffset="-39.27" transform="rotate(-90 50 40)"/><circle cx="50" cy="40" r="25" fill="none" stroke="#ffd60a" stroke-width="8" stroke-dasharray="23.56 157.08" stroke-dashoffset="-70.69" transform="rotate(-90 50 40)"/></svg>',
+    preview: '<svg viewBox="0 0 100 80" style="width: 100%; height: 100%;"><g transform="translate(50,40)"><path d="M 0,-25 A 25,25 0 0,1 22.5,-9.58 L 0,0 Z" fill="#3b82f6"></path><path d="M 22.5,-9.58 A 25,25 0 0,1 9.58,22.5 L 0,0 Z" fill="#06d6a0"></path><path d="M 9.58,22.5 A 25,25 0 0,1 -24.27,-5.88 L 0,0 Z" fill="#ffd60a"></path><path d="M -24.27,-5.88 A 25,25 0 0,1 0,-25 L 0,0 Z" fill="#f72585"></path></g></svg>',
     properties: {
       chartType: 'pie',
       data: [
-        { label: 'Desktop and Bigtop', value: 45, color: '#3b82f6' },
+        { label: 'Desktop', value: 45, color: '#3b82f6' },
         { label: 'Mobile', value: 35, color: '#06d6a0' },
         { label: 'Tablet', value: 15, color: '#ffd60a' },
         { label: 'Other', value: 5, color: '#f72585' }
