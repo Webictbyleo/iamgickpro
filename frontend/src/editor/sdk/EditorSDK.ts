@@ -446,7 +446,7 @@ export class EditorSDK extends EventEmitter {
       
       // Get the clicked layer
       const clickedLayer = e.target
-
+     
       
       // Find the layer data if a layer was clicked
       let layerData = null

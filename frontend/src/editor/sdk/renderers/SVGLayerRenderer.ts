@@ -664,9 +664,50 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
   }
 
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {
+    // Clear any existing event handlers to prevent duplicates
+    group.off()
+    
     // Only set up click/tap handlers - LayerManager handles universal drag events
-    group.on('click tap', () => {
+    group.on('click tap', (e) => {
+      e.cancelBubble = true
       group.getStage()?.fire('layer:select', { layer })
+    })
+
+    // Context menu handling for SVG layers with multiple elements
+    group.on('contextmenu', (e) => {
+      e.evt.preventDefault()
+      e.cancelBubble = true
+      
+      // Create a custom event that the EditorSDK will capture
+      // This follows the same pattern as ChartLayerRenderer
+      const stage = group.getStage()
+      if (stage) {
+        const customEvent = new CustomEvent('editor:context-menu', {
+          detail: {
+            event: e.evt,
+            layer: {
+              id: layer.id,
+              type: layer.type,
+              x: layer.x,
+              y: layer.y,
+              width: layer.width,
+              height: layer.height,
+              rotation: layer.rotation,
+              scaleX: layer.scaleX,
+              scaleY: layer.scaleY,
+              zIndex: layer.zIndex,
+              properties: layer.properties
+            },
+            position: {
+              x: e.evt instanceof MouseEvent ? e.evt.clientX : 0,
+              y: e.evt instanceof MouseEvent ? e.evt.clientY : 0
+            }
+          }
+        })
+        
+        // Dispatch to the document for the DesignCanvas to handle
+        document.dispatchEvent(customEvent)
+      }
     })
 
     // Set up cursor changes for better UX
@@ -678,6 +719,17 @@ export class SVGLayerRenderer implements KonvaLayerRenderer {
     group.on('mouseleave', () => {
       const container = group.getStage()?.container()
       if (container) container.style.cursor = 'default'
+    })
+
+    // Drag event handlers for canvas movement
+    group.on('dragstart', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'grabbing'
+    })
+
+    group.on('dragend', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'grab'
     })
   }
 

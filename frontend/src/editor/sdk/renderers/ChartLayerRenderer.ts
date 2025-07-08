@@ -22,6 +22,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
    
     this.renderChart(chartGroup, props, layer.width, layer.height)
     this.applyCommonProperties(chartGroup, layer)
+    this.setupInteractions(chartGroup, layer)
     
     return chartGroup
   }
@@ -38,6 +39,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     
     // Apply common properties (this will set position, size, and other properties from layer)
     this.applyCommonProperties(node, layer)
+    
+    // Re-setup interactions (they may have been lost during update)
+    this.setupInteractions(node, layer)
   }
 
   destroy(node: Konva.Node): void {
@@ -46,6 +50,81 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
 
   getSupportedTypes(): string[] {
     return ['chart']
+  }
+
+  /**
+   * Set up interactions for chart elements including hover effects and context menu
+   */
+  private setupInteractions(group: Konva.Group, layer: LayerNode): void {
+    // Clear any existing event handlers to prevent duplicates
+    group.off()
+    
+    // Drag event handlers for canvas movement
+    group.on('dragstart', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'grabbing'
+    })
+
+    group.on('dragend', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'default'
+    })
+
+    // Hover effects for better UX
+    group.on('mouseenter', () => {
+      if (!layer.locked) {
+        const container = group.getStage()?.container()
+        if (container) container.style.cursor = 'grab'
+      }
+    })
+
+    group.on('mouseleave', () => {
+      const container = group.getStage()?.container()
+      if (container) container.style.cursor = 'default'
+    })
+
+    // Click handling for selection (similar to other renderers)
+    group.on('click tap', (e) => {
+      e.cancelBubble = true
+      // Chart selections will be handled by the EditorSDK layer selection system
+    })
+
+    // Context menu handling (following EditorSDK pattern)
+    group.on('contextmenu', (e) => {
+      e.evt.preventDefault()
+      e.cancelBubble = true
+      
+      // Create a custom event that the EditorSDK will capture
+      // This follows the same pattern as in EditorSDK.ts
+      const stage = group.getStage()
+      if (stage) {
+        const customEvent = new CustomEvent('editor:context-menu', {
+          detail: {
+            event: e.evt,
+            layer: {
+              id: layer.id,
+              type: layer.type,
+              x: layer.x,
+              y: layer.y,
+              width: layer.width,
+              height: layer.height,
+              rotation: layer.rotation,
+              scaleX: layer.scaleX,
+              scaleY: layer.scaleY,
+              zIndex: layer.zIndex,
+              properties: layer.properties
+            },
+            position: {
+              x: e.evt instanceof MouseEvent ? e.evt.clientX : 0,
+              y: e.evt instanceof MouseEvent ? e.evt.clientY : 0
+            }
+          }
+        })
+        
+        // Dispatch to the document for the DesignCanvas to handle
+        document.dispatchEvent(customEvent)
+      }
+    })
   }
 
   /**
@@ -405,6 +484,12 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       color: string
     }> = []
 
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+
+    // Get responsive font scale for tooltips
+    const fontScale = (group as any)._fontScale || 1
+
     // Assuming single dataset for pie charts
     const dataset = data.datasets[0]
     
@@ -439,12 +524,71 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
 
       group.add(slice)
 
+      // Create interactive tooltip for this slice
+      const midAngle = currentAngle + sliceAngle / 2
+      const tooltipX = centerX + Math.cos(midAngle) * (radius * 0.7)
+      const tooltipY = centerY + Math.sin(midAngle) * (radius * 0.7)
+      const sliceLabel = data.labels[index] || `Slice ${index + 1}`
+      const percentage = ((value / total) * 100).toFixed(1)
+      
+      const tooltip = this.createTooltip(
+        tooltipGroup, 
+        tooltipX, 
+        tooltipY, 
+        -30, 
+        `${sliceLabel}: ${percentage}% (${this.formatAxisValue(value, 1)})`, 
+        theme, 
+        fontScale
+      )
+      tooltipGroup.add(tooltip)
+
+      // Add interactive hover effects to the slice
+      slice.on('mouseenter', () => {
+        // Expand slice slightly on hover (cast to Wedge to access radius property)
+        const wedge = slice as Konva.Wedge
+        wedge.radius(radius + 5)
+        wedge.strokeWidth(3)
+        wedge.moveToTop()
+        tooltip.visible(true)
+        tooltip.moveToTop()
+        // Move the entire tooltip group to top to ensure it's above all slices
+        tooltipGroup.moveToTop()
+        
+        // Disable tooltip listening to prevent mouse events from interfering
+        tooltip.listening(false)
+        
+        // Change cursor to pointer to indicate interactivity
+        const container = slice.getStage()?.container()
+        if (container) container.style.cursor = 'pointer'
+      })
+
+      slice.on('mouseleave', () => {
+        // Return slice to normal state
+        const wedge = slice as Konva.Wedge
+        wedge.radius(radius)
+        wedge.strokeWidth(2)
+        tooltip.visible(false)
+        
+        // Reset cursor
+        const container = slice.getStage()?.container()
+        if (container) container.style.cursor = 'grab'
+      })
+
+      // Store data for potential interaction
+      slice.setAttr('dataPoint', { 
+        label: sliceLabel,
+        value: value,
+        percentage: percentage,
+        dataset: dataset.label,
+        index: index
+      })
+
       // Store slice data for label positioning
       sliceData.push({
         index,
-        label: data.labels[index] || `Slice ${index + 1}`,
+        label: sliceLabel,
         value,
-        percentage: ((value / total) * 100).toFixed(1),
+        percentage: percentage,
         midAngle: currentAngle + sliceAngle / 2,
         sliceAngle,
         color: this.getColor(dataset.backgroundColor, index, theme)
@@ -452,9 +596,14 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       currentAngle = endAngle
     })
 
+    // Add the tooltip group on top
+    group.add(tooltipGroup)
   
     // Render labels with better positioning
     this.renderPieLabels(group, sliceData, centerX, centerY, radius, innerRadius, theme)
+    
+    // Ensure tooltip group stays on top after labels are rendered
+    tooltipGroup.moveToTop()
   }
 
   /**
@@ -476,6 +625,12 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       sliceAngle: number
       color: string
     }> = []
+
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+
+    // Get responsive font scale for tooltips
+    const fontScale = (group as any)._fontScale || 1
 
     // Assuming single dataset for doughnut charts
     const dataset = data.datasets[0]
@@ -509,6 +664,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       }
     })
 
+    // Store references to slices for interactive effects
+    const sliceElements: Konva.Wedge[] = []
+
     // Create each slice as a solid wedge and add to clipping group
     numericData.forEach((value, index) => {
       const sliceAngle = (value / total) * 2 * Math.PI
@@ -528,13 +686,69 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       })
 
       clipGroup.add(slice)
+      sliceElements.push(slice)
+
+      // Create interactive tooltip for this slice
+      const midAngle = currentAngle + sliceAngle / 2
+      const tooltipRadius = (radius + innerRadius) / 2 // Position tooltip in the middle of the doughnut ring
+      const tooltipX = centerX + Math.cos(midAngle) * tooltipRadius
+      const tooltipY = centerY + Math.sin(midAngle) * tooltipRadius
+      const sliceLabel = data.labels[index] || `Slice ${index + 1}`
+      const percentage = ((value / total) * 100).toFixed(1)
+      
+      const tooltip = this.createTooltip(
+        tooltipGroup, 
+        tooltipX, 
+        tooltipY, 
+        -30, 
+        `${sliceLabel}: ${percentage}% (${this.formatAxisValue(value, 1)})`, 
+        theme, 
+        fontScale
+      )
+      tooltipGroup.add(tooltip)
+
+      // Add interactive hover effects to the slice
+      slice.on('mouseenter', () => {
+        // Expand slice slightly on hover
+        slice.radius(radius + 5)
+        slice.strokeWidth(3)
+        slice.moveToTop()
+        tooltip.visible(true)
+        tooltip.moveToTop()
+        // Move the entire tooltip group to top to ensure it's above all slices
+        tooltipGroup.moveToTop()
+        
+        // Change cursor to pointer to indicate interactivity
+        const container = slice.getStage()?.container()
+        if (container) container.style.cursor = 'pointer'
+      })
+
+      slice.on('mouseleave', () => {
+        // Return slice to normal state
+        slice.radius(radius)
+        slice.strokeWidth(2)
+        tooltip.visible(false)
+        
+        // Reset cursor
+        const container = slice.getStage()?.container()
+        if (container) container.style.cursor = 'grab'
+      })
+
+      // Store data for potential interaction
+      slice.setAttr('dataPoint', { 
+        label: sliceLabel,
+        value: value,
+        percentage: percentage,
+        dataset: dataset.label,
+        index: index
+      })
 
       // Store slice data for label positioning
       sliceData.push({
         index,
-        label: data.labels[index] || `Slice ${index + 1}`,
+        label: sliceLabel,
         value,
-        percentage: ((value / total) * 100).toFixed(1),
+        percentage: percentage,
         midAngle: currentAngle + sliceAngle / 2,
         sliceAngle,
         color: this.getColor(dataset.backgroundColor, index, theme)
@@ -545,8 +759,14 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     // Add the clipped group to the main group
     group.add(clipGroup)
 
+    // Add the tooltip group on top
+    group.add(tooltipGroup)
+
     // Render labels using pie chart labeling logic
     this.renderPieLabels(group, sliceData, centerX, centerY, radius, innerRadius, theme)
+    
+    // Ensure tooltip group stays on top after labels are rendered
+    tooltipGroup.moveToTop()
   }
 
   /**
