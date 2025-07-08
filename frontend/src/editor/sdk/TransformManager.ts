@@ -458,12 +458,19 @@ export class TransformManager {
 
     // Configure transformer for chart layers - charts should maintain readability
     // and proportional scaling to preserve chart data visualization integrity
-    this.transformer.setAttrs({
-      enabledAnchors: [
+    const chartTypes = this.selectedLayers.map(layer => layer.properties?.chartType || 'bar')
+    const hasCircularCharts = chartTypes.some(type => type === 'pie' || type === 'doughnut')
+    let anchors = [
         'top-left', 'top-center', 'top-right',
         'middle-left', 'middle-right',
         'bottom-left', 'bottom-center', 'bottom-right'
-      ],
+      ];
+    if (hasCircularCharts) {
+      // For pie/doughnut charts, only allow corner handles to maintain aspect ratio
+      anchors = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+    }
+    this.transformer.setAttrs({
+      enabledAnchors: anchors,
       keepRatio: false, // Allow non-proportional scaling for charts to fit different layouts
       rotateEnabled: true,
       borderEnabled: true,
@@ -477,18 +484,12 @@ export class TransformManager {
           newBox.width = Math.max(minWidth, newBox.width)
           newBox.height = Math.max(minHeight, newBox.height)
         }
-        
-        // For certain chart types like pie/doughnut, we might want to maintain aspect ratio
-        // This could be enhanced based on the specific chart type in the future
-        const chartType = this.selectedLayers[0]?.properties?.chartType
+        // For pie/doughnut charts, maintain aspect ratio during corner scaling
+        const chartType = this.selectedLayers[0].properties?.chartType
         if (chartType === 'pie' || chartType === 'doughnut') {
-          // For circular charts, prefer square aspect ratio when using corner handles
-          const activeAnchor = this.transformer?.getActiveAnchor()
-          if (activeAnchor && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(activeAnchor)) {
-            const size = Math.min(newBox.width, newBox.height)
-            newBox.width = Math.max(minWidth, size)
-            newBox.height = Math.max(minHeight, size)
-          }
+          const scale = Math.min(newBox.width / oldBox.width, newBox.height / oldBox.height)
+          newBox.width = Math.max(minWidth, oldBox.width * scale)
+          newBox.height = Math.max(minHeight, oldBox.height * scale)
         }
         
         return newBox

@@ -1200,9 +1200,10 @@ const chartElements: ChartElement[] = [
     properties: {
       chartType: 'pie',
       data: [
-        { label: 'Desktop', value: 45, color: '#3b82f6' },
+        { label: 'Desktop and Bigtop', value: 45, color: '#3b82f6' },
         { label: 'Mobile', value: 35, color: '#06d6a0' },
-        { label: 'Tablet', value: 20, color: '#ffd60a' }
+        { label: 'Tablet', value: 15, color: '#ffd60a' },
+        { label: 'Other', value: 5, color: '#f72585' }
       ],
       width: 250,
       height: 250

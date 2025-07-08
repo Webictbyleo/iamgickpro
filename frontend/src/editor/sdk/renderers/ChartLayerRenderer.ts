@@ -161,8 +161,8 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       height: height - margins.top - margins.bottom
     }
 
-    // Render background
-    if (theme.background !== 'transparent') {
+    // Render background (skip for pie/doughnut charts to allow transparent center)
+    if (theme.background !== 'transparent' && !['pie', 'doughnut'].includes(chartType)) {
       const background = new Konva.Rect({
         x: 0,
         y: 0,
@@ -365,7 +365,18 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     const centerX = chartArea.x + chartArea.width / 2
     const centerY = chartArea.y + chartArea.height / 2
     const radius = Math.min(chartArea.width, chartArea.height) / 2 - 10
-    const innerRadius = isDoughnut ? radius * 0.4 : 0
+    const innerRadius = isDoughnut ? radius * 0.5 : 0 // Increased from 0.4 to 0.5 for more visible hole
+
+    // Store slice data for better label positioning
+    const sliceData: Array<{
+      index: number
+      label: string
+      value: number
+      percentage: string
+      midAngle: number
+      sliceAngle: number
+      color: string
+    }> = []
 
     // Assuming single dataset for pie charts
     const dataset = data.datasets[0]
@@ -376,21 +387,97 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       const sliceAngle = (value / total) * 2 * Math.PI
       const endAngle = currentAngle + sliceAngle
 
-      const slice = new Konva.Wedge({
-        x: centerX,
-        y: centerY,
-        innerRadius: innerRadius,
-        radius: radius,
-        angle: sliceAngle * (180 / Math.PI),
-        rotation: currentAngle * (180 / Math.PI),
-        fill: this.getColor(dataset.backgroundColor, index, theme),
-        stroke: theme.background,
-        strokeWidth: 2
-      })
+      let slice: Konva.Shape
+
+      if (isDoughnut) {
+        // Capture the angles in local scope for the closure
+        const startAngle = currentAngle
+        const endAngleLocal = endAngle
+        
+        // Use custom shape for doughnut charts to create proper transparent hole
+        slice = new Konva.Shape({
+          sceneFunc: function (context, shape) {
+            context.beginPath()
+            // Draw outer arc
+            context.arc(0, 0, radius, startAngle, endAngleLocal, false)
+            // Draw line to inner radius
+            context.lineTo(Math.cos(endAngleLocal) * innerRadius, Math.sin(endAngleLocal) * innerRadius)
+            // Draw inner arc (reverse direction)
+            context.arc(0, 0, innerRadius, endAngleLocal, startAngle, true)
+            // Close the path
+            context.closePath()
+            context.fillStrokeShape(shape)
+          },
+          x: centerX,
+          y: centerY,
+          fill: this.getColor(dataset.backgroundColor, index, theme)
+        })
+      } else {
+        // Use Wedge for pie charts
+        slice = new Konva.Wedge({
+          x: centerX,
+          y: centerY,
+          innerRadius: 0,
+          radius: radius,
+          angle: sliceAngle * (180 / Math.PI),
+          rotation: currentAngle * (180 / Math.PI),
+          fill: this.getColor(dataset.backgroundColor, index, theme),
+          stroke: theme.background,
+          strokeWidth: 2
+        })
+      }
 
       group.add(slice)
+
+      // Store slice data for label positioning
+      sliceData.push({
+        index,
+        label: data.labels[index] || `Slice ${index + 1}`,
+        value,
+        percentage: ((value / total) * 100).toFixed(1),
+        midAngle: currentAngle + sliceAngle / 2,
+        sliceAngle,
+        color: this.getColor(dataset.backgroundColor, index, theme)
+      })
       currentAngle = endAngle
     })
+
+    // Add center text for doughnut charts (but no filled circle - keep the hole transparent)
+    if (isDoughnut) {
+      // Add center text showing total or chart type
+      const fontScale = (group as any)._fontScale || 1
+      const centerText = new Konva.Text({
+        x: centerX,
+        y: centerY - 8 * fontScale,
+        text: 'Total',
+        fontSize: Math.max(10, 14 * fontScale),
+        fill: theme.text,
+        align: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: 'bold',
+        opacity: 0.7
+      })
+      centerText.offsetX(centerText.width() / 2)
+      group.add(centerText)
+
+      // Add total value below
+      const totalText = new Konva.Text({
+        x: centerX,
+        y: centerY + 4 * fontScale,
+        text: total.toString(),
+        fontSize: Math.max(8, 12 * fontScale),
+        fill: theme.text,
+        align: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: '600',
+        opacity: 0.6
+      })
+      totalText.offsetX(totalText.width() / 2)
+      group.add(totalText)
+    }
+
+    // Render labels with better positioning
+    this.renderPieLabels(group, sliceData, centerX, centerY, radius, innerRadius, theme, isDoughnut)
   }
 
   /**
@@ -578,6 +665,266 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       })
       group.add(legendText)
     })
+  }
+
+  /**
+   * Render pie chart labels with improved positioning and visibility
+   */
+  private renderPieLabels(
+    group: Konva.Group, 
+    sliceData: Array<{
+      index: number
+      label: string
+      value: number
+      percentage: string
+      midAngle: number
+      sliceAngle: number
+      color: string
+    }>, 
+    centerX: number, 
+    centerY: number, 
+    radius: number, 
+    innerRadius: number, 
+    theme: ChartTheme, 
+    isDoughnut: boolean
+  ): void {
+    // Get responsive font size
+    const fontScale = (group as any)._fontScale || 1
+    const labelFontSize = Math.max(9, 12 * fontScale)
+    const percentageFontSize = Math.max(8, 10 * fontScale)
+    
+    // Only show labels for slices larger than this threshold
+    const minSliceAngleForLabel = 0.15 // About 8.5 degrees
+    
+    // Filter slices that are large enough to show labels
+    const visibleSlices = sliceData.filter(slice => slice.sliceAngle > minSliceAngleForLabel)
+    
+    // Position all labels outside the chart with leader lines
+    visibleSlices.forEach(slice => {
+      const { label, percentage, midAngle, sliceAngle } = slice
+      
+      // Always place labels outside the chart
+      const labelRadius = radius + 40
+      const useExternalLabel = true
+      
+      // Calculate label position
+      const labelX = centerX + Math.cos(midAngle) * labelRadius
+      const labelY = centerY + Math.sin(midAngle) * labelRadius
+      
+      // Calculate the maximum text width for external labels
+      let maxTextWidth: number
+      
+      // For external labels, use a fixed width that's readable
+      maxTextWidth = 100
+      
+      // Add leader line from slice edge to label
+      const lineStartRadius = radius + 2
+      const lineStartX = centerX + Math.cos(midAngle) * lineStartRadius
+      const lineStartY = centerY + Math.sin(midAngle) * lineStartRadius
+      const lineEndX = centerX + Math.cos(midAngle) * (labelRadius - 15)
+      const lineEndY = centerY + Math.sin(midAngle) * (labelRadius - 15)
+      
+      const line = new Konva.Line({
+        points: [lineStartX, lineStartY, lineEndX, lineEndY],
+        stroke: theme.text,
+        strokeWidth: 1,
+        opacity: 0.6
+      })
+      group.add(line)
+      
+      // Use the original label without truncation
+      const displayLabel = label
+      
+      // Use theme text color for external labels
+      const textColor = theme.text
+      
+      // Create background for all external labels
+      const padding = 6
+      const tempBgText = new Konva.Text({
+        text: `${displayLabel}\n${percentage}%`,
+        fontSize: labelFontSize,
+        fontFamily: 'Arial, sans-serif'
+      })
+      const bgWidth = Math.max(tempBgText.width() + padding * 2, 70)
+      const bgHeight = tempBgText.height() + padding * 2
+      tempBgText.destroy()
+      
+      const background = new Konva.Rect({
+        x: labelX - bgWidth / 2,
+        y: labelY - bgHeight / 2,
+        width: bgWidth,
+        height: bgHeight,
+        fill: theme.background,
+        cornerRadius: 4,
+        stroke: theme.text,
+        strokeWidth: 0.5,
+        opacity: 0.95
+      })
+      group.add(background)
+      
+      // Calculate text heights for proper positioning
+      const tempLabelText = new Konva.Text({
+        text: displayLabel,
+        fontSize: labelFontSize,
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: 'bold'
+      })
+      const labelHeight = tempLabelText.height()
+      tempLabelText.destroy()
+      
+      const tempPercentageText = new Konva.Text({
+        text: `${percentage}%`,
+        fontSize: percentageFontSize,
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: '600'
+      })
+      const percentageHeight = tempPercentageText.height()
+      tempPercentageText.destroy()
+      
+      // Calculate total text height with gap
+      const textGap = 2
+      const totalTextHeight = labelHeight + percentageHeight + textGap
+      
+      // Calculate starting Y position to center both texts
+      const startY = labelY - (totalTextHeight / 2)
+      
+      // Create the label text
+      const labelText = new Konva.Text({
+        x: labelX,
+        y: startY,
+        text: displayLabel,
+        fontSize: labelFontSize,
+        fill: textColor,
+        align: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: 'bold'
+      })
+      
+      // Center the text horizontally
+      labelText.offsetX(labelText.width() / 2)
+      
+      group.add(labelText)
+      
+      // Create percentage text below the label
+      const percentageText = new Konva.Text({
+        x: labelX,
+        y: startY + labelHeight + textGap,
+        text: `${percentage}%`,
+        fontSize: percentageFontSize,
+        fill: textColor,
+        align: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: '600',
+        opacity: 0.95
+      })
+      
+      // Center the percentage text horizontally
+      percentageText.offsetX(percentageText.width() / 2)
+      
+      group.add(percentageText)
+    })
+    
+    // For very small slices, show a compact legend
+    const hiddenSlices = sliceData.filter(slice => slice.sliceAngle <= minSliceAngleForLabel)
+    if (hiddenSlices.length > 0) {
+      // Add a compact legend for hidden slices
+      const legendStartY = centerY + radius + 40
+      const legendFontSize = Math.max(7, 8 * fontScale)
+      const legendItemHeight = legendFontSize + 3
+      
+      // Add legend title
+      const legendTitle = new Konva.Text({
+        x: centerX - 60,
+        y: legendStartY - 15,
+        width: 120,
+        text: 'Other:',
+        fontSize: legendFontSize + 1,
+        fill: theme.text,
+        align: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: 'bold',
+        opacity: 0.8
+      })
+      group.add(legendTitle)
+      
+      hiddenSlices.forEach((slice, index) => {
+        if (index < 3) { // Show only first 3 hidden slices in legend
+          const legendY = legendStartY + (index * legendItemHeight)
+          const legendText = new Konva.Text({
+            x: centerX - 60,
+            y: legendY,
+            width: 120,
+            text: `${slice.label}: ${slice.percentage}%`,
+            fontSize: legendFontSize,
+            fill: theme.text,
+            align: 'center',
+            fontFamily: 'Arial, sans-serif',
+            opacity: 0.7
+          })
+          group.add(legendText)
+        }
+      })
+    }
+  }
+
+  /**
+   * Calculate contrast color (black or white) based on background color
+   */
+  private getContrastColor(backgroundColor: string, theme: ChartTheme): string {
+    // If it's a light background, use dark text, otherwise use light text
+    return this.isLightColor(backgroundColor) ? '#000000' : '#FFFFFF'
+  }
+
+  /**
+   * Determine if a color is light or dark for contrast calculation
+   */
+  private isLightColor(color: string): boolean {
+    // Convert color to RGB values
+    let r: number, g: number, b: number
+
+    if (color.startsWith('#')) {
+      // Hex color
+      const hex = color.replace('#', '')
+      if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16)
+        g = parseInt(hex[1] + hex[1], 16)
+        b = parseInt(hex[2] + hex[2], 16)
+      } else {
+        r = parseInt(hex.substring(0, 2), 16)
+        g = parseInt(hex.substring(2, 4), 16)
+        b = parseInt(hex.substring(4, 6), 16)
+      }
+    } else if (color.startsWith('rgb')) {
+      // RGB or RGBA color
+      const matches = color.match(/\d+/g)
+      if (matches && matches.length >= 3) {
+        r = parseInt(matches[0])
+        g = parseInt(matches[1])
+        b = parseInt(matches[2])
+      } else {
+        return false // Default to dark if we can't parse
+      }
+    } else {
+      // Named colors or other formats - use a simple heuristic
+      const namedColors: { [key: string]: boolean } = {
+        'white': true,
+        'lightgray': true,
+        'lightgrey': true,
+        'yellow': true,
+        'cyan': true,
+        'magenta': true,
+        'lime': true,
+        'silver': true
+      }
+      return namedColors[color.toLowerCase()] || false
+    }
+
+    // Calculate luminance using the relative luminance formula
+    // Formula: (0.299 * R + 0.587 * G + 0.114 * B) / 255
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    
+    // If luminance is greater than 0.5, it's a light color
+    return luminance > 0.5
   }
 
   /**
