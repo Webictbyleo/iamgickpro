@@ -763,7 +763,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Create a responsive tooltip for scatter and bubble charts
+   * Create a responsive tooltip for scatter and bubble charts with smart positioning
    */
   private createTooltip(
     group: Konva.Group,
@@ -774,15 +774,43 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     theme: ChartTheme,
     fontScale: number = 1
   ): Konva.Group {
-    const tooltip = new Konva.Group({
-      x: x,
-      y: y + offsetY,
-      visible: false
-    })
-    
     // Calculate tooltip dimensions based on content
     const tooltipWidth = Math.max(100, tooltipText.length * 6 * fontScale)
     const tooltipHeight = 30 * fontScale
+    
+    // Get the parent group to determine chart boundaries
+    const parentGroup = group.getParent()
+    const chartWidth = parentGroup ? parentGroup.width() : 400
+    const chartHeight = parentGroup ? parentGroup.height() : 300
+    
+    // Smart positioning logic to avoid chart edges
+    let finalX = x
+    let finalY = y + offsetY
+    let finalOffsetX = 0
+    
+    // Check if tooltip would extend beyond right edge
+    if (x + tooltipWidth / 2 > chartWidth - 10) {
+      finalOffsetX = -tooltipWidth / 2 - 10 // Position to the left of point
+    }
+    // Check if tooltip would extend beyond left edge
+    else if (x - tooltipWidth / 2 < 10) {
+      finalOffsetX = tooltipWidth / 2 + 10 // Position to the right of point
+    }
+    
+    // Check if tooltip would extend beyond top edge
+    if (finalY - tooltipHeight / 2 < 10) {
+      finalY = y + Math.abs(offsetY) + 10 // Position below point instead
+    }
+    // Check if tooltip would extend beyond bottom edge
+    else if (finalY + tooltipHeight / 2 > chartHeight - 10) {
+      finalY = y - Math.abs(offsetY) - 10 // Position above point
+    }
+    
+    const tooltip = new Konva.Group({
+      x: finalX + finalOffsetX,
+      y: finalY,
+      visible: false
+    })
     
     const tooltipBg = new Konva.Rect({
       x: -tooltipWidth / 2,
@@ -1027,39 +1055,42 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
             
             // Ensure label is within chart area with proper padding
             if (x >= chartArea.x && x <= chartArea.x + chartArea.width) {
-              const labelText = new Konva.Text({
-                x: x - 30, // Wider label area for better centering
-                y: chartArea.y + chartArea.height + 10,
-                width: 60,
-                text: this.formatAxisValue(value, 1), // Use 1 decimal max for axis labels
-                fontSize: 12 * fontScale,
-                fill: theme.text,
-                align: 'center'
-              })
+              const labelText = this.createSmartLabel(
+                this.formatAxisValue(value, 1),
+                x,
+                chartArea.y + chartArea.height + 10,
+                60, // Max width for numeric labels
+                12 * fontScale,
+                theme.text,
+                'center'
+              )
               group.add(labelText)
             }
           })
         }
       } else {
-        // For other charts, use category labels
+        // For other charts, use category labels with smart width calculation
         const categoryCount = data.labels.length
         const availableWidth = chartArea.width * 0.9
         const categoryWidth = availableWidth / categoryCount
         const startOffset = (chartArea.width - availableWidth) / 2
         
+        // Calculate the maximum width available for each label
+        const maxLabelWidth = Math.max(40, categoryWidth * 0.8) // Use 80% of category width, minimum 40px
+        
         data.labels.forEach((label, index) => {
           const categoryCenter = startOffset + (index + 0.5) * categoryWidth
           const x = chartArea.x + categoryCenter
           
-          const labelText = new Konva.Text({
-            x: x - 30,
-            y: chartArea.y + chartArea.height + 10,
-            width: 60,
-            text: label,
-            fontSize: 12 * fontScale,
-            fill: theme.text,
-            align: 'center'
-          })
+          const labelText = this.createSmartLabel(
+            label,
+            x,
+            chartArea.y + chartArea.height + 10,
+            maxLabelWidth,
+            12 * fontScale,
+            theme.text,
+            'center'
+          )
           group.add(labelText)
         })
       }
@@ -1102,15 +1133,15 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
               }
 
               // Label with better positioning to avoid cutoff
-              const labelText = new Konva.Text({
-                x: chartArea.x - 60, // More space to prevent cutoff
-                y: y - 8, // Better vertical centering
-                width: 50,
-                text: this.formatAxisValue(value, 1), // Use 1 decimal max for axis labels
-                fontSize: 12 * fontScale,
-                fill: theme.text,
-                align: 'right'
-              })
+              const labelText = this.createSmartLabel(
+                this.formatAxisValue(value, 1),
+                chartArea.x - 10, // Position from right edge
+                y - 8,
+                50, // Max width for Y-axis labels
+                12 * fontScale,
+                theme.text,
+                'right'
+              )
               group.add(labelText)
             }
           })
@@ -1140,15 +1171,15 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           }
 
           // Label
-          const labelText = new Konva.Text({
-            x: chartArea.x - 50,
-            y: y - 6,
-            width: 40,
-            text: this.formatAxisValue(value, 1),
-            fontSize: 12 * fontScale,
-            fill: theme.text,
-            align: 'right'
-          })
+          const labelText = this.createSmartLabel(
+            this.formatAxisValue(value, 1),
+            chartArea.x - 10,
+            y - 6,
+            40, // Max width for Y-axis labels
+            12 * fontScale,
+            theme.text,
+            'right'
+          )
           group.add(labelText)
         }
       }
@@ -1568,6 +1599,53 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       visible: layer.visible !== false,
       listening: !layer.locked,
       draggable: true
+    })
+  }
+
+  /**
+   * Create a smart label with optimal width and wrapping
+   */
+  private createSmartLabel(
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    fontSize: number,
+    color: string,
+    align: string = 'center'
+  ): Konva.Text {
+    // Create a temporary text element to measure the natural width
+    const tempText = new Konva.Text({
+      text: text,
+      fontSize: fontSize,
+      fontFamily: 'Arial, sans-serif'
+    })
+    const naturalWidth = tempText.width()
+    tempText.destroy()
+    
+    // Determine optimal settings
+    const shouldWrap = naturalWidth > maxWidth
+    const labelWidth = shouldWrap ? maxWidth : naturalWidth
+    
+    // Adjust X position based on alignment
+    let finalX = x
+    if (align === 'center') {
+      finalX = x - labelWidth / 2
+    } else if (align === 'right') {
+      finalX = x - labelWidth
+    }
+    
+    return new Konva.Text({
+      x: finalX,
+      y: y,
+      width: labelWidth,
+      text: text,
+      fontSize: fontSize,
+      fill: color,
+      align: align,
+      wrap: shouldWrap ? 'word' : 'none',
+      ellipsis: !shouldWrap && naturalWidth > maxWidth,
+      fontFamily: 'Arial, sans-serif'
     })
   }
 
