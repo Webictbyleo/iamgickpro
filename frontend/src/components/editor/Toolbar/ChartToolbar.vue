@@ -2,7 +2,6 @@
   <div class="flex items-center space-x-4">
     <!-- Chart Color Controls -->
     <div class="flex items-center space-x-3">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Primary:</span>
       <PropertyColorPicker
         :value="theme?.primary || '#3B82F6'"
         @update="updateThemeColor('primary', $event)"
@@ -10,7 +9,6 @@
     </div>
 
     <div class="flex items-center space-x-3">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Secondary:</span>
       <PropertyColorPicker
         :value="theme?.secondary || '#10B981'"
         @update="updateThemeColor('secondary', $event)"
@@ -18,7 +16,6 @@
     </div>
 
     <div class="flex items-center space-x-3">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Background:</span>
       <PropertyColorPicker
         :value="theme?.background || '#FFFFFF'"
         @update="updateThemeColor('background', $event)"
