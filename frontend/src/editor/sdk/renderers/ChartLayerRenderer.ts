@@ -465,19 +465,12 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           bar.opacity(0.9)
           bar.moveToTop()
           
-          // For bar charts, position tooltip relative to mouse cursor for better UX
-          // This prevents tooltips from appearing too far away on tall bars
-          const stage = bar.getStage()
-          if (stage) {
-            const pointerPos = stage.getPointerPosition()
-            if (pointerPos) {
-              // Convert stage coordinates to chart area coordinates
-              const mouseX = pointerPos.x
-              const mouseY = pointerPos.y
-              const clearanceRadius = 20 // 20px breathing space from mouse cursor
-              this.positionTooltipWithinChartArea(tooltip, mouseX, mouseY, clearanceRadius, tooltipText, chartArea, fontScale)
-            }
-          }
+          // Calculate bar center for tooltip positioning
+          const barCenterX = x + (barWidth * 0.95) / 2 // Center of the bar
+          const barCenterY = y + barHeight / 2 // Middle of the bar
+          
+          // Position tooltip above the bar center
+          this.positionTooltipAtMouse(tooltip, barCenterX, barCenterY, tooltipText, chartArea, fontScale, -35)
           
           tooltip.visible(true)
           tooltip.moveToTop()
@@ -1447,6 +1440,52 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     } else if (tooltipY + halfHeight > chartArea.y + chartArea.height) {
       // Too low, clamp to bottom boundary
       tooltipY = chartArea.y + chartArea.height - halfHeight - 5
+    }
+    
+    // Apply final position
+    tooltip.x(tooltipX)
+    tooltip.y(tooltipY)
+  }
+
+  /**
+   * Mouse-relative tooltip positioning - positions tooltip near mouse cursor with chart boundary awareness
+   */
+  private positionTooltipAtMouse(
+    tooltip: Konva.Group,
+    mouseX: number,
+    mouseY: number,
+    tooltipText: string,
+    chartArea: any,
+    fontScale: number,
+    offsetY: number = -30
+  ): void {
+    // Calculate tooltip dimensions for boundary checking
+    const padding = 8 * fontScale
+    const fontSize = 10 * fontScale
+    const tooltipWidth = Math.max(100, tooltipText.length * (fontSize * 0.6) + (padding * 2))
+    const tooltipHeight = fontSize + (padding * 2)
+    const halfWidth = tooltipWidth / 2
+    const halfHeight = tooltipHeight / 2
+    
+    // Start with desired position near mouse (coordinates are already in local space)
+    let tooltipX = mouseX
+    let tooltipY = mouseY + offsetY
+    
+    // Smart boundary checking with chart area constraints
+    const margin = 5
+    
+    // Horizontal boundary check - keep within chart area
+    if (tooltipX - halfWidth < chartArea.x + margin) {
+      tooltipX = chartArea.x + halfWidth + margin
+    } else if (tooltipX + halfWidth > chartArea.x + chartArea.width - margin) {
+      tooltipX = chartArea.x + chartArea.width - halfWidth - margin
+    }
+    
+    // Vertical boundary check - prefer above mouse, fallback to below
+    if (tooltipY - halfHeight < chartArea.y + margin) {
+      tooltipY = mouseY + Math.abs(offsetY) + halfHeight + margin // Position below mouse instead
+    } else if (tooltipY + halfHeight > chartArea.y + chartArea.height - margin) {
+      tooltipY = chartArea.y + chartArea.height - halfHeight - margin
     }
     
     // Apply final position

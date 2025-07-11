@@ -3,7 +3,7 @@
     <div 
       v-if="shouldShow"
       ref="toolbarRef"
-      class="fixed items-center  gap-x-3 gap-y-4 px-2 py-2 z-[9999] pointer-events-auto toolbar-container"
+      class="fixed items-center  gap-x-3 gap-y-4 px-2 py-2 z-50 pointer-events-auto toolbar-container"
       :style="{
         maxWidth: `${containerWidth}px`,
         top: '54px',

@@ -178,7 +178,7 @@
                       </div>
                       <input
                         v-else
-                        ref="editInputRef"
+                        :data-edit-cell="`${rowIndex}-label`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
                         @keydown="handleEditKeyDown"
@@ -206,7 +206,7 @@
                       </div>
                       <input
                         v-else
-                        ref="editInputRef"
+                        :data-edit-cell="`${rowIndex}-label`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
                         @keydown="handleEditKeyDown"
@@ -236,7 +236,7 @@
                     </div>
                     <input
                       v-else
-                      ref="editInputRef"
+                      :data-edit-cell="`${rowIndex}-${selectedDatasetIndex}`"
                       v-model="tempEditValue"
                       @blur="saveEdit"
                       @keydown="handleEditKeyDown"
@@ -261,7 +261,7 @@
                       </div>
                       <input
                         v-else
-                        ref="editInputRef"
+                        :data-edit-cell="`${rowIndex}-${selectedDatasetIndex}-x`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
                         @keydown="handleEditKeyDown"
@@ -284,7 +284,7 @@
                       </div>
                       <input
                         v-else
-                        ref="editInputRef"
+                        :data-edit-cell="`${rowIndex}-${selectedDatasetIndex}-y`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
                         @keydown="handleEditKeyDown"
@@ -307,7 +307,7 @@
                       </div>
                       <input
                         v-else
-                        ref="editInputRef"
+                        :data-edit-cell="`${rowIndex}-${selectedDatasetIndex}-r`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
                         @keydown="handleEditKeyDown"
@@ -610,7 +610,7 @@
                     </div>
                     <input
                       v-else
-                      ref="editInputRef"
+                      :data-edit-cell="`${rowIndex}-label`"
                       v-model="tempEditValue"
                       @blur="saveEdit"
                       @keydown="handleEditKeyDown"
@@ -642,10 +642,11 @@
                     </div>
                     <input
                       v-else
+                      :data-edit-cell="`${rowIndex}-${datasetIndex}`"
                       v-model="tempEditValue"
                       @blur="saveEdit"
-                      @keyup.enter="saveEdit"
-                      @keyup.escape="cancelEdit"
+                      @keydown="handleEditKeyDown"
+                      @input="handleEditInput"
                       type="number"
                       step="any"
                       class="w-full px-2 py-1 text-sm border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
@@ -665,10 +666,11 @@
                       </div>
                       <input
                         v-else
+                        :data-edit-cell="`${rowIndex}-${datasetIndex}-x`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
-                        @keyup.enter="saveEdit"
-                        @keyup.escape="cancelEdit"
+                        @keydown="handleEditKeyDown"
+                        @input="handleEditInput"
                         type="number"
                         step="any"
                         class="w-full px-2 py-1 text-sm border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
@@ -686,10 +688,11 @@
                       </div>
                       <input
                         v-else
+                        :data-edit-cell="`${rowIndex}-${datasetIndex}-y`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
-                        @keyup.enter="saveEdit"
-                        @keyup.escape="cancelEdit"
+                        @keydown="handleEditKeyDown"
+                        @input="handleEditInput"
                         type="number"
                         step="any"
                         class="w-full px-2 py-1 text-sm border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
@@ -707,10 +710,11 @@
                       </div>
                       <input
                         v-else
+                        :data-edit-cell="`${rowIndex}-${datasetIndex}-r`"
                         v-model="tempEditValue"
                         @blur="saveEdit"
-                        @keyup.enter="saveEdit"
-                        @keyup.escape="cancelEdit"
+                        @keydown="handleEditKeyDown"
+                        @input="handleEditInput"
                         type="number"
                         step="any"
                         class="w-full px-2 py-1 text-sm border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
@@ -1032,7 +1036,6 @@ const isModalOpen = ref(false)
 const editingCell = ref<{ row: number; col: number; field?: 'x' | 'y' | 'r' } | null>(null)
 const editingLabel = ref<number | null>(null)
 const tempEditValue = ref<string>('')
-const editInputRef = ref<HTMLInputElement>()
 
 // Add keyboard navigation
 const handleKeyDown = (event: KeyboardEvent) => {
@@ -1370,9 +1373,14 @@ const startEditingCell = (rowIndex: number, colIndex: number, field?: 'x' | 'y' 
   
   editingCell.value = { row: rowIndex, col: supportsMultipleDatasets.value ? 0 : colIndex, field }
   
-  // Focus and select the input after DOM update
+  // Focus and select the input after DOM update using a more specific selector
   nextTick(() => {
-    const input = editInputRef.value
+    // Find the specific input element that should be focused
+    const cellSelector = field 
+      ? `[data-edit-cell="${rowIndex}-${datasetIndex}-${field}"]`
+      : `[data-edit-cell="${rowIndex}-${datasetIndex}"]`
+    
+    const input = document.querySelector(cellSelector) as HTMLInputElement
     if (input) {
       input.focus()
       input.select()
@@ -1384,9 +1392,9 @@ const startEditingLabel = (rowIndex: number) => {
   tempEditValue.value = tableData.value[rowIndex].label
   editingLabel.value = rowIndex
   
-  // Focus and select the input after DOM update
+  // Focus and select the input after DOM update using specific selector
   nextTick(() => {
-    const input = editInputRef.value
+    const input = document.querySelector(`[data-edit-cell="${rowIndex}-label"]`) as HTMLInputElement
     if (input) {
       input.focus()
       input.select()
