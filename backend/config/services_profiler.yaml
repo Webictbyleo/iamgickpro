@@ -1,0 +1,12 @@
+when@dev:
+    services:
+        # Custom profiler storage service with null byte protection
+        App\Service\SafeProfilerStorage:
+            arguments:
+                $dsn: '%kernel.cache_dir%/profiler'
+            public: false
+
+        # Override the default profiler storage when in dev environment
+        profiler.storage:
+            alias: App\Service\SafeProfilerStorage
+            public: false

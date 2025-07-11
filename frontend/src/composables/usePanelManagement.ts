@@ -50,8 +50,7 @@ export function usePanelManagement() {
       'animation': 'Animation',
       'colors': 'Colors',
       'image-editing': 'Image Settings',
-      'text-editing': 'Text Settings',
-      'shape-editing': 'Shape Settings',
+      'chart-editing': 'Chart Settings',
       'layer-properties': 'Properties',
       // Plugin panels
       'plugin-removebg': 'Background Remover'
@@ -120,12 +119,10 @@ export function usePanelManagement() {
     switch (layer.type) {
       case 'image':
         return 'image-editing'
-      case 'text':
-        return 'text-editing'
-      case 'shape':
-        return 'shape-editing'
+      case 'chart':
+        return 'chart-editing'
       default:
-        return 'layer-properties'
+        return null
     }
   }
   
@@ -243,11 +240,15 @@ export function usePanelManagement() {
       activePanelModal.value = null
       return
     }
-    
+
     // If layer type changed, suggest appropriate contextual panel
     if (selectedLayer && activePanelModal.value) {
       const suggestedPanel = getContextualPanelForLayer(selectedLayer)
-      
+      if (!suggestedPanel) {
+        // No contextual panel available for this layer type
+        activePanelModal.value = null
+        return
+      }
       // Only auto-switch if current panel doesn't match layer type
       if (suggestedPanel && suggestedPanel !== activePanelModal.value) {
         // Check if there's cached data for the suggested panel

@@ -76,6 +76,16 @@
         class="toolbar-section"
       />
       
+      <!-- Chart Layer Toolbar -->
+      <ChartToolbar
+        v-else-if="selectedLayer && selectedLayer.type === 'chart'"
+        :chartType="selectedLayer.properties?.chartType"
+        :theme="selectedLayer.properties?.theme"
+        @update="(props) => $emit('tool-update', 'chart', props)"
+        @edit-chart="$emit('toggle-panel', 'chart-editing', selectedLayer)"
+        class="toolbar-section"
+      />
+      
       <!-- Tool-specific Toolbar (when no layer selected but tool is active) -->
       <component 
         v-else-if="!selectedLayer && activeTool && toolOptions[activeTool]"
@@ -331,6 +341,7 @@ import TextToolbar from '@/components/editor/Toolbar/TextToolbar.vue'
 import ShapeToolbar from '@/components/editor/Toolbar/ShapeToolbar.vue'
 import ImageToolbar from '@/components/editor/Toolbar/ImageToolbar.vue'
 import SVGToolbar from '@/components/editor/Toolbar/SVGToolbar.vue'
+import ChartToolbar from '@/components/editor/Toolbar/ChartToolbar.vue'
 import { Container } from 'konva/lib/Container'
 
 interface ToolOption {

@@ -119,6 +119,14 @@
               :properties="selectedLayer.properties as ImageLayerProperties"
               @update="handleUpdateImageEdit"
             />
+
+            <ChartPanel
+              v-if="activePanelModal === 'chart-editing' && selectedLayer && selectedLayer.type === 'chart'"
+              :key="selectedLayer.id"
+              :properties="selectedLayer.properties as ChartLayerProperties"
+              @update="handleUpdateChartEdit"
+              @close="handleCancelPanelModal"
+            />
           </div>
         </div>
 
@@ -265,6 +273,7 @@ import AnimationPanel from './Panels/AnimationPanel.vue'
 import ColorsPanel from './Panels/ColorsPanel.vue'
 import DesignCanvas from './Canvas/DesignCanvas.vue'
 import ImageEditingPanel from './Panels/ImageEditingPanel.vue'
+import ChartPanel from './Panels/ChartPanel.vue'
 import DesignEditorContextMenu from './ContextMenu/DesignEditorContextMenu.vue'
 import PluginPanelManager from './plugins/PluginPanelManager.vue'
 
@@ -549,7 +558,6 @@ watch(selectedLayer, (newLayer, oldLayer) => {
     // When a layer is selected, automatically switch to select tool
     // This ensures the layer-specific toolbar will show instead of tool toolbar
     activeTool.value = 'select'
-    
     // Handle layer selection change through panel management
     handleLayerSelectionChange(selectedLayer.value ? [selectedLayer.value] : [])
   } else {
@@ -1261,6 +1269,17 @@ const handleCancelPanelModal = () => {
 
 const handleUpdateImageEdit = (updatedProperties: any) => {
   if (selectedLayer.value && selectedLayer.value.type === 'image') {
+    updateLayerProperties(selectedLayer.value.id, {
+      properties: {
+        ...selectedLayer.value.properties,
+        ...updatedProperties
+      }
+    })
+  }
+}
+
+const handleUpdateChartEdit = (updatedProperties: any) => {
+  if (selectedLayer.value && selectedLayer.value.type === 'chart') {
     updateLayerProperties(selectedLayer.value.id, {
       properties: {
         ...selectedLayer.value.properties,

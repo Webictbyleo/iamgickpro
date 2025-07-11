@@ -50,6 +50,13 @@ services:
         arguments:
             $plansConfigFile: '%app.plans_config_file%'
 
+    # Profiler Cleanup Command
+    App\Command\ProfilerCleanupCommand:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%'
+        tags:
+            - { name: console.command }
+
     # Database Plan Service Configuration (NEW)
     App\Service\DatabasePlanService:
         public: true

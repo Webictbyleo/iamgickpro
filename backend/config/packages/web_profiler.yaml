@@ -7,7 +7,7 @@ when@dev:
         profiler:
             # Reduced data collection to minimize file I/O issues
             collect_serializer_data: false
-            # Store profiles in a clean directory
+            # Store profiles in a clean directory with safe naming
             dsn: 'file:%kernel.cache_dir%/profiler'
             # Only collect main requests to reduce file creation
             only_main_requests: true

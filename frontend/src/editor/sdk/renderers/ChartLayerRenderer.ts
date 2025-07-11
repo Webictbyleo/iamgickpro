@@ -40,7 +40,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     // Apply common properties (this will set position, size, and other properties from layer)
     this.applyCommonProperties(node, layer)
     
-    // Re-setup interactions (they may have been lost during update)
+    // Re-setup interactions (now safe - won't remove transform handle listeners)
     this.setupInteractions(node, layer)
   }
 
@@ -56,41 +56,48 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
    * Set up interactions for chart elements including hover effects and context menu
    */
   private setupInteractions(group: Konva.Group, layer: LayerNode): void {
-    // Clear any existing event handlers to prevent duplicates
-    group.off()
+    // Only clear specific event handlers to avoid removing transform handle listeners
+    // DO NOT use group.off() as it removes ALL handlers including transform handles
+    group.off('dragstart.chart')
+    group.off('dragend.chart')
+    group.off('mouseenter.chart')
+    group.off('mouseleave.chart')
+    group.off('click.chart')
+    group.off('tap.chart')
+    group.off('contextmenu.chart')
     
     // Drag event handlers for canvas movement
-    group.on('dragstart', () => {
+    group.on('dragstart.chart', () => {
       const container = group.getStage()?.container()
       if (container) container.style.cursor = 'grabbing'
     })
 
-    group.on('dragend', () => {
+    group.on('dragend.chart', () => {
       const container = group.getStage()?.container()
       if (container) container.style.cursor = 'default'
     })
 
     // Hover effects for better UX
-    group.on('mouseenter', () => {
+    group.on('mouseenter.chart', () => {
       if (!layer.locked) {
         const container = group.getStage()?.container()
         if (container) container.style.cursor = 'grab'
       }
     })
 
-    group.on('mouseleave', () => {
+    group.on('mouseleave.chart', () => {
       const container = group.getStage()?.container()
       if (container) container.style.cursor = 'default'
     })
 
     // Click handling for selection (similar to other renderers)
-    group.on('click tap', (e) => {
+    group.on('click.chart tap.chart', (e) => {
       e.cancelBubble = true
       // Chart selections will be handled by the EditorSDK layer selection system
     })
 
     // Context menu handling (following EditorSDK pattern)
-    group.on('contextmenu', (e) => {
+    group.on('contextmenu.chart', (e) => {
       e.evt.preventDefault()
       e.cancelBubble = true
       
@@ -161,15 +168,15 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       datasets: [{
         label: 'Sample Data',
         data: [10, 20, 15, 25, 30],
-        backgroundColor: '#3B82F6',
-        borderColor: '#1E40AF',
+        backgroundColor: '#3B82F6', // Will be overridden by theme
+        borderColor: '#2563EB', // Primary-600 (darker variant)
         borderWidth: 2
       }]
     }
   }
 
   /**
-   * Get default chart options
+   * Get default chart options with enhanced styling
    */
   private getDefaultOptions(options?: ChartOptions): ChartOptions {
     return {
@@ -193,14 +200,14 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           display: true,
           grid: {
             display: true,
-            color: '#E5E7EB'
+            color: '#F1F5F9' // Lighter grid color for better aesthetics
           }
         },
         y: {
           display: true,
           grid: {
             display: true,
-            color: '#E5E7EB'
+            color: '#F1F5F9' // Lighter grid color for better aesthetics
           }
         }
       },
@@ -213,18 +220,31 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Get default chart theme
+   * Get default chart theme with rich color palette
    */
   private getDefaultTheme(theme?: ChartTheme): ChartTheme {
     return {
-      primary: '#3B82F6',
-      secondary: '#8B5CF6',
+      primary: '#3B82F6', // Primary-500
+      secondary: '#8B5CF6', // Secondary-500
       background: '#FFFFFF',
-      text: '#1F2937',
-      grid: '#E5E7EB',
-      accent: ['#EF4444', '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899'],
+      text: '#1F2937', // Gray-800
+      grid: '#E5E7EB', // Gray-200
+      accent: [
+        '#EF4444', // Red-500
+        '#F59E0B', // Amber-500
+        '#10B981', // Emerald-500
+        '#F97316', // Orange-500
+        '#8B5CF6', // Purple-500
+        '#EC4899', // Pink-500
+        '#06B6D4', // Cyan-500
+        '#84CC16', // Lime-500
+        '#F43F5E', // Rose-500
+        '#6366F1', // Indigo-500
+        '#8B5CF6', // Violet-500
+        '#14B8A6'  // Teal-500
+      ],
       tooltip: {
-        background: '#1F2937',
+        background: '#1F2937', // Gray-800
         text: '#FFFFFF'
       },
       ...theme
@@ -401,14 +421,41 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         const barHeight = value * scale
         const y = chartArea.y + chartArea.height - barHeight
 
+        // Get primary color for this bar
+        const primaryColor = this.getColor(dataset.backgroundColor, datasetIndex, theme)
+        const borderColor = this.getColor(dataset.borderColor, datasetIndex, theme)
+        
+        // Create gradient effect for bars
+        const lighterColor = this.adjustColorBrightness(primaryColor, 0.1)
+        const darkerColor = this.adjustColorBrightness(primaryColor, -0.1)
+
         const bar = new Konva.Rect({
           x: x,
           y: y,
           width: barWidth * 0.95, // Small gap between bars in same group
           height: barHeight,
-          fill: this.getColor(dataset.backgroundColor, datasetIndex, theme),
-          stroke: this.getColor(dataset.borderColor, datasetIndex, theme),
-          strokeWidth: dataset.borderWidth || 0
+          fillLinearGradientStartPoint: { x: 0, y: 0 },
+          fillLinearGradientEndPoint: { x: 0, y: barHeight },
+          fillLinearGradientColorStops: [0, lighterColor, 1, darkerColor],
+          stroke: borderColor,
+          strokeWidth: dataset.borderWidth || 0,
+          shadowColor: 'rgba(0, 0, 0, 0.1)',
+          shadowBlur: 2,
+          shadowOffset: { x: 0, y: 1 },
+          cornerRadius: 2 // Add subtle rounded corners
+        })
+
+        // Add hover effect
+        bar.on('mouseenter', () => {
+          bar.shadowBlur(4)
+          bar.shadowOffset({ x: 0, y: 2 })
+          bar.opacity(0.9)
+        })
+
+        bar.on('mouseleave', () => {
+          bar.shadowBlur(2)
+          bar.shadowOffset({ x: 0, y: 1 })
+          bar.opacity(1)
         })
 
         group.add(bar)
@@ -438,26 +485,50 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         points.push(x, y)
       })
 
-      // Draw line
+      // Get enhanced colors
+      const lineColor = this.getColor(dataset.borderColor, datasetIndex, theme)
+      const pointColor = this.getColor(dataset.pointBackgroundColor, datasetIndex, theme)
+      
+      // Draw line with shadow for depth
       const line = new Konva.Line({
         points: points,
-        stroke: this.getColor(dataset.borderColor, datasetIndex, theme),
+        stroke: lineColor,
         strokeWidth: dataset.borderWidth || 2,
-        tension: dataset.tension || 0
+        tension: dataset.tension || 0,
+        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowBlur: 3,
+        shadowOffset: { x: 0, y: 1 }
       })
       group.add(line)
 
-      // Draw points
+      // Draw enhanced points with hover effects
       if (dataset.pointRadius && dataset.pointRadius > 0) {
         for (let i = 0; i < points.length; i += 2) {
           const circle = new Konva.Circle({
             x: points[i],
             y: points[i + 1],
             radius: dataset.pointRadius,
-            fill: this.getColor(dataset.pointBackgroundColor, datasetIndex, theme),
+            fill: pointColor,
             stroke: this.getColor(dataset.pointBorderColor, datasetIndex, theme),
-            strokeWidth: 1
+            strokeWidth: 1,
+            shadowColor: 'rgba(0, 0, 0, 0.1)',
+            shadowBlur: 2,
+            shadowOffset: { x: 0, y: 1 }
           })
+          
+          // Add hover effect
+          circle.on('mouseenter', () => {
+            circle.radius(dataset.pointRadius! * 1.3)
+            circle.shadowBlur(4)
+            circle.shadowOffset({ x: 0, y: 2 })
+          })
+          
+          circle.on('mouseleave', () => {
+            circle.radius(dataset.pointRadius!)
+            circle.shadowBlur(2)
+            circle.shadowOffset({ x: 0, y: 1 })
+          })
+          
           group.add(circle)
         }
       }
@@ -797,14 +868,30 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       // End at bottom right
       points.push(chartArea.x + chartArea.width, chartArea.y + chartArea.height)
 
-      // Create filled area
+      // Get enhanced colors for gradient effect
+      const fillColor = this.getColor(dataset.backgroundColor, datasetIndex, theme, 0.3)
+      const strokeColor = this.getColor(dataset.borderColor, datasetIndex, theme)
+      
+      // Create gradient fill for area
+      const topY = Math.min(...points.filter((_, i) => i % 2 === 1))
+      const bottomY = chartArea.y + chartArea.height
+      
+      // Create filled area with gradient
       const area = new Konva.Line({
         points: points,
-        fill: this.getColor(dataset.backgroundColor, datasetIndex, theme, 0.3),
-        stroke: this.getColor(dataset.borderColor, datasetIndex, theme),
+        fillLinearGradientStartPoint: { x: 0, y: topY },
+        fillLinearGradientEndPoint: { x: 0, y: bottomY },
+        fillLinearGradientColorStops: [
+          0, this.getColor(dataset.backgroundColor, datasetIndex, theme, 0.6),
+          1, this.getColor(dataset.backgroundColor, datasetIndex, theme, 0.1)
+        ],
+        stroke: strokeColor,
         strokeWidth: dataset.borderWidth || 2,
         closed: true,
-        tension: dataset.tension || 0
+        tension: dataset.tension || 0,
+        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowBlur: 3,
+        shadowOffset: { x: 0, y: 1 }
       })
       group.add(area)
     })
@@ -1247,17 +1334,25 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Render axes
+   * Render axes with enhanced styling
    */
   private renderAxes(group: Konva.Group, data: ChartData, chartArea: any, theme: ChartTheme, options: ChartOptions, chartType: string): void {
     const fontScale = (group as any)._fontScale || 1
+    
+    // Enhanced axis line styling
+    const axisStyle = {
+      stroke: theme.grid,
+      strokeWidth: 1.5,
+      shadowColor: 'rgba(0, 0, 0, 0.05)',
+      shadowBlur: 1,
+      shadowOffset: { x: 0, y: 1 }
+    }
     
     // X-axis
     if (options.scales?.x?.display) {
       const xAxis = new Konva.Line({
         points: [chartArea.x, chartArea.y + chartArea.height, chartArea.x + chartArea.width, chartArea.y + chartArea.height],
-        stroke: theme.grid,
-        strokeWidth: 1
+        ...axisStyle
       })
       group.add(xAxis)
 
@@ -1278,7 +1373,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
               const labelText = this.createSmartLabel(
                 this.formatAxisValue(value, 1),
                 x,
-                chartArea.y + chartArea.height + 10,
+                chartArea.y + chartArea.height + 15,
                 60, // Max width for numeric labels
                 12 * fontScale,
                 theme.text,
@@ -1305,7 +1400,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           const labelText = this.createSmartLabel(
             label,
             x,
-            chartArea.y + chartArea.height + 10,
+            chartArea.y + chartArea.height + 15,
             maxLabelWidth,
             12 * fontScale,
             theme.text,
@@ -1320,14 +1415,11 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     if (options.scales?.y?.display) {
       const yAxis = new Konva.Line({
         points: [chartArea.x, chartArea.y, chartArea.x, chartArea.y + chartArea.height],
-        stroke: theme.grid,
-        strokeWidth: 1
+        ...axisStyle
       })
       group.add(yAxis)
 
       // Y-axis grid lines and labels
-      let maxValue: number, minValue: number
-      
       if (chartType === 'scatter' || chartType === 'bubble') {
         // For scatter and bubble charts, use the scatter scales for consistent labeling
         const scatterScales = (group as any)._scatterScales
@@ -1341,22 +1433,23 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
 
             // Ensure label is within chart area
             if (y >= chartArea.y && y <= chartArea.y + chartArea.height) {
-              // Grid line
+              // Enhanced grid line
               if (options.scales?.y?.grid?.display) {
                 const gridLine = new Konva.Line({
                   points: [chartArea.x, y, chartArea.x + chartArea.width, y],
                   stroke: theme.grid,
                   strokeWidth: 0.5,
-                  opacity: 0.3
+                  opacity: 0.3,
+                  dash: [2, 4] // Dashed grid lines for better readability
                 })
                 group.add(gridLine)
               }
 
-              // Label with better positioning to avoid cutoff
+              // Enhanced label
               const labelText = this.createSmartLabel(
                 this.formatAxisValue(value, 1),
-                chartArea.x - 10, // Position from right edge
-                y - 8,
+                chartArea.x - 15,
+                y - 6,
                 50, // Max width for Y-axis labels
                 12 * fontScale,
                 theme.text,
@@ -1379,23 +1472,24 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           const value = minValue + (maxValue - minValue) * (i / steps)
           const y = chartArea.y + chartArea.height - (chartArea.height * i) / steps
 
-          // Grid line
+          // Enhanced grid line
           if (options.scales?.y?.grid?.display) {
             const gridLine = new Konva.Line({
               points: [chartArea.x, y, chartArea.x + chartArea.width, y],
               stroke: theme.grid,
               strokeWidth: 0.5,
-              opacity: 0.3
+              opacity: 0.3,
+              dash: [2, 4] // Dashed grid lines for better readability
             })
             group.add(gridLine)
           }
 
-          // Label
+          // Enhanced label
           const labelText = this.createSmartLabel(
             this.formatAxisValue(value, 1),
-            chartArea.x - 10,
+            chartArea.x - 15,
             y - 6,
-            40, // Max width for Y-axis labels
+            50, // Max width for Y-axis labels
             12 * fontScale,
             theme.text,
             'right'
@@ -1407,12 +1501,14 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Render legend
+   * Render legend with enhanced styling
    */
   private renderLegend(group: Konva.Group, data: ChartData, legend: any, theme: ChartTheme, width: number, height: number): void {
     const position = legend.position || 'top'
-    const itemHeight = 20
-    const itemSpacing = 10
+    const fontScale = (group as any)._fontScale || 1
+    const itemHeight = 20 * fontScale
+    const itemSpacing = 10 * fontScale
+    const iconSize = 12 * fontScale
 
     let startX = 10
     let startY = 10
@@ -1433,28 +1529,108 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
 
     data.datasets.forEach((dataset, index) => {
       const y = startY + index * (itemHeight + itemSpacing)
+      const legendColor = this.getColor(dataset.backgroundColor, index, theme)
 
-      // Legend color box
+      // Enhanced legend color box with border and shadow
       const colorBox = new Konva.Rect({
         x: startX,
         y: y,
-        width: 12,
-        height: 12,
-        fill: this.getColor(dataset.backgroundColor, index, theme)
+        width: iconSize,
+        height: iconSize,
+        fill: legendColor,
+        stroke: this.adjustColorBrightness(legendColor, -0.2),
+        strokeWidth: 1,
+        cornerRadius: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowBlur: 1,
+        shadowOffset: { x: 0, y: 1 }
       })
       group.add(colorBox)
 
-      // Legend text
-      const fontScale = (group as any)._fontScale || 1
+      // Enhanced legend text with better typography
       const legendText = new Konva.Text({
-        x: startX + 20,
+        x: startX + iconSize + 8,
         y: y - 2,
-        text: dataset.label,
+        text: dataset.label || `Dataset ${index + 1}`,
         fontSize: 12 * fontScale,
-        fill: theme.text
+        fill: theme.text,
+        fontFamily: 'Arial, sans-serif',
+        fontWeight: '500'
       })
       group.add(legendText)
     })
+  }
+
+  /**
+   * Format axis value for display
+   */
+  private formatAxisValue(value: number, maxDecimals: number = 2): string {
+    // Format numbers appropriately for axis display
+    if (Math.abs(value) >= 1000000) {
+      return (value / 1000000).toFixed(maxDecimals).replace(/\.?0+$/, '') + 'M'
+    } else if (Math.abs(value) >= 1000) {
+      return (value / 1000).toFixed(maxDecimals).replace(/\.?0+$/, '') + 'K'
+    } else if (value % 1 === 0) {
+      return value.toString()
+    } else {
+      return value.toFixed(maxDecimals).replace(/\.?0+$/, '')
+    }
+  }
+
+  /**
+   * Generate nice axis values for better readability
+   * For scatter charts, always include 0 in the range like professional libraries
+   */
+  private generateNiceAxisValues(min: number, max: number, targetSteps: number = 5, includeZero: boolean = false): number[] {
+    // Handle edge case where min equals max
+    if (min === max) {
+      if (includeZero && min !== 0) {
+        return min > 0 ? [0, min, min * 1.5] : [min * 1.5, min, 0]
+      }
+      return [min - 1, min, min + 1]
+    }
+
+    // Extend range to include zero if requested
+    if (includeZero) {
+      min = Math.min(min, 0)
+      max = Math.max(max, 0)
+    }
+
+    // Calculate range and rough step size
+    const range = max - min
+    const roughStep = range / targetSteps
+
+    // Find the order of magnitude
+    const orderOfMagnitude = Math.floor(Math.log10(roughStep))
+    const stepMagnitude = Math.pow(10, orderOfMagnitude)
+
+    // Round step to a nice number
+    const normalizedStep = roughStep / stepMagnitude
+    let niceStep: number
+    if (normalizedStep <= 1) {
+      niceStep = 1
+    } else if (normalizedStep <= 2) {
+      niceStep = 2
+    } else if (normalizedStep <= 5) {
+      niceStep = 5
+    } else {
+      niceStep = 10
+    }
+
+    niceStep *= stepMagnitude
+
+    // Generate nice values
+    const niceMin = Math.floor(min / niceStep) * niceStep
+    const niceMax = Math.ceil(max / niceStep) * niceStep
+
+    const values: number[] = []
+    for (let value = niceMin; value <= niceMax; value += niceStep) {
+      // Round to avoid floating point precision issues
+      const rounded = Math.round(value / niceStep) * niceStep
+      values.push(rounded)
+    }
+
+    return values
   }
 
   /**
@@ -1615,172 +1791,48 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     // For very small slices, show a compact legend
     const hiddenSlices = sliceData.filter(slice => slice.sliceAngle <= minSliceAngleForLabel)
     if (hiddenSlices.length > 0) {
-      // Add a compact legend for hidden slices
-      const legendStartY = centerY + radius + 40
-      const legendFontSize = Math.max(7, 8 * fontScale)
-      const legendItemHeight = legendFontSize + 3
-      
-      // Add legend title
-      const legendTitle = new Konva.Text({
-        x: centerX - 60,
-        y: legendStartY - 15,
-        width: 120,
-        text: 'Other:',
-        fontSize: legendFontSize + 1,
+      const legendY = centerY + radius + 60
+      const legendText = new Konva.Text({
+        x: centerX,
+        y: legendY,
+        text: `${hiddenSlices.length} small slices not labeled`,
+        fontSize: 10 * fontScale,
         fill: theme.text,
         align: 'center',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
-        opacity: 0.8
+        opacity: 0.7
       })
-      group.add(legendTitle)
       
-      hiddenSlices.forEach((slice, index) => {
-        if (index < 3) { // Show only first 3 hidden slices in legend
-          const legendY = legendStartY + (index * legendItemHeight)
-          const legendText = new Konva.Text({
-            x: centerX - 60,
-            y: legendY,
-            width: 120,
-            text: `${slice.label}: ${slice.percentage}%`,
-            fontSize: legendFontSize,
-            fill: theme.text,
-            align: 'center',
-            fontFamily: 'Arial, sans-serif',
-            opacity: 0.7
-          })
-          group.add(legendText)
-        }
-      })
+      legendText.offsetX(legendText.width() / 2)
+      group.add(legendText)
     }
   }
 
   /**
-   * Format axis value for display
+   * Adjust the brightness of a color
    */
-  private formatAxisValue(value: number, maxDecimals: number = 2): string {
-    // Format numbers appropriately for axis display
-    if (Math.abs(value) >= 1000000) {
-      return (value / 1000000).toFixed(1) + 'M'
-    } else if (Math.abs(value) >= 1000) {
-      return (value / 1000).toFixed(1) + 'K'
-    } else if (value % 1 === 0) {
-      // Always show integers without decimals
-      return value.toString()
-    } else {
-      // For decimal values, limit to maxDecimals and remove trailing zeros
-      const formatted = value.toFixed(maxDecimals)
-      return parseFloat(formatted).toString()
+  private adjustColorBrightness(color: string, amount: number): string {
+    // Convert hex to RGB
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    
+    // Apply brightness adjustment
+    const newR = Math.max(0, Math.min(255, r + (255 * amount)))
+    const newG = Math.max(0, Math.min(255, g + (255 * amount)))
+    const newB = Math.max(0, Math.min(255, b + (255 * amount)))
+    
+    // Convert back to hex
+    const toHex = (value: number) => {
+      const hex = Math.round(value).toString(16)
+      return hex.length === 1 ? '0' + hex : hex
     }
+    
+    return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`
   }
 
   /**
-   * Generate nice axis values for better readability
-   * For scatter charts, always include 0 in the range like professional libraries
-   */
-  private generateNiceAxisValues(min: number, max: number, targetSteps: number = 5, includeZero: boolean = false): number[] {
-    if (min === max) {
-      return includeZero && min !== 0 ? [0, min] : [min]
-    }
-    
-    // For scatter charts, always include 0 to match industry standards
-    let adjustedMin = min
-    let adjustedMax = max
-    
-    if (includeZero) {
-      adjustedMin = Math.min(0, min)
-      adjustedMax = Math.max(0, max)
-    }
-    
-    const range = adjustedMax - adjustedMin
-    const rawStep = range / targetSteps
-    
-    // Find a "nice" step size
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
-    const normalizedStep = rawStep / magnitude
-    
-    let niceStep: number
-    if (normalizedStep <= 1) {
-      niceStep = 1
-    } else if (normalizedStep <= 2) {
-      niceStep = 2
-    } else if (normalizedStep <= 5) {
-      niceStep = 5
-    } else {
-      niceStep = 10
-    }
-    
-    niceStep *= magnitude
-    
-    // Find nice start and end values
-    let niceMin = Math.floor(adjustedMin / niceStep) * niceStep
-    let niceMax = Math.ceil(adjustedMax / niceStep) * niceStep
-    
-    // For scatter charts, ensure we start from 0 if includeZero is true
-    if (includeZero && niceMin > 0) {
-      niceMin = 0
-    }
-    
-    // Generate the values
-    const values: number[] = []
-    for (let value = niceMin; value <= niceMax; value += niceStep) {
-      // Fix floating point precision issues
-      values.push(Math.round(value / niceStep) * niceStep)
-    }
-    
-    return values
-  }
-
-  /**
-   * Calculate contrast color (black or white) based on background color
-   */
-  private getContrastColor(backgroundColor: string, theme: ChartTheme): string {
-    // If it's a light background, use dark text, otherwise use light text
-    return this.isLightColor(backgroundColor) ? '#000000' : '#FFFFFF'
-  }
-
-  /**
-   * Determine if a color is light or dark for contrast calculation
-   */
-  private isLightColor(color: string): boolean {
-    // Convert color to RGB values
-    let r: number = 0, g: number = 0, b: number = 0
-
-    if (color.startsWith('#')) {
-      // Hex color
-      const hex = color.replace('#', '')
-      if (hex.length === 3) {
-        r = parseInt(hex[0] + hex[0], 16)
-        g = parseInt(hex[1] + hex[1], 16)
-        b = parseInt(hex[2] + hex[2], 16)
-      } else {
-        r = parseInt(hex.substring(0, 2), 16)
-        g = parseInt(hex.substring(2, 4), 16)
-        b = parseInt(hex.substring(4, 6), 16)
-      }
-    } else if (color.startsWith('rgb')) {
-      // RGB or RGBA color
-      const matches = color.match(/\d+/g)
-      if (matches && matches.length >= 3) {
-        r = parseInt(matches[0])
-        g = parseInt(matches[1])
-        b = parseInt(matches[2])
-      }
-    } else {
-      // For named colors, assume dark (this is a fallback)
-      return false
-    }
-
-    // Calculate luminance using the relative luminance formula
-    // Formula: (0.299 * R + 0.587 * G + 0.114 * B) / 255
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-    
-    // If luminance is greater than 0.5, it's a light color
-    return luminance > 0.5
-  }
-
-  /**
-   * Get color from dataset or theme
+   * Get color from dataset or theme with enhanced color selection
    */
   private getColor(color: string | string[] | undefined, index: number, theme: ChartTheme, alpha: number = 1): string {
     if (Array.isArray(color)) {
@@ -1799,7 +1851,20 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       return color
     }
     
-    return theme.accent[index % theme.accent.length]
+    // Use a wider range of theme colors for better variety
+    const extendedAccentColors = [
+      ...theme.accent,
+      theme.primary,
+      theme.secondary,
+      // Add color variations by adjusting brightness/saturation
+      this.adjustColorBrightness(theme.primary, 0.2),
+      this.adjustColorBrightness(theme.secondary, 0.2),
+      this.adjustColorBrightness(theme.accent[0], -0.2),
+      this.adjustColorBrightness(theme.accent[1], -0.2),
+      this.adjustColorBrightness(theme.accent[2], -0.2)
+    ]
+    
+    return extendedAccentColors[index % extendedAccentColors.length]
   }
 
   /**
