@@ -139,7 +139,7 @@
                 <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 w-28 whitespace-nowrap">
                   {{ isScatterOrBubbleChart ? 'Points' : 'Labels' }}
                 </th>
-                <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 min-w-32 whitespace-nowrap">
+                <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 whitespace-nowrap">
                   <div class="flex items-center justify-between">
                     <span>{{ getValueColumnHeader() }}</span>
                     <!-- Show data format hint for scatter/bubble charts -->
@@ -223,7 +223,7 @@
                     </button>
                   </div>
                 </td>
-                <td class="px-3 py-2 border-r border-gray-200 dark:border-gray-600 min-w-32 whitespace-nowrap">
+                <td class="px-3 py-2 border-r border-gray-200 dark:border-gray-600" :class="{ 'whitespace-nowrap': !editingCell || editingCell.row !== rowIndex }">
                   <!-- Regular charts: single number input -->
                   <div v-if="!isScatterOrBubbleChart" class="w-full">
                     <div 
@@ -248,9 +248,9 @@
                   </div>
                   
                   <!-- Scatter/Bubble charts: x, y, r inputs -->
-                  <div v-else class="flex space-x-1 min-w-32">
+                  <div v-else class="flex space-x-1" :class="{ 'min-w-64': editingCell?.row === rowIndex }">
                     <!-- X coordinate -->
-                    <div class="flex-1 min-w-0">
+                    <div class="flex-1" :class="{ 'min-w-20': editingCell?.row === rowIndex }">
                       <div 
                         v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0 || editingCell?.field !== 'x'"
                         @dblclick="startEditingCell(rowIndex, 0, 'x')"
@@ -268,12 +268,12 @@
                         @input="handleEditInput"
                         type="number"
                         step="any"
-                        class="w-full px-1 py-1 text-xs border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none min-w-12"
+                        class="w-full px-1 py-1 text-xs border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                     </div>
                     
                     <!-- Y coordinate -->
-                    <div class="flex-1 min-w-0">
+                    <div class="flex-1" :class="{ 'min-w-20': editingCell?.row === rowIndex }">
                       <div 
                         v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0 || editingCell?.field !== 'y'"
                         @dblclick="startEditingCell(rowIndex, 0, 'y')"
@@ -291,12 +291,12 @@
                         @input="handleEditInput"
                         type="number"
                         step="any"
-                        class="w-full px-1 py-1 text-xs border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none min-w-12"
+                        class="w-full px-1 py-1 text-xs border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                     </div>
                     
                     <!-- R coordinate (bubble only) -->
-                    <div v-if="isBubbleChart" class="flex-1 min-w-0">
+                    <div v-if="isBubbleChart" class="flex-1" :class="{ 'min-w-20': editingCell?.row === rowIndex }">
                       <div 
                         v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0 || editingCell?.field !== 'r'"
                         @dblclick="startEditingCell(rowIndex, 0, 'r')"
@@ -314,7 +314,7 @@
                         @input="handleEditInput"
                         type="number"
                         step="any"
-                        class="w-full px-1 py-1 text-xs border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none min-w-12"
+                        class="w-full px-1 py-1 text-xs border border-blue-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                     </div>
                   </div>
