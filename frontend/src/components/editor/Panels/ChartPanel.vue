@@ -1383,7 +1383,9 @@ const startEditingCell = (rowIndex: number, colIndex: number, field?: 'x' | 'y' 
     const input = document.querySelector(cellSelector) as HTMLInputElement
     if (input) {
       input.focus()
-      input.select()
+      // Position cursor at the end instead of selecting all text
+      const length = input.value.length
+      input.setSelectionRange(length, length)
     }
   })
 }
@@ -1397,7 +1399,9 @@ const startEditingLabel = (rowIndex: number) => {
     const input = document.querySelector(`[data-edit-cell="${rowIndex}-label"]`) as HTMLInputElement
     if (input) {
       input.focus()
-      input.select()
+      // Position cursor at the end instead of selecting all text
+      const length = input.value.length
+      input.setSelectionRange(length, length)
     }
   })
 }
