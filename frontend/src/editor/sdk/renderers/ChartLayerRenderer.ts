@@ -319,9 +319,12 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         break
     }
 
-    // Render legend
+    // Render legend in a separate group that stays on top
     if (options.plugins?.legend?.display) {
-      this.renderLegend(group, data, options.plugins.legend, theme, width, height)
+      const legendGroup = new Konva.Group()
+      this.renderLegendToGroup(legendGroup, data, options.plugins.legend, theme, width, height)
+      group.add(legendGroup)
+      legendGroup.moveToTop() // Ensure legend is always visible on top
     }
 
     // Render axes for charts that need them
@@ -393,6 +396,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     const maxValue = Math.max(...numericDatasets.flatMap(d => d.data as number[]))
     const scale = chartArea.height / maxValue
 
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+    const fontScale = (group as any)._fontScale || 1
+
     // Calculate proper spacing within chartArea bounds
     const categoryCount = labels.length
     const datasetCount = numericDatasets.length
@@ -445,22 +452,65 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           cornerRadius: 2 // Add subtle rounded corners
         })
 
-        // Add hover effect
-        bar.on('mouseenter', () => {
+        // Create tooltip for this bar
+        const datasetLabel = dataset.label || `Dataset ${datasetIndex + 1}`
+        const categoryLabel = labels[index] || `Category ${index + 1}`
+        const tooltipText = `${datasetLabel} - ${categoryLabel}: ${this.formatAxisValue(value, 1)}`
+        const tooltip = this.createSimpleTooltip(tooltipGroup, tooltipText, theme, fontScale)
+
+        // Add hover effect with tooltip
+        bar.on('mouseenter', (e) => {
           bar.shadowBlur(4)
           bar.shadowOffset({ x: 0, y: 2 })
           bar.opacity(0.9)
+          bar.moveToTop()
+          
+          // For bar charts, position tooltip relative to mouse cursor for better UX
+          // This prevents tooltips from appearing too far away on tall bars
+          const stage = bar.getStage()
+          if (stage) {
+            const pointerPos = stage.getPointerPosition()
+            if (pointerPos) {
+              // Convert stage coordinates to chart area coordinates
+              const mouseX = pointerPos.x
+              const mouseY = pointerPos.y
+              const clearanceRadius = 20 // 20px breathing space from mouse cursor
+              this.positionTooltipWithinChartArea(tooltip, mouseX, mouseY, clearanceRadius, tooltipText, chartArea, fontScale)
+            }
+          }
+          
+          tooltip.visible(true)
+          tooltip.moveToTop()
+          tooltipGroup.moveToTop()
+          
+          // Disable tooltip listening to prevent mouse events from interfering
+          tooltip.listening(false)
+          
+          // Change cursor to pointer to indicate interactivity
+          const container = bar.getStage()?.container()
+          if (container) container.style.cursor = 'pointer'
         })
 
         bar.on('mouseleave', () => {
           bar.shadowBlur(2)
           bar.shadowOffset({ x: 0, y: 1 })
           bar.opacity(1)
+          tooltip.visible(false)
+          
+          // Reset cursor
+          const container = bar.getStage()?.container()
+          if (container) container.style.cursor = 'grab'
         })
 
         group.add(bar)
       })
     })
+    
+    // Add the tooltip group on top
+    group.add(tooltipGroup)
+    
+    // Ensure tooltip group stays on top
+    tooltipGroup.moveToTop()
   }
 
   /**
@@ -474,6 +524,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     const numericDatasets = datasets.filter(d => this.isNumericData(d.data))
     const maxValue = Math.max(...numericDatasets.flatMap(d => d.data as number[]))
     const scale = chartArea.height / maxValue
+
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+    const fontScale = (group as any)._fontScale || 1
 
     numericDatasets.forEach((dataset, datasetIndex) => {
       const points: number[] = []
@@ -504,35 +558,75 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
       // Draw enhanced points with hover effects
       if (dataset.pointRadius && dataset.pointRadius > 0) {
         for (let i = 0; i < points.length; i += 2) {
+          const pointIndex = i / 2
+          const pointValue = numericData[pointIndex]
+          const pointLabel = labels[pointIndex] || `Point ${pointIndex + 1}`
+          const datasetLabel = dataset.label || `Dataset ${datasetIndex + 1}`
+          
+          // Apply font scale to point radius for responsive sizing
+          const responsiveRadius = dataset.pointRadius * fontScale
+          
           const circle = new Konva.Circle({
             x: points[i],
             y: points[i + 1],
-            radius: dataset.pointRadius,
+            radius: responsiveRadius,
             fill: pointColor,
             stroke: this.getColor(dataset.pointBorderColor, datasetIndex, theme),
-            strokeWidth: 1,
+            strokeWidth: 1 * fontScale, // Also scale stroke width
             shadowColor: 'rgba(0, 0, 0, 0.1)',
             shadowBlur: 2,
             shadowOffset: { x: 0, y: 1 }
           })
           
-          // Add hover effect
+          // Create tooltip for this point
+          const tooltipText = `${datasetLabel} - ${pointLabel}: ${this.formatAxisValue(pointValue, 1)}`
+          const tooltip = this.createSimpleTooltip(tooltipGroup, tooltipText, theme, fontScale)
+          
+          // Add hover effect with tooltip
           circle.on('mouseenter', () => {
-            circle.radius(dataset.pointRadius! * 1.3)
+            circle.radius(responsiveRadius * 1.3)
             circle.shadowBlur(4)
             circle.shadowOffset({ x: 0, y: 2 })
+            circle.moveToTop()
+            
+            // Position tooltip relative to the point position with smart boundary checking
+            // Add extra spacing beyond the hover radius for proper breathing room
+            const clearanceRadius = responsiveRadius * 1.3 + 15 // Point radius + 15px breathing space
+            this.positionTooltipWithinChartArea(tooltip, points[i], points[i + 1], clearanceRadius, tooltipText, chartArea, fontScale)
+            
+            tooltip.visible(true)
+            tooltip.moveToTop()
+            tooltipGroup.moveToTop()
+            
+            // Disable tooltip listening to prevent mouse events from interfering
+            tooltip.listening(false)
+            
+            // Change cursor to pointer to indicate interactivity
+            const container = circle.getStage()?.container()
+            if (container) container.style.cursor = 'pointer'
           })
           
           circle.on('mouseleave', () => {
-            circle.radius(dataset.pointRadius!)
+            circle.radius(responsiveRadius)
             circle.shadowBlur(2)
             circle.shadowOffset({ x: 0, y: 1 })
+            tooltip.visible(false)
+            
+            // Reset cursor
+            const container = circle.getStage()?.container()
+            if (container) container.style.cursor = 'grab'
           })
           
           group.add(circle)
         }
       }
     })
+    
+    // Add the tooltip group on top
+    group.add(tooltipGroup)
+    
+    // Ensure tooltip group stays on top
+    tooltipGroup.moveToTop()
   }
 
   /**
@@ -789,6 +883,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         // Move the entire tooltip group to top to ensure it's above all slices
         tooltipGroup.moveToTop()
         
+        // Disable tooltip listening to prevent mouse events from interfering
+        tooltip.listening(false)
+        
         // Change cursor to pointer to indicate interactivity
         const container = slice.getStage()?.container()
         if (container) container.style.cursor = 'pointer'
@@ -852,6 +949,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     const maxValue = Math.max(...numericDatasets.flatMap(d => d.data as number[]))
     const scale = chartArea.height / maxValue
 
+    // Create a separate group for tooltips that won't be clipped
+    const tooltipGroup = new Konva.Group()
+    const fontScale = (group as any)._fontScale || 1
+
     numericDatasets.forEach((dataset, datasetIndex) => {
       const points: number[] = []
       const numericData = dataset.data as number[]
@@ -894,7 +995,80 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         shadowOffset: { x: 0, y: 1 }
       })
       group.add(area)
+      
+      // Add invisible interactive points for tooltips
+      numericData.forEach((value, index) => {
+        const x = chartArea.x + index * pointSpacing
+        const y = chartArea.y + chartArea.height - (value * scale)
+        const pointLabel = labels[index] || `Point ${index + 1}`
+        const datasetLabel = dataset.label || `Dataset ${datasetIndex + 1}`
+        
+        // Calculate responsive radius for interaction
+        const baseRadius = 6
+        const responsiveRadius = baseRadius * fontScale
+        const hoverRadius = 4 * fontScale
+        
+        // Create invisible circle for interaction
+        const point = new Konva.Circle({
+          x: x,
+          y: y,
+          radius: responsiveRadius, // Responsive size for easier interaction
+          fill: 'transparent',
+          stroke: 'transparent'
+        })
+        
+        // Create tooltip for this point
+        const tooltipText = `${datasetLabel} - ${pointLabel}: ${this.formatAxisValue(value, 1)}`
+        const tooltip = this.createSimpleTooltip(tooltipGroup, tooltipText, theme, fontScale)
+        
+        // Add hover effect with tooltip
+        point.on('mouseenter', () => {
+          // Show a small indicator on hover
+          point.fill(this.getColor(dataset.backgroundColor, datasetIndex, theme))
+          point.stroke(this.getColor(dataset.borderColor, datasetIndex, theme))
+          point.strokeWidth(2 * fontScale)
+          point.radius(hoverRadius)
+          point.moveToTop()
+          
+          // Position tooltip relative to the point position with smart boundary checking
+          // Add extra spacing beyond the hover radius for proper breathing room
+          const clearanceRadius = hoverRadius + 12 // Point radius + 12px breathing space
+          this.positionTooltipWithinChartArea(tooltip, x, y, clearanceRadius, tooltipText, chartArea, fontScale)
+          
+          tooltip.visible(true)
+          tooltip.moveToTop()
+          tooltipGroup.moveToTop()
+          
+          // Disable tooltip listening to prevent mouse events from interfering
+          tooltip.listening(false)
+          
+          // Change cursor to pointer to indicate interactivity
+          const container = point.getStage()?.container()
+          if (container) container.style.cursor = 'pointer'
+        })
+        
+        point.on('mouseleave', () => {
+          // Hide the indicator
+          point.fill('transparent')
+          point.stroke('transparent')
+          point.strokeWidth(0)
+          point.radius(responsiveRadius)
+          tooltip.visible(false)
+          
+          // Reset cursor
+          const container = point.getStage()?.container()
+          if (container) container.style.cursor = 'grab'
+        })
+        
+        group.add(point)
+      })
     })
+    
+    // Add the tooltip group on top
+    group.add(tooltipGroup)
+    
+    // Ensure tooltip group stays on top
+    tooltipGroup.moveToTop()
   }
 
   /**
@@ -965,12 +1139,8 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     const basePointRadius = 5
     const responsivePointRadius = Math.max(2, basePointRadius * fontScale)
 
-    // Create a clipping group to ensure points don't render outside chart area
-    const pointsGroup = new Konva.Group({
-      clipFunc: (ctx) => {
-        ctx.rect(chartArea.x, chartArea.y, chartArea.width, chartArea.height)
-      }
-    })
+    // Create a group for points without clipping to prevent edge points from being cut off
+    const pointsGroup = new Konva.Group()
     
     // Create a separate group for tooltips that won't be clipped
     const tooltipGroup = new Konva.Group()
@@ -1000,9 +1170,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         const x = chartArea.x + (xValue - xMin) * xScale
         const y = chartArea.y + chartArea.height - (yValue - yMin) * yScale
         
-        // Skip points that are outside the visible data range
-        if (x < chartArea.x || x > chartArea.x + chartArea.width || 
-            y < chartArea.y || y > chartArea.y + chartArea.height) {
+        // Skip points that are way outside the reasonable chart area (allow some overflow)
+        const tolerance = 50 // Allow points to be up to 50px outside chart area
+        if (x < chartArea.x - tolerance || x > chartArea.x + chartArea.width + tolerance || 
+            y < chartArea.y - tolerance || y > chartArea.y + chartArea.height + tolerance) {
           return
         }
         
@@ -1025,18 +1196,32 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         
         pointsGroup.add(point)
         
-        // Create responsive tooltip for hover effect
-        const tooltip = this.createTooltip(tooltipGroup, x, y, -40, `(${this.formatAxisValue(xValue, 1)}, ${this.formatAxisValue(yValue, 1)})`, theme, fontScale)
-        tooltipGroup.add(tooltip)
+        // Create tooltip using simplified approach
+        const datasetLabel = dataset.label || `Dataset ${datasetIndex + 1}`
+        const tooltipText = `${datasetLabel}: (${xValue.toFixed(1)}, ${yValue.toFixed(1)})`
+        const tooltip = this.createSimpleTooltip(tooltipGroup, tooltipText, theme, fontScale)
         
         // Add professional hover effect with tooltip
-        point.on('mouseenter', () => {
+        point.on('mouseenter', (e) => {
           point.radius(pointRadius * 1.3) // More noticeable hover
           point.opacity(1)
           point.strokeWidth(borderWidth + 1)
-          point.moveToTop() // Bring to front
+          point.moveToTop()
+          
+          // Smart positioning that respects chart boundaries with breathing room
+          const clearanceRadius = pointRadius + 10 // Point radius + 10px breathing space
+          this.positionTooltipWithinChartArea(tooltip, x, y, clearanceRadius, tooltipText, chartArea, fontScale)
+          
           tooltip.visible(true)
           tooltip.moveToTop()
+          tooltipGroup.moveToTop()
+          
+          // Disable tooltip listening to prevent mouse events from interfering
+          tooltip.listening(false)
+          
+          // Change cursor to pointer to indicate interactivity
+          const container = point.getStage()?.container()
+          if (container) container.style.cursor = 'pointer'
         })
         
         point.on('mouseleave', () => {
@@ -1044,6 +1229,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           point.opacity(0.8)
           point.strokeWidth(borderWidth)
           tooltip.visible(false)
+          
+          // Reset cursor
+          const container = point.getStage()?.container()
+          if (container) container.style.cursor = 'grab'
         })
         
         // Store data for potential tooltip/interaction
@@ -1070,7 +1259,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   }
 
   /**
-   * Create a responsive tooltip for scatter and bubble charts with smart positioning
+   * Create a responsive tooltip with smart boundary-aware positioning
    */
   private createTooltip(
     group: Konva.Group,
@@ -1081,71 +1270,188 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     theme: ChartTheme,
     fontScale: number = 1
   ): Konva.Group {
-    // Calculate tooltip dimensions based on content
-    const tooltipWidth = Math.max(100, tooltipText.length * 6 * fontScale)
-    const tooltipHeight = 30 * fontScale
+    // Calculate tooltip dimensions based on content with proper padding
+    const padding = 8 * fontScale
+    const fontSize = 10 * fontScale
+    const textWidth = tooltipText.length * (fontSize * 0.6)
+    const tooltipWidth = Math.max(100, textWidth + (padding * 2))
+    const tooltipHeight = fontSize + (padding * 2)
+    const halfWidth = tooltipWidth / 2
+    const halfHeight = tooltipHeight / 2
     
-    // Get the parent group to determine chart boundaries
-    const parentGroup = group.getParent()
-    const chartWidth = parentGroup ? parentGroup.width() : 400
-    const chartHeight = parentGroup ? parentGroup.height() : 300
+    // Get the stage dimensions for boundary checking
+    const stage = group.getStage()
+    const canvasWidth = stage ? stage.width() : 400
+    const canvasHeight = stage ? stage.height() : 300
     
-    // Smart positioning logic to avoid chart edges
+    // Start with the desired position
     let finalX = x
     let finalY = y + offsetY
-    let finalOffsetX = 0
     
-    // Check if tooltip would extend beyond right edge
-    if (x + tooltipWidth / 2 > chartWidth - 10) {
-      finalOffsetX = -tooltipWidth / 2 - 10 // Position to the left of point
-    }
-    // Check if tooltip would extend beyond left edge
-    else if (x - tooltipWidth / 2 < 10) {
-      finalOffsetX = tooltipWidth / 2 + 10 // Position to the right of point
-    }
+    // Smart boundary checking with minimal adjustments
+    const margin = 5
     
-    // Check if tooltip would extend beyond top edge
-    if (finalY - tooltipHeight / 2 < 10) {
-      finalY = y + Math.abs(offsetY) + 10 // Position below point instead
-    }
-    // Check if tooltip would extend beyond bottom edge
-    else if (finalY + tooltipHeight / 2 > chartHeight - 10) {
-      finalY = y - Math.abs(offsetY) - 10 // Position above point
+    // Horizontal boundary check - only adjust if necessary
+    if (finalX - halfWidth < margin) {
+      finalX = margin + halfWidth
+    } else if (finalX + halfWidth > canvasWidth - margin) {
+      finalX = canvasWidth - margin - halfWidth
     }
     
+    // Vertical boundary check - prefer above, fallback to below
+    if (finalY - halfHeight < margin) {
+      finalY = y - offsetY + halfHeight + margin // Position below instead
+    } else if (finalY + halfHeight > canvasHeight - margin) {
+      finalY = canvasHeight - margin - halfHeight
+    }
+    
+    // Create tooltip group at the calculated position
     const tooltip = new Konva.Group({
-      x: finalX + finalOffsetX,
+      x: finalX,
       y: finalY,
       visible: false
     })
     
+    // Simple centered background
     const tooltipBg = new Konva.Rect({
-      x: -tooltipWidth / 2,
-      y: -tooltipHeight / 2,
+      x: -halfWidth,
+      y: -halfHeight,
       width: tooltipWidth,
       height: tooltipHeight,
       fill: theme.tooltip.background,
       cornerRadius: 4,
-      opacity: 0.9
+      opacity: 0.9,
+      shadowColor: 'rgba(0, 0, 0, 0.2)',
+      shadowBlur: 4,
+      shadowOffset: { x: 0, y: 2 }
     })
     
     const tooltipTextNode = new Konva.Text({
-      x: -tooltipWidth / 2,
-      y: -tooltipHeight / 2,
+      x: -halfWidth,
+      y: -halfHeight,
       width: tooltipWidth,
       height: tooltipHeight,
       text: tooltipText,
-      fontSize: 10 * fontScale,
+      fontSize: fontSize,
       fill: theme.tooltip.text,
       align: 'center',
       verticalAlign: 'middle',
-      fontFamily: 'Arial, sans-serif'
+      fontFamily: 'Arial, sans-serif',
+      fontWeight: '500'
     })
     
     tooltip.add(tooltipBg)
     tooltip.add(tooltipTextNode)
     
     return tooltip
+  }
+
+  /**
+   * Create a simple tooltip directly for bubble and scatter charts
+   * Just creates the tooltip structure - positioning is handled separately
+   */
+  private createSimpleTooltip(
+    tooltipGroup: Konva.Group,
+    tooltipText: string,
+    theme: ChartTheme,
+    fontScale: number
+  ): Konva.Group {
+    // Simple tooltip dimensions
+    const padding = 8 * fontScale
+    const fontSize = 10 * fontScale
+    const tooltipWidth = Math.max(100, tooltipText.length * (fontSize * 0.6) + (padding * 2))
+    const tooltipHeight = fontSize + (padding * 2)
+    const halfWidth = tooltipWidth / 2
+    const halfHeight = tooltipHeight / 2
+
+    // Create tooltip group (position will be set dynamically)
+    const tooltip = new Konva.Group({
+      x: 0,
+      y: 0,
+      visible: false
+    })
+
+    // Simple background
+    const tooltipBg = new Konva.Rect({
+      x: -halfWidth,
+      y: -halfHeight,
+      width: tooltipWidth,
+      height: tooltipHeight,
+      fill: theme.tooltip.background,
+      cornerRadius: 4,
+      opacity: 0.9,
+      shadowColor: 'rgba(0, 0, 0, 0.2)',
+      shadowBlur: 4,
+      shadowOffset: { x: 0, y: 2 }
+    })
+
+    // Simple text
+    const tooltipTextNode = new Konva.Text({
+      x: -halfWidth,
+      y: -halfHeight,
+      width: tooltipWidth,
+      height: tooltipHeight,
+      text: tooltipText,
+      fontSize: fontSize,
+      fill: theme.tooltip.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      fontFamily: 'Arial, sans-serif',
+      fontWeight: '500'
+    })
+
+    tooltip.add(tooltipBg)
+    tooltip.add(tooltipTextNode)
+    tooltipGroup.add(tooltip)
+
+    return tooltip
+  }
+
+  /**
+   * Smart tooltip positioning - maintains relationship with element while respecting chart boundaries
+   */
+  private positionTooltipWithinChartArea(
+    tooltip: Konva.Group,
+    elementX: number,
+    elementY: number,
+    elementRadius: number,
+    tooltipText: string,
+    chartArea: any,
+    fontScale: number
+  ): void {
+    // Calculate tooltip dimensions for boundary checking
+    const padding = 8 * fontScale
+    const fontSize = 10 * fontScale
+    const tooltipWidth = Math.max(100, tooltipText.length * (fontSize * 0.6) + (padding * 2))
+    const tooltipHeight = fontSize + (padding * 2)
+    const halfWidth = tooltipWidth / 2
+    const halfHeight = tooltipHeight / 2
+    
+    // Preferred position: above the element
+    let tooltipX = elementX
+    let tooltipY = elementY - elementRadius - 20
+    
+    // Check horizontal boundaries and adjust
+    if (tooltipX - halfWidth < chartArea.x) {
+      // Too far left, align to left edge with margin
+      tooltipX = chartArea.x + halfWidth + 5
+    } else if (tooltipX + halfWidth > chartArea.x + chartArea.width) {
+      // Too far right, align to right edge with margin
+      tooltipX = chartArea.x + chartArea.width - halfWidth - 5
+    }
+    
+    // Check vertical boundaries and adjust
+    if (tooltipY - halfHeight < chartArea.y) {
+      // Too high, position below the element instead
+      tooltipY = elementY + elementRadius + 20
+    } else if (tooltipY + halfHeight > chartArea.y + chartArea.height) {
+      // Too low, clamp to bottom boundary
+      tooltipY = chartArea.y + chartArea.height - halfHeight - 5
+    }
+    
+    // Apply final position
+    tooltip.x(tooltipX)
+    tooltip.y(tooltipY)
   }
 
   /**
@@ -1175,6 +1481,17 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
             allYValues.push(point.y)
             allRValues.push(5) // Default radius
           })
+        } else if (this.isNumericData(dataset.data)) {
+          // Fallback for numeric data: convert to bubble format using index as x-coordinate
+          const numericData = dataset.data as number[]
+          numericData.forEach((value: number, index: number) => {
+            allXValues.push(index)
+            allYValues.push(value)
+            allRValues.push(5) // Default radius
+          })
+          console.warn(`Bubble chart: Dataset "${dataset.label || `Dataset ${datasetIndex + 1}`}" has numeric data. Converting to bubble format with index as X-coordinate.`)
+        } else {
+          console.warn(`Bubble chart: Dataset "${dataset.label || `Dataset ${datasetIndex + 1}`}" has invalid data format. Skipping dataset.`)
         }
       }
     })
@@ -1215,20 +1532,10 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     const radiusRange = dataMaxR - dataMinR
     const radiusScale = radiusRange > 0 ? (maxBubbleRadius - minBubbleRadius) / radiusRange : 0
 
-    // Create a clipping group with padding for bubble radius to prevent edge clipping
-    const bubblePadding = maxBubbleRadius
-    const bubblesGroup = new Konva.Group({
-      clipFunc: (ctx) => {
-        ctx.rect(
-          chartArea.x - bubblePadding, 
-          chartArea.y - bubblePadding, 
-          chartArea.width + bubblePadding * 2, 
-          chartArea.height + bubblePadding * 2
-        )
-      }
-    })
+    // Create a group for bubbles without clipping to prevent edge bubbles from being cut off
+    const bubblesGroup = new Konva.Group()
     
-    // Create a separate group for tooltips that won't be clipped
+    // Create a separate group for tooltips that will stay on top
     const tooltipGroup = new Konva.Group()
     
     // Render data points for each dataset
@@ -1251,6 +1558,12 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           yValue = scatterPoint.y
           rValue = 5 // Default radius for scatter points treated as bubbles
           pointLabel = `Point ${index + 1}: (${xValue}, ${yValue})`
+        } else if (typeof dataPoint === 'number') {
+          // Fallback for numeric data: use index as x-coordinate
+          xValue = index
+          yValue = dataPoint
+          rValue = 5 // Default radius
+          pointLabel = `Point ${index + 1}: (${xValue}, ${yValue})`
         } else {
           return // Skip invalid data points
         }
@@ -1259,7 +1572,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         const x = chartArea.x + (xValue - xMin) * xScale
         const y = chartArea.y + chartArea.height - (yValue - yMin) * yScale
         
-        // Skip points that are outside the visible data range
+        // Skip bubbles that are outside the visible data range
         if (x < chartArea.x || x > chartArea.x + chartArea.width || 
             y < chartArea.y || y > chartArea.y + chartArea.height) {
           return
@@ -1270,12 +1583,19 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
           ? minBubbleRadius + (rValue - dataMinR) * radiusScale
           : (minBubbleRadius + maxBubbleRadius) / 2 // Use average radius when all bubbles are same size
         
+        // Skip points that are completely outside the reasonable chart area
+        const tolerance = 50 // Allow bubbles to be up to 50px outside chart area
+        if (x < chartArea.x - tolerance || x > chartArea.x + chartArea.width + tolerance || 
+            y < chartArea.y - tolerance || y > chartArea.y + chartArea.height + tolerance) {
+          return // Skip bubbles that are way outside the chart area
+        }
+        
         // Get bubble styling
         const bubbleColor = this.getColor(dataset.backgroundColor, datasetIndex, theme)
         const borderColor = this.getColor(dataset.borderColor, datasetIndex, theme)
         const borderWidth = (dataset.borderWidth || 1) * fontScale
         
-        // Create bubble
+        // Create bubble with original position (no artificial adjustment)
         const bubble = new Konva.Circle({
           x: x,
           y: y,
@@ -1288,25 +1608,41 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         
         bubblesGroup.add(bubble)
         
-        // Create responsive tooltip for hover effect
-        const tooltip = this.createTooltip(tooltipGroup, x, y, -bubbleRadius - 30, `(${this.formatAxisValue(xValue, 1)}, ${this.formatAxisValue(yValue, 1)}, r=${this.formatAxisValue(rValue, 1)})`, theme, fontScale)
-        tooltipGroup.add(tooltip)
+        // Create tooltip using simplified approach
+        const datasetLabel = dataset.label || `Dataset ${datasetIndex + 1}`
+        const tooltipText = `${datasetLabel}: (${xValue.toFixed(1)}, ${yValue.toFixed(1)}, r=${rValue.toFixed(1)})`
+        const tooltip = this.createSimpleTooltip(tooltipGroup, tooltipText, theme, fontScale)
         
         // Add professional hover effect with tooltip
-        bubble.on('mouseenter', () => {
+        bubble.on('mouseenter', (e) => {
           bubble.opacity(0.9)
           bubble.strokeWidth(borderWidth + 1)
           bubble.moveToTop()
+          
+          // Smart positioning that respects chart boundaries with breathing room
+          const clearanceRadius = bubbleRadius + 12 // Bubble radius + 12px breathing space
+          this.positionTooltipWithinChartArea(tooltip, x, y, clearanceRadius, tooltipText, chartArea, fontScale)
+          
           tooltip.visible(true)
           tooltip.moveToTop()
-          // Reposition tooltip to avoid overlapping with larger bubbles
-          tooltip.y(y - bubbleRadius - 35)
+          tooltipGroup.moveToTop()
+          
+          // Disable tooltip listening to prevent mouse events from interfering
+          tooltip.listening(false)
+          
+          // Change cursor to pointer to indicate interactivity
+          const container = bubble.getStage()?.container()
+          if (container) container.style.cursor = 'pointer'
         })
         
         bubble.on('mouseleave', () => {
           bubble.opacity(0.7)
           bubble.strokeWidth(borderWidth)
           tooltip.visible(false)
+          
+          // Reset cursor
+          const container = bubble.getStage()?.container()
+          if (container) container.style.cursor = 'grab'
         })
         
         // Store data for potential interaction
@@ -1325,6 +1661,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
     
     // Add the unclipped tooltip group on top so tooltips can render outside chart area
     group.add(tooltipGroup)
+    
+    // Ensure tooltip group stays on top but below legends
+    tooltipGroup.moveToTop()
     
     // Store scale information for axis rendering with nice values
     ;(group as any)._scatterScales = {
@@ -1481,7 +1820,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
               opacity: 0.3,
               dash: [2, 4] // Dashed grid lines for better readability
             })
-            group.add(gridLine)
+                       group.add(gridLine)
           }
 
           // Enhanced label
@@ -1503,9 +1842,9 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
   /**
    * Render legend with enhanced styling
    */
-  private renderLegend(group: Konva.Group, data: ChartData, legend: any, theme: ChartTheme, width: number, height: number): void {
+  private renderLegendToGroup(legendGroup: Konva.Group, data: ChartData, legend: any, theme: ChartTheme, width: number, height: number): void {
     const position = legend.position || 'top'
-    const fontScale = (group as any)._fontScale || 1
+    const fontScale = (legendGroup.getParent() as any)?._fontScale || 1
     const itemHeight = 20 * fontScale
     const itemSpacing = 10 * fontScale
     const iconSize = 12 * fontScale
@@ -1545,7 +1884,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         shadowBlur: 1,
         shadowOffset: { x: 0, y: 1 }
       })
-      group.add(colorBox)
+      legendGroup.add(colorBox)
 
       // Enhanced legend text with better typography
       const legendText = new Konva.Text({
@@ -1557,7 +1896,7 @@ export class ChartLayerRenderer implements KonvaLayerRenderer {
         fontFamily: 'Arial, sans-serif',
         fontWeight: '500'
       })
-      group.add(legendText)
+      legendGroup.add(legendText)
     })
   }
 

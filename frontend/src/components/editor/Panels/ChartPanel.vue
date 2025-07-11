@@ -86,12 +86,16 @@
       </div>
       
       <!-- Data format hint for scatter/bubble charts -->
-      <div v-if="isScatterOrBubbleChart" class="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
+      <div v-if="isScatterOrBubbleChart && supportsMultipleDatasets && datasets.length > 1" class="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
+        <span v-if="isBubbleChart">💡 Multi-dataset bubble chart: Each dataset represents a different data series. Use coordinates (x,y,r) where x=horizontal, y=vertical, r=radius</span>
+        <span v-else>💡 Multi-dataset scatter chart: Each dataset represents a different data series. Use coordinates (x,y) where x=horizontal, y=vertical</span>
+      </div>
+      <div v-else-if="isScatterOrBubbleChart" class="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
         <span v-if="isBubbleChart">💡 Double-click cells to edit. Use Tab/Enter to navigate. Bubble charts use x,y,r coordinates (x=horizontal, y=vertical, r=radius)</span>
         <span v-else>💡 Double-click cells to edit. Use Tab/Enter to navigate. Scatter charts use x,y coordinates (x=horizontal, y=vertical)</span>
       </div>
       <div v-else-if="isPieOrDoughnutChart" class="mb-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-xs text-purple-700 dark:text-purple-300">
-        🎨 Double-click cells to edit values. Click colored squares to change slice colors. Each row represents a slice of the pie.
+        🎨 Double-click cells to edit values. Click colored squares to change slice colors. Each row represents a slice of the pie. Note: Pie/Doughnut charts use a single dataset.
       </div>
       <div v-else-if="supportsMultipleDatasets && datasets.length > 1" class="mb-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs text-green-700 dark:text-green-300">
         📊 Multi-dataset chart: Use the dataset selector above to switch between datasets. Each dataset can have different values for the same labels.
@@ -420,6 +424,22 @@
             @click="openThemeColorPicker('background')"
           ></div>
         </div>
+        <div class="flex items-center justify-between">
+          <label class="text-xs text-gray-700 dark:text-gray-300">Tooltip Background</label>
+          <div 
+            class="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+            :style="{ backgroundColor: theme.tooltip?.background || '#1F2937' }"
+            @click="openThemeColorPicker('tooltipBackground')"
+          ></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <label class="text-xs text-gray-700 dark:text-gray-300">Tooltip Text</label>
+          <div 
+            class="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+            :style="{ backgroundColor: theme.tooltip?.text || '#FFFFFF' }"
+            @click="openThemeColorPicker('tooltipText')"
+          ></div>
+        </div>
       </div>
     </div>
     </div>
@@ -456,6 +476,20 @@
       @input="updateThemeColor('background', ($event.target as HTMLInputElement).value)"
       class="w-0 h-0 opacity-0 absolute pointer-events-none"
       ref="backgroundColorPicker"
+    />
+    <input
+      type="color"
+      :value="theme.tooltip?.background || '#1F2937'"
+      @input="updateThemeColor('tooltipBackground', ($event.target as HTMLInputElement).value)"
+      class="w-0 h-0 opacity-0 absolute pointer-events-none"
+      ref="tooltipBackgroundColorPicker"
+    />
+    <input
+      type="color"
+      :value="theme.tooltip?.text || '#FFFFFF'"
+      @input="updateThemeColor('tooltipText', ($event.target as HTMLInputElement).value)"
+      class="w-0 h-0 opacity-0 absolute pointer-events-none"
+      ref="tooltipTextColorPicker"
     />
   </div>
 
@@ -737,13 +771,13 @@ console.log('ChartLayerEditor initialized with properties:', props.properties)
 
 // Chart types configuration
 const chartTypes = [
-  { value: 'bar', label: 'Bar', icon: ChartBarIcon },
-  { value: 'line', label: 'Line', icon: ArrowTrendingUpIcon },
-  { value: 'pie', label: 'Pie', icon: ChartPieIcon },
-  { value: 'doughnut', label: 'Doughnut', icon: CircleStackIcon },
-  { value: 'area', label: 'Area', icon: ArrowTrendingUpIcon },
-  { value: 'scatter', label: 'Scatter', icon: CircleStackIcon },
-  { value: 'bubble', label: 'Bubble', icon: CircleStackIcon }
+  { value: 'bar', label: 'Bar', icon: ChartBarIcon },        // ✅ Multiple datasets
+  { value: 'line', label: 'Line', icon: ArrowTrendingUpIcon }, // ✅ Multiple datasets  
+  { value: 'pie', label: 'Pie', icon: ChartPieIcon },          // ❌ Single dataset
+  { value: 'doughnut', label: 'Doughnut', icon: CircleStackIcon }, // ❌ Single dataset
+  { value: 'area', label: 'Area', icon: ArrowTrendingUpIcon }, // ✅ Multiple datasets
+  { value: 'scatter', label: 'Scatter', icon: CircleStackIcon }, // ✅ Multiple datasets
+  { value: 'bubble', label: 'Bubble', icon: CircleStackIcon }    // ✅ Multiple datasets
 ]
 
 // Local state
@@ -795,10 +829,15 @@ const isPieOrDoughnutChart = computed(() => chartType.value === 'pie' || chartTy
 
 // Check if chart type supports multiple datasets
 const supportsMultipleDatasets = computed(() => {
-  // Pie and doughnut charts typically use a single dataset with multiple values
-  // Scatter and bubble charts can have multiple datasets but are complex to manage
-  // Bar, line, and area charts work well with multiple datasets
-  return ['bar', 'line', 'area'].includes(chartType.value)
+  // Based on the ChartLayerRenderer implementation:
+  // - Bar charts: Use numericDatasets.forEach() - supports multiple datasets ✅
+  // - Line charts: Use numericDatasets.forEach() - supports multiple datasets ✅
+  // - Area charts: Use numericDatasets.forEach() - supports multiple datasets ✅
+  // - Scatter charts: Use datasets.forEach() - supports multiple datasets ✅
+  // - Bubble charts: Use datasets.forEach() - supports multiple datasets ✅
+  // - Pie charts: Use data.datasets[0] - single dataset only ❌
+  // - Doughnut charts: Use data.datasets[0] - single dataset only ❌
+  return ['bar', 'line', 'area', 'scatter', 'bubble'].includes(chartType.value)
 })
 
 // Dataset selection for multi-dataset charts
@@ -985,6 +1024,8 @@ const theme = ref<ChartTheme>({
 // Template refs
 const primaryColorPicker = ref<HTMLInputElement>()
 const backgroundColorPicker = ref<HTMLInputElement>()
+const tooltipBackgroundColorPicker = ref<HTMLInputElement>()
+const tooltipTextColorPicker = ref<HTMLInputElement>()
 
 // Modal and editing state
 const isModalOpen = ref(false)
@@ -1171,22 +1212,6 @@ const convertChartTypeData = (oldType: string, newType: string) => {
   syncTableToDatasets()
 }
 
-const addColumn = () => {
-  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316']
-  const color = colors[datasets.value.length % colors.length]
-  
-  datasets.value.push({
-    label: `Dataset ${datasets.value.length + 1}`,
-    data: tableData.value.map(() => 0),
-    backgroundColor: color,
-    borderColor: color
-  })
-  
-  // Add values for all existing rows
-  tableData.value.forEach(row => {
-    row.values.push(0)
-  })
-}
 
 const addDataset = () => {
   // Only allow adding datasets for charts that support multiple datasets
@@ -1291,12 +1316,16 @@ const openSliceColorPicker = (rowIndex: number, datasetIndex: number) => {
   })
 }
 
-const openThemeColorPicker = (type: 'primary' | 'background') => {
+const openThemeColorPicker = (type: 'primary' | 'background' | 'tooltipBackground' | 'tooltipText') => {
   nextTick(() => {
     if (type === 'primary') {
       primaryColorPicker.value?.click()
     } else if (type === 'background') {
       backgroundColorPicker.value?.click()
+    } else if (type === 'tooltipBackground') {
+      tooltipBackgroundColorPicker.value?.click()
+    } else if (type === 'tooltipText') {
+      tooltipTextColorPicker.value?.click()
     }
   })
 }
@@ -1306,6 +1335,16 @@ const updateThemeColor = (type: string, color: string) => {
     theme.value.primary = color
   } else if (type === 'background') {
     theme.value.background = color
+  } else if (type === 'tooltipBackground') {
+    if (!theme.value.tooltip) {
+      theme.value.tooltip = { background: '#1F2937', text: '#FFFFFF' }
+    }
+    theme.value.tooltip.background = color
+  } else if (type === 'tooltipText') {
+    if (!theme.value.tooltip) {
+      theme.value.tooltip = { background: '#1F2937', text: '#FFFFFF' }
+    }
+    theme.value.tooltip.text = color
   }
 }
 
