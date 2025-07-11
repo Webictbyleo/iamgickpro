@@ -35,6 +35,7 @@
         <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Chart Data</h3>
         <div class="flex items-center space-x-1">
           <button
+            v-if="supportsMultipleDatasets"
             @click="addDataset"
             class="px-2 py-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 border border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 rounded transition-colors"
           >
@@ -50,6 +51,39 @@
           </button>
         </div>
       </div>
+
+      <!-- Dataset Selection (for multi-dataset charts) -->
+      <div v-if="supportsMultipleDatasets && datasets.length > 1" class="mb-3">
+        <div class="flex items-center space-x-2 mb-2">
+          <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Editing Dataset:</span>
+        </div>
+        <div class="flex flex-wrap gap-1">
+          <button
+            v-for="(dataset, index) in datasets"
+            :key="index"
+            @click="selectedDatasetIndex = index"
+            :class="[
+              'px-2 py-1 text-xs rounded-md border transition-colors flex items-center space-x-1',
+              selectedDatasetIndex === index
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
+                : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600'
+            ]"
+          >
+            <div 
+              class="w-3 h-3 rounded border border-white shadow"
+              :style="{ backgroundColor: Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[0] : dataset.backgroundColor }"
+            ></div>
+            <span>{{ dataset.label || `Dataset ${index + 1}` }}</span>
+            <button
+              v-if="datasets.length > 1"
+              @click.stop="removeDataset(index)"
+              class="text-red-500 hover:text-red-700 ml-1"
+            >
+              <XMarkIcon class="w-3 h-3" />
+            </button>
+          </button>
+        </div>
+      </div>
       
       <!-- Data format hint for scatter/bubble charts -->
       <div v-if="isScatterOrBubbleChart" class="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
@@ -59,12 +93,39 @@
       <div v-else-if="isPieOrDoughnutChart" class="mb-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-xs text-purple-700 dark:text-purple-300">
         🎨 Double-click cells to edit values. Click colored squares to change slice colors. Each row represents a slice of the pie.
       </div>
+      <div v-else-if="supportsMultipleDatasets && datasets.length > 1" class="mb-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs text-green-700 dark:text-green-300">
+        📊 Multi-dataset chart: Use the dataset selector above to switch between datasets. Each dataset can have different values for the same labels.
+      </div>
       <div v-else class="mb-2 p-2 bg-gray-50 dark:bg-gray-700/20 rounded text-xs text-gray-700 dark:text-gray-300">
         💡 Double-click cells to edit values. Use Tab/Enter to navigate between cells. Click "Expand" for a larger view.
       </div>
 
       <!-- Data Table -->
       <div class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800 relative">
+        <!-- Dataset Label Editor (for multi-dataset charts) -->
+        <div v-if="supportsMultipleDatasets" class="p-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div class="flex items-center space-x-2">
+            <div 
+              class="w-4 h-4 rounded border border-white shadow cursor-pointer"
+              :style="{ backgroundColor: Array.isArray(currentDataset.backgroundColor) ? currentDataset.backgroundColor[0] : currentDataset.backgroundColor }"
+              @click="openColorPickerForDataset(selectedDatasetIndex)"
+            ></div>
+            <input
+              v-model="currentDataset.label"
+              @input="syncTableToDatasets"
+              placeholder="Dataset name"
+              class="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            />
+            <input
+              type="color"
+              :value="Array.isArray(currentDataset.backgroundColor) ? currentDataset.backgroundColor[0] : currentDataset.backgroundColor"
+              @input="updateDatasetColor(selectedDatasetIndex, ($event.target as HTMLInputElement).value)"
+              class="w-0 h-0 opacity-0 absolute pointer-events-none"
+              :id="`colorPicker-${selectedDatasetIndex}`"
+            />
+          </div>
+        </div>
+
         <!-- Table Header and Body in single scrollable container -->
         <div class="overflow-x-auto overflow-y-auto max-h-40 pb-10">
           <table class="w-full text-xs table-auto">
@@ -74,45 +135,14 @@
                 <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 min-w-28 whitespace-nowrap">
                   {{ isScatterOrBubbleChart ? 'Points' : 'Labels' }}
                 </th>
-                <th
-                  v-for="(dataset, index) in datasets"
-                  :key="index"
-                  class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 min-w-24 relative group whitespace-nowrap"
-                  :style="{ width: datasets.length <= 3 ? 'auto' : '6rem' }"
-                >
+                <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 min-w-24 whitespace-nowrap">
                   <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-1 flex-1">
-                      <div 
-                        class="w-3 h-3 rounded border border-white shadow cursor-pointer"
-                        :style="{ backgroundColor: Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[0] : dataset.backgroundColor }"
-                        @click="openColorPickerForDataset(index)"
-                      ></div>
-                      <input
-                        v-model="dataset.label"
-                        @input="syncTableToDatasets"
-                        placeholder="Dataset"
-                        class="flex-1 px-1 py-0.5 text-xs border-0 bg-transparent focus:ring-0 focus:outline-none"
-                      />
+                    <span>{{ getValueColumnHeader() }}</span>
+                    <!-- Show data format hint for scatter/bubble charts -->
+                    <div v-if="isScatterOrBubbleChart" class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                      {{ isBubbleChart ? 'x,y,r' : 'x,y' }}
                     </div>
-                    <button
-                      v-if="datasets.length > 1"
-                      @click="removeDataset(index)"
-                      class="text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <XMarkIcon class="w-3 h-3" />
-                    </button>
                   </div>
-                  <!-- Show data format hint for scatter/bubble charts -->
-                  <div v-if="isScatterOrBubbleChart" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {{ isBubbleChart ? 'x,y,r' : 'x,y' }}
-                  </div>
-                  <input
-                    type="color"
-                    :value="Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[0] : dataset.backgroundColor"
-                    @input="updateDatasetColor(index, ($event.target as HTMLInputElement).value)"
-                    class="w-0 h-0 opacity-0 absolute pointer-events-none"
-                    :id="`colorPicker-${index}`"
-                  />
                 </th>
               </tr>
             </thead>
@@ -130,8 +160,8 @@
                     <div v-if="isPieOrDoughnutChart" class="flex items-center space-x-2 flex-1">
                       <div 
                         class="w-4 h-4 rounded border border-gray-300 dark:border-gray-600 cursor-pointer shadow-sm"
-                        :style="{ backgroundColor: getSliceColor(rowIndex, 0) }"
-                        @click="openSliceColorPicker(rowIndex, 0)"
+                        :style="{ backgroundColor: getSliceColor(rowIndex, selectedDatasetIndex) }"
+                        @click="openSliceColorPicker(rowIndex, selectedDatasetIndex)"
                       ></div>
                       <div 
                         v-if="editingLabel !== rowIndex"
@@ -153,10 +183,10 @@
                       />
                       <input
                         type="color"
-                        :value="getSliceColor(rowIndex, 0)"
-                        @input="updateSliceColor(rowIndex, 0, ($event.target as HTMLInputElement).value)"
+                        :value="getSliceColor(rowIndex, selectedDatasetIndex)"
+                        @input="updateSliceColor(rowIndex, selectedDatasetIndex, ($event.target as HTMLInputElement).value)"
                         class="w-0 h-0 opacity-0 absolute pointer-events-none"
-                        :id="`sliceColorPicker-${rowIndex}-0`"
+                        :id="`sliceColorPicker-${rowIndex}-${selectedDatasetIndex}`"
                       />
                     </div>
                     <!-- Regular chart label -->
@@ -189,21 +219,16 @@
                     </button>
                   </div>
                 </td>
-                <td
-                  v-for="(dataset, datasetIndex) in datasets"
-                  :key="datasetIndex"
-                  class="px-3 py-2 border-r border-gray-200 dark:border-gray-600 min-w-24 whitespace-nowrap"
-                  :style="{ width: datasets.length <= 3 ? 'auto' : '6rem' }"
-                >
+                <td class="px-3 py-2 border-r border-gray-200 dark:border-gray-600 min-w-24 whitespace-nowrap">
                   <!-- Regular charts: single number input -->
                   <div v-if="!isScatterOrBubbleChart" class="w-full">
                     <div 
-                      v-if="editingCell?.row !== rowIndex || editingCell?.col !== datasetIndex"
-                      @dblclick="startEditingCell(rowIndex, datasetIndex)"
+                      v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0"
+                      @dblclick="startEditingCell(rowIndex, 0)"
                       class="px-2 py-1 text-xs rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 text-gray-900 dark:text-gray-100 border border-transparent transition-colors min-h-[1.5rem] flex items-center w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                      :title="getCellDisplayValue(row.values[datasetIndex])"
+                      :title="getCellDisplayValue(getCurrentDatasetValue(rowIndex))"
                     >
-                      {{ getCellDisplayValue(row.values[datasetIndex]) }}
+                      {{ getCellDisplayValue(getCurrentDatasetValue(rowIndex)) }}
                     </div>
                     <input
                       v-else
@@ -223,12 +248,12 @@
                     <!-- X coordinate -->
                     <div class="flex-1">
                       <div 
-                        v-if="editingCell?.row !== rowIndex || editingCell?.col !== datasetIndex || editingCell?.field !== 'x'"
-                        @dblclick="startEditingCell(rowIndex, datasetIndex, 'x')"
+                        v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0 || editingCell?.field !== 'x'"
+                        @dblclick="startEditingCell(rowIndex, 0, 'x')"
                         class="px-1 py-1 text-xs rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 text-gray-900 dark:text-gray-100 text-center border border-transparent transition-colors min-h-[1.5rem] flex items-center justify-center w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        :title="getCellDisplayValue(row.values[datasetIndex], 'x')"
+                        :title="getCellDisplayValue(getCurrentDatasetValue(rowIndex), 'x')"
                       >
-                        {{ getCellDisplayValue(row.values[datasetIndex], 'x') }}
+                        {{ getCellDisplayValue(getCurrentDatasetValue(rowIndex), 'x') }}
                       </div>
                       <input
                         v-else
@@ -246,12 +271,12 @@
                     <!-- Y coordinate -->
                     <div class="flex-1">
                       <div 
-                        v-if="editingCell?.row !== rowIndex || editingCell?.col !== datasetIndex || editingCell?.field !== 'y'"
-                        @dblclick="startEditingCell(rowIndex, datasetIndex, 'y')"
+                        v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0 || editingCell?.field !== 'y'"
+                        @dblclick="startEditingCell(rowIndex, 0, 'y')"
                         class="px-1 py-1 text-xs rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 text-gray-900 dark:text-gray-100 text-center border border-transparent transition-colors min-h-[1.5rem] flex items-center justify-center w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        :title="getCellDisplayValue(row.values[datasetIndex], 'y')"
+                        :title="getCellDisplayValue(getCurrentDatasetValue(rowIndex), 'y')"
                       >
-                        {{ getCellDisplayValue(row.values[datasetIndex], 'y') }}
+                        {{ getCellDisplayValue(getCurrentDatasetValue(rowIndex), 'y') }}
                       </div>
                       <input
                         v-else
@@ -269,12 +294,12 @@
                     <!-- R coordinate (bubble only) -->
                     <div v-if="isBubbleChart" class="flex-1">
                       <div 
-                        v-if="editingCell?.row !== rowIndex || editingCell?.col !== datasetIndex || editingCell?.field !== 'r'"
-                        @dblclick="startEditingCell(rowIndex, datasetIndex, 'r')"
+                        v-if="editingCell?.row !== rowIndex || editingCell?.col !== 0 || editingCell?.field !== 'r'"
+                        @dblclick="startEditingCell(rowIndex, 0, 'r')"
                         class="px-1 py-1 text-xs rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 text-gray-900 dark:text-gray-100 text-center border border-transparent transition-colors min-h-[1.5rem] flex items-center justify-center w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        :title="getCellDisplayValue(row.values[datasetIndex], 'r')"
+                        :title="getCellDisplayValue(getCurrentDatasetValue(rowIndex), 'r')"
                       >
-                        {{ getCellDisplayValue(row.values[datasetIndex], 'r') }}
+                        {{ getCellDisplayValue(getCurrentDatasetValue(rowIndex), 'r') }}
                       </div>
                       <input
                         v-else
@@ -451,6 +476,7 @@
         </h3>
         <div class="flex items-center space-x-2">
           <button
+            v-if="supportsMultipleDatasets"
             @click="addDataset"
             class="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 border border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 rounded transition-colors"
           >
@@ -664,7 +690,7 @@
         </div>
       </div>
 
-      <!-- Modal Footer -->
+      <!-- Footer -->
       <div class="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-600">
         <button
           @click="clearAllData"
@@ -766,6 +792,44 @@ const isScatterChart = computed(() => chartType.value === 'scatter')
 const isBubbleChart = computed(() => chartType.value === 'bubble')
 const isScatterOrBubbleChart = computed(() => isScatterChart.value || isBubbleChart.value)
 const isPieOrDoughnutChart = computed(() => chartType.value === 'pie' || chartType.value === 'doughnut')
+
+// Check if chart type supports multiple datasets
+const supportsMultipleDatasets = computed(() => {
+  // Pie and doughnut charts typically use a single dataset with multiple values
+  // Scatter and bubble charts can have multiple datasets but are complex to manage
+  // Bar, line, and area charts work well with multiple datasets
+  return ['bar', 'line', 'area'].includes(chartType.value)
+})
+
+// Dataset selection for multi-dataset charts
+const selectedDatasetIndex = ref(0)
+
+// Get current dataset being edited
+const currentDataset = computed(() => {
+  if (supportsMultipleDatasets.value && datasets.value.length > selectedDatasetIndex.value) {
+    return datasets.value[selectedDatasetIndex.value]
+  }
+  return datasets.value[0] || {}
+})
+
+// Helper to get value column header
+const getValueColumnHeader = () => {
+  if (isScatterOrBubbleChart.value) {
+    return isBubbleChart.value ? 'Coordinates (x,y,r)' : 'Coordinates (x,y)'
+  }
+  if (supportsMultipleDatasets.value && datasets.value.length > 1) {
+    return currentDataset.value.label || `Dataset ${selectedDatasetIndex.value + 1}`
+  }
+  return 'Values'
+}
+
+// Helper to get current dataset value for a row
+const getCurrentDatasetValue = (rowIndex: number) => {
+  if (supportsMultipleDatasets.value) {
+    return tableData.value[rowIndex]?.values?.[selectedDatasetIndex.value] ?? 0
+  }
+  return tableData.value[rowIndex]?.values?.[0] ?? 0
+}
 
 const tableData = ref<TableRow[]>([])
 
@@ -875,7 +939,10 @@ const initializeTableData = () => {
 initializeTableData()
 
 // Watch for chart type changes and reinitialize data structure
-watch(chartType, () => {
+watch(chartType, (newType, oldType) => {
+  // Reset selected dataset index when switching chart types
+  selectedDatasetIndex.value = 0
+  
   // Initialize pie/doughnut slice colors if needed (only if not already set)
   if (isPieOrDoughnutChart.value) {
     datasets.value.forEach(dataset => {
@@ -893,35 +960,12 @@ watch(chartType, () => {
   }
   
   // Convert existing data to new format when chart type changes
-  tableData.value.forEach(row => {
-    row.values = row.values.map((value, index) => {
-      if (isBubbleChart.value) {
-        // Convert to bubble data
-        if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value) {
-          return { x: value.x, y: value.y, r: 'r' in value ? value.r : 5 } as BubbleDataPoint
-        }
-        return { x: 0, y: typeof value === 'number' ? value : 0, r: 5 } as BubbleDataPoint
-      } else if (isScatterChart.value) {
-        // Convert to scatter data
-        if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value) {
-          return { x: value.x, y: value.y } as ScatterDataPoint
-        }
-        return { x: 0, y: typeof value === 'number' ? value : 0 } as ScatterDataPoint
-      } else {
-        // Convert to number
-        if (typeof value === 'number') {
-          return value
-        }
-        if (typeof value === 'object' && value !== null && 'y' in value) {
-          return value.y
-        }
-        return 0
-      }
-    })
-  })
-  
-  // Update datasets with new data structure
-  syncTableToDatasets()
+  convertChartTypeData(oldType, newType)
+})
+
+// Watch for dataset selection changes to cancel any active editing
+watch(selectedDatasetIndex, () => {
+  cancelEdit()
 })
 
 // Theme
@@ -988,8 +1032,9 @@ const moveToNextCell = () => {
     }
   }
   
-  // Move to next column
-  if (col < datasets.value.length - 1) {
+  // For multi-dataset charts, stay in the same column (always 0)
+  // For single-dataset charts, move to next column if available
+  if (!supportsMultipleDatasets.value && col < datasets.value.length - 1) {
     const nextField = isScatterOrBubbleChart.value ? 'x' : undefined
     startEditingCell(row, col + 1, nextField)
   } else if (row < tableData.value.length - 1) {
@@ -1020,8 +1065,37 @@ const convertChartTypeData = (oldType: string, newType: string) => {
   const oldNeedsCoordinates = ['scatter', 'bubble'].includes(oldType)
   const isPieOrDoughnut = ['pie', 'doughnut'].includes(newType)
   const oldIsPieOrDoughnut = ['pie', 'doughnut'].includes(oldType)
+  const newSupportsMultiple = ['bar', 'line', 'area'].includes(newType)
+  const oldSupportsMultiple = ['bar', 'line', 'area'].includes(oldType)
   
-  // Update datasets structure
+  // Handle dataset structure changes for different chart types
+  if (!newSupportsMultiple && oldSupportsMultiple && datasets.value.length > 1) {
+    // Convert from multi-dataset to single-dataset chart
+    // Keep only the first dataset for pie/doughnut/scatter/bubble charts
+    const firstDataset = datasets.value[0]
+    datasets.value = [firstDataset]
+    
+    // Update table data to only keep first dataset values
+    tableData.value.forEach(row => {
+      row.values = [row.values[0] || 0]
+    })
+    
+    selectedDatasetIndex.value = 0
+  } else if (newSupportsMultiple && !oldSupportsMultiple) {
+    // Convert from single-dataset to multi-dataset chart
+    // Keep existing single dataset
+    if (datasets.value.length === 0) {
+      // Create a default dataset if none exists
+      datasets.value = [{
+        label: 'Dataset 1',
+        data: [],
+        backgroundColor: '#3B82F6',
+        borderColor: '#1E40AF'
+      }]
+    }
+  }
+  
+  // Update datasets structure based on chart type
   datasets.value.forEach((dataset, datasetIndex) => {
     if (needsCoordinates && !oldNeedsCoordinates) {
       // Convert from regular chart to scatter/bubble
@@ -1044,7 +1118,6 @@ const convertChartTypeData = (oldType: string, newType: string) => {
     // Handle pie/doughnut specific backgroundColor
     if (isPieOrDoughnut && !oldIsPieOrDoughnut) {
       // Convert to multi-color for pie/doughnut slices
-      // Only create new colors if no existing backgroundColor array
       if (!Array.isArray(dataset.backgroundColor)) {
         const colors = theme.value.accent || [
           '#EF4444', '#F59E0B', '#10B981', '#F97316', '#8B5CF6', '#EC4899',
@@ -1078,6 +1151,21 @@ const convertChartTypeData = (oldType: string, newType: string) => {
       }
       return value
     })
+    
+    // Adjust row values for dataset count changes
+    if (!newSupportsMultiple && row.values.length > 1) {
+      // Keep only first value for single-dataset charts
+      row.values = [row.values[0]]
+    } else if (newSupportsMultiple && row.values.length < datasets.value.length) {
+      // Add missing values for multi-dataset charts
+      while (row.values.length < datasets.value.length) {
+        if (needsCoordinates) {
+          row.values.push(newType === 'bubble' ? { x: 0, y: 0, r: 5 } : { x: 0, y: 0 })
+        } else {
+          row.values.push(0)
+        }
+      }
+    }
   })
   
   syncTableToDatasets()
@@ -1101,6 +1189,11 @@ const addColumn = () => {
 }
 
 const addDataset = () => {
+  // Only allow adding datasets for charts that support multiple datasets
+  if (!supportsMultipleDatasets.value) {
+    return
+  }
+  
   const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316']
   const color = colors[datasets.value.length % colors.length]
   
@@ -1132,6 +1225,9 @@ const addDataset = () => {
       row.values.push(0)
     }
   })
+  
+  // Select the new dataset for editing
+  selectedDatasetIndex.value = datasets.value.length - 1
 }
 
 const addRow = () => {
@@ -1149,6 +1245,8 @@ const addRow = () => {
     label: isScatterOrBubbleChart.value ? `Point ${tableData.value.length + 1}` : `Label ${tableData.value.length + 1}`,
     values: newValues
   })
+  
+  syncTableToDatasets()
 }
 
 const removeDataset = (index: number) => {
@@ -1157,12 +1255,20 @@ const removeDataset = (index: number) => {
     tableData.value.forEach(row => {
       row.values.splice(index, 1)
     })
+    
+    // Adjust selected dataset index if necessary
+    if (selectedDatasetIndex.value >= datasets.value.length) {
+      selectedDatasetIndex.value = datasets.value.length - 1
+    } else if (selectedDatasetIndex.value > index) {
+      selectedDatasetIndex.value--
+    }
   }
 }
 
 const removeRow = (index: number) => {
   if (tableData.value.length > 1) {
     tableData.value.splice(index, 1)
+    syncTableToDatasets()
   }
 }
 
@@ -1206,7 +1312,10 @@ const updateThemeColor = (type: string, color: string) => {
 // Cell editing methods
 const startEditingCell = (rowIndex: number, colIndex: number, field?: 'x' | 'y' | 'r') => {
   const row = tableData.value[rowIndex]
-  const value = row.values[colIndex]
+  
+  // For multi-dataset charts, use the selected dataset index
+  const datasetIndex = supportsMultipleDatasets.value ? selectedDatasetIndex.value : colIndex
+  const value = row.values[datasetIndex]
   
   if (field && typeof value === 'object' && value !== null) {
     if (field === 'r' && 'r' in value) {
@@ -1220,7 +1329,7 @@ const startEditingCell = (rowIndex: number, colIndex: number, field?: 'x' | 'y' 
     tempEditValue.value = String(typeof value === 'number' ? value : 0)
   }
   
-  editingCell.value = { row: rowIndex, col: colIndex, field }
+  editingCell.value = { row: rowIndex, col: supportsMultipleDatasets.value ? 0 : colIndex, field }
   
   // Focus and select the input after DOM update
   nextTick(() => {
@@ -1256,9 +1365,12 @@ const saveEdit = () => {
       numValue = 0
     }
     
-    if (field && typeof tableData.value[row].values[col] === 'object') {
+    // For multi-dataset charts, use the selected dataset index
+    const datasetIndex = supportsMultipleDatasets.value ? selectedDatasetIndex.value : col
+    
+    if (field && typeof tableData.value[row].values[datasetIndex] === 'object') {
       // Update scatter/bubble point field
-      const point = tableData.value[row].values[col] as ScatterDataPoint | BubbleDataPoint
+      const point = tableData.value[row].values[datasetIndex] as ScatterDataPoint | BubbleDataPoint
       if (field === 'r' && 'r' in point) {
         // Ensure radius is positive
         (point as BubbleDataPoint).r = Math.max(0.1, numValue)
@@ -1267,7 +1379,7 @@ const saveEdit = () => {
       }
     } else {
       // Update regular number value
-      tableData.value[row].values[col] = numValue
+      tableData.value[row].values[datasetIndex] = numValue
     }
     
     syncTableToDatasets()
