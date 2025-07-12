@@ -6,9 +6,13 @@
       <div class="flex items-center space-x-4 min-w-0 mr-8">
         <!-- Logo/Brand Space -->
         <div class="flex items-center">
-          <div class="w-8 h-8 bg-gradient-to-br from-secondary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <button
+            @click="navigateToDashboard"
+            class="w-8 h-8 bg-gradient-to-br from-secondary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+            title="Go to Dashboard"
+          >
             <span class="text-white font-bold text-sm">{{ appInitials }}</span>
-          </div>
+          </button>
         </div>
         
         <!-- Design Name -->
@@ -139,6 +143,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import ExportDropdown from './ExportDropdown.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import UndoIcon from '@/components/icons/UndoIcon.vue'
@@ -163,6 +168,8 @@ const props = withDefaults(defineProps<Props>(), {
   showComments: false,
   commentCount: 0
 })
+
+const router = useRouter()
 
 const appInitials = computed(() => {
   const title = import.meta.env.VITE_APP_TITLE || 'Design Studio'
@@ -231,5 +238,9 @@ const handleDesignNameEscape = (event: KeyboardEvent) => {
 
 const handleExport = (format: string) => {
   emit('export', format)
+}
+
+const navigateToDashboard = () => {
+  router.push({ name: 'Dashboard' })
 }
 </script>
