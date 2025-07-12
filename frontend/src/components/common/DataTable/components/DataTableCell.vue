@@ -94,6 +94,12 @@
       />
     </div>
     
+    <!-- Validation message for editing -->
+    <div v-if="isEditing && !editingValidation.isValid && editingValidation.message" 
+         class="absolute top-full left-0 z-10 mt-1 px-2 py-1 text-xs text-white bg-danger-500 rounded shadow-lg whitespace-nowrap">
+      {{ editingValidation.message }}
+    </div>
+    
     <!-- Display mode -->
     <div v-else class="cell-display">
       <!-- Loading state -->
@@ -132,17 +138,17 @@
         
         <!-- Currency display -->
         <div v-else-if="column.type === 'currency'" class="text-right font-mono">
-          {{ formatCurrency(cellValue) }}
+          {{ displayValue }}
         </div>
         
         <!-- Number display -->
         <div v-else-if="column.type === 'number'" class="text-right font-mono">
-          {{ formatNumber(cellValue) }}
+          {{ displayValue }}
         </div>
         
         <!-- Date display -->
         <div v-else-if="column.type === 'date'">
-          {{ formatDate(cellValue) }}
+          {{ displayValue }}
         </div>
         
         <!-- Email display -->
@@ -212,6 +218,8 @@
 import { ref, computed, nextTick, inject, watch, type Ref } from 'vue'
 import type { DataTableColumn, DataTableRow, CellState } from '../types'
 import formatters from '../utils/formatters'
+import validators from '../utils/validators'
+import keyboardUtils from '../utils/keyboard'
 
 interface Props {
   column: DataTableColumn
@@ -371,7 +379,8 @@ const cellClasses = computed(() => [
   'relative px-3 py-2 border-r border-gray-200 dark:border-gray-600 transition-colors',
   {
     'bg-primary-50 dark:bg-primary-900/20': props.selected,
-    'bg-white dark:bg-gray-700 ring-2 ring-primary-500': isEditing.value,
+    'bg-white dark:bg-gray-700 ring-2 ring-primary-500': isEditing.value && editingValidation.value.isValid,
+    'bg-white dark:bg-gray-700 ring-2 ring-danger-500': isEditing.value && !editingValidation.value.isValid,
     'bg-danger-50 dark:bg-danger-900/20': hasError.value,
     'bg-warning-50 dark:bg-warning-900/20': hasWarnings.value,
     'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50': !isEditing.value,
@@ -391,7 +400,9 @@ const inputClasses = computed(() => [
   'w-full px-2 py-1 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none',
   'text-gray-900 dark:text-gray-100',
   {
-    'text-right': props.column.type === 'number' || props.column.type === 'currency'
+    'text-right': props.column.type === 'number' || props.column.type === 'currency',
+    'ring-1 ring-danger-500': !editingValidation.value.isValid,
+    'ring-1 ring-success-500': editingValidation.value.isValid && tempValue.value !== ''
   }
 ])
 
@@ -446,19 +457,25 @@ const handleBlur = () => {
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
-  switch (event.key) {
-    case 'Enter':
-      event.preventDefault()
-      saveEdit()
-      break
-    case 'Escape':
-      event.preventDefault()
-      cancelEdit()
-      break
-    case 'Tab':
-      // Let the parent handle tab navigation
-      saveEdit()
-      break
+  // Use keyboard utilities for better key handling
+  if (keyboardUtils.matches(event, 'Enter')) {
+    keyboardUtils.preventDefault(event)
+    saveEdit()
+  } else if (keyboardUtils.isEscapeKey(event)) {
+    keyboardUtils.preventDefault(event)
+    cancelEdit()
+  } else if (keyboardUtils.matches(event, 'Tab')) {
+    // Let the parent handle tab navigation
+    saveEdit()
+  }
+  
+  // Handle Ctrl+A for select all in text inputs
+  if (keyboardUtils.isSelectAllKey(event)) {
+    const target = event.target as HTMLInputElement
+    if (target && (target.type === 'text' || target.type === 'email' || target.type === 'url')) {
+      // Let the default behavior handle select all
+      return
+    }
   }
 }
 
@@ -466,6 +483,9 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   tempValue.value = target.value
   isDirty.value = tempValue.value !== originalValue.value
+  
+  // Provide immediate visual feedback through validation
+  // The validation will automatically update the UI through computed properties
 }
 
 const handleSelectChange = (event: Event) => {
@@ -496,21 +516,94 @@ const handleCustomChange = (value: any) => {
 const saveEdit = () => {
   let finalValue = tempValue.value
   
-  // Parse value based on column type
+  // Use custom parser if provided
   if (props.column.parser) {
     finalValue = props.column.parser(tempValue.value)
   } else {
-    switch (props.column.type) {
-      case 'number':
-      case 'currency':
-        finalValue = tempValue.value === '' ? null : Number(tempValue.value)
-        break
-      case 'date':
-        finalValue = tempValue.value ? new Date(tempValue.value) : null
-        break
-      case 'boolean':
-        finalValue = Boolean(tempValue.value)
-        break
+    // Use validators utility for type conversion and validation
+    try {
+      switch (props.column.type) {
+        case 'number':
+        case 'currency':
+          if (tempValue.value === '') {
+            finalValue = null
+          } else {
+            const numResult = validators.number(tempValue.value)
+            if (numResult === true) {
+              finalValue = Number(tempValue.value)
+            } else {
+              console.warn('Invalid number:', numResult)
+              return // Don't save invalid values
+            }
+          }
+          break
+        
+        case 'email':
+          if (tempValue.value !== '') {
+            const emailResult = validators.email(tempValue.value)
+            if (emailResult !== true) {
+              console.warn('Invalid email:', emailResult)
+              return // Don't save invalid emails
+            }
+          }
+          finalValue = tempValue.value || null
+          break
+        
+        case 'url':
+          if (tempValue.value !== '') {
+            const urlResult = validators.url(tempValue.value)
+            if (urlResult !== true) {
+              console.warn('Invalid URL:', urlResult)
+              return // Don't save invalid URLs
+            }
+          }
+          finalValue = tempValue.value || null
+          break
+        
+        case 'date':
+          if (tempValue.value) {
+            const dateResult = validators.date(tempValue.value)
+            if (dateResult === true) {
+              finalValue = new Date(tempValue.value)
+            } else {
+              console.warn('Invalid date:', dateResult)
+              return // Don't save invalid dates
+            }
+          } else {
+            finalValue = null
+          }
+          break
+        
+        case 'boolean':
+          finalValue = Boolean(tempValue.value)
+          break
+        
+        default:
+          finalValue = tempValue.value
+          break
+      }
+      
+      // Check required field validation
+      if (props.column.required) {
+        const requiredResult = validators.required(finalValue, props.column.label)
+        if (requiredResult !== true) {
+          console.warn('Required field validation failed:', requiredResult)
+          return // Don't save if required field is empty
+        }
+      }
+      
+      // Use custom validator if provided
+      if (props.column.validator) {
+        const customResult = props.column.validator(finalValue, props.rowData.data)
+        if (customResult !== true) {
+          console.warn('Custom validation failed:', customResult)
+          return // Don't save if custom validation fails
+        }
+      }
+      
+    } catch (error) {
+      console.error('Validation error during save:', error)
+      return // Don't save if there's an error
     }
   }
   
@@ -529,45 +622,38 @@ const formatValueForEditing = (value: any): string => {
     return ''
   }
   
-  switch (props.column.type) {
-    case 'date':
-      if (value instanceof Date) {
-        return value.toISOString().split('T')[0]
-      }
-      return String(value)
-    case 'boolean':
-      return String(Boolean(value))
-    default:
-      return String(value)
+  try {
+    // Use formatters utility for consistent editing format
+    switch (props.column.type) {
+      case 'date':
+        if (value instanceof Date) {
+          return value.toISOString().split('T')[0]
+        }
+        return formatters.date(value, 'short') || String(value)
+      
+      case 'number':
+        return formatters.number(value, 10) // Higher precision for editing
+      
+      case 'currency':
+        return formatters.number(value, 2) // Just the number part for editing
+      
+      case 'boolean':
+        return formatters.boolean(value, 'true-false')
+      
+      case 'email':
+      case 'url':
+      case 'text':
+      case 'textarea':
+      case 'password':
+        return formatters.text(value)
+      
+      default:
+        return formatters.text(value)
+    }
+  } catch (error) {
+    console.error('Error formatting value for editing:', error)
+    return String(value)
   }
-}
-
-const formatCurrency = (value: any): string => {
-  if (value === null || value === undefined || isNaN(Number(value))) {
-    return ''
-  }
-  
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(Number(value))
-}
-
-const formatNumber = (value: any): string => {
-  if (value === null || value === undefined || isNaN(Number(value))) {
-    return ''
-  }
-  
-  return new Intl.NumberFormat().format(Number(value))
-}
-
-const formatDate = (value: any): string => {
-  if (!value) return ''
-  
-  const date = value instanceof Date ? value : new Date(value)
-  if (isNaN(date.getTime())) return String(value)
-  
-  return date.toLocaleDateString()
 }
 
 const getSelectLabel = (value: any): string => {
@@ -576,6 +662,51 @@ const getSelectLabel = (value: any): string => {
   const option = props.column.options.find(opt => opt.value === value)
   return option ? option.label : String(value || '')
 }
+
+// Real-time validation for editing values
+const editingValidation = computed(() => {
+  if (!isEditing.value || tempValue.value === '') {
+    return { isValid: true, message: '' }
+  }
+  
+  try {
+    switch (props.column.type) {
+      case 'email':
+        const emailResult = validators.email(tempValue.value)
+        return {
+          isValid: emailResult === true,
+          message: emailResult === true ? '' : emailResult
+        }
+      
+      case 'url':
+        const urlResult = validators.url(tempValue.value)
+        return {
+          isValid: urlResult === true,
+          message: urlResult === true ? '' : urlResult
+        }
+      
+      case 'number':
+      case 'currency':
+        const numberResult = validators.number(tempValue.value)
+        return {
+          isValid: numberResult === true,
+          message: numberResult === true ? '' : numberResult
+        }
+      
+      case 'date':
+        const dateResult = validators.date(tempValue.value)
+        return {
+          isValid: dateResult === true,
+          message: dateResult === true ? '' : dateResult
+        }
+      
+      default:
+        return { isValid: true, message: '' }
+    }
+  } catch (error) {
+    return { isValid: false, message: 'Validation error' }
+  }
+})
 
 // Focus the editor when editing starts
 watch(() => props.editing, (editing) => {
