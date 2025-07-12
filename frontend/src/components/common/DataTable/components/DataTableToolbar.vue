@@ -154,6 +154,7 @@ import {
   ChevronDownIcon
 } from '@heroicons/vue/24/outline'
 import type { DataTableRow, DataTableSort, DataTableFilter } from '../types'
+import clipboardUtils from '../utils/clipboard'
 
 interface Props {
   selectedRows: DataTableRow[]
@@ -201,46 +202,29 @@ const handleExport = (format: 'csv' | 'excel' | 'json') => {
   showExportDropdown.value = false
 }
 
-const handleImport = (event: Event) => {
+const handleImport = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   
   if (!file) return
   
-  const reader = new FileReader()
-  
-  reader.onload = (e) => {
-    try {
-      const content = e.target?.result as string
-      let data: any[] = []
-      
-      if (file.name.endsWith('.json')) {
-        data = JSON.parse(content)
-      } else if (file.name.endsWith('.csv')) {
-        // Parse CSV
-        const lines = content.split('\n').filter(line => line.trim())
-        const headers = lines[0].split(',').map(h => h.trim())
-        
-        data = lines.slice(1).map(line => {
-          const values = line.split(',').map(v => v.trim())
-          const obj: any = {}
-          headers.forEach((header, index) => {
-            obj[header] = values[index] || ''
-          })
-          return obj
-        })
-      }
-      
-      if (data.length > 0) {
-        emit('import', data)
-      }
-    } catch (error) {
-      console.error('Failed to parse file:', error)
-      alert('Failed to parse file. Please check the format.')
+  try {
+    // Use clipboard utilities for robust file parsing
+    const data = await clipboardUtils.import.fromFile(file, {
+      maxRows: 10000,
+      maxColumns: 100,
+      sanitizeHTML: true
+    })
+    
+    if (Array.isArray(data) && data.length > 0) {
+      emit('import', data)
+    } else {
+      alert('No valid data found in file.')
     }
+  } catch (error) {
+    console.error('Failed to import file:', error)
+    alert(`Failed to import file: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
-  
-  reader.readAsText(file)
   
   // Reset input
   target.value = ''

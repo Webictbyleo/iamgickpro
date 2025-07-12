@@ -1,27 +1,78 @@
-// Data formatters for different column types
+// Data formatters for different column types with improved error handling and performance
+
+// Cache for Intl formatters to improve performance
+const formatterCache = new Map<string, Intl.NumberFormat | Intl.DateTimeFormat>()
+
+// Get cached formatter or create new one
+const getCachedFormatter = (key: string, creator: () => Intl.NumberFormat | Intl.DateTimeFormat) => {
+  if (!formatterCache.has(key)) {
+    formatterCache.set(key, creator())
+  }
+  return formatterCache.get(key)!
+}
+
 const formatters = {
-  // Text formatter
+  // Text formatter with null safety
   text: (value: any): string => {
     if (value === null || value === undefined) return ''
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value)
+      } catch {
+        return String(value)
+      }
+    }
     return String(value)
   },
 
-  // Number formatter
-  number: (value: any, decimals = 2): string => {
-    if (value === null || value === undefined || isNaN(Number(value))) return ''
-    return Number(value).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: decimals
-    })
+  // Number formatter with improved error handling
+  number: (value: any, decimals = 2, locale = 'en-US'): string => {
+    if (value === null || value === undefined || value === '') return ''
+    
+    const num = Number(value)
+    if (isNaN(num)) return String(value) // Return original if not a number
+    
+    // Check for infinite values
+    if (!isFinite(num)) return num > 0 ? '∞' : '-∞'
+    
+    try {
+      const cacheKey = `number-${locale}-${decimals}`
+      const formatter = getCachedFormatter(cacheKey, () => 
+        new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: decimals
+        })
+      ) as Intl.NumberFormat
+      
+      return formatter.format(num)
+    } catch (error) {
+      // Fallback to basic formatting
+      return num.toFixed(decimals)
+    }
   },
 
-  // Currency formatter
+  // Currency formatter with error handling
   currency: (value: any, currency = 'USD', locale = 'en-US'): string => {
-    if (value === null || value === undefined || isNaN(Number(value))) return ''
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency
-    }).format(Number(value))
+    if (value === null || value === undefined || value === '') return ''
+    
+    const num = Number(value)
+    if (isNaN(num)) return String(value)
+    if (!isFinite(num)) return num > 0 ? '∞' : '-∞'
+    
+    try {
+      const cacheKey = `currency-${locale}-${currency}`
+      const formatter = getCachedFormatter(cacheKey, () => 
+        new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency
+        })
+      ) as Intl.NumberFormat
+      
+      return formatter.format(num)
+    } catch (error) {
+      // Fallback formatting
+      return `${currency} ${num.toFixed(2)}`
+    }
   },
 
   // Percentage formatter
@@ -34,46 +85,89 @@ const formatters = {
     }).format(Number(value) / 100)
   },
 
-  // Date formatter
-  date: (value: any, format: 'short' | 'medium' | 'long' | 'full' = 'short'): string => {
+  // Date formatter with better error handling
+  date: (value: any, format: 'short' | 'medium' | 'long' | 'full' = 'short', locale = 'en-US'): string => {
     if (!value) return ''
     
-    const date = value instanceof Date ? value : new Date(value)
+    let date: Date
+    
+    // Handle different input types
+    if (value instanceof Date) {
+      date = value
+    } else if (typeof value === 'string' || typeof value === 'number') {
+      date = new Date(value)
+    } else {
+      return String(value) // Return original if can't parse
+    }
+    
     if (isNaN(date.getTime())) return String(value)
     
-    const options: Intl.DateTimeFormatOptions = {
-      short: { year: 'numeric', month: 'numeric', day: 'numeric' },
-      medium: { year: 'numeric', month: 'short', day: 'numeric' },
-      long: { year: 'numeric', month: 'long', day: 'numeric' },
-      full: { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-    }[format] as Intl.DateTimeFormatOptions
-    
-    return date.toLocaleDateString(undefined, options)
+    try {
+      const options: Intl.DateTimeFormatOptions = {
+        short: { year: 'numeric' as const, month: 'numeric' as const, day: 'numeric' as const },
+        medium: { year: 'numeric' as const, month: 'short' as const, day: 'numeric' as const },
+        long: { year: 'numeric' as const, month: 'long' as const, day: 'numeric' as const },
+        full: { weekday: 'long' as const, year: 'numeric' as const, month: 'long' as const, day: 'numeric' as const }
+      }[format]
+      
+      const cacheKey = `date-${locale}-${format}`
+      const formatter = getCachedFormatter(cacheKey, () => 
+        new Intl.DateTimeFormat(locale, options)
+      ) as Intl.DateTimeFormat
+      
+      return formatter.format(date)
+    } catch (error) {
+      // Fallback to ISO string
+      return date.toLocaleDateString()
+    }
   },
 
-  // DateTime formatter
-  datetime: (value: any, format: 'short' | 'medium' | 'long' = 'medium'): string => {
+  // DateTime formatter with timezone support
+  datetime: (value: any, format: 'short' | 'medium' | 'long' = 'medium', locale = 'en-US', timeZone?: string): string => {
     if (!value) return ''
     
-    const date = value instanceof Date ? value : new Date(value)
+    let date: Date
+    
+    if (value instanceof Date) {
+      date = value
+    } else if (typeof value === 'string' || typeof value === 'number') {
+      date = new Date(value)
+    } else {
+      return String(value)
+    }
+    
     if (isNaN(date.getTime())) return String(value)
     
-    const options: Intl.DateTimeFormatOptions = {
-      short: { 
-        year: 'numeric', month: 'numeric', day: 'numeric',
-        hour: 'numeric', minute: 'numeric'
-      },
-      medium: { 
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: 'numeric', minute: 'numeric', second: 'numeric'
-      },
-      long: { 
-        year: 'numeric', month: 'long', day: 'numeric',
-        hour: 'numeric', minute: 'numeric', second: 'numeric', timeZoneName: 'short'
+    try {
+      const options: Intl.DateTimeFormatOptions = {
+        short: { 
+          year: 'numeric' as const, month: 'numeric' as const, day: 'numeric' as const,
+          hour: 'numeric' as const, minute: 'numeric' as const
+        },
+        medium: { 
+          year: 'numeric' as const, month: 'short' as const, day: 'numeric' as const,
+          hour: 'numeric' as const, minute: 'numeric' as const, second: 'numeric' as const
+        },
+        long: { 
+          year: 'numeric' as const, month: 'long' as const, day: 'numeric' as const,
+          hour: 'numeric' as const, minute: 'numeric' as const, second: 'numeric' as const, timeZoneName: 'short' as const
+        }
+      }[format]
+      
+      if (timeZone) {
+        options.timeZone = timeZone
       }
-    }[format] as Intl.DateTimeFormatOptions
-    
-    return date.toLocaleString(undefined, options)
+      
+      const cacheKey = `datetime-${locale}-${format}-${timeZone || 'default'}`
+      const formatter = getCachedFormatter(cacheKey, () => 
+        new Intl.DateTimeFormat(locale, options)
+      ) as Intl.DateTimeFormat
+      
+      return formatter.format(date)
+    } catch (error) {
+      // Fallback
+      return date.toLocaleString()
+    }
   },
 
   // Time formatter

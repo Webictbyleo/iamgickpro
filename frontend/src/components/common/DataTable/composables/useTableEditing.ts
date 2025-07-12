@@ -6,6 +6,8 @@ import type {
   EditingState,
   ValidationResult 
 } from '../types'
+import formatters from '../utils/formatters'
+import validators from '../utils/validators'
 
 export interface UseTableEditingOptions<T = any> {
   columns: Ref<DataTableColumn<T>[]>
@@ -89,63 +91,73 @@ export function useTableEditing<T = any>(options: UseTableEditingOptions<T>) {
   }
   
   // Save the current edit
-  const saveEdit = async () => {
+  const saveEdit = async (): Promise<boolean> => {
     if (!editingCell.value || !isEditing.value) {
       return false
     }
     
-    const { row, col, key } = editingCell.value
-    const column = getColumn(col)
-    const rowData = getRow(row)
-    
-    if (!column || !rowData) {
-      return false
-    }
-    
-    // Parse the value based on column type
-    const parsedValue = parseValue(tempValue.value, column)
-    
-    // Validate the value
-    const validation = await validateValue(parsedValue, column, rowData)
-    
-    if (!validation.valid) {
-      // Show validation error
-      editingCell.value.invalid = true
-      editingCell.value.error = validation.error
+    try {
+      const { row, col, key } = editingCell.value
+      const column = getColumn(col)
+      const rowData = getRow(row)
       
+      if (!column || !rowData) {
+        console.error('Cannot save edit: missing column or row data')
+        return false
+      }
+      
+      // Parse the value based on column type
+      const parsedValue = parseValue(tempValue.value, column)
+      
+      // Validate the value
+      const validation = await validateValue(parsedValue, column, rowData)
+      
+      if (!validation.valid) {
+        // Show validation error
+        if (editingCell.value) {
+          editingCell.value.invalid = true
+          editingCell.value.error = validation.error
+        }
+        
+        const cellKey = getCellKey(row, col)
+        validationErrors[cellKey] = validation.error || 'Invalid value'
+        
+        return false
+      }
+      
+      // Clear any previous validation errors
       const cellKey = getCellKey(row, col)
-      validationErrors[cellKey] = validation.error || 'Invalid value'
+      delete validationErrors[cellKey]
+      delete validationWarnings[cellKey]
       
+      // Update the data
+      const oldValue = (rowData.data as any)[key]
+      (rowData.data as any)[key] = parsedValue
+      
+      // Mark cell as dirty if value changed
+      const isDirty = oldValue !== parsedValue
+      if (editingCell.value) {
+        editingCell.value.dirty = isDirty
+      }
+      
+      // Call change callback
+      if (isDirty && options.onCellChange && editingCell.value) {
+        options.onCellChange(editingCell.value, oldValue)
+      }
+      
+      // Auto-save if enabled
+      if (options.autoSave && isDirty) {
+        scheduleAutoSave()
+      }
+      
+      // Clear editing state
+      clearEditingState()
+      
+      return true
+    } catch (error) {
+      console.error('Error saving edit:', error)
       return false
     }
-    
-    // Clear any previous validation errors
-    const cellKey = getCellKey(row, col)
-    delete validationErrors[cellKey]
-    delete validationWarnings[cellKey]
-    
-    // Update the data
-    const oldValue = (rowData.data as any)[key]
-    (rowData.data as any)[key] = parsedValue
-    
-    // Mark cell as dirty if value changed
-    const isDirty = oldValue !== parsedValue
-    editingCell.value.dirty = isDirty
-    
-    // Call change callback
-    if (isDirty && options.onCellChange) {
-      options.onCellChange(editingCell.value, oldValue)
-    }
-    
-    // Auto-save if enabled
-    if (options.autoSave && isDirty) {
-      scheduleAutoSave()
-    }
-    
-    // Clear editing state
-    clearEditingState()
-    
-    return true
   }
   
   // Cancel the current edit
@@ -176,25 +188,38 @@ export function useTableEditing<T = any>(options: UseTableEditingOptions<T>) {
     }
   }
   
-  // Format value for editing (convert to string representation)
+  // Format value for editing using formatters utility
   const formatValueForEditing = (value: any, column: DataTableColumn<T>): string => {
     if (value === null || value === undefined) {
       return ''
     }
     
-    switch (column.type) {
-      case 'number':
-      case 'currency':
-        return String(value)
-      case 'date':
-        if (value instanceof Date) {
-          return value.toISOString().split('T')[0]
-        }
-        return String(value)
-      case 'boolean':
-        return String(value)
-      default:
-        return String(value)
+    try {
+      // Use formatters utility for consistent formatting
+      switch (column.type) {
+        case 'number':
+          return formatters.number(value, 10) // Higher precision for editing
+        case 'currency':
+          return formatters.number(value, 2) // Just the number part for editing
+        case 'date':
+          if (value instanceof Date) {
+            return value.toISOString().split('T')[0]
+          }
+          return formatters.date(value, 'short')
+        case 'boolean':
+          return formatters.boolean(value, 'true-false')
+        case 'email':
+        case 'url':
+        case 'text':
+        case 'textarea':
+        case 'password':
+          return formatters.text(value)
+        default:
+          return formatters.text(value)
+      }
+    } catch (error) {
+      console.error('Error formatting value for editing:', error)
+      return String(value || '')
     }
   }
   
@@ -227,60 +252,96 @@ export function useTableEditing<T = any>(options: UseTableEditingOptions<T>) {
     }
   }
   
-  // Validate a value against column rules
+  // Validate a value against column rules using validators utility
   const validateValue = async (value: any, column: DataTableColumn<T>, row?: DataTableRow<T>): Promise<ValidationResult> => {
-    // Check required
-    if (column.required && (value === null || value === undefined || value === '')) {
-      return { valid: false, error: `${column.label} is required` }
-    }
-    
-    // Skip validation for empty optional fields
-    if (!column.required && (value === null || value === undefined || value === '')) {
+    try {
+      // Check required using validators utility
+      if (column.required) {
+        const requiredResult = validators.required(value, column.label)
+        if (requiredResult !== true) {
+          return { valid: false, error: typeof requiredResult === 'string' ? requiredResult : `${column.label} is required` }
+        }
+      }
+      
+      // Skip validation for empty optional fields
+      if (!column.required && (value === null || value === undefined || value === '')) {
+        return { valid: true }
+      }
+      
+      // Type-specific validation using validators utility
+      let validationResult: boolean | string = true
+      
+      switch (column.type) {
+        case 'email':
+          validationResult = validators.email(value)
+          break
+        
+        case 'url':
+          validationResult = validators.url(value)
+          break
+        
+        case 'number':
+          validationResult = validators.number(value)
+          break
+        
+        case 'currency':
+          validationResult = validators.number(value)
+          if (validationResult === true) {
+            // Additional currency validation
+            validationResult = validators.positive(value, true) // Allow zero
+          }
+          break
+        
+        case 'password':
+          // Use basic validation for password, full validation can be in custom validator
+          validationResult = validators.minLength(8)(value)
+          break
+        
+        case 'boolean':
+          // Boolean values are generally always valid if present
+          validationResult = true
+          break
+        
+        case 'date':
+          validationResult = validators.date(value)
+          break
+        
+        case 'text':
+        case 'textarea':
+        case 'select':
+        default:
+          // Basic text validation - just check it's not excessively long
+          if (typeof value === 'string' && value.length > 10000) {
+            validationResult = 'Value is too long (maximum 10000 characters)'
+          }
+          break
+      }
+      
+      if (validationResult !== true) {
+        return { valid: false, error: typeof validationResult === 'string' ? validationResult : 'Invalid value' }
+      }
+      
+      // Custom validator
+      if (column.validator) {
+        const result = column.validator(value, row?.data)
+        if (typeof result === 'string') {
+          return { valid: false, error: result }
+        }
+        if (result === false) {
+          return { valid: false, error: `Invalid value for ${column.label}` }
+        }
+      }
+      
+      // Call external validation if provided
+      if (options.onValidation && editingCell.value) {
+        return options.onValidation(editingCell.value)
+      }
+      
       return { valid: true }
+    } catch (error) {
+      console.error('Validation error:', error)
+      return { valid: false, error: 'Validation failed due to an error' }
     }
-    
-    // Type-specific validation
-    switch (column.type) {
-      case 'email':
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(String(value))) {
-          return { valid: false, error: 'Please enter a valid email address' }
-        }
-        break
-      
-      case 'url':
-        try {
-          new URL(String(value))
-        } catch {
-          return { valid: false, error: 'Please enter a valid URL' }
-        }
-        break
-      
-      case 'number':
-      case 'currency':
-        if (typeof value !== 'number' || isNaN(value)) {
-          return { valid: false, error: 'Please enter a valid number' }
-        }
-        break
-    }
-    
-    // Custom validator
-    if (column.validator) {
-      const result = column.validator(value, row?.data)
-      if (typeof result === 'string') {
-        return { valid: false, error: result }
-      }
-      if (result === false) {
-        return { valid: false, error: `Invalid value for ${column.label}` }
-      }
-    }
-    
-    // Call external validation if provided
-    if (options.onValidation && editingCell.value) {
-      return options.onValidation(editingCell.value)
-    }
-    
-    return { valid: true }
   }
   
   // Schedule auto-save

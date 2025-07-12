@@ -133,12 +133,15 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import { ref, computed, onMounted, onUnmounted, provide, type Ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide, watch, type Ref } from 'vue'
 import type { 
   DataTableProps, 
   DataTableEmits, 
   DataTableRow,
+  DataTableColumn,
   DataTableFilter,
+  DataTableSort,
+  DataTablePagination as DataTablePaginationType,
   CellState,
   ContextMenuState,
   ContextMenuItem
@@ -152,6 +155,7 @@ import DataTableBody from './components/DataTableBody.vue'
 import DataTableToolbar from './components/DataTableToolbar.vue'
 import DataTablePagination from './components/DataTablePagination.vue'
 import DataTableContextMenu from './components/DataTableContextMenu.vue'
+import formatters from './utils/formatters'
 
 // Props with defaults
 const props = withDefaults(defineProps<DataTableProps<T>>(), {
@@ -289,6 +293,46 @@ const showToolbar = computed(() =>
   props.editable || props.filterable || props.sortable
 )
 
+// Cell formatting function using formatters utility
+const formatCellValue = (value: any, column: DataTableColumn<T>): string => {
+  try {
+    // Use custom formatter if provided
+    if (column.formatter) {
+      return column.formatter(value, undefined)
+    }
+    
+    // Use built-in formatters based on column type
+    switch (column.type) {
+      case 'number':
+        return formatters.number(value, 2)
+      case 'currency':
+        return formatters.currency(value, 'USD')
+      case 'date':
+        return formatters.date(value, 'medium')
+      case 'boolean':
+        return formatters.boolean(value, 'yes-no')
+      case 'email':
+      case 'url':
+        return formatters.text(value)
+      case 'password':
+        return value ? '••••••••' : ''
+      case 'textarea':
+        return formatters.truncate(value, 100)
+      case 'text':
+      case 'select':
+      default:
+        return formatters.text(value)
+    }
+  } catch (error) {
+    console.error('Error formatting cell value:', error)
+    return String(value || '')
+  }
+}
+
+// Provide formatters to child components
+provide('formatCellValue', formatCellValue)
+provide('formatters', formatters)
+
 const contextMenuItems = computed((): ContextMenuItem[] => {
   const items: ContextMenuItem[] = []
   
@@ -309,67 +353,97 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
 
 // Event handlers
 const handleCellClick = (row: number, col: number, event: MouseEvent) => {
-  if (props.selectable) {
-    handleCellSelection(row, col, event.ctrlKey || event.metaKey, event.shiftKey)
+  try {
+    if (props.selectable && visibleColumns.value[col]) {
+      handleCellSelection(row, col, event.ctrlKey || event.metaKey, event.shiftKey)
+    }
+  } catch (error) {
+    console.error('Error handling cell click:', error)
   }
 }
 
 const handleCellDoubleClick = (row: number, col: number) => {
-  if (props.editable) {
-    startEditing(row, col)
+  try {
+    if (props.editable && visibleColumns.value[col]?.editable !== false) {
+      startEditing(row, col)
+    }
+  } catch (error) {
+    console.error('Error handling cell double click:', error)
   }
 }
 
 const handleCellEdit = (row: number, col: number) => {
-  const cellState: CellState = {
-    row,
-    col,
-    key: visibleColumns.value[col]?.key || '',
-    editing: true,
-    selected: true,
-    value: null,
-    originalValue: null,
-    invalid: false,
-    dirty: false
+  try {
+    const column = visibleColumns.value[col]
+    if (!column) return
+    
+    const cellState: CellState = {
+      row,
+      col,
+      key: column.key,
+      editing: true,
+      selected: true,
+      value: null,
+      originalValue: null,
+      invalid: false,
+      dirty: false
+    }
+    emit('cell-edit', cellState)
+  } catch (error) {
+    console.error('Error handling cell edit:', error)
   }
-  emit('cell-edit', cellState)
 }
 
 const handleCellChange = (row: number, col: number, value: any) => {
-  const cellState: CellState = {
-    row,
-    col,
-    key: visibleColumns.value[col]?.key || '',
-    editing: false,
-    selected: false,
-    value,
-    originalValue: null,
-    invalid: false,
-    dirty: true
+  try {
+    const column = visibleColumns.value[col]
+    if (!column) return
+    
+    const cellState: CellState = {
+      row,
+      col,
+      key: column.key,
+      editing: false,
+      selected: false,
+      value,
+      originalValue: null,
+      invalid: false,
+      dirty: true
+    }
+    emit('cell-change', cellState, value)
+  } catch (error) {
+    console.error('Error handling cell change:', error)
   }
-  emit('cell-change', cellState, value)
 }
 
 const handleRowSelect = (row: DataTableRow<T>, selected: boolean) => {
-  if (selected) {
-    selectRow(row.id)
-    emit('row-select', row)
-  } else {
-    deselectRow(row.id)
-    emit('row-deselect', row)
+  try {
+    if (selected) {
+      selectRow(row.id)
+      emit('row-select', row)
+    } else {
+      deselectRow(row.id)
+      emit('row-deselect', row)
+    }
+    
+    ;(emit as any)('selection-change', selectedRows.value)
+  } catch (error) {
+    console.error('Error handling row selection:', error)
   }
-  
-  (emit as any)('selection-change', selectedRows.value)
 }
 
 const handleSelectAll = (selected: boolean) => {
-  if (selected) {
-    selectAllRows()
-  } else {
-    deselectAllRows()
+  try {
+    if (selected) {
+      selectAllRows()
+    } else {
+      deselectAllRows()
+    }
+    
+    ;(emit as any)('selection-change', selectedRows.value)
+  } catch (error) {
+    console.error('Error handling select all:', error)
   }
-  
-  (emit as any)('selection-change', selectedRows.value)
 }
 
 const handleSort = (column: string, direction: 'asc' | 'desc', multiSort = false) => {
@@ -412,28 +486,46 @@ const handleAddRow = () => {
 }
 
 const handleDeleteRows = () => {
-  selectedRows.value.forEach(row => {
-    removeRow(row.id)
-    ;(emit as any)('row-delete', row)
-  })
-  deselectAllRows()
+  try {
+    const rowsToDelete = [...selectedRows.value] // Create a copy to avoid mutation during iteration
+    rowsToDelete.forEach(row => {
+      removeRow(row.id)
+      ;(emit as any)('row-delete', row)
+    })
+    deselectAllRows()
+  } catch (error) {
+    console.error('Error deleting rows:', error)
+  }
 }
 
 const handleDuplicateRows = () => {
-  selectedRows.value.forEach(row => {
-    const duplicated = duplicateRow(row.id)
-    if (duplicated) {
-      emit('row-duplicate', duplicated)
-    }
-  })
+  try {
+    const rowsToDuplicate = [...selectedRows.value] // Create a copy
+    rowsToDuplicate.forEach(row => {
+      const duplicated = duplicateRow(row.id)
+      if (duplicated) {
+        emit('row-duplicate', duplicated)
+      }
+    })
+  } catch (error) {
+    console.error('Error duplicating rows:', error)
+  }
 }
 
 const handleExport = (format: 'csv' | 'excel' | 'json') => {
-  emit('export', format)
+  try {
+    emit('export', format)
+  } catch (error) {
+    console.error('Error during export:', error)
+  }
 }
 
 const handleImport = (data: any[]) => {
-  emit('import', data)
+  try {
+    emit('import', data)
+  } catch (error) {
+    console.error('Error during import:', error)
+  }
 }
 
 const handleRowContextMenu = (row: number, event: MouseEvent) => {
@@ -485,24 +577,50 @@ const handleContextMenuAction = (action: string) => {
 }
 
 const handleScroll = () => {
-  if (props.virtualScrolling && tableContainer.value) {
+  if (!props.virtualScrolling || !tableContainer.value) return
+  
+  try {
     const { scrollTop, clientHeight } = tableContainer.value
     const itemHeight = props.rowHeight || 40
     
     const start = Math.floor(scrollTop / itemHeight)
-    const end = Math.min(start + Math.ceil(clientHeight / itemHeight) + 5, data.value.length)
+    const viewportSize = Math.ceil(clientHeight / itemHeight)
+    const bufferSize = Math.min(5, Math.floor(viewportSize * 0.5)) // Dynamic buffer
+    const end = Math.min(start + viewportSize + bufferSize, data.value.length)
     
-    visibleRange.value = { start, end }
+    // Only update if range actually changed to prevent unnecessary re-renders
+    const newRange = { start: Math.max(0, start - bufferSize), end }
+    if (newRange.start !== visibleRange.value.start || newRange.end !== visibleRange.value.end) {
+      visibleRange.value = newRange
+    }
+  } catch (error) {
+    console.error('Error handling scroll:', error)
   }
 }
 
 // Global keyboard event handler
 const handleGlobalKeyDown = (event: KeyboardEvent) => {
-  handleKeyDown(event)
+  // Only handle events when component is focused or has active editing
+  if (!tableContainer.value?.contains(document.activeElement) && !isEditing.value) {
+    return
+  }
   
-  // Handle editing keyboard events
-  if (isEditing.value) {
-    handleEditKeydown(event)
+  try {
+    handleKeyDown(event)
+    
+    // Handle editing keyboard events
+    if (isEditing.value) {
+      handleEditKeydown(event)
+    }
+  } catch (error) {
+    console.error('Error handling keyboard event:', error)
+  }
+}
+
+// Global click handler for context menu
+const handleGlobalClick = (event: Event) => {
+  if (contextMenu.value.visible && !(event.target as Element)?.closest('.context-menu')) {
+    closeContextMenu()
   }
 }
 
@@ -517,16 +635,57 @@ provide('dataTable', {
 
 // Lifecycle
 onMounted(() => {
-  document.addEventListener('keydown', handleGlobalKeyDown)
-  document.addEventListener('click', (event) => {
-    if (contextMenu.value.visible && !(event.target as Element)?.closest('.context-menu')) {
-      closeContextMenu()
-    }
-  })
+  // Add event listeners with proper cleanup
+  document.addEventListener('keydown', handleGlobalKeyDown, { passive: false })
+  document.addEventListener('click', handleGlobalClick, { passive: true })
+  
+  // Set up table container accessibility
+  if (tableContainer.value) {
+    tableContainer.value.setAttribute('role', 'grid')
+    tableContainer.value.setAttribute('aria-label', 'Data table')
+    tableContainer.value.setAttribute('tabindex', '0')
+    tableContainer.value.setAttribute('aria-rowcount', String(data.value.length))
+    tableContainer.value.setAttribute('aria-colcount', String(visibleColumns.value.length))
+  }
 })
 
 onUnmounted(() => {
+  // Clean up event listeners to prevent memory leaks
   document.removeEventListener('keydown', handleGlobalKeyDown)
+  document.removeEventListener('click', handleGlobalClick)
+})
+
+// Watch for prop changes and update internal state
+watch(() => props.data, (newData: DataTableRow<T>[]) => {
+  data.value = newData
+  // Update pagination total if pagination is enabled
+  if (pagination.value) {
+    pagination.value.total = newData.length
+    pagination.value.totalPages = Math.ceil(newData.length / pagination.value.pageSize)
+  }
+}, { deep: true })
+
+watch(() => props.columns, (newColumns: DataTableColumn<T>[]) => {
+  columns.value = newColumns
+}, { deep: true })
+
+watch(() => props.pagination, (newPagination: DataTablePaginationType | undefined) => {
+  if (newPagination) {
+    Object.assign(pagination.value, newPagination)
+  }
+}, { deep: true })
+
+// Watch for data length changes and update aria attributes
+watch(() => data.value.length, (newLength: number) => {
+  if (tableContainer.value) {
+    tableContainer.value.setAttribute('aria-rowcount', String(newLength))
+  }
+})
+
+watch(() => visibleColumns.value.length, (newLength: number) => {
+  if (tableContainer.value) {
+    tableContainer.value.setAttribute('aria-colcount', String(newLength))
+  }
 })
 
 // Watch for prop changes
@@ -552,29 +711,63 @@ table {
 }
 
 .datatable-container ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-700;
+  background-color: rgb(243 244 246);
+}
+
+.dark .datatable-container ::-webkit-scrollbar-track {
+  background-color: rgb(55 65 81);
 }
 
 .datatable-container ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-500 rounded;
+  background-color: rgb(209 213 219);
+  border-radius: 0.375rem;
+}
+
+.dark .datatable-container ::-webkit-scrollbar-thumb {
+  background-color: rgb(107 114 128);
 }
 
 .datatable-container ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-400;
+  background-color: rgb(156 163 175);
+}
+
+.dark .datatable-container ::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(156 163 175);
 }
 
 /* Selection styles */
 .cell-selected {
-  @apply bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-300 dark:ring-primary-600;
+  background-color: rgb(239 246 255);
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(147 197 253);
+}
+
+.dark .cell-selected {
+  background-color: rgb(30 58 138 / 0.3);
+  --tw-ring-color: rgb(37 99 235);
 }
 
 .row-selected {
-  @apply bg-primary-25 dark:bg-primary-900/20;
+  background-color: rgb(254 249 195);
+}
+
+.dark .row-selected {
+  background-color: rgb(30 58 138 / 0.2);
 }
 
 /* Editing styles */
 .cell-editing {
-  @apply bg-white dark:bg-gray-700 ring-2 ring-primary-500;
+  background-color: rgb(255 255 255);
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: rgb(59 130 246);
+}
+
+.dark .cell-editing {
+  background-color: rgb(55 65 81);
 }
 
 /* Sticky header */
@@ -598,5 +791,24 @@ table {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* Focus styles for accessibility */
+.datatable-container:focus-within {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

@@ -6,6 +6,8 @@ import type {
   EditingState, 
   CellState 
 } from '../types'
+import keyboardUtils from '../utils/keyboard'
+import clipboardUtils from '../utils/clipboard'
 
 export interface UseTableKeyboardOptions<T = any> {
   columns: Ref<DataTableColumn<T>[]>
@@ -240,7 +242,7 @@ export function useTableKeyboard<T = any>(options: UseTableKeyboardOptions<T>) {
   }
   
   // Handle copy operation
-  const handleCopy = (): boolean => {
+  const handleCopy = async (): Promise<boolean> => {
     const positions = Array.from(selection.selectedCells).map(key => {
       const [row, col] = key.split('-').map(Number)
       return { row, col }
@@ -269,37 +271,51 @@ export function useTableKeyboard<T = any>(options: UseTableKeyboardOptions<T>) {
     })
     
     // Convert to text format
-    const rows: string[] = []
+    const dataRows: string[][] = []
     
     for (const [, cells] of rowMap) {
       cells.sort((a, b) => a.col - b.col)
-      const row = cells.map(cell => String(cell.value || '')).join('\t')
-      rows.push(row)
+      const row = cells.map(cell => String(cell.value || ''))
+      dataRows.push(row)
     }
-    
-    const text = rows.join('\n')
-    
-    // Copy to clipboard
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text)
-      return true
-    }
-    
-    return false
-  }
-  
-  // Handle paste operation
-  const handlePaste = async (): Promise<boolean> => {
-    if (!navigator.clipboard) return false
     
     try {
-      const text = await navigator.clipboard.readText()
-      const lines = text.split('\n').filter(line => line.trim())
+      // Use clipboard utilities for better error handling and features
+      const result = await clipboardUtils.copy(dataRows, {
+        sanitizeHTML: true,
+        maxRows: 10000,
+        maxColumns: 100
+      })
       
-      if (lines.length === 0) return false
+      if (result.success) {
+        // Announce to screen readers
+        keyboardUtils.accessibility.announce(`Copied ${dataRows.length} rows to clipboard`)
+        return true
+      } else {
+        console.error('Copy failed:', result.error)
+        return false
+      }
+    } catch (error) {
+      console.error('Copy operation failed:', error)
+      return false
+    }
+  }
+  
+  // Handle paste operation using clipboard utilities
+  const handlePaste = async (): Promise<boolean> => {
+    try {
+      const result = await clipboardUtils.paste({
+        sanitizeHTML: true,
+        maxRows: 10000,
+        maxColumns: 100
+      })
       
-      const pasteData = lines.map(line => line.split('\t'))
+      if (!result.success || !result.data) {
+        console.error('Paste failed:', result.error)
+        return false
+      }
       
+      const pasteData = result.data
       const current = getActiveCellPosition()
       if (!current) return false
       
@@ -368,129 +384,107 @@ export function useTableKeyboard<T = any>(options: UseTableKeyboardOptions<T>) {
     }
   }
   
-  // Main keyboard event handler
+  // Main keyboard event handler using keyboard utilities
   const handleKeyDown = (event: KeyboardEvent) => {
-    const { key, ctrlKey, metaKey, shiftKey, altKey } = event
-    const cmdKey = ctrlKey || metaKey
-    
     // Don't handle keys when editing (except special ones)
     if (editing.isEditing.value) {
-      switch (key) {
+      if (keyboardUtils.matches(event, 'Tab')) {
+        keyboardUtils.preventDefault(event)
+        saveEdit().then(() => handleTab(event.shiftKey))
+      } else if (keyboardUtils.matches(event, 'Enter')) {
+        keyboardUtils.preventDefault(event)
+        handleEnter(event.shiftKey)
+      } else if (keyboardUtils.isEscapeKey(event)) {
+        keyboardUtils.preventDefault(event)
+        cancelEditing()
+      }
+      return
+    }
+    
+    // Handle navigation keys
+    if (keyboardUtils.isNavigationKey(event)) {
+      keyboardUtils.preventDefault(event)
+      
+      switch (event.key) {
+        case 'ArrowUp':
+          moveSelection(-1, 0, event.shiftKey)
+          break
+        case 'ArrowDown':
+          moveSelection(1, 0, event.shiftKey)
+          break
+        case 'ArrowLeft':
+          moveSelection(0, -1, event.shiftKey)
+          break
+        case 'ArrowRight':
+          moveSelection(0, 1, event.shiftKey)
+          break
         case 'Tab':
-          event.preventDefault()
-          saveEdit().then(() => handleTab(shiftKey))
+          handleTab(event.shiftKey)
           break
         case 'Enter':
-          event.preventDefault()
-          handleEnter(shiftKey)
+          handleEnter(event.shiftKey)
           break
-        case 'Escape':
-          event.preventDefault()
-          cancelEditing()
+        case 'Home':
+          handleHome(event.ctrlKey || event.metaKey)
+          break
+        case 'End':
+          handleEnd(event.ctrlKey || event.metaKey)
+          break
+        case 'PageUp':
+          handlePageUp()
+          break
+        case 'PageDown':
+          handlePageDown()
           break
       }
       return
     }
     
-    // Handle navigation and editing keys
-    switch (key) {
-      case 'ArrowUp':
-        event.preventDefault()
-        moveSelection(-1, 0, shiftKey)
-        break
+    // Handle edit keys
+    if (keyboardUtils.isEditKey(event)) {
+      keyboardUtils.preventDefault(event)
+      const current = getActiveCellPosition()
+      if (current) {
+        startEditing(current.row, current.col)
+      }
+      return
+    }
+    
+    // Handle delete keys
+    if (keyboardUtils.isDeleteKey(event)) {
+      keyboardUtils.preventDefault(event)
+      handleDelete()
+      return
+    }
+    
+    // Handle clipboard operations
+    if (keyboardUtils.isClipboardKey(event)) {
+      keyboardUtils.preventDefault(event)
       
-      case 'ArrowDown':
-        event.preventDefault()
-        moveSelection(1, 0, shiftKey)
-        break
-      
-      case 'ArrowLeft':
-        event.preventDefault()
-        moveSelection(0, -1, shiftKey)
-        break
-      
-      case 'ArrowRight':
-        event.preventDefault()
-        moveSelection(0, 1, shiftKey)
-        break
-      
-      case 'Tab':
-        event.preventDefault()
-        handleTab(shiftKey)
-        break
-      
-      case 'Enter':
-        event.preventDefault()
-        handleEnter(shiftKey)
-        break
-      
-      case 'Home':
-        event.preventDefault()
-        handleHome(cmdKey)
-        break
-      
-      case 'End':
-        event.preventDefault()
-        handleEnd(cmdKey)
-        break
-      
-      case 'PageUp':
-        event.preventDefault()
-        handlePageUp()
-        break
-      
-      case 'PageDown':
-        event.preventDefault()
-        handlePageDown()
-        break
-      
-      case 'Delete':
-      case 'Backspace':
-        event.preventDefault()
-        handleDelete()
-        break
-      
-      case 'F2':
-        event.preventDefault()
-        const current = getActiveCellPosition()
-        if (current) {
+      if (keyboardUtils.matches(event, 'c', { ctrl: true }) || keyboardUtils.matches(event, 'c', { meta: true })) {
+        handleCopy()
+      } else if (keyboardUtils.matches(event, 'v', { ctrl: true }) || keyboardUtils.matches(event, 'v', { meta: true })) {
+        handlePaste()
+      }
+      return
+    }
+    
+    // Handle select all
+    if (keyboardUtils.isSelectAllKey(event)) {
+      keyboardUtils.preventDefault(event)
+      handleSelectAll()
+      return
+    }
+    
+    // Handle printable characters to start editing
+    if (keyboardUtils.isPrintable(event)) {
+      const current = getActiveCellPosition()
+      if (current) {
+        const column = columns.value[current.col]
+        if (column?.editable) {
           startEditing(current.row, current.col)
         }
-        break
-      
-      case 'c':
-        if (cmdKey) {
-          event.preventDefault()
-          handleCopy()
-        }
-        break
-      
-      case 'v':
-        if (cmdKey) {
-          event.preventDefault()
-          handlePaste()
-        }
-        break
-      
-      case 'a':
-        if (cmdKey) {
-          event.preventDefault()
-          handleSelectAll()
-        }
-        break
-      
-      default:
-        // Start editing with typed character
-        if (!cmdKey && !altKey && key.length === 1) {
-          const current = getActiveCellPosition()
-          if (current) {
-            const column = columns.value[current.col]
-            if (column?.editable) {
-              startEditing(current.row, current.col)
-            }
-          }
-        }
-        break
+      }
     }
   }
   

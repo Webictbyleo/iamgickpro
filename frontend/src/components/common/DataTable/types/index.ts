@@ -144,7 +144,7 @@ export interface UndoRedoState {
 }
 
 export interface DataTableHistoryEntry {
-  type: 'cell-edit' | 'row-add' | 'row-delete' | 'bulk-edit'
+  type: 'cell-edit' | 'row-add' | 'row-delete' | 'row-duplicate' | 'bulk-edit'
   timestamp: number
   data: any
   description: string

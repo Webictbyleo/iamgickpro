@@ -211,6 +211,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, inject, watch, type Ref } from 'vue'
 import type { DataTableColumn, DataTableRow, CellState } from '../types'
+import formatters from '../utils/formatters'
 
 interface Props {
   column: DataTableColumn
@@ -332,11 +333,38 @@ const displayValue = computed(() => {
     return ''
   }
   
+  // Use custom formatter if provided
   if (props.column.formatter) {
     return props.column.formatter(cellValue.value, props.rowData.data)
   }
   
-  return String(cellValue.value)
+  // Use formatters utility based on column type
+  try {
+    switch (props.column.type) {
+      case 'number':
+        return formatters.number(cellValue.value, 2)
+      case 'currency':
+        return formatters.currency(cellValue.value)
+      case 'date':
+        return formatters.date(cellValue.value, 'medium')
+      case 'boolean':
+        return formatters.boolean(cellValue.value, 'yes-no')
+      case 'email':
+      case 'url':
+      case 'text':
+      case 'textarea':
+      case 'password':
+        return formatters.text(cellValue.value)
+      case 'select':
+        // For select, show the raw value first, getSelectLabel will handle the display
+        return formatters.text(cellValue.value)
+      default:
+        return formatters.text(cellValue.value)
+    }
+  } catch (error) {
+    console.error('Error formatting cell value:', error)
+    return String(cellValue.value)
+  }
 })
 
 const cellClasses = computed(() => [

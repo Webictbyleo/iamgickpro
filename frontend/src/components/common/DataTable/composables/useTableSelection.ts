@@ -5,6 +5,7 @@ import type {
   SelectionState, 
   TableSelection 
 } from '../types'
+import formatters from '../utils/formatters'
 
 export interface UseTableSelectionOptions<T = any> {
   columns: Ref<DataTableColumn<T>[]>
@@ -251,8 +252,8 @@ export function useTableSelection<T = any>(options: UseTableSelectionOptions<T>)
     })
   }
   
-  // Get selected data for clipboard operations
-  const getSelectedData = (): string[][] => {
+  // Get selected data for clipboard operations with formatting
+  const getSelectedData = (formatted = false): string[][] => {
     const positions = getSelectedCellPositions()
     if (positions.length === 0) return []
     
@@ -260,7 +261,7 @@ export function useTableSelection<T = any>(options: UseTableSelectionOptions<T>)
     positions.sort((a, b) => a.row - b.row || a.col - b.col)
     
     // Group by rows
-    const rowMap = new Map<number, Array<{ col: number; value: any }>>()
+    const rowMap = new Map<number, Array<{ col: number; value: any; column: DataTableColumn<T> }>>()
     
     positions.forEach(({ row, col }) => {
       if (!rowMap.has(row)) {
@@ -272,18 +273,43 @@ export function useTableSelection<T = any>(options: UseTableSelectionOptions<T>)
       
       if (rowData && column) {
         const value = (rowData.data as any)[column.key]
-        rowMap.get(row)!.push({ col, value })
+        rowMap.get(row)!.push({ col, value, column })
       }
     })
     
-    // Convert to 2D array
+    // Convert to 2D array with optional formatting
     const result: string[][] = []
     
-    for (const [rowIndex, cells] of rowMap) {
-      // Sort cells by column
+    for (const [, cells] of rowMap) {
       cells.sort((a, b) => a.col - b.col)
-      
-      const row = cells.map(cell => String(cell.value || ''))
+      const row = cells.map(cell => {
+        if (formatted) {
+          // Use formatters for display values
+          try {
+            if (cell.column.formatter) {
+              return cell.column.formatter(cell.value, undefined)
+            }
+            
+            switch (cell.column.type) {
+              case 'number':
+                return formatters.number(cell.value, 2)
+              case 'currency':
+                return formatters.currency(cell.value, 'USD')
+              case 'date':
+                return formatters.date(cell.value, 'short')
+              case 'boolean':
+                return formatters.boolean(cell.value, 'yes-no')
+              default:
+                return formatters.text(cell.value)
+            }
+          } catch (error) {
+            return String(cell.value || '')
+          }
+        } else {
+          // Raw values for data processing
+          return String(cell.value || '')
+        }
+      })
       result.push(row)
     }
     

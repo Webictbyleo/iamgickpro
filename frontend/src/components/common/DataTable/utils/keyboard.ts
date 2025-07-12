@@ -1,52 +1,93 @@
-// Keyboard utility functions for DataTable
+// Keyboard utility functions for DataTable with improved performance and accessibility
+
+// Cache for platform detection
+let platformCache: { isMac: boolean; isWindows: boolean; isLinux: boolean } | null = null
+
+const getPlatform = () => {
+  if (!platformCache) {
+    const platform = navigator.platform.toLowerCase()
+    const userAgent = navigator.userAgent.toLowerCase()
+    
+    platformCache = {
+      isMac: /mac|ipod|iphone|ipad/.test(platform) || /mac os x/.test(userAgent),
+      isWindows: /win/.test(platform),
+      isLinux: /linux/.test(platform)
+    }
+  }
+  return platformCache
+}
+
+// Debounce function for performance
+const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
+}
+
 const keyboardUtils = {
-  // Check if a key combination matches
+  // Check if a key combination matches with better performance
   matches: (event: KeyboardEvent, key: string, modifiers: {
     ctrl?: boolean
     shift?: boolean
     alt?: boolean
     meta?: boolean
   } = {}): boolean => {
-    return event.key === key &&
-           event.ctrlKey === (modifiers.ctrl || false) &&
+    // Quick exit if key doesn't match
+    if (event.key !== key) return false
+    
+    return event.ctrlKey === (modifiers.ctrl || false) &&
            event.shiftKey === (modifiers.shift || false) &&
            event.altKey === (modifiers.alt || false) &&
            event.metaKey === (modifiers.meta || false)
   },
 
-  // Check if it's a printable character
+  // Enhanced printable character check
   isPrintable: (event: KeyboardEvent): boolean => {
     const { key, ctrlKey, metaKey, altKey } = event
     
-    // Ignore modifier keys and control combinations
-    if (ctrlKey || metaKey || altKey) return false
+    // Quick exit for modifier combinations
+    if (ctrlKey || metaKey) return false
     
-    // Check for special keys
-    const specialKeys = [
+    // Allow Alt combinations on Windows/Linux for international characters
+    const platform = getPlatform()
+    if (altKey && !platform.isMac) {
+      // Allow Alt+key combinations for international input
+      return key.length === 1 && /[\w\s\p{L}\p{N}\p{P}\p{S}]/u.test(key)
+    } else if (altKey) {
+      return false
+    }
+    
+    // Comprehensive special keys list
+    const specialKeys = new Set([
       'Tab', 'Enter', 'Escape', 'Backspace', 'Delete',
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
       'Home', 'End', 'PageUp', 'PageDown',
       'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
       'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
       'Insert', 'CapsLock', 'NumLock', 'ScrollLock',
-      'Pause', 'ContextMenu'
-    ]
+      'Pause', 'ContextMenu', 'PrintScreen'
+    ])
     
-    if (specialKeys.includes(key)) return false
+    if (specialKeys.has(key)) return false
     
     // Check for modifier keys
-    const modifierKeys = [
-      'Control', 'Alt', 'Shift', 'Meta',
+    const modifierKeys = new Set([
+      'Control', 'Alt', 'Shift', 'Meta', 'AltGraph',
       'ControlLeft', 'ControlRight',
       'AltLeft', 'AltRight',
       'ShiftLeft', 'ShiftRight',
       'MetaLeft', 'MetaRight'
-    ]
+    ])
     
-    if (modifierKeys.includes(key)) return false
+    if (modifierKeys.has(key)) return false
     
-    // If key is a single character, it's printable
-    return key.length === 1
+    // Enhanced printable character detection
+    return key.length === 1 && /[\w\s\p{L}\p{N}\p{P}\p{S}]/u.test(key)
   },
 
   // Navigation key check

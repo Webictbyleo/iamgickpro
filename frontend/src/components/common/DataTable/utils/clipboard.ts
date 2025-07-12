@@ -1,4 +1,18 @@
 // Clipboard utility functions for DataTable
+export interface ClipboardOptions {
+  maxCellLength?: number
+  maxRows?: number
+  maxColumns?: number
+  sanitizeHTML?: boolean
+}
+
+const DEFAULT_OPTIONS: ClipboardOptions = {
+  maxCellLength: 32767, // Excel cell limit
+  maxRows: 1048576, // Excel row limit
+  maxColumns: 16384, // Excel column limit
+  sanitizeHTML: true
+}
+
 const clipboardUtils = {
   // Check if clipboard API is supported
   isSupported: (): boolean => {
@@ -7,58 +21,198 @@ const clipboardUtils = {
            typeof navigator.clipboard.writeText === 'function'
   },
 
-  // Copy data to clipboard
-  copy: async (data: string[][] | string): Promise<boolean> => {
+  // Check if clipboard read is supported and allowed
+  isReadSupported: async (): Promise<boolean> => {
+    if (!clipboardUtils.isSupported()) return false
+    
     try {
+      // Test if we have read permission
+      const permission = await navigator.permissions.query({ name: 'clipboard-read' as PermissionName })
+      return permission.state === 'granted' || permission.state === 'prompt'
+    } catch (error) {
+      // Fallback: try to read once to test support
+      try {
+        await navigator.clipboard.readText()
+        return true
+      } catch {
+        return false
+      }
+    }
+  },
+
+  // Copy data to clipboard with size limits and sanitization
+  copy: async (data: string[][] | string, options: ClipboardOptions = {}): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const opts = { ...DEFAULT_OPTIONS, ...options }
       let text: string
       
       if (typeof data === 'string') {
         text = data
       } else {
-        // Convert 2D array to tab-separated values
-        text = data.map(row => row.join('\t')).join('\n')
+        // Validate data size
+        const sizeValidation = clipboardUtils.validateDataSize(data, opts)
+        if (!sizeValidation.valid) {
+          return { success: false, error: sizeValidation.error }
+        }
+        
+        // Convert 2D array to tab-separated values with sanitization
+        text = data.map(row => 
+          row.map(cell => {
+            let cellValue = String(cell || '')
+            
+            // Truncate if too long
+            if (cellValue.length > opts.maxCellLength!) {
+              cellValue = cellValue.substring(0, opts.maxCellLength! - 3) + '...'
+            }
+            
+            // Sanitize if needed
+            if (opts.sanitizeHTML) {
+              cellValue = clipboardUtils.sanitizeText(cellValue)
+            }
+            
+            return cellValue
+          }).join('\t')
+        ).join('\n')
       }
       
       if (clipboardUtils.isSupported()) {
-        await navigator.clipboard!.writeText(text)
+        await navigator.clipboard.writeText(text)
       } else {
         // Fallback for older browsers
-        clipboardUtils.fallbackCopy(text)
+        const fallbackResult = clipboardUtils.fallbackCopy(text)
+        if (!fallbackResult) {
+          return { success: false, error: 'Clipboard access not supported' }
+        }
       }
       
-      return true
+      return { success: true }
     } catch (error) {
       console.error('Failed to copy to clipboard:', error)
-      return false
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      }
     }
   },
 
-  // Paste data from clipboard
-  paste: async (): Promise<string[][] | null> => {
+  // Paste data from clipboard with validation
+  paste: async (options: ClipboardOptions = {}): Promise<{ 
+    success: boolean
+    data?: string[][]
+    error?: string 
+  }> => {
     try {
+      const opts = { ...DEFAULT_OPTIONS, ...options }
+      
+      // Check if read is supported
+      const readSupported = await clipboardUtils.isReadSupported()
+      if (!readSupported) {
+        return { success: false, error: 'Clipboard read not supported or permission denied' }
+      }
+      
       let text: string
       
       if (clipboardUtils.isSupported()) {
         text = await navigator.clipboard.readText()
       } else {
-        // Fallback not available for reading
-        return null
+        return { success: false, error: 'Clipboard read not supported' }
       }
       
-      return clipboardUtils.parseClipboardData(text)
+      const parsedData = clipboardUtils.parseClipboardData(text, opts)
+      
+      if (!parsedData) {
+        return { success: false, error: 'Failed to parse clipboard data' }
+      }
+      
+      return { success: true, data: parsedData }
     } catch (error) {
       console.error('Failed to paste from clipboard:', error)
-      return null
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to read clipboard'
+      }
     }
   },
 
-  // Parse clipboard text data into 2D array
-  parseClipboardData: (text: string): string[][] => {
+  // Validate data size constraints
+  validateDataSize: (data: string[][], options: ClipboardOptions): { valid: boolean; error?: string } => {
+    if (data.length > (options.maxRows || DEFAULT_OPTIONS.maxRows!)) {
+      return { 
+        valid: false, 
+        error: `Too many rows. Maximum ${options.maxRows || DEFAULT_OPTIONS.maxRows} rows allowed.` 
+      }
+    }
+    
+    for (const row of data) {
+      if (row.length > (options.maxColumns || DEFAULT_OPTIONS.maxColumns!)) {
+        return { 
+          valid: false, 
+          error: `Too many columns. Maximum ${options.maxColumns || DEFAULT_OPTIONS.maxColumns} columns allowed.` 
+        }
+      }
+    }
+    
+    return { valid: true }
+  },
+
+  // Sanitize text to prevent XSS
+  sanitizeText: (text: string): string => {
+    // Remove potentially dangerous characters and patterns
+    return text
+      .replace(/[<>]/g, '') // Remove angle brackets
+      .replace(/javascript:/gi, '') // Remove javascript: protocol
+      .replace(/data:/gi, '') // Remove data: protocol
+      .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+      .trim()
+  },
+
+  // Parse clipboard text data into 2D array with validation
+  parseClipboardData: (text: string, options: ClipboardOptions = {}): string[][] | null => {
     if (!text) return []
     
-    // Split by lines and then by tabs
-    const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0)
-    return lines.map(line => line.split('\t'))
+    try {
+      const opts = { ...DEFAULT_OPTIONS, ...options }
+      
+      // Split by lines and then by tabs
+      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0)
+      
+      // Validate row count
+      if (lines.length > opts.maxRows!) {
+        console.warn(`Data truncated: ${lines.length} rows exceeds limit of ${opts.maxRows}`)
+        lines.splice(opts.maxRows!)
+      }
+      
+      const result = lines.map(line => {
+        const cells = line.split('\t')
+        
+        // Validate column count
+        if (cells.length > opts.maxColumns!) {
+          console.warn(`Row truncated: ${cells.length} columns exceeds limit of ${opts.maxColumns}`)
+          cells.splice(opts.maxColumns!)
+        }
+        
+        // Sanitize cells if needed
+        return cells.map(cell => {
+          let sanitized = cell
+          
+          if (opts.sanitizeHTML) {
+            sanitized = clipboardUtils.sanitizeText(cell)
+          }
+          
+          // Truncate if too long
+          if (sanitized.length > opts.maxCellLength!) {
+            sanitized = sanitized.substring(0, opts.maxCellLength! - 3) + '...'
+          }
+          
+          return sanitized
+        })
+      })
+      
+      return result
+    } catch (error) {
+      console.error('Error parsing clipboard data:', error)
+      return null
+    }
   },
 
   // Convert 2D array to clipboard text format
@@ -125,24 +279,35 @@ const clipboardUtils = {
     return div.innerHTML
   },
 
-  // Fallback copy method for older browsers
-  fallbackCopy: (text: string): void => {
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    textArea.style.position = 'fixed'
-    textArea.style.left = '-999999px'
-    textArea.style.top = '-999999px'
-    
-    document.body.appendChild(textArea)
-    textArea.select()
-    
+  // Improved fallback copy method with better error handling
+  fallbackCopy: (text: string): boolean => {
     try {
-      document.execCommand('copy')
+      // Check if document.execCommand is supported
+      if (!document.queryCommandSupported || !document.queryCommandSupported('copy')) {
+        return false
+      }
+      
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      textArea.style.opacity = '0'
+      textArea.style.pointerEvents = 'none'
+      textArea.setAttribute('readonly', '')
+      
+      document.body.appendChild(textArea)
+      textArea.select()
+      textArea.setSelectionRange(0, 99999) // For mobile devices
+      
+      const successful = document.execCommand('copy')
+      document.body.removeChild(textArea)
+      
+      return successful
     } catch (err) {
       console.error('Fallback copy failed:', err)
+      return false
     }
-    
-    document.body.removeChild(textArea)
   },
 
   // Copy selection with formatting preservation
@@ -173,22 +338,36 @@ const clipboardUtils = {
   },
 
   // Paste and validate data types
-  pasteTyped: async (columnTypes: string[]): Promise<Array<{ value: any; type: string; valid: boolean }>[] | null> => {
+  pasteTyped: async (
+    columnTypes: string[], 
+    options: ClipboardOptions = {}
+  ): Promise<{ 
+    success: boolean
+    data?: Array<{ value: any; type: string; valid: boolean }>[]
+    error?: string 
+  }> => {
     try {
-      const rawData = await clipboardUtils.paste()
-      if (!rawData) return null
+      const pasteResult = await clipboardUtils.paste(options)
+      if (!pasteResult.success || !pasteResult.data) {
+        return { success: false, error: pasteResult.error }
+      }
       
-      return rawData.map((row: any) => 
-        row.map((cell: any, index: number) => {
+      const typedData = pasteResult.data.map(row => 
+        row.map((cell, index) => {
           const type = columnTypes[index] || 'text'
           const { value, valid } = clipboardUtils.parseTypedValue(cell, type)
           
           return { value, type, valid }
         })
       )
+      
+      return { success: true, data: typedData }
     } catch (error) {
       console.error('Failed to paste typed data:', error)
-      return null
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to parse typed data'
+      }
     }
   },
 
@@ -298,8 +477,15 @@ const clipboardUtils = {
   // Import data from file
   import: {
     // Import from file input
-    fromFile: (file: File): Promise<string[][] | any[]> => {
+    fromFile: (file: File, options: ClipboardOptions = {}): Promise<string[][] | any[]> => {
       return new Promise((resolve, reject) => {
+        // Validate file size (limit to 10MB for safety)
+        const maxFileSize = 10 * 1024 * 1024 // 10MB
+        if (file.size > maxFileSize) {
+          reject(new Error(`File too large. Maximum size is ${maxFileSize / 1024 / 1024}MB`))
+          return
+        }
+        
         const reader = new FileReader()
         
         reader.onload = (e) => {
@@ -310,15 +496,18 @@ const clipboardUtils = {
               const data = JSON.parse(content)
               resolve(Array.isArray(data) ? data : [data])
             } else if (file.name.endsWith('.csv')) {
-              resolve(clipboardUtils.import.parseCSV(content))
+              const result = clipboardUtils.import.parseCSV(content)
+              resolve(result || [])
             } else if (file.name.endsWith('.tsv')) {
-              resolve(clipboardUtils.import.parseTSV(content))
+              const result = clipboardUtils.import.parseTSV(content)
+              resolve(result || [])
             } else {
               // Try to parse as plain text
-              resolve(clipboardUtils.parseClipboardData(content))
+              const result = clipboardUtils.parseClipboardData(content, options)
+              resolve(result || [])
             }
           } catch (error) {
-            reject(error)
+            reject(error instanceof Error ? error : new Error('Failed to parse file'))
           }
         }
         
@@ -327,40 +516,70 @@ const clipboardUtils = {
       })
     },
 
-    // Parse CSV content
-    parseCSV: (content: string): string[][] => {
-      const lines = content.split(/\r?\n/)
-      return lines.map(line => {
-        const result: string[] = []
-        let current = ''
-        let inQuotes = false
+    // Parse CSV content with improved error handling
+    parseCSV: (content: string): string[][] | null => {
+      try {
+        if (!content.trim()) return []
         
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i]
+        const lines = content.split(/\r?\n/)
+        const result: string[][] = []
+        
+        for (const line of lines) {
+          if (!line.trim()) continue // Skip empty lines
           
-          if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-              current += '"'
+          const row: string[] = []
+          let current = ''
+          let inQuotes = false
+          let i = 0
+          
+          while (i < line.length) {
+            const char = line[i]
+            
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                // Escaped quote
+                current += '"'
+                i += 2
+              } else {
+                // Toggle quote state
+                inQuotes = !inQuotes
+                i++
+              }
+            } else if (char === ',' && !inQuotes) {
+              // End of field
+              row.push(current)
+              current = ''
               i++
             } else {
-              inQuotes = !inQuotes
+              current += char
+              i++
             }
-          } else if (char === ',' && !inQuotes) {
-            result.push(current)
-            current = ''
-          } else {
-            current += char
           }
+          
+          // Add the last field
+          row.push(current)
+          result.push(row)
         }
         
-        result.push(current)
         return result
-      })
+      } catch (error) {
+        console.error('Error parsing CSV:', error)
+        return null
+      }
     },
 
-    // Parse TSV content
-    parseTSV: (content: string): string[][] => {
-      return content.split(/\r?\n/).map(line => line.split('\t'))
+    // Parse TSV content with error handling
+    parseTSV: (content: string): string[][] | null => {
+      try {
+        if (!content.trim()) return []
+        
+        return content.split(/\r?\n/)
+          .filter(line => line.trim())
+          .map(line => line.split('\t'))
+      } catch (error) {
+        console.error('Error parsing TSV:', error)
+        return null
+      }
     }
   }
 }

@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { DataTableColumn, DataTableFilter } from '../types'
+import validators from '../utils/validators'
 
 interface Props {
   column: DataTableColumn
@@ -212,11 +213,54 @@ const needsValue = computed(() => {
 const isValid = computed(() => {
   if (!needsValue.value) return true
   
+  // Check basic emptiness
   if (filterOperator.value === 'between') {
-    return filterValue.value !== '' && filterValue2.value !== ''
+    if (filterValue.value === '' || filterValue2.value === '') return false
+  } else if (filterValue.value === '') {
+    return false
   }
   
-  return filterValue.value !== ''
+  // Use validators utility for type-specific validation
+  try {
+    switch (props.column.type) {
+      case 'email':
+        const emailResult = validators.email(filterValue.value)
+        return emailResult === true
+      
+      case 'url':
+        const urlResult = validators.url(filterValue.value)
+        return urlResult === true
+      
+      case 'number':
+      case 'currency':
+        const numberResult = validators.number(filterValue.value)
+        if (numberResult !== true) return false
+        
+        // Validate second value for between operator
+        if (filterOperator.value === 'between') {
+          const number2Result = validators.number(filterValue2.value)
+          return number2Result === true
+        }
+        return true
+      
+      case 'date':
+        const dateResult = validators.date(filterValue.value)
+        if (dateResult !== true) return false
+        
+        // Validate second value for between operator
+        if (filterOperator.value === 'between') {
+          const date2Result = validators.date(filterValue2.value)
+          return date2Result === true
+        }
+        return true
+      
+      default:
+        return true
+    }
+  } catch (error) {
+    console.error('Filter validation error:', error)
+    return false
+  }
 })
 
 // Methods
