@@ -57,6 +57,7 @@
               v-if="activePanel === 'elements'" 
               @add-element="handleAddElement" 
               @add-template="handleAddTemplate"
+              @apply-color="handleApplyColor"
             />
 
             <TemplatesPanel 
